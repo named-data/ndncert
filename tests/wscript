@@ -1,0 +1,28 @@
+# -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
+from waflib import Utils
+
+top = '..'
+
+def build(bld):
+    if not bld.env["WITH_TESTS"]:
+        return
+
+    tests_main = bld(
+        target='tests-main',
+        name='tests-main',
+        features='cxx',
+        source="main.cpp",
+        use='objects BOOST',
+        defines=['BOOST_TEST_MODULE=\"NDNCERT Tests\"']
+        )
+
+    unit_test = bld.program(
+        target="../unit-tests",
+        source=bld.path.ant_glob(['*.cpp', 'unit-tests/**/*.cpp'],
+                                 excl=['main.cpp']),
+        features=['cxx', 'cxxprogram'],
+        use='objects tests-main',
+        includes=['.'],
+        install_path=None,
+        defines='TMP_TESTS_PATH=\"%s/tmp-tests\"' % bld.bldnode,
+        )
