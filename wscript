@@ -47,7 +47,7 @@ def configure(conf):
     conf.load('coverage')
 
     conf.load('sanitizers')
-    
+
     conf.write_config_header('src/ndncert-config.hpp')
 
 def build(bld):
