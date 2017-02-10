@@ -26,25 +26,22 @@
 namespace ndn {
 namespace ndncert {
 
-const std::string JSON_IDNENTIFIER = "Identifier";
-const std::string JSON_CA_INFO = "CA-Info";
-const std::string JSON_STATUS = "Status";
-const std::string JSON_REQUEST_ID = "Request-ID";
-const std::string JSON_CHALLENGES = "Challenges";
-const std::string JSON_CHALLENGE_TYPE = "Challenge-Type";
-const std::string JSON_CHALLENGE_INSTRUCTION = "Challenge-Instruction";
-const std::string JSON_CHALLENGE_STATUS = "Challenge-Status";
-const std::string JSON_ERROR_INFO = "Error-Info";
-
-typedef boost::property_tree::ptree JsonSection;
+const std::string JSON_IDNENTIFIER = "identifier";
+const std::string JSON_CA_INFO = "ca-info";
+const std::string JSON_STATUS = "status";
+const std::string JSON_REQUEST_ID = "request-id";
+const std::string JSON_CHALLENGES = "challenges";
+const std::string JSON_CHALLENGE_TYPE = "challenge-type";
+const std::string JSON_ERROR_INFO = "error-info";
+const std::string JSON_CERTIFICATE = "certificate";
 
 /**
  * @brief Generate JSON file to response PROBE insterest
  *
  * Target JSON format:
  * {
- *   "Identifier": "",
- *   "CA-Info": ""
+ *   "identifier": "",
+ *   "ca-info": ""
  * }
  */
 const JsonSection
@@ -55,46 +52,54 @@ genResponseProbeJson(const Name& identifier, const Name& CaInformation);
  *
  * Target JSON format:
  * {
- *   "Status": "",
- *   "Request-ID": "",
- *   "Challenges": [
+ *   "request-id": "",
+ *   "challenges": [
  *     {
- *       "Challenge-Type": "",
- *       "Challenge-Instruction": ""
+ *       "challenge-type": ""
  *     },
  *     {
- *       "Challenge-Type": "",
- *       "Challenge-Instruction": ""
+ *       "challenge-type": ""
  *     },
  *     ...
  *   ]
  * }
  */
 const JsonSection
-genResponseNewJson(const CertificateRequest& request,
-                   const std::list<std::tuple<std::string, std::string>> challenges);
+genResponseNewJson(const std::string& requestId, const std::list<std::string>& challenges);
 
 /**
- * @brief Generate JSON file to response POLL interest
+ * @brief Generate JSON file to response _SELECT, _VALIDATE, and _STATUS interest
+ *
+ * if certificate name is not present:
  *
  * Target JSON format:
  * {
- *   "Status": "",
- *   "Challenge-Type": "",
- *   "Challenge-Status": "",
- *   "Challenge-Instruction": ""
+ *   "request-id": "@p requestId",
+ *   "challenge-type": "@p challengeType",
+ *   "status": "@p status"
+ * }
+ *
+ * if certificate name is present:
+ *
+ * Target JSON format:
+ * {
+ *   "request-id": "@p requestId",
+ *   "challenge-type": "@p challengeType",
+ *   "status": "@p status",
+ *   "certificate":"@p name"
  * }
  */
 const JsonSection
-genResponsePollJson(const CertificateRequest& request);
+genResponseChallengeJson(const std::string& requestId, const std::string& challengeType,
+                         const std::string& status, const Name& name = Name());
 
 /**
  * @brief Generate JSON file when there is an Error
  *
  * Target JSON format:
  * {
- *   "Status": "",
- *   "Error-Info": ""
+ *   "status": "",
+ *   "error-info": ""
  * }
  */
 const JsonSection

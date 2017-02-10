@@ -38,29 +38,24 @@ BOOST_AUTO_TEST_CASE(Constructor)
   CertificateRequest request1(Name("/ndn/site1"), "123", cert);
   BOOST_CHECK_EQUAL(request1.getCaName().toUri(), "/ndn/site1");
   BOOST_CHECK_EQUAL(request1.getRequestId(), "123");
-  BOOST_CHECK_EQUAL(request1.getStatus(), CertificateRequest::Pending);
-  BOOST_CHECK_EQUAL(request1.getChallengeType(), "");
-  BOOST_CHECK_EQUAL(request1.getChallengeStatus(), "");
-  BOOST_CHECK_EQUAL(request1.getChallengeDefinedField(), "");
-  BOOST_CHECK_EQUAL(request1.getChallengeInstruction(), "");
+  BOOST_CHECK_EQUAL(request1.getStatus(), "");
+  BOOST_CHECK_EQUAL(request1.getChallengeSecrets().empty(), true);
+  BOOST_CHECK_EQUAL(request1.getCert(), cert);
   BOOST_CHECK_EQUAL(request1.getCert(), cert);
 
-  CertificateRequest request2(Name("/ndn/site1"), "123", CertificateRequest::Verifying,
-                              "Email", "NEED_CODE", "123456", cert);
+  JsonSection json;
+  json.put("code", "1234");
+  std::stringstream ss;
+  boost::property_tree::write_json(ss, json);
+  std::string jsonValue = ss.str();
+
+  CertificateRequest request2(Name("/ndn/site1"), "123", "need-verify", "EMAIL", jsonValue, cert);
   BOOST_CHECK_EQUAL(request2.getCaName().toUri(), "/ndn/site1");
   BOOST_CHECK_EQUAL(request2.getRequestId(), "123");
-  BOOST_CHECK_EQUAL(request2.getStatus(), CertificateRequest::Verifying);
-  BOOST_CHECK_EQUAL(request2.getChallengeType(), "Email");
-  BOOST_CHECK_EQUAL(request2.getChallengeStatus(), "NEED_CODE");
-  BOOST_CHECK_EQUAL(request2.getChallengeDefinedField(), "123456");
-  BOOST_CHECK_EQUAL(request2.getChallengeInstruction(), "");
+  BOOST_CHECK_EQUAL(request2.getStatus(), "need-verify");
+  BOOST_CHECK_EQUAL(request2.getChallengeType(), "EMAIL");
+  BOOST_CHECK(request2.getChallengeSecrets() == json);
   BOOST_CHECK_EQUAL(request2.getCert(), cert);
-}
-
-BOOST_AUTO_TEST_CASE(GetStatusOutput)
-{
-  CertificateRequest::ApplicationStatus status = CertificateRequest::Success;
-  BOOST_CHECK_EQUAL(boost::lexical_cast<std::string>(status), "success");
 }
 
 BOOST_AUTO_TEST_CASE(GetterSetter)
@@ -69,18 +64,17 @@ BOOST_AUTO_TEST_CASE(GetterSetter)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  CertificateRequest request(Name("/ndn/site1"), "123", cert);
-  request.setStatus(CertificateRequest::Verifying);
-  request.setChallengeType("Email");
-  request.setChallengeDefinedField("456");
-  request.setChallengeStatus("NEED_EMAIL");
-  request.setChallengeInstruction("Please provide your email address");
+  JsonSection json;
+  json.put("code", "1234");
 
-  BOOST_CHECK_EQUAL(request.getStatus(), CertificateRequest::Verifying);
-  BOOST_CHECK_EQUAL(request.getChallengeType(), "Email");
-  BOOST_CHECK_EQUAL(request.getChallengeDefinedField(), "456");
-  BOOST_CHECK_EQUAL(request.getChallengeStatus(), "NEED_EMAIL");
-  BOOST_CHECK_EQUAL(request.getChallengeInstruction(), "Please provide your email address");
+  CertificateRequest request(Name("/ndn/site1"), "123", cert);
+  request.setStatus("need-verify");
+  request.setChallengeType("EMAIL");
+  request.setChallengeSecrets(json);
+
+  BOOST_CHECK_EQUAL(request.getStatus(), "need-verify");
+  BOOST_CHECK_EQUAL(request.getChallengeType(), "EMAIL");
+  BOOST_CHECK(request.getChallengeSecrets() == json);
 }
 
 BOOST_AUTO_TEST_CASE(GetCertificateRequestOutput)
@@ -101,8 +95,6 @@ ODE0VDIyMzczOf0A/w8yMDE1MDgxOFQyMjM3MzgXgP//////////////////////
   /ndn/site1
 Request ID:
   123
-Request Status:
-  pending
 Certificate:
   Certificate name:
     /ndn/site1/KEY/ksk-1416425377094/0123/%FD%00%00%01I%C9%8B

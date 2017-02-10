@@ -27,6 +27,8 @@
 namespace ndn {
 namespace ndncert {
 
+typedef boost::property_tree::ptree JsonSection;
+
 /**
  * @brief Represents a certificate request instance.
  *
@@ -37,20 +39,12 @@ namespace ndncert {
 class CertificateRequest
 {
 public:
-  enum ApplicationStatus {
-    Pending = 0,
-    Verifying = 1,
-    Success = 2,
-    Failure = 3
-  };
-
-public:
   CertificateRequest(const Name& caName, const std::string& requestId,
                      const security::v2::Certificate& cert);
 
   CertificateRequest(const Name& caName, const std::string& requestId,
-                     const ApplicationStatus& status, const std::string& challengeType,
-                     const std::string& challengeStatus, const std::string& challengeDefinedField,
+                     const std::string& status, const std::string& challengeType,
+                     const std::string& challengeDefinedField,
                      const security::v2::Certificate& certBlock);
 
   const Name&
@@ -65,7 +59,7 @@ public:
     return m_requestId;
   }
 
-  const ApplicationStatus&
+  const std::string&
   getStatus() const
   {
     return m_status;
@@ -77,22 +71,10 @@ public:
     return m_challengeType;
   }
 
-  const std::string&
-  getChallengeDefinedField() const
+  const JsonSection&
+  getChallengeSecrets() const
   {
-    return m_challengeDefinedField;
-  }
-
-  const std::string&
-  getChallengeInstruction() const
-  {
-    return m_challengeInstruction;
-  }
-
-  const std::string&
-  getChallengeStatus() const
-  {
-    return m_challengeStatus;
+    return m_challengeSecrets;
   }
 
   const security::v2::Certificate&
@@ -101,11 +83,8 @@ public:
     return m_cert;
   }
 
-  /**
-   * These setters should only be invoked by ChallengeModule
-   */
   void
-  setStatus(const ApplicationStatus& status)
+  setStatus(const std::string& status)
   {
     m_status = status;
   }
@@ -117,56 +96,26 @@ public:
   }
 
   void
-  setChallengeStatus(const std::string& challengeStatus)
+  setChallengeSecrets(const JsonSection& challengeSecrets)
   {
-    m_challengeStatus = challengeStatus;
-  }
-
-  void
-  setChallengeDefinedField(const std::string& challengeDefinedField)
-  {
-    m_challengeDefinedField = challengeDefinedField;
-  }
-
-  void
-  setChallengeInstruction(const std::string& challengeInstruction)
-  {
-    m_challengeInstruction = challengeInstruction;
+    m_challengeSecrets = challengeSecrets;
   }
 
 private:
   Name m_caName;
   std::string m_requestId;
-  ApplicationStatus m_status;
+  std::string m_status;
   std::string m_challengeType;
-
-  /**
-   * @brief Defined by ChallengeModule to indicate the verification status.
-   *
-   * This field will be stored by CA.
-   */
-  std::string m_challengeStatus;
 
   /**
    * @brief Defined by ChallengeModule to store secret information.
    *
    * This field will be stored by CA.
    */
-  std::string m_challengeDefinedField;
-
-  /**
-   * @brief Defined by ChallengeModule to indicate end entity the next step.
-   *
-   * This field will be presented to end entity.
-   * This field will NOT be stored by CA.
-   */
-  std::string m_challengeInstruction;
+  JsonSection m_challengeSecrets;
 
   security::v2::Certificate m_cert;
 };
-
-std::ostream&
-operator<<(std::ostream& os, CertificateRequest::ApplicationStatus status);
 
 std::ostream&
 operator<<(std::ostream& os, const CertificateRequest& request);

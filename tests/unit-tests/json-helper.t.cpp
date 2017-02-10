@@ -18,14 +18,14 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "identity-management-fixture.hpp"
+#include "boost-test.hpp"
 #include "json-helper.hpp"
 
 namespace ndn {
 namespace ndncert {
 namespace tests {
 
-BOOST_FIXTURE_TEST_SUITE(TestJsonHelper, IdentityManagementV2Fixture)
+BOOST_AUTO_TEST_SUITE(TestJsonHelper)
 
 BOOST_AUTO_TEST_CASE(GenerateProbeJson)
 {
@@ -37,45 +37,33 @@ BOOST_AUTO_TEST_CASE(GenerateProbeJson)
 
 BOOST_AUTO_TEST_CASE(GenerateNewResponseJson)
 {
-  auto identity = addIdentity(Name("/ndn/site1"));
-  auto key = identity.getDefaultKey();
-  auto cert = key.getDefaultCertificate();
+  std::list<std::string> challenges;
+  challenges.push_back("PIN");
+  challenges.push_back("EMAIL");
+  auto result = genResponseNewJson("598234759", challenges);
 
-  CertificateRequest request(Name("/ndn/site1"), "598234759", cert);
-  std::list<std::tuple<std::string, std::string>> challenges;
-  challenges.push_back(std::make_tuple("PIN", "Please ask ca officer"));
-  challenges.push_back(std::make_tuple("EMAIL", "Please provide your email"));
-  auto result = genResponseNewJson(request, challenges);
-
-  BOOST_CHECK_EQUAL(result.get<std::string>(JSON_STATUS), "pending");
   BOOST_CHECK_EQUAL(result.get<std::string>(JSON_REQUEST_ID), "598234759");
   auto child = result.get_child(JSON_CHALLENGES);
   auto it = child.begin();
   BOOST_CHECK_EQUAL(it->second.get<std::string>(JSON_CHALLENGE_TYPE), "PIN");
-  BOOST_CHECK_EQUAL(it->second.get<std::string>(JSON_CHALLENGE_INSTRUCTION),
-                    "Please ask ca officer");
   it++;
   BOOST_CHECK_EQUAL(it->second.get<std::string>(JSON_CHALLENGE_TYPE), "EMAIL");
-  BOOST_CHECK_EQUAL(it->second.get<std::string>(JSON_CHALLENGE_INSTRUCTION),
-                    "Please provide your email");
 }
 
-BOOST_AUTO_TEST_CASE(GeneratePollResponseJson)
+BOOST_AUTO_TEST_CASE(GenerateChallengeResponseJson)
 {
-  auto identity = addIdentity(Name("/ndn/site1"));
-  auto key = identity.getDefaultKey();
-  auto cert = key.getDefaultCertificate();
+  auto result = genResponseChallengeJson("598234759", "EMAIL", "need-code");
 
-  CertificateRequest request(Name("/ndn/site1"), "598234759", CertificateRequest::Verifying,
-                             "Email", "NEED_CODE", "111", cert);
-  request.setChallengeInstruction("Please provide verification code");
-  auto result = genResponsePollJson(request);
+  BOOST_CHECK_EQUAL(result.get<std::string>(JSON_REQUEST_ID), "598234759");
+  BOOST_CHECK_EQUAL(result.get<std::string>(JSON_CHALLENGE_TYPE), "EMAIL");
+  BOOST_CHECK_EQUAL(result.get<std::string>(JSON_STATUS), "need-code");
 
-  BOOST_CHECK_EQUAL(result.get<std::string>(JSON_STATUS), "verifying");
-  BOOST_CHECK_EQUAL(result.get<std::string>(JSON_CHALLENGE_TYPE), "Email");
-  BOOST_CHECK_EQUAL(result.get<std::string>(JSON_CHALLENGE_STATUS), "NEED_CODE");
-  BOOST_CHECK_EQUAL(result.get<std::string>(JSON_CHALLENGE_INSTRUCTION),
-                    "Please provide verification code");
+  result = genResponseChallengeJson("598234759", "EMAIL", "need-code", Name("/ndn/test"));
+
+  BOOST_CHECK_EQUAL(result.get<std::string>(JSON_REQUEST_ID), "598234759");
+  BOOST_CHECK_EQUAL(result.get<std::string>(JSON_CHALLENGE_TYPE), "EMAIL");
+  BOOST_CHECK_EQUAL(result.get<std::string>(JSON_STATUS), "need-code");
+  BOOST_CHECK_EQUAL(result.get<std::string>(JSON_CERTIFICATE), "/ndn/test");
 }
 
 BOOST_AUTO_TEST_CASE(GenerateErrorJson)

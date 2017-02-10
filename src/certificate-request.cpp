@@ -29,52 +29,24 @@ CertificateRequest::CertificateRequest(const Name& caName,
                                        const security::v2::Certificate& cert)
   : m_caName(caName)
   , m_requestId(requestId)
-  , m_status(Pending)
   , m_cert(static_cast<const Data&>(cert))
 {
 }
 
 CertificateRequest::CertificateRequest(const Name& caName,
                                        const std::string& requestId,
-                                       const ApplicationStatus& status,
+                                       const std::string& status,
                                        const std::string& challengeType,
-                                       const std::string& challengeStatus,
-                                       const std::string& challengeDefinedField,
+                                       const std::string& challengeSecrets,
                                        const security::v2::Certificate& cert)
   : m_caName(caName)
   , m_requestId(requestId)
   , m_status(status)
   , m_challengeType(challengeType)
-  , m_challengeStatus(challengeStatus)
-  , m_challengeDefinedField(challengeDefinedField)
   , m_cert(static_cast<const Data&>(cert))
 {
-}
-
-std::ostream&
-operator<<(std::ostream& os, CertificateRequest::ApplicationStatus status)
-{
-  std::string statusString;
-  switch (status) {
-    case CertificateRequest::Pending: {
-      statusString = "pending";
-      break;
-    }
-    case CertificateRequest::Verifying: {
-      statusString = "verifying";
-      break;
-    }
-    case CertificateRequest::Success: {
-      statusString = "success";
-      break;
-    }
-    case CertificateRequest::Failure: {
-      statusString = "failure";
-      break;
-    }
-  }
-  os << statusString;
-  return os;
+  std::istringstream ss(challengeSecrets);
+  boost::property_tree::json_parser::read_json(ss, m_challengeSecrets);
 }
 
 std::ostream&
@@ -84,15 +56,13 @@ operator<<(std::ostream& os, const CertificateRequest& request)
   os << "  " << request.getCaName() << "\n";
   os << "Request ID:\n";
   os << "  " << request.getRequestId() << "\n";
-  os << "Request Status:\n";
-  os << "  " << request.getStatus() << "\n";
+  if (request.getStatus() != "") {
+    os << "Request Status:\n";
+    os << "  " << request.getStatus() << "\n";
+  }
   if (request.getChallengeType() != "") {
     os << "Request Challenge Type:\n";
     os << "  " << request.getChallengeType() << "\n";
-  }
-  if (request.getChallengeStatus() != "") {
-    os << "Request Challenge Status:\n";
-    os << "  " << request.getChallengeStatus() << "\n";
   }
   os << "Certificate:\n";
   util::IndentedStream os2(os, "  ");

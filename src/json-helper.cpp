@@ -36,18 +36,15 @@ genResponseProbeJson(const Name& identifier, const Name& CaInformation)
 }
 
 const JsonSection
-genResponseNewJson(const CertificateRequest& request,
-                   const std::list<std::tuple<std::string, std::string>> challenges)
+genResponseNewJson(const std::string& requestId, const std::list<std::string>& challenges)
 {
   JsonSection root;
   JsonSection challengesSection;
-  root.put(JSON_STATUS, boost::lexical_cast<std::string>(request.getStatus()));
-  root.put(JSON_REQUEST_ID, request.getRequestId());
+  root.put(JSON_REQUEST_ID, requestId);
 
   for (const auto& entry : challenges) {
     JsonSection challenge;
-    challenge.put(JSON_CHALLENGE_TYPE, std::get<0>(entry));
-    challenge.put(JSON_CHALLENGE_INSTRUCTION, std::get<1>(entry));
+    challenge.put(JSON_CHALLENGE_TYPE, entry);
     challengesSection.push_back(std::make_pair("", challenge));
   }
   root.add_child(JSON_CHALLENGES, challengesSection);
@@ -56,13 +53,16 @@ genResponseNewJson(const CertificateRequest& request,
 }
 
 const JsonSection
-genResponsePollJson(const CertificateRequest& request)
+genResponseChallengeJson(const std::string& requestId, const std::string& challengeType,
+                         const std::string& status, const Name& name)
 {
   JsonSection root;
-  root.put(JSON_STATUS, boost::lexical_cast<std::string>(request.getStatus()));
-  root.put(JSON_CHALLENGE_TYPE, request.getChallengeType());
-  root.put(JSON_CHALLENGE_STATUS, request.getChallengeStatus());
-  root.put(JSON_CHALLENGE_INSTRUCTION, request.getChallengeInstruction());
+  root.put(JSON_REQUEST_ID, requestId);
+  root.put(JSON_CHALLENGE_TYPE, challengeType);
+  root.put(JSON_STATUS, status);
+  if (name.toUri() != "") {
+    root.put(JSON_CERTIFICATE, name.toUri());
+  }
   return root;
 }
 
