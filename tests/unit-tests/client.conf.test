@@ -1,0 +1,23 @@
+{
+  "ca-list":
+  [
+    {
+        "ca-prefix": "/ndn/edu/ucla/CA",
+        "ca-info": "UCLA's ceritificate authority, located in BH4805.",
+        "probe": "Please use your email address to apply a namespace first. UCLA email is preferred.",
+        "supported-challenges":
+        [
+            { "type": "PIN" },
+            { "type": "EMAIL" }
+        ]
+    },
+    {
+        "ca-prefix": "/ndn/edu/ucla/zhiyi/CA",
+        "ca-info": "Zhiyi's own ceritificate authority",
+        "supported-challenges":
+        [
+            { "type": "PIN" }
+        ]
+    }
+  ]
+}
