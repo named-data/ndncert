@@ -25,7 +25,7 @@
 namespace ndn {
 namespace ndncert {
 
-_LOG_INIT(ndncert.pinchallenge);
+_LOG_INIT(ndncert.challenge-module);
 
 const std::string ChallengeModule::WAIT_SELECTION = "wait-selection";
 const std::string ChallengeModule::SUCCESS = "success";

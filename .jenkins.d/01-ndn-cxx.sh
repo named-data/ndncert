@@ -16,6 +16,10 @@ git clone --depth 1 git://github.com/named-data/ndn-cxx ndn-cxx-latest
 
 LATEST_VERSION=$((cd ndn-cxx-latest && git rev-parse HEAD) 2>/dev/null || echo UNKNOWN)
 
+if has OSX $NODE_LABELS; then
+    LATEST_VERSION=""
+fi
+
 if [[ $INSTALLED_VERSION != $LATEST_VERSION ]]; then
     sudo rm -Rf ndn-cxx
     mv ndn-cxx-latest ndn-cxx
