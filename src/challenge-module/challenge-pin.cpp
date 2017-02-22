@@ -79,6 +79,7 @@ ChallengePin::processValidateInterest(const Interest& interest, CertificateReque
     // check rest attempt times
     if (std::get<2>(parsedSecret) > 1) {
       int restAttemptTimes = std::get<2>(parsedSecret) - 1;
+      request.setStatus(WRONG_CODE);
       request.setChallengeSecrets(generateStoredSecrets(std::get<0>(parsedSecret),
                                                         std::get<1>(parsedSecret),
                                                         restAttemptTimes));

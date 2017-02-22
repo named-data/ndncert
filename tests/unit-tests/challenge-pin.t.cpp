@@ -83,9 +83,9 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithCode)
   request.setChallengeSecrets(json);
 
   JsonSection infoJson;
-  infoJson.put(ChallengePin::JSON_PIN_CODE, "123");
+  infoJson.put(ChallengePin::JSON_PIN_CODE, "1234");
   std::stringstream ss;
-  boost::property_tree::write_json(ss, json);
+  boost::property_tree::write_json(ss, infoJson);
   std::string jsonString = ss.str();
   Block jsonContent = makeStringBlock(ndn::tlv::NameComponent, ss.str());
 
@@ -98,6 +98,41 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithCode)
 
   BOOST_CHECK_EQUAL(request.getStatus(), ChallengeModule::SUCCESS);
   BOOST_CHECK_EQUAL(request.getChallengeSecrets().empty(), true);
+}
+
+BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithWrongCode)
+{
+  auto identity = addIdentity(Name("/ndn/site1"));
+  auto key = identity.getDefaultKey();
+  auto cert = key.getDefaultCertificate();
+  CertificateRequest request(Name("/ndn/site1"), "123", cert);
+  request.setChallengeType("PIN");
+  request.setStatus(ChallengePin::NEED_CODE);
+
+  time::system_clock::TimePoint tp = time::system_clock::now();
+  JsonSection json;
+  json.put(ChallengePin::JSON_CODE_TP, time::toIsoString(tp));
+  json.put(ChallengePin::JSON_PIN_CODE, "1234");
+  json.put(ChallengePin::JSON_ATTEMPT_TIMES, std::to_string(3));
+
+  request.setChallengeSecrets(json);
+
+  JsonSection infoJson;
+  infoJson.put(ChallengePin::JSON_PIN_CODE, "4567");
+  std::stringstream ss;
+  boost::property_tree::write_json(ss, infoJson);
+  std::string jsonString = ss.str();
+  Block jsonContent = makeStringBlock(ndn::tlv::NameComponent, ss.str());
+
+  Name interestName("/ndn/site1");
+  interestName.append("_VALIDATE").append("Fake-Request-ID").append("PIN").append(jsonContent);
+  Interest interest(interestName);
+
+  ChallengePin challenge;
+  challenge.handleChallengeRequest(interest, request);
+
+  BOOST_CHECK_EQUAL(request.getStatus(), ChallengePin::WRONG_CODE);
+  BOOST_CHECK_EQUAL(request.getChallengeSecrets().empty(), false);
 }
 
 BOOST_AUTO_TEST_CASE(ClientSendSelect)
