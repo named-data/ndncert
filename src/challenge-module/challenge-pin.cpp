@@ -50,7 +50,7 @@ ChallengePin::processSelectInterest(const Interest& interest, CertificateRequest
   request.setStatus(NEED_CODE);
   request.setChallengeType(CHALLENGE_TYPE);
   request.setChallengeSecrets(generateStoredSecrets(time::system_clock::now(),
-                                                    generateSecureSecretCode(),
+                                                    generateSecretCode(),
                                                     m_maxAttemptTimes));
   return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, NEED_CODE);
 }
@@ -147,22 +147,6 @@ ChallengePin::generateStoredSecrets(const time::system_clock::TimePoint& tp,
   json.put(JSON_PIN_CODE, secretCode);
   json.put(JSON_ATTEMPT_TIMES, std::to_string(attempTimes));
   return json;
-}
-
-std::string
-ChallengePin::generateSecureSecretCode()
-{
-  uint32_t securityCode = 0;
-  do {
-    securityCode = random::generateSecureWord32();
-  }
-  while (securityCode >= 4294000000);
-  securityCode /= 4294;
-  std::string result = std::to_string(securityCode);
-  while (result.length() < 6) {
-    result = "0" + result;
-  }
-  return result;
 }
 
 } // namespace ndncert

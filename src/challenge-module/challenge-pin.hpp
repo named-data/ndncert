@@ -74,9 +74,6 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   generateStoredSecrets(const time::system_clock::TimePoint& tp, const std::string& secretCode,
                         int attempTimes);
 
-  static std::string
-  generateSecureSecretCode();
-
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   static const std::string NEED_CODE;
   static const std::string WRONG_CODE;

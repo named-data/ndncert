@@ -121,5 +121,21 @@ ChallengeModule::getFactory()
   return factory;
 }
 
+std::string
+ChallengeModule::generateSecretCode()
+{
+  uint32_t securityCode = 0;
+  do {
+    securityCode = random::generateSecureWord32();
+  }
+  while (securityCode >= 4294000000);
+  securityCode /= 4294;
+  std::string result = std::to_string(securityCode);
+  while (result.length() < 6) {
+    result = "0" + result;
+  }
+  return result;
+}
+
 } // namespace ndncert
 } // namespace ndn

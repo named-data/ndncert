@@ -146,6 +146,9 @@ PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   static Name
   genDownloadName(const Name& caName, const std::string& requestId);
 
+  static std::string
+  generateSecretCode();
+
 public:
   const std::string CHALLENGE_TYPE;
   static const std::string WAIT_SELECTION;
