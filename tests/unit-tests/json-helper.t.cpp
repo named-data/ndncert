@@ -40,9 +40,10 @@ BOOST_AUTO_TEST_CASE(GenerateNewResponseJson)
   std::list<std::string> challenges;
   challenges.push_back("PIN");
   challenges.push_back("EMAIL");
-  auto result = genResponseNewJson("598234759", challenges);
+  auto result = genResponseNewJson("598234759", "wait-selection", challenges);
 
   BOOST_CHECK_EQUAL(result.get<std::string>(JSON_REQUEST_ID), "598234759");
+  BOOST_CHECK_EQUAL(result.get<std::string>(JSON_STATUS), "wait-selection");
   auto child = result.get_child(JSON_CHALLENGES);
   auto it = child.begin();
   BOOST_CHECK_EQUAL(it->second.get<std::string>(JSON_CHALLENGE_TYPE), "PIN");

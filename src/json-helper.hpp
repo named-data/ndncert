@@ -40,19 +40,20 @@ const std::string JSON_CERTIFICATE = "certificate";
  *
  * Target JSON format:
  * {
- *   "identifier": "",
- *   "ca-info": ""
+ *   "identifier": "@p identifier",
+ *   "ca-info": "@p caInformation"
  * }
  */
 const JsonSection
-genResponseProbeJson(const Name& identifier, const Name& CaInformation);
+genResponseProbeJson(const Name& identifier, const Name& caInformation);
 
 /**
  * @brief Generate JSON file to response NEW interest
  *
  * Target JSON format:
  * {
- *   "request-id": "",
+ *   "request-id": "@p requestId",
+ *   "status": "@p status",
  *   "challenges": [
  *     {
  *       "challenge-type": ""
@@ -65,7 +66,8 @@ genResponseProbeJson(const Name& identifier, const Name& CaInformation);
  * }
  */
 const JsonSection
-genResponseNewJson(const std::string& requestId, const std::list<std::string>& challenges);
+genResponseNewJson(const std::string& requestId, const std::string& status,
+                   const std::list<std::string>& challenges);
 
 /**
  * @brief Generate JSON file to response _SELECT, _VALIDATE, and _STATUS interest
@@ -98,8 +100,8 @@ genResponseChallengeJson(const std::string& requestId, const std::string& challe
  *
  * Target JSON format:
  * {
- *   "status": "",
- *   "error-info": ""
+ *   "status": "error",
+ *   "error-info": "@p errorInfo"
  * }
  */
 const JsonSection

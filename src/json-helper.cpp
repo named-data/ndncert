@@ -25,22 +25,24 @@ namespace ndn {
 namespace ndncert {
 
 const JsonSection
-genResponseProbeJson(const Name& identifier, const Name& CaInformation)
+genResponseProbeJson(const Name& identifier, const Name& caInformation)
 {
   JsonSection root;
 
   root.put(JSON_IDNENTIFIER, identifier.toUri());
-  root.put(JSON_CA_INFO, CaInformation.toUri());
+  root.put(JSON_CA_INFO, caInformation.toUri());
 
   return root;
 }
 
 const JsonSection
-genResponseNewJson(const std::string& requestId, const std::list<std::string>& challenges)
+genResponseNewJson(const std::string& requestId, const std::string& status,
+                   const std::list<std::string>& challenges)
 {
   JsonSection root;
   JsonSection challengesSection;
   root.put(JSON_REQUEST_ID, requestId);
+  root.put(JSON_STATUS, status);
 
   for (const auto& entry : challenges) {
     JsonSection challenge;
