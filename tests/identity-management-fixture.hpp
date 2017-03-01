@@ -136,6 +136,14 @@ class IdentityManagementTimeFixture : public UnitTestTimeFixture
 {
 };
 
+/** \brief convenience base class for inheriting from both UnitTestTimeFixture
+ *         and IdentityManagementV2Fixture
+ */
+class IdentityManagementV2TimeFixture : public UnitTestTimeFixture
+                                      , public IdentityManagementV2Fixture
+{
+};
+
 } // namespace tests
 } // namespace ndncert
 } // namespace ndn
