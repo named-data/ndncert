@@ -19,11 +19,14 @@
  */
 
 #include "challenge-pin.hpp"
+#include "logging.hpp"
 #include "json-helper.hpp"
 #include <ndn-cxx/util/random.hpp>
 
 namespace ndn {
 namespace ndncert {
+
+_LOG_INIT(ndncert.challenge-pin);
 
 NDNCERT_REGISTER_CHALLENGE(ChallengePin, "PIN");
 
@@ -49,9 +52,11 @@ ChallengePin::processSelectInterest(const Interest& interest, CertificateRequest
   // interest format: /caName/CA/_SELECT/{"request-id":"id"}/PIN/<signature>
   request.setStatus(NEED_CODE);
   request.setChallengeType(CHALLENGE_TYPE);
+  std::string secretCode = generateSecretCode();
   request.setChallengeSecrets(generateStoredSecrets(time::system_clock::now(),
-                                                    generateSecretCode(),
+                                                    secretCode,
                                                     m_maxAttemptTimes));
+  _LOG_TRACE("Secret for request " << request.getRequestId() << " : " << secretCode);
   return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, NEED_CODE);
 }
 

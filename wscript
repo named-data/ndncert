@@ -48,6 +48,8 @@ def configure(conf):
 
     conf.load('sanitizers')
 
+    conf.define('SYSCONFDIR', conf.env['SYSCONFDIR'])
+
     # If there happens to be a static library, waf will put the corresponding -L flags
     # before dynamic library flags.  This can result in compilation failure when the
     # system has a different version of the ndncert library installed.
@@ -67,6 +69,8 @@ def build(bld):
         export_includes=['src'],
     )
 
+    bld.recurse('tools')
+
     bld.recurse('tests')
 
     bld.install_files(
@@ -82,6 +86,10 @@ def build(bld):
         cwd = bld.path.get_bld().find_dir("src"),
         relative_trick = False,
         )
+
+    bld.install_files("${SYSCONFDIR}/ndncert", "ca.conf.sample")
+
+    bld.install_files("${SYSCONFDIR}/ndncert", "client.conf.sample")
 
     bld(features = "subst",
         source='libndn-cert.pc.in',

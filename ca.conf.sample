@@ -1,0 +1,15 @@
+{
+  "ca-list":
+  [
+    {
+        "ca-prefix": "/example",
+        "issuing-freshness": "720",
+        "validity-period": "360",
+        "ca-anchor": "/example/KEY/%9A%E0%C6%C6%09%7C%92i/self/%FD%00%00%01Z%B0%2AJ%B4",
+        "supported-challenges":
+        [
+            { "type": "PIN" }
+        ]
+    }
+  ]
+}
