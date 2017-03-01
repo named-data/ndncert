@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_CERTFICATE_REQUEST_HPP
-#define NDNCERT_CERTFICATE_REQUEST_HPP
+#ifndef NDNCERT_CERTIFICATE_REQUEST_HPP
+#define NDNCERT_CERTIFICATE_REQUEST_HPP
 
 #include "ndncert-common.hpp"
 #include <ndn-cxx/security/v2/certificate.hpp>
@@ -39,6 +39,8 @@ typedef boost::property_tree::ptree JsonSection;
 class CertificateRequest
 {
 public:
+  CertificateRequest();
+
   CertificateRequest(const Name& caName, const std::string& requestId,
                      const security::v2::Certificate& cert);
 
@@ -101,6 +103,12 @@ public:
     m_challengeSecrets = challengeSecrets;
   }
 
+  bool
+  isEmpty()
+  {
+    return m_requestId == "";
+  }
+
 private:
   Name m_caName;
   std::string m_requestId;
@@ -123,4 +131,4 @@ operator<<(std::ostream& os, const CertificateRequest& request);
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_CERTFICATE_REQUEST_HPP
+#endif // NDNCERT_CERTIFICATE_REQUEST_HPP

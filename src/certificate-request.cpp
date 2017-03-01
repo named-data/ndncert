@@ -24,6 +24,8 @@
 namespace ndn {
 namespace ndncert {
 
+CertificateRequest::CertificateRequest() = default;
+
 CertificateRequest::CertificateRequest(const Name& caName,
                                        const std::string& requestId,
                                        const security::v2::Certificate& cert)
