@@ -27,15 +27,6 @@
 namespace ndn {
 namespace ndncert {
 
-class CaItem
-{
-public:
-  Name m_caName;
-  std::string m_caInfo;
-  std::string m_probe;
-  std::list<std::string> m_supportedChallenges;
-};
-
 class ClientConfig
 {
 public:

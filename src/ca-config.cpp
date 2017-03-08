@@ -25,89 +25,54 @@
 namespace ndn {
 namespace ndncert {
 
-CaConfig::CaConfig() = default;
-
-CaConfig::CaConfig(const std::string& fileName)
-  : m_fileName(fileName)
-{
-  open();
-  load();
-}
-
 void
-CaConfig::open()
+CaConfig::load(const std::string& fileName)
 {
-  std::ifstream inputFile;
-  inputFile.open(m_fileName.c_str());
-  if (!inputFile.good() || !inputFile.is_open()) {
-    std::string msg = "Failed to read configuration file: ";
-    msg += m_fileName;
-    BOOST_THROW_EXCEPTION(Error(msg));
-  }
-
   try {
-    boost::property_tree::read_info(inputFile, m_config);
+    boost::property_tree::read_json(fileName, m_config);
   }
   catch (const boost::property_tree::info_parser_error& error) {
-    BOOST_THROW_EXCEPTION(Error("Failed to parse configuration file " + m_fileName +
+    BOOST_THROW_EXCEPTION(Error("Failed to parse configuration file " + fileName +
                                 " " + error.message() + " line " + std::to_string(error.line())));
   }
 
   if (m_config.begin() == m_config.end()) {
-    BOOST_THROW_EXCEPTION(Error("Error processing configuration file: " + m_fileName + " no data"));
+    BOOST_THROW_EXCEPTION(Error("Error processing configuration file: " + fileName + " no data"));
   }
 
-  inputFile.close();
+  parse();
 }
 
 void
-CaConfig::load()
+CaConfig::parse()
 {
-  m_caName = Name(m_config.get<std::string>("name"));
-  m_validatorConfig = m_config.get_child("validator-conf");
+  m_caItems.clear();
+  auto caList = m_config.get_child("ca-list");
+  auto it = caList.begin();
+  for (; it != caList.end(); it++) {
+    CaItem item;
+    item.m_caName = Name(it->second.get<std::string>("ca-prefix"));
+    item.m_caInfo = it->second.get<std::string>("ca-info");
+    item.m_probe = it->second.get("probe", "");
+    item.m_freshnessPeriod = time::seconds(it->second.get<uint64_t>("issuing-freshness"));
+    item.m_validityPeriod = time::days(it->second.get<uint64_t>("validity-period"));
 
-  parseCertificateInfo(m_config.get_child("certificate-info"));
-  parseCaAnchor(m_config.get_child("ca-anchor"));
-  parseChallengeList(m_config.get_child("challenge-list"));
-}
-
-void
-CaConfig::parseCertificateInfo(const ConfigSection& configSection)
-{
-  m_freshPeriod = configSection.get<uint64_t>("freshness-period");
-}
-
-void
-CaConfig::parseCaAnchor(const ConfigSection& configSection)
-{
-  std::string type = configSection.get<std::string>("type");
-  std::string value = configSection.get<std::string>("value");
-  if (type == "file") {
-    boost::filesystem::path certfilePath = absolute(value,
-                                                    boost::filesystem::path(m_fileName).parent_path());
-    m_anchor = io::load<security::v2::Certificate>(certfilePath.string());
-    if (m_anchor != nullptr) {
-      BOOST_ASSERT(m_anchor->getName().size() >= 1);
-    }
-    else
-      BOOST_THROW_EXCEPTION(Error("Cannot read certificate from file: " + certfilePath.native()));
-  }
-  else if (type == "base64") {
-    std::istringstream ss(value);
-    m_anchor = io::load<security::v2::Certificate>(ss);
-  }
-  else {
-    BOOST_THROW_EXCEPTION(Error("Unrecognized trust anchor '" + type + "' '" + value + "'"));
+    auto challengeList = it->second.get_child("supported-challenges");
+    item.m_supportedChallenges = parseChallengeList(challengeList);
+    item.m_anchor = Name(it->second.get<std::string>("ca-anchor"));
+    m_caItems.push_back(item);
   }
 }
 
-void
-CaConfig::parseChallengeList(const ConfigSection& configSection)
+std::list<std::string>
+CaConfig::parseChallengeList(const ConfigSection& section)
 {
-  auto it = configSection.begin();
-  for (; it != configSection.end(); it++) {
-    m_availableChallenges.push_back(it->second.get<std::string>("type"));
+  std::list<std::string> result;
+  auto it = section.begin();
+  for (; it != section.end(); it++) {
+    result.push_back(it->second.get<std::string>("type"));
   }
+  return result;
 }
 
 } // namespace ndncert

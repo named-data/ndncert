@@ -32,31 +32,25 @@ BOOST_FIXTURE_TEST_SUITE(TestCaConfig, IdentityManagementV2Fixture)
 
 BOOST_AUTO_TEST_CASE(ReadConfigFileWithFileAnchor)
 {
-  CaConfig config("tests/unit-tests/ca.conf.test");
-  BOOST_CHECK_EQUAL(config.m_caName.toUri(), "/ndn/edu/ucla/cs/zhiyi");
-  BOOST_CHECK_EQUAL(config.m_freshPeriod, 720);
-  BOOST_CHECK_EQUAL(config.m_anchor->getName().toUri(),
+  CaConfig config;
+  config.load("tests/unit-tests/ca.conf.test");
+  auto itemA = config.m_caItems.front();
+  BOOST_CHECK_EQUAL(itemA.m_caName.toUri(), "/ndn/edu/ucla/cs/zhiyi");
+  BOOST_CHECK_EQUAL(itemA.m_probe, "true");
+  BOOST_CHECK_EQUAL(itemA.m_freshnessPeriod, time::seconds(720));
+  BOOST_CHECK_EQUAL(itemA.m_validityPeriod, time::days(360));
+  BOOST_CHECK_EQUAL(itemA.m_anchor.toUri(),
+                    "/ndn/edu/ucla/cs/zhiyi/KEY/%9A%E0%C6%C6%09%7C%92i/self/%FD%00%00%01Z%B0%2AJ%B4");
+  BOOST_CHECK_EQUAL(itemA.m_supportedChallenges.size(), 1);
+
+  auto itemB = config.m_caItems.back();
+  BOOST_CHECK_EQUAL(itemB.m_caName.toUri(), "/ndn/site1");
+  BOOST_CHECK_EQUAL(itemB.m_probe, "true");
+  BOOST_CHECK_EQUAL(itemB.m_freshnessPeriod, time::seconds(720));
+  BOOST_CHECK_EQUAL(itemB.m_validityPeriod, time::days(360));
+  BOOST_CHECK_EQUAL(itemB.m_anchor.toUri(),
                     "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
-  BOOST_CHECK_EQUAL(config.m_availableChallenges.size(), 1);
-}
-
-BOOST_AUTO_TEST_CASE(ReadConfigFileWithBase64Anchor)
-{
-  auto identity = addIdentity(Name("/ndn/site1"));
-  auto key = identity.getDefaultKey();
-  auto cert = key.getDefaultCertificate();
-
-  using namespace security::transform;
-  std::stringstream ss;
-  bufferSource(cert.wireEncode().wire(), cert.wireEncode().size()) >> base64Encode() >> streamSink(ss);
-
-  const std::string certBase64 = ss.str();
-
-  CaConfig config("tests/unit-tests/ca.conf.test");
-  config.m_config.put("ca-anchor.type", "base64");
-  config.m_config.put("ca-anchor.value", certBase64);
-  config.load();
-  BOOST_CHECK_EQUAL(*(config.m_anchor), cert);
+  BOOST_CHECK_EQUAL(itemB.m_supportedChallenges.size(), 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TestCaConfig

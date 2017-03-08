@@ -29,6 +29,18 @@ namespace ndncert {
 
 typedef boost::property_tree::ptree ConfigSection;
 
+class CaItem
+{
+public:
+  Name m_caName;
+  std::string m_caInfo;
+  std::string m_probe;
+  time::seconds m_freshnessPeriod;
+  time::days m_validityPeriod;
+  std::list<std::string> m_supportedChallenges;
+  Name m_anchor;
+};
+
 /**
  * @brief Represents a CA configuration instance
  */
@@ -41,45 +53,25 @@ public:
   class Error : public std::runtime_error
   {
   public:
-    explicit
-    Error(const std::string& what)
-      : std::runtime_error(what)
-    {
-    }
+    using std::runtime_error::runtime_error;
   };
 
 public:
-  CaConfig();
-
-  explicit
-  CaConfig(const std::string& fileName);
-
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
-  open();
+  load(const std::string& fileName);
 
+private:
   void
-  load();
+  parse();
 
-  void
-  parseCertificateInfo(const ConfigSection& configSection);
-
-  void
-  parseCaAnchor(const ConfigSection& configSection);
-
-  void
+  std::list<std::string>
   parseChallengeList(const ConfigSection& configSection);
 
 public:
-  Name m_caName;
-  uint64_t m_freshPeriod;
-  shared_ptr<security::v2::Certificate> m_anchor;
-  std::list<std::string> m_availableChallenges;
-  ConfigSection m_validatorConfig;
+  std::list<CaItem> m_caItems;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   ConfigSection m_config;
-  std::string m_fileName;
 };
 
 } // namespace ndncert
