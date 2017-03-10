@@ -39,6 +39,8 @@ BOOST_AUTO_TEST_CASE(ReadConfigFile)
   BOOST_CHECK_EQUAL(item.m_probe, "Please use your email address to apply a namespace first. UCLA email is preferred.");
   BOOST_CHECK_EQUAL(item.m_supportedChallenges.size(), 2);
   BOOST_CHECK_EQUAL(item.m_supportedChallenges.front(), "PIN");
+  BOOST_CHECK_EQUAL(item.m_anchor.getName().toUri(),
+                    "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
 }
 
 BOOST_AUTO_TEST_CASE(AddAndRemoveCaItem)
@@ -46,7 +48,7 @@ BOOST_AUTO_TEST_CASE(AddAndRemoveCaItem)
   ClientConfig config;
   config.load("tests/unit-tests/client.conf.test");
 
-  CaItem item;
+  ClientCaItem item;
   item.m_caName = Name("/test");
   item.m_caInfo = "test";
   item.m_probe = "test";

@@ -19,6 +19,7 @@
  */
 
 #include "client-config.hpp"
+#include <ndn-cxx/util/io.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -48,10 +49,13 @@ ClientConfig::parse()
   auto caList = m_config.get_child("ca-list");
   auto it = caList.begin();
   for (; it != caList.end(); it++) {
-    CaItem item;
+    ClientCaItem item;
     item.m_caName = Name(it->second.get<std::string>("ca-prefix"));
     item.m_caInfo = it->second.get<std::string>("ca-info");
     item.m_probe = it->second.get("probe", "");
+
+    std::istringstream ss(it->second.get<std::string>("certificate"));
+    item.m_anchor = *(io::load<security::v2::Certificate>(ss));
 
     auto challengeList = it->second.get_child("supported-challenges");
     item.m_supportedChallenges = parseChallengeList(challengeList);
@@ -61,7 +65,7 @@ ClientConfig::parse()
 }
 
 std::list<std::string>
-ClientConfig::parseChallengeList(const ConfigSection& section)
+ClientConfig::parseChallengeList(const JsonSection& section)
 {
   std::list<std::string> result;
   auto it = section.begin();
@@ -72,43 +76,15 @@ ClientConfig::parseChallengeList(const ConfigSection& section)
 }
 
 void
-ClientConfig::addNewCaItem(const CaItem& item)
+ClientConfig::addNewCaItem(const ClientCaItem& item)
 {
-  auto& caList = m_config.get_child("ca-list");
-
-  ConfigSection newCaItem;
-  ConfigSection newCaChallengeList;
-  newCaItem.put("ca-prefix", item.m_caName.toUri());
-  newCaItem.put("ca-info", item.m_caInfo);
-  if (item.m_probe != "") {
-    newCaItem.put("probe", item.m_probe);
-  }
-  for (const auto& challengeType : item.m_supportedChallenges) {
-    ConfigSection challengeSection;
-    challengeSection.put("type", challengeType);
-    newCaChallengeList.push_back(std::make_pair("", challengeSection));
-  }
-  newCaItem.add_child("supported-challenges", newCaChallengeList);
-  caList.push_back(std::make_pair("", newCaItem));
-
-  parse();
+  m_caItems.push_back(item);
 }
 
 void
 ClientConfig::removeCaItem(const Name& caName)
 {
-  auto& caList = m_config.get_child("ca-list");
-  auto it = caList.begin();
-  while (it != caList.end()) {
-    if (it->second.get<std::string>("ca-prefix") == caName.toUri()) {
-      it = caList.erase(it);
-      break;
-    }
-    else {
-      it++;
-    }
-  }
-  parse();
+  m_caItems.remove_if([&] (const ClientCaItem& item) {return item.m_caName == caName;});
 }
 
 } // namespace ndncert

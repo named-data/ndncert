@@ -52,8 +52,7 @@ CaConfig::parse()
   for (; it != caList.end(); it++) {
     CaItem item;
     item.m_caName = Name(it->second.get<std::string>("ca-prefix"));
-    item.m_caInfo = it->second.get<std::string>("ca-info");
-    item.m_probe = it->second.get("probe", "");
+    item.m_probe = it->second.get("probe", false);
     item.m_freshnessPeriod = time::seconds(it->second.get<uint64_t>("issuing-freshness"));
     item.m_validityPeriod = time::days(it->second.get<uint64_t>("validity-period"));
 
@@ -65,7 +64,7 @@ CaConfig::parse()
 }
 
 std::list<std::string>
-CaConfig::parseChallengeList(const ConfigSection& section)
+CaConfig::parseChallengeList(const JsonSection& section)
 {
   std::list<std::string> result;
   auto it = section.begin();

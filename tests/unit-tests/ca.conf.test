@@ -3,8 +3,6 @@
   [
     {
         "ca-prefix": "/ndn/edu/ucla/cs/zhiyi",
-        "ca-info": "UCLA's ceritificate authority, located in BH4805.",
-        "probe": "true",
         "issuing-freshness": "720",
         "validity-period": "360",
         "ca-anchor": "/ndn/edu/ucla/cs/zhiyi/KEY/%9A%E0%C6%C6%09%7C%92i/self/%FD%00%00%01Z%B0%2AJ%B4",
@@ -15,7 +13,6 @@
     },
     {
         "ca-prefix": "/ndn/site1",
-        "ca-info": "UCLA's ceritificate authority, located in BH4805.",
         "probe": "true",
         "issuing-freshness": "720",
         "validity-period": "360",

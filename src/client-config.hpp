@@ -21,11 +21,21 @@
 #ifndef NDNCERT_CLIENT_CONFIG_HPP
 #define NDNCERT_CLIENT_CONFIG_HPP
 
-#include "ca-config.hpp"
-#include <boost/filesystem.hpp>
+#include "certificate-request.hpp"
+#include <ndn-cxx/security/v2/certificate.hpp>
 
 namespace ndn {
 namespace ndncert {
+
+class ClientCaItem
+{
+public:
+  Name m_caName;
+  std::string m_caInfo;
+  std::string m_probe;
+  std::list<std::string> m_supportedChallenges;
+  security::v2::Certificate m_anchor;
+};
 
 class ClientConfig
 {
@@ -41,7 +51,7 @@ public:
   load(const std::string& fileName);
 
   void
-  addNewCaItem(const CaItem& item);
+  addNewCaItem(const ClientCaItem& item);
 
   void
   removeCaItem(const Name& caName);
@@ -51,13 +61,13 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   parse();
 
   std::list<std::string>
-  parseChallengeList(const ConfigSection& section);
+  parseChallengeList(const JsonSection& section);
 
 public:
-  std::list<CaItem> m_caItems;
+  std::list<ClientCaItem> m_caItems;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  ConfigSection m_config;
+  JsonSection m_config;
 };
 
 } // namespace ndncert

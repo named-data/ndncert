@@ -21,20 +21,17 @@
 #ifndef NDNCERT_CA_CONFIG_HPP
 #define NDNCERT_CA_CONFIG_HPP
 
-#include "ndncert-common.hpp"
+#include "certificate-request.hpp"
 #include <ndn-cxx/security/v2/certificate.hpp>
 
 namespace ndn {
 namespace ndncert {
 
-typedef boost::property_tree::ptree ConfigSection;
-
 class CaItem
 {
 public:
   Name m_caName;
-  std::string m_caInfo;
-  std::string m_probe;
+  bool m_probe;
   time::seconds m_freshnessPeriod;
   time::days m_validityPeriod;
   std::list<std::string> m_supportedChallenges;
@@ -65,13 +62,13 @@ private:
   parse();
 
   std::list<std::string>
-  parseChallengeList(const ConfigSection& configSection);
+  parseChallengeList(const JsonSection& configSection);
 
 public:
   std::list<CaItem> m_caItems;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  ConfigSection m_config;
+  JsonSection m_config;
 };
 
 } // namespace ndncert

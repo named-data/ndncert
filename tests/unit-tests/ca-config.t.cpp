@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_CASE(ReadConfigFileWithFileAnchor)
   config.load("tests/unit-tests/ca.conf.test");
   auto itemA = config.m_caItems.front();
   BOOST_CHECK_EQUAL(itemA.m_caName.toUri(), "/ndn/edu/ucla/cs/zhiyi");
-  BOOST_CHECK_EQUAL(itemA.m_probe, "true");
+  BOOST_CHECK(!itemA.m_probe);
   BOOST_CHECK_EQUAL(itemA.m_freshnessPeriod, time::seconds(720));
   BOOST_CHECK_EQUAL(itemA.m_validityPeriod, time::days(360));
   BOOST_CHECK_EQUAL(itemA.m_anchor.toUri(),
@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE(ReadConfigFileWithFileAnchor)
 
   auto itemB = config.m_caItems.back();
   BOOST_CHECK_EQUAL(itemB.m_caName.toUri(), "/ndn/site1");
-  BOOST_CHECK_EQUAL(itemB.m_probe, "true");
+  BOOST_CHECK(itemB.m_probe);
   BOOST_CHECK_EQUAL(itemB.m_freshnessPeriod, time::seconds(720));
   BOOST_CHECK_EQUAL(itemB.m_validityPeriod, time::days(360));
   BOOST_CHECK_EQUAL(itemB.m_anchor.toUri(),
