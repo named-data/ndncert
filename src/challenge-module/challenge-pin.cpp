@@ -115,17 +115,21 @@ ChallengePin::getValidateRequirements(const std::string& status)
 }
 
 JsonSection
-ChallengePin::genChallengeInfo(const std::string& interestType, const std::string& status,
-                               const std::list<std::string>& paramList)
+ChallengePin::doGenSelectParamsJson(const std::string& status,
+                                    const std::list<std::string>& paramList)
 {
   JsonSection result;
-  if (interestType == "_SELECT") {
-    BOOST_ASSERT(paramList.size() == 0);
-  }
-  else if (interestType == "_VALIDATE") {
-    BOOST_ASSERT(paramList.size() == 1);
-    result.put(JSON_PIN_CODE, paramList.front());
-  }
+  BOOST_ASSERT(paramList.size() == 0);
+  return result;
+}
+
+JsonSection
+ChallengePin::doGenValidateParamsJson(const std::string& status,
+                                      const std::list<std::string>& paramList)
+{
+  JsonSection result;
+  BOOST_ASSERT(paramList.size() == 1);
+  result.put(JSON_PIN_CODE, paramList.front());
   return result;
 }
 

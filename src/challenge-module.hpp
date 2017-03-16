@@ -58,6 +58,7 @@ public:
   static unique_ptr<ChallengeModule>
   createChallengeModule(const std::string& ChallengeType);
 
+  // For CA
   /**
    * @brief Handle the challenge related interest and update certificate request.
    * @note Should be used by CA Module
@@ -73,6 +74,7 @@ public:
   JsonSection
   handleChallengeRequest(const Interest& interest, CertificateRequest& request);
 
+  // For Client
   /**
    * @brief Get requirements for requester before sending SELECT interest.
    * @note Should be used by Client Module
@@ -105,28 +107,45 @@ public:
   getRequirementForValidate(const std::string& status);
 
   /**
-   * @brief Generate ChallengeInfo part for SELECT and VALIDATE interest.
+   * @brief Generate ChallengeInfo part for SELECT interest.
    * @note Should be used by Client Module
    *
    * After requester provides required information, client should invoke the function to
    * generate the ChallengeInfo part of the interest.
    *
-   * @param interestType of the request
    * @param status of the challenge
    * @param paramList contains all the input from requester
    * @return the JSON file of ChallengeInfo
    */
   JsonSection
-  genRequestChallengeInfo(const std::string& interestType, const std::string& status,
-                          const std::list<std::string>& paramList);
+  genSelectParamsJson(const std::string& status, const std::list<std::string>& paramList);
+
+  /**
+   * @brief Generate ChallengeInfo part for VALIDATE interest.
+   * @note Should be used by Client Module
+   *
+   * After requester provides required information, client should invoke the function to
+   * generate the ChallengeInfo part of the interest.
+   *
+   * @param status of the challenge
+   * @param paramList contains all the input from requester
+   * @return the JSON file of ChallengeInfo
+   */
+  JsonSection
+  genValidateParamsJson(const std::string& status, const std::list<std::string>& paramList);
 
 PUBLIC_WITH_TESTS_ELSE_PROTECTED:
+  // For CA
   virtual JsonSection
   processSelectInterest(const Interest& interest, CertificateRequest& request) = 0;
 
   virtual JsonSection
   processValidateInterest(const Interest& interest, CertificateRequest& request) = 0;
 
+  virtual JsonSection
+  processStatusInterest(const Interest& interest, const CertificateRequest& request);
+
+  // For Client
   virtual std::list<std::string>
   getSelectRequirements() = 0;
 
@@ -134,12 +153,12 @@ PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   getValidateRequirements(const std::string& status) = 0;
 
   virtual JsonSection
-  genChallengeInfo(const std::string& interestType, const std::string& status,
-                   const std::list<std::string>& paramList) = 0;
+  doGenSelectParamsJson(const std::string& status, const std::list<std::string>& paramList) = 0;
 
   virtual JsonSection
-  processStatusInterest(const Interest& interest, const CertificateRequest& request);
+  doGenValidateParamsJson(const std::string& status, const std::list<std::string>& paramList) = 0;
 
+  // Helpers
   static JsonSection
   getJsonFromNameComponent(const Name& name, int pos);
 

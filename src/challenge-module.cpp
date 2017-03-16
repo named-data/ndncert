@@ -71,10 +71,17 @@ ChallengeModule::getRequirementForValidate(const std::string& status)
 }
 
 JsonSection
-ChallengeModule::genRequestChallengeInfo(const std::string& interestType, const std::string& status,
-                                         const std::list<std::string>& paramList)
+ChallengeModule::genSelectParamsJson(const std::string& status,
+                                     const std::list<std::string>& paramList)
 {
-  return genChallengeInfo(interestType, status, paramList);
+  return doGenSelectParamsJson(status, paramList);
+}
+
+JsonSection
+ChallengeModule::genValidateParamsJson(const std::string& status,
+                                     const std::list<std::string>& paramList)
+{
+  return doGenValidateParamsJson(status, paramList);
 }
 
 JsonSection

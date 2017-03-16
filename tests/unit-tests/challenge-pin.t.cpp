@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE(ClientSendSelect)
   auto requirementList = challenge.getSelectRequirements();
   BOOST_CHECK_EQUAL(requirementList.size(), 0);
 
-  auto json = challenge.genChallengeInfo("_SELECT", ChallengeModule::WAIT_SELECTION, requirementList);
+  auto json = challenge.doGenSelectParamsJson(ChallengeModule::WAIT_SELECTION, requirementList);
   BOOST_CHECK_EQUAL(json.empty(), true);
 }
 
@@ -154,7 +154,7 @@ BOOST_AUTO_TEST_CASE(ClientSendValidate)
   requirementList.clear();
   requirementList.push_back("123");
 
-  auto json = challenge.genChallengeInfo("_VALIDATE", ChallengePin::NEED_CODE, requirementList);
+  auto json = challenge.doGenValidateParamsJson(ChallengePin::NEED_CODE, requirementList);
   BOOST_CHECK_EQUAL(json.empty(), false);
   BOOST_CHECK_EQUAL(json.get<std::string>(ChallengePin::JSON_PIN_CODE), "123");
 }

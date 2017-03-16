@@ -63,8 +63,12 @@ PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   getValidateRequirements(const std::string& status) override;
 
   JsonSection
-  genChallengeInfo(const std::string& interestType, const std::string& status,
-                   const std::list<std::string>& paramList) override;
+  doGenSelectParamsJson(const std::string& status,
+                        const std::list<std::string>& paramList) override;
+
+  JsonSection
+  doGenValidateParamsJson(const std::string& status,
+                          const std::list<std::string>& paramList) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   static std::tuple<time::system_clock::TimePoint, std::string, int>
