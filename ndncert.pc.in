@@ -1,0 +1,9 @@
+prefix=@PREFIX@
+libdir=@LIBDIR@
+includedir=@INCLUDEDIR@
+
+Name: ndncert
+Description: ndncert library
+Version: @VERSION@
+Libs: -L${libdir} -lndncert
+Cflags: -I${includedir}

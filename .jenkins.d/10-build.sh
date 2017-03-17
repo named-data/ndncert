@@ -42,3 +42,9 @@ fi
 
 # Install
 sudo ./waf -j1 --color=yes install
+
+if has Linux $NODE_LABELS; then
+    sudo ldconfig
+elif has FreeBSD $NODE_LABELS; then
+    sudo ldconfig -a
+fi

@@ -48,16 +48,46 @@ def configure(conf):
 
     conf.load('sanitizers')
 
+    # If there happens to be a static library, waf will put the corresponding -L flags
+    # before dynamic library flags.  This can result in compilation failure when the
+    # system has a different version of the ndncert library installed.
+    conf.env['STLIBPATH'] = ['.'] + conf.env['STLIBPATH']
+
     conf.write_config_header('src/ndncert-config.hpp')
 
 def build(bld):
     core = bld(
         target = "objects",
-        features=['cxx'],
+        features=['cxx', 'cxxshlib'],
         source =  bld.path.ant_glob(['src/**/*.cpp']),
+        vnum = VERSION,
+        cnum = VERSION,
         use = 'NDN_CXX BOOST',
         includes = ['src'],
         export_includes=['src'],
     )
 
     bld.recurse('tests')
+
+    bld.install_files(
+        dest = "%s/ndncert" % bld.env['INCLUDEDIR'],
+        files = bld.path.ant_glob(['src/**/*.hpp', 'src/**/*.h']),
+        cwd = bld.path.find_dir("src"),
+        relative_trick = True,
+        )
+
+    bld.install_files(
+        dest = "%s/ndncert" % bld.env['INCLUDEDIR'],
+        files = bld.path.get_bld().ant_glob(['src/**/*.hpp']),
+        cwd = bld.path.get_bld().find_dir("src"),
+        relative_trick = False,
+        )
+
+    bld(features = "subst",
+        source='ndncert.pc.in',
+        target='ndncert.pc',
+        install_path = '${LIBDIR}/pkgconfig',
+        PREFIX       = bld.env['PREFIX'],
+        INCLUDEDIR   = "%s/ndncert" % bld.env['INCLUDEDIR'],
+        VERSION      = VERSION,
+        )
