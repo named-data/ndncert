@@ -57,7 +57,7 @@ def configure(conf):
 
 def build(bld):
     core = bld(
-        target = "objects",
+        target = "ndn-cert",
         features=['cxx', 'cxxshlib'],
         source =  bld.path.ant_glob(['src/**/*.cpp']),
         vnum = VERSION,
@@ -84,8 +84,8 @@ def build(bld):
         )
 
     bld(features = "subst",
-        source='ndncert.pc.in',
-        target='ndncert.pc',
+        source='libndn-cert.pc.in',
+        target='libndn-cert.pc',
         install_path = '${LIBDIR}/pkgconfig',
         PREFIX       = bld.env['PREFIX'],
         INCLUDEDIR   = "%s/ndncert" % bld.env['INCLUDEDIR'],

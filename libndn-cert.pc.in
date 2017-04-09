@@ -2,8 +2,8 @@ prefix=@PREFIX@
 libdir=@LIBDIR@
 includedir=@INCLUDEDIR@
 
-Name: ndncert
+Name: libndn-cert
 Description: ndncert library
 Version: @VERSION@
-Libs: -L${libdir} -lndncert
+Libs: -L${libdir} -lndn-cert
 Cflags: -I${includedir}

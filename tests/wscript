@@ -12,7 +12,7 @@ def build(bld):
         name='tests-main',
         features='cxx',
         source="main.cpp",
-        use='objects BOOST',
+        use='ndn-cert BOOST',
         defines=['BOOST_TEST_MODULE=\"NDNCERT Tests\"']
         )
 
@@ -21,7 +21,7 @@ def build(bld):
         source=bld.path.ant_glob(['*.cpp', 'unit-tests/**/*.cpp'],
                                  excl=['main.cpp']),
         features=['cxx', 'cxxprogram'],
-        use='objects tests-main',
+        use='ndn-cert tests-main',
         includes=['.'],
         install_path=None,
         defines='TMP_TESTS_PATH=\"%s/tmp-tests\"' % bld.bldnode,
