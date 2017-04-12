@@ -46,8 +46,8 @@ public:
 
   CertificateRequest(const Name& caName, const std::string& requestId,
                      const std::string& status, const std::string& challengeType,
-                     const std::string& challengeDefinedField,
-                     const security::v2::Certificate& certBlock);
+                     const std::string& challengeSecrets,
+                     const security::v2::Certificate& cert);
 
   const Name&
   getCaName() const

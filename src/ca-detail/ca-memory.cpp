@@ -41,6 +41,21 @@ CaMemory::getRequest(const std::string& requestId)
 void
 CaMemory::addRequest(const CertificateRequest& request)
 {
+  for (auto& entry : m_requests) {
+    const auto& existingRequest = entry.second;
+    if (existingRequest.getCert().getKeyName() == request.getCert().getKeyName()) {
+      BOOST_THROW_EXCEPTION(Error("Request for " + request.getCert().getKeyName().toUri() + " already exists"));
+      return;
+    }
+  }
+  for (auto& entry : m_issuedCerts) {
+    const auto& cert = entry.second;
+    if (cert.getKeyName() == request.getCert().getKeyName()) {
+      BOOST_THROW_EXCEPTION(Error("Cert for " + request.getCert().getKeyName().toUri() + " already exists"));
+      return;
+    }
+  }
+
   auto search = m_requests.find(request.getRequestId());
   if (search == m_requests.end()) {
     m_requests[request.getRequestId()] = request;
@@ -73,8 +88,11 @@ CaMemory::getCertificate(const std::string& certId)
   auto search = m_issuedCerts.find(certId);
   if (search != m_issuedCerts.end()) {
     cert = search->second;
+    return cert;
   }
-  return cert;
+  else {
+    BOOST_THROW_EXCEPTION(Error("Certificate with ID " + certId + " does not exists"));
+  }
 }
 
 void
@@ -85,20 +103,14 @@ CaMemory::addCertificate(const std::string& certId, const security::v2::Certific
     m_issuedCerts[certId] = cert;
   }
   else {
-    BOOST_THROW_EXCEPTION(Error("Certificate " + cert.getName().toUri() + " does not exists"));
+    BOOST_THROW_EXCEPTION(Error("Certificate " + cert.getName().toUri() + " already exists"));
   }
 }
 
 void
 CaMemory::updateCertificate(const std::string& certId, const security::v2::Certificate& cert)
 {
-  auto search = m_issuedCerts.find(certId);
-  if (search == m_issuedCerts.end()) {
-    m_issuedCerts[certId] = cert;
-  }
-  else {
-    BOOST_THROW_EXCEPTION(Error("Certificate " + cert.getName().toUri() + " does not exists"));
-  }
+  m_issuedCerts[certId] = cert;
 }
 
 void
