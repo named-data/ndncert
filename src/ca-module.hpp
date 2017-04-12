@@ -49,7 +49,7 @@ public:
 
 public:
   CaModule(Face& face, security::v2::KeyChain& keyChain, const std::string& configPath,
-           const std::string& storageType = "ca-storage-memory");
+           const std::string& storageType = "ca-storage-sqlite3");
 
   ~CaModule();
 
