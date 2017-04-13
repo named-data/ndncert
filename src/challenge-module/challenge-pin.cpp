@@ -46,7 +46,7 @@ ChallengePin::ChallengePin(const size_t& maxAttemptTimes, const time::seconds& s
 JsonSection
 ChallengePin::processSelectInterest(const Interest& interest, CertificateRequest& request)
 {
-  // interest format: /CA/_SELECT/{"request-id":"id"}/PIN/<signature>
+  // interest format: /caName/CA/_SELECT/{"request-id":"id"}/PIN/<signature>
   request.setStatus(NEED_CODE);
   request.setChallengeType(CHALLENGE_TYPE);
   request.setChallengeSecrets(generateStoredSecrets(time::system_clock::now(),
@@ -58,8 +58,8 @@ ChallengePin::processSelectInterest(const Interest& interest, CertificateRequest
 JsonSection
 ChallengePin::processValidateInterest(const Interest& interest, CertificateRequest& request)
 {
-  // interest format: /CA/_VALIDATION/{"request-id":"id"}/PIN/{"code":"code"}/<signature>
-  JsonSection infoJson = getJsonFromNameComponent(interest.getName(), request.getCaName().size() + 3);
+  // interest format: /caName/CA/_VALIDATION/{"request-id":"id"}/PIN/{"code":"code"}/<signature>
+  JsonSection infoJson = getJsonFromNameComponent(interest.getName(), request.getCaName().size() + 4);
   std::string givenCode = infoJson.get<std::string>(JSON_PIN_CODE);
 
   const auto parsedSecret = parseStoredSecrets(request.getChallengeSecrets());

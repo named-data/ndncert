@@ -173,6 +173,7 @@ CaModule::handleSelect(const Interest& request, const CaItem& caItem)
     _LOG_TRACE(e.what());
     return;
   }
+  _LOG_TRACE("SELECT request choosing challenge " << challengeType);
   auto challenge = ChallengeModule::createChallengeModule(challengeType);
   if (challenge == nullptr) {
     _LOG_TRACE("Unrecognized challenge type " << challengeType);

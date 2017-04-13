@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(OnSelectInterestComingWithEmptyInfo)
   auto cert = key.getDefaultCertificate();
   CertificateRequest request(Name("/ndn/site1"), "123", cert);
 
-  Name interestName("/ndn/site1");
+  Name interestName("/ndn/site1/CA");
   interestName.append("_SELECT").append("Fake-Request-ID").append("PIN");
   Interest interest(interestName);
 
@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithCode)
   std::string jsonString = ss.str();
   Block jsonContent = makeStringBlock(ndn::tlv::NameComponent, ss.str());
 
-  Name interestName("/ndn/site1");
+  Name interestName("/ndn/site1/CA");
   interestName.append("_VALIDATE").append("Fake-Request-ID").append("PIN").append(jsonContent);
   Interest interest(interestName);
 
@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithWrongCode)
   std::string jsonString = ss.str();
   Block jsonContent = makeStringBlock(ndn::tlv::NameComponent, ss.str());
 
-  Name interestName("/ndn/site1");
+  Name interestName("/ndn/site1/CA");
   interestName.append("_VALIDATE").append("Fake-Request-ID").append("PIN").append(jsonContent);
   Interest interest(interestName);
 

@@ -187,6 +187,9 @@ ClientModule::handleSelectResponse(const Interest& request,
   }
 
   JsonSection json = getJsonFromData(reply);
+
+  _LOG_TRACE("SELECT response would change the status from " << state->m_status << " to " + json.get<std::string>(JSON_STATUS));
+
   state->m_status = json.get<std::string>(JSON_STATUS);
 
   if (!checkStatus(*state, json, errorCallback)) {
@@ -393,7 +396,8 @@ ClientModule::checkStatus(const RequestState& state, const JsonSection& json,
     return false;
   }
   if (state.m_requestId.empty() || state.m_status.empty()) {
-    errorCallback("The response does not carry required fields.");
+    errorCallback("The response does not carry required fields. requestID: " + state.m_requestId
+                  + " status: " + state.m_status);
     return false;
   }
   return true;

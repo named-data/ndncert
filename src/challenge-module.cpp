@@ -19,10 +19,13 @@
  */
 
 #include "challenge-module.hpp"
+#include "logging.hpp"
 #include <random>
 
 namespace ndn {
 namespace ndncert {
+
+_LOG_INIT(ndncert.pinchallenge);
 
 const std::string ChallengeModule::WAIT_SELECTION = "wait-selection";
 const std::string ChallengeModule::SUCCESS = "success";
@@ -44,9 +47,12 @@ ChallengeModule::createChallengeModule(const std::string& canonicalName)
 JsonSection
 ChallengeModule::handleChallengeRequest(const Interest& interest, CertificateRequest& request)
 {
-  int pos = request.getCaName().size();
+  int pos = request.getCaName().size() + 1;
   const Name& interestName = interest.getName();
   std::string interestType = interestName.get(pos).toUri();
+
+  _LOG_TRACE("Incoming challenge request. type: " << interestType);
+
   if (interestType == "_SELECT") {
     return processSelectInterest(interest, request);
   }
