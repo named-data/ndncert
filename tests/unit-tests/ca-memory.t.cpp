@@ -18,23 +18,24 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "database-fixture.hpp"
+#include "identity-management-fixture.hpp"
+#include "ca-detail/ca-memory.hpp"
 #include "ca-detail/ca-sqlite.hpp"
 
 namespace ndn {
 namespace ndncert {
 namespace tests {
 
-BOOST_FIXTURE_TEST_SUITE(TestCaSqlite, DatabaseFixture)
+BOOST_FIXTURE_TEST_SUITE(TestCaMemory, IdentityManagementV2TimeFixture)
 
 BOOST_AUTO_TEST_CASE(Initialization)
 {
-  BOOST_CHECK_NO_THROW(CaSqlite storage(dbDir.string()));
+  BOOST_CHECK_NO_THROW(CaMemory storage);
 }
 
 BOOST_AUTO_TEST_CASE(CertificateOperations)
 {
-  CaSqlite storage(dbDir.string());
+  CaMemory storage;
 
   auto identity1 = addIdentity(Name("/ndn/site1"));
   auto key1 = identity1.getDefaultKey();
@@ -74,7 +75,7 @@ BOOST_AUTO_TEST_CASE(CertificateOperations)
 
 BOOST_AUTO_TEST_CASE(RequestOperations)
 {
-  CaSqlite storage(dbDir.string());
+  CaMemory storage;
 
   auto identity1 = addIdentity(Name("/ndn/site1"));
   auto key1 = identity1.getDefaultKey();
@@ -115,10 +116,6 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   storage.deleteRequest("456");
   allRequests = storage.listAllRequests();
   BOOST_CHECK_EQUAL(allRequests.size(), 1);
-
-  storage.deleteRequest("123");
-  allRequests = storage.listAllRequests();
-  BOOST_CHECK_EQUAL(allRequests.size(), 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TestCaModule

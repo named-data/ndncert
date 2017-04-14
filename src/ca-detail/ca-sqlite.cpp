@@ -72,11 +72,6 @@ CaSqlite::CaSqlite(const std::string& location)
   if (!location.empty()) {
     dbDir = boost::filesystem::path(location);
   }
-#ifdef HAVE_TESTS
-  else if (getenv("TEST_HOME") != nullptr) {
-    dbDir = boost::filesystem::path(getenv("TEST_HOME")) / ".ndn";
-  }
-#endif // HAVE_TESTS
   else if (getenv("HOME") != nullptr) {
     dbDir = boost::filesystem::path(getenv("HOME")) / ".ndn";
   }
@@ -186,11 +181,50 @@ CaSqlite::updateRequest(const CertificateRequest& request)
   }
 }
 
+std::list<CertificateRequest>
+CaSqlite::listAllRequests()
+{
+  std::list<CertificateRequest> result;
+  Sqlite3Statement statement(m_database, R"_SQLTEXT_(SELECT * FROM CertRequests)_SQLTEXT_");
+
+  while(statement.step() == SQLITE_ROW) {
+    std::string requestId = statement.getString(1);
+    Name caName(statement.getBlock(2));
+    std::string status = statement.getString(3);
+    security::v2::Certificate cert(statement.getBlock(5));
+    std::string challengeType = statement.getString(6);
+    std::string challengeSecrets = statement.getString(7);
+    CertificateRequest entry(caName, requestId, status, challengeType, challengeSecrets, cert);
+    result.push_back(entry);
+  }
+  return result;
+}
+
+std::list<CertificateRequest>
+CaSqlite::listAllRequests(const Name& caName)
+{
+  std::list<CertificateRequest> result;
+  Sqlite3Statement statement(m_database,
+                             R"_SQLTEXT_(SELECT * FROM CertRequests WHERE ca_name = ?)_SQLTEXT_");
+  statement.bind(1, caName.wireEncode(), SQLITE_TRANSIENT);
+
+  while(statement.step() == SQLITE_ROW) {
+    std::string requestId = statement.getString(1);
+    std::string status = statement.getString(3);
+    security::v2::Certificate cert(statement.getBlock(5));
+    std::string challengeType = statement.getString(6);
+    std::string challengeSecrets = statement.getString(7);
+    CertificateRequest entry(caName, requestId, status, challengeType, challengeSecrets, cert);
+    result.push_back(entry);
+  }
+  return result;
+}
+
 void
 CaSqlite::deleteRequest(const std::string& requestId)
 {
   Sqlite3Statement statement(m_database,
-                             R"_SQLTEXT_(DELETE FROM CertRequest WHERE request_id = ?)_SQLTEXT_");
+                             R"_SQLTEXT_(DELETE FROM CertRequests WHERE request_id = ?)_SQLTEXT_");
   statement.bind(1, requestId, SQLITE_TRANSIENT);
   statement.step();
 }
@@ -246,6 +280,32 @@ CaSqlite::deleteCertificate(const std::string& certId)
                              R"_SQLTEXT_(DELETE FROM IssuedCerts WHERE cert_id = ?)_SQLTEXT_");
   statement.bind(1, certId, SQLITE_TRANSIENT);
   statement.step();
+}
+
+std::list<security::v2::Certificate>
+CaSqlite::listAllIssuedCertificates()
+{
+  std::list<security::v2::Certificate> result;
+  Sqlite3Statement statement(m_database, R"_SQLTEXT_(SELECT * FROM IssuedCerts)_SQLTEXT_");
+
+  while (statement.step() == SQLITE_ROW) {
+    security::v2::Certificate cert(statement.getBlock(3));
+    result.push_back(cert);
+  }
+  return result;
+}
+
+std::list<security::v2::Certificate>
+CaSqlite::listAllIssuedCertificates(const Name& caName)
+{
+  auto allCerts = listAllIssuedCertificates();
+  std::list<security::v2::Certificate> result;
+  for (const auto& entry : allCerts) {
+    if (entry.getSignature().getKeyLocator().getName().getPrefix(-2) == caName) {
+      result.push_back(entry);
+    }
+  }
+  return result;
 }
 
 std::string

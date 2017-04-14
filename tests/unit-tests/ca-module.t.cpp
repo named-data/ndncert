@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "identity-management-fixture.hpp"
+#include "database-fixture.hpp"
 #include "ca-module.hpp"
 #include "client-module.hpp"
 #include "challenge-module.hpp"
@@ -31,7 +31,7 @@ namespace ndn {
 namespace ndncert {
 namespace tests {
 
-BOOST_FIXTURE_TEST_SUITE(TestCaModule, IdentityManagementV2TimeFixture)
+BOOST_FIXTURE_TEST_SUITE(TestCaModule, DatabaseFixture)
 
 BOOST_AUTO_TEST_CASE(Initialization)
 {

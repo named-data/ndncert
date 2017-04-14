@@ -52,6 +52,12 @@ public:
   virtual void
   deleteRequest(const std::string& requestId) = 0;
 
+  virtual std::list<CertificateRequest>
+  listAllRequests() = 0;
+
+  virtual std::list<CertificateRequest>
+  listAllRequests(const Name& caName) = 0;
+
   // certificate related
   virtual security::v2::Certificate
   getCertificate(const std::string& certId) = 0;
@@ -64,6 +70,12 @@ public:
 
   virtual void
   deleteCertificate(const std::string& certId) = 0;
+
+  virtual std::list<security::v2::Certificate>
+  listAllIssuedCertificates() = 0;
+
+  virtual std::list<security::v2::Certificate>
+  listAllIssuedCertificates(const Name& caName) = 0;
 
 public:
   template<class CaStorageType>

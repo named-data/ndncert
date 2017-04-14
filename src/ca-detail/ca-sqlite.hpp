@@ -53,6 +53,12 @@ public:
   void
   deleteRequest(const std::string& requestId) override;
 
+  std::list<CertificateRequest>
+  listAllRequests() override;
+
+  std::list<CertificateRequest>
+  listAllRequests(const Name& caName) override;
+
   // certificate related
   security::v2::Certificate
   getCertificate(const std::string& certId) override;
@@ -66,7 +72,13 @@ public:
   void
   deleteCertificate(const std::string& certId) override;
 
-private:
+  std::list<security::v2::Certificate>
+  listAllIssuedCertificates() override;
+
+  std::list<security::v2::Certificate>
+  listAllIssuedCertificates(const Name& caName) override;
+
+PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   static std::string
   convertJson2String(const JsonSection& json);
 

@@ -80,6 +80,28 @@ CaMemory::deleteRequest(const std::string& requestId)
   }
 }
 
+std::list<CertificateRequest>
+CaMemory::listAllRequests()
+{
+  std::list<CertificateRequest> result;
+  for (const auto& entry : m_requests) {
+    result.push_back(entry.second);
+  }
+  return result;
+}
+
+std::list<CertificateRequest>
+CaMemory::listAllRequests(const Name& caName)
+{
+  std::list<CertificateRequest> result;
+  for (const auto& entry : m_requests) {
+    if (entry.second.getCaName() == caName) {
+      result.push_back(entry.second);
+    }
+  }
+  return result;
+}
+
 // certificate related
 security::v2::Certificate
 CaMemory::getCertificate(const std::string& certId)
@@ -120,6 +142,28 @@ CaMemory::deleteCertificate(const std::string& certId)
   if (search != m_issuedCerts.end()) {
     m_issuedCerts.erase(search);
   }
+}
+
+std::list<security::v2::Certificate>
+CaMemory::listAllIssuedCertificates()
+{
+  std::list<security::v2::Certificate> result;
+  for (const auto& entry : m_issuedCerts) {
+    result.push_back(entry.second);
+  }
+  return result;
+}
+
+std::list<security::v2::Certificate>
+CaMemory::listAllIssuedCertificates(const Name& caName)
+{
+  std::list<security::v2::Certificate> result;
+  for (const auto& entry : m_issuedCerts) {
+    if (entry.second.getSignature().getKeyLocator().getName().getPrefix(-2) == caName) {
+      result.push_back(entry.second);
+    }
+  }
+  return result;
 }
 
 } // namespace ndncert
