@@ -13,3 +13,8 @@ def build(bld):
         target='../bin/ndncert-ca-server',
         source='ndncert-ca-server.cpp',
         use='ndn-cert')
+
+    bld(features='cxx cxxprogram',
+        target='../bin/ndncert-ca-status',
+        source='ndncert-ca-status.cpp',
+        use='ndn-cert')
