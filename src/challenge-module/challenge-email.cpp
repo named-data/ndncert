@@ -139,6 +139,7 @@ ChallengeEmail::doGenSelectParamsJson(const std::string& status,
                                       const std::list<std::string>& paramList)
 {
   JsonSection result;
+  BOOST_ASSERT(status == WAIT_SELECTION);
   BOOST_ASSERT(paramList.size() == 1);
   result.put(JSON_EMAIL, paramList.front());
   return result;

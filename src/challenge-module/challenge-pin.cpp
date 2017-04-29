@@ -124,6 +124,7 @@ ChallengePin::doGenSelectParamsJson(const std::string& status,
                                     const std::list<std::string>& paramList)
 {
   JsonSection result;
+  BOOST_ASSERT(status == WAIT_SELECTION);
   BOOST_ASSERT(paramList.size() == 0);
   return result;
 }

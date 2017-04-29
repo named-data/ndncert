@@ -65,7 +65,6 @@ BOOST_AUTO_TEST_CASE(OnSelectInterestComingWithEmail)
   emailJson.put(ChallengeEmail::JSON_EMAIL, "zhiyi@cs.ucla.edu");
   std::stringstream ss;
   boost::property_tree::write_json(ss, emailJson);
-  std::string jsonString = ss.str();
   Block jsonContent = makeStringBlock(ndn::tlv::NameComponent, ss.str());
 
   Name interestName("/ndn/site1/CA");
@@ -90,7 +89,6 @@ BOOST_AUTO_TEST_CASE(OnSelectInterestComingWithInvalidEmail)
   emailJson.put(ChallengeEmail::JSON_EMAIL, "zhiyi@cs");
   std::stringstream ss;
   boost::property_tree::write_json(ss, emailJson);
-  std::string jsonString = ss.str();
   Block jsonContent = makeStringBlock(ndn::tlv::NameComponent, ss.str());
 
   Name interestName("/ndn/site1/CA");
@@ -125,7 +123,6 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithCode)
   infoJson.put(ChallengeEmail::JSON_CODE, "4567");
   std::stringstream ss;
   boost::property_tree::write_json(ss, infoJson);
-  std::string jsonString = ss.str();
   Block jsonContent = makeStringBlock(ndn::tlv::NameComponent, ss.str());
 
   Name interestName("/ndn/site1/CA");
@@ -160,7 +157,6 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithWrongCode)
   infoJson.put(ChallengeEmail::JSON_CODE, "1234");
   std::stringstream ss;
   boost::property_tree::write_json(ss, infoJson);
-  std::string jsonString = ss.str();
   Block jsonContent = makeStringBlock(ndn::tlv::NameComponent, ss.str());
 
   Name interestName("/ndn/site1/CA");
