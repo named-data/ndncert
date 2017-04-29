@@ -92,7 +92,7 @@ CaModule::~CaModule()
 void
 CaModule::handleProbe(const Interest& request, const CaItem& caItem)
 {
-  // PROBE Naming Convention: /CA-prefix/_PROBE/<Probe Information>
+  // PROBE Naming Convention: /CA-prefix/CA/_PROBE/<Probe Information>
   _LOG_TRACE("Handle PROBE request");
 
   std::string identifier;
@@ -118,7 +118,7 @@ CaModule::handleProbe(const Interest& request, const CaItem& caItem)
 void
 CaModule::handleNew(const Interest& request, const CaItem& caItem)
 {
-  // NEW Naming Convention: /CA-prefix/_NEW/<certificate-request>/[signature]
+  // NEW Naming Convention: /CA-prefix/CA/_NEW/<certificate-request>/[signature]
   _LOG_TRACE("Handle NEW request");
 
   security::v2::Certificate clientCert;
@@ -151,7 +151,7 @@ CaModule::handleNew(const Interest& request, const CaItem& caItem)
 void
 CaModule::handleSelect(const Interest& request, const CaItem& caItem)
 {
-  // SELECT Naming Convention: /CA-prefix/_SELECT/{Request-ID JSON}/<ChallengeID>/
+  // SELECT Naming Convention: /CA-prefix/CA/_SELECT/{Request-ID JSON}/<ChallengeID>/
   // {Param JSON}/[Signature components]
   _LOG_TRACE("Handle SELECT request");
 
@@ -198,7 +198,7 @@ CaModule::handleSelect(const Interest& request, const CaItem& caItem)
 void
 CaModule::handleValidate(const Interest& request, const CaItem& caItem)
 {
-  // VALIDATE Naming Convention: /CA-prefix/_VALIDATE/{Request-ID JSON}/<ChallengeID>/
+  // VALIDATE Naming Convention: /CA-prefix/CA/_VALIDATE/{Request-ID JSON}/<ChallengeID>/
   // {Param JSON}/[Signature components]
   _LOG_TRACE("Handle VALIDATE request");
 
@@ -241,7 +241,7 @@ CaModule::handleValidate(const Interest& request, const CaItem& caItem)
 void
 CaModule::handleStatus(const Interest& request, const CaItem& caItem)
 {
-  // STATUS Naming Convention: /CA-prefix/_STATUS/{Request-ID JSON}/[Signature components]
+  // STATUS Naming Convention: /CA-prefix/CA/_STATUS/{Request-ID JSON}/[Signature components]
   _LOG_TRACE("Handle STATUS request");
 
   CertificateRequest certRequest = getCertificateRequest(request, caItem.m_caName);
@@ -272,7 +272,7 @@ CaModule::handleStatus(const Interest& request, const CaItem& caItem)
 void
 CaModule::handleDownload(const Interest& request, const CaItem& caItem)
 {
-  // DOWNLOAD Naming Convention: /CA-prefix/_DOWNLOAD/{Request-ID JSON}
+  // DOWNLOAD Naming Convention: /CA-prefix/CA/_DOWNLOAD/{Request-ID JSON}
   _LOG_TRACE("Handle DOWNLOAD request");
 
   JsonSection requestIdJson = jsonFromNameComponent(request.getName(), caItem.m_caName.size() + 2);
@@ -289,7 +289,7 @@ CaModule::handleDownload(const Interest& request, const CaItem& caItem)
   Data result;
   result.setName(request.getName());
   result.setContent(signedCert.wireEncode());
-  m_keyChain.sign(result, signingWithSha256());
+  m_keyChain.sign(result, signingByCertificate(caItem.m_anchor));
   m_face.put(result);
 }
 

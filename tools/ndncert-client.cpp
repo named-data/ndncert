@@ -46,10 +46,20 @@ public:
   }
 
   void
-  validateCb(const shared_ptr<RequestState> state, int& nStep)
+  downloadCb(const shared_ptr<RequestState>& state, int& nStep)
+  {
+    _LOG_TRACE("Certificate has already been installed to local keychain");
+    return;
+  }
+
+  void
+  validateCb(const shared_ptr<RequestState>& state, int& nStep)
   {
     if (state->m_status == ChallengeModule::SUCCESS) {
       _LOG_TRACE("Certificate has already been issued");
+      client.requestDownload(state,
+                             bind(&ClientTool::downloadCb, this, _1, nStep),
+                             bind(&ClientTool::errorCb, this, _1));
       return;
     }
 
@@ -73,7 +83,7 @@ public:
   }
 
   void
-  selectCb(const shared_ptr<RequestState> state, int& nStep)
+  selectCb(const shared_ptr<RequestState>& state, int& nStep)
   {
     auto challenge = ChallengeModule::createChallengeModule(state->m_challengeType);
     auto requirementList = challenge->getRequirementForValidate(state->m_status);
@@ -96,7 +106,7 @@ public:
   }
 
   void
-  newCb(const shared_ptr<RequestState> state, int& nStep)
+  newCb(const shared_ptr<RequestState>& state, int& nStep)
   {
     std::cerr << "Step" << nStep++ << ": Please select one challenge from following types." << std::endl;
     for (auto item : state->m_challengeList) {
@@ -191,7 +201,7 @@ main(int argc, char* argv[])
     std::cerr <<"Step" << nStep++ << ": Please type in the identity name" << std::endl;
     std::string nameComponent;
     std::cin >> nameComponent;
-    Name identityName(targetCaItem.m_caName);
+    Name identityName = targetCaItem.m_caName.getPrefix(-1);
     identityName.append(nameComponent);
     client.sendNew(targetCaItem, identityName,
                    bind(&ClientTool::newCb, &tool, _1, nStep),
