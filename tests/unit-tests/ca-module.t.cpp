@@ -83,6 +83,35 @@ BOOST_AUTO_TEST_CASE(HandleProbe)
   BOOST_CHECK_EQUAL(count, 1);
 }
 
+BOOST_AUTO_TEST_CASE(HandleProbeUsingDefaultHandler)
+{
+  auto identity = addIdentity(Name("/ndn/site1"));
+  auto key = identity.getDefaultKey();
+  auto cert = key.getDefaultCertificate();
+
+  util::DummyClientFace face(m_io, {true, true});
+  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test");
+  ca.getCaConf().m_caItems.back().m_anchor = cert.getName();
+
+  advanceClocks(time::milliseconds(20), 60);
+
+  Name interestName("/ndn/site1/CA");
+  interestName.append("_PROBE").append("zhiyi");
+  Interest interest(interestName);
+
+  int count = 0;
+  face.onSendData.connect([&] (const Data& response) {
+      count++;
+      BOOST_CHECK(security::verifySignature(response, cert));
+      JsonSection contentJson = ClientModule::getJsonFromData(response);
+      BOOST_CHECK_EQUAL(contentJson.get(JSON_IDNENTIFIER, ""), "/ndn/site1/zhiyi");
+    });
+  face.receive(interest);
+
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK_EQUAL(count, 1);
+}
+
 BOOST_AUTO_TEST_CASE(HandleNew)
 {
   auto identity = addIdentity(Name("/ndn/site1"));

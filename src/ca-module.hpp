@@ -47,6 +47,11 @@ public:
    */
   using ProbeHandler = function<std::string (const std::string&)>;
 
+  /**
+   * @brief The function would be invoked whenever the certificate request gets update
+   */
+  using RequestUpdateCallback = function<void (const CertificateRequest&)>;
+
 public:
   CaModule(Face& face, security::v2::KeyChain& keyChain, const std::string& configPath,
            const std::string& storageType = "ca-storage-sqlite3");
@@ -69,6 +74,12 @@ public:
   setProbeHandler(const ProbeHandler& handler)
   {
     m_probeHandler = handler;
+  }
+
+  void
+  setRequestUpdateCallback(const RequestUpdateCallback& onUpateCallback)
+  {
+    m_requestUpdateCallback = onUpateCallback;
   }
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
@@ -105,13 +116,14 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   static Block
   dataContentFromJson(const JsonSection& jsonSection);
 
-PUBLIC_WITH_TESTS_ELSE_PROTECTED:
+PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   Face& m_face;
   CaConfig m_config;
   unique_ptr<CaStorage> m_storage;
   security::v2::KeyChain& m_keyChain;
 
   ProbeHandler m_probeHandler;
+  RequestUpdateCallback m_requestUpdateCallback;
   std::list<const RegisteredPrefixId*> m_registeredPrefixIds;
   std::list<const InterestFilterId*> m_interestFilterIds;
 };

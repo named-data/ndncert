@@ -35,9 +35,19 @@ CaModule::CaModule(Face& face, security::v2::KeyChain& keyChain,
   : m_face(face)
   , m_keyChain(keyChain)
 {
+  // load the config and create storage
   m_config.load(configPath);
   m_storage = CaStorage::createCaStorage(storageType);
 
+  // set default handler and callback
+  m_probeHandler = [&] (const std::string& probeInfo) {
+    return probeInfo;
+  };
+  m_requestUpdateCallback = [&] (const CertificateRequest& CertRequest) {
+    // do nothing
+  };
+
+  // register prefix
   for (const auto& item : m_config.m_caItems) {
     Name prefix = item.m_caName;
     prefix.append("CA");
@@ -131,6 +141,7 @@ CaModule::handleNew(const Interest& request, const CaItem& caItem)
   }
   std::string requestId = std::to_string(random::generateWord64());
   CertificateRequest certRequest(caItem.m_caName, requestId, clientCert);
+  certRequest.setStatus(ChallengeModule::WAIT_SELECTION);
   try {
     m_storage->addRequest(certRequest);
   }
@@ -141,11 +152,12 @@ CaModule::handleNew(const Interest& request, const CaItem& caItem)
 
   Data result;
   result.setName(request.getName());
-  result.setContent(dataContentFromJson(genResponseNewJson(requestId,
-                                                           ChallengeModule::WAIT_SELECTION,
+  result.setContent(dataContentFromJson(genResponseNewJson(requestId, certRequest.getStatus(),
                                                            caItem.m_supportedChallenges)));
   m_keyChain.sign(result, signingByCertificate(caItem.m_anchor));
   m_face.put(result);
+
+  m_requestUpdateCallback(certRequest);
 }
 
 void
@@ -193,6 +205,8 @@ CaModule::handleSelect(const Interest& request, const CaItem& caItem)
   result.setContent(dataContentFromJson(contentJson));
   m_keyChain.sign(result, signingByCertificate(caItem.m_anchor));
   m_face.put(result);
+
+  m_requestUpdateCallback(certRequest);
 }
 
 void
@@ -232,6 +246,8 @@ CaModule::handleValidate(const Interest& request, const CaItem& caItem)
   result.setContent(dataContentFromJson(contentJson));
   m_keyChain.sign(result, signingByCertificate(caItem.m_anchor));
   m_face.put(result);
+
+  m_requestUpdateCallback(certRequest);
 
   if (certRequest.getStatus() == ChallengeModule::SUCCESS) {
     issueCertificate(certRequest, caItem);
