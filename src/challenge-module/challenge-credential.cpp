@@ -32,13 +32,17 @@ NDNCERT_REGISTER_CHALLENGE(ChallengeCredential, "Credential");
 const std::string ChallengeCredential::FAILURE_INVALID_FORMAT = "failure-invalid-format";
 const std::string ChallengeCredential::FAILURE_INVALID_CREDENTIAL = "failure-invalid-credential";
 
-const std::string ChallengeCredential::JSON_CREDENTIAL = "signed-cert";
+const std::string ChallengeCredential::JSON_CREDENTIAL_CERT = "issued-cert";
+const std::string ChallengeCredential::JSON_CREDENTIAL_SELF = "self-signed";
 
 ChallengeCredential::ChallengeCredential(const std::string& configPath)
-  : ChallengeModule("CREDENTIAL")
-  , m_configFile(configPath)
+  : ChallengeModule("Credential")
 {
-  parseConfigFile();
+  if (configPath == "") {
+    m_configFile = std::string(SYSCONFDIR) + "/ndncert/challenge-credential.conf";
+  }
+  else
+    m_configFile = configPath;
 }
 
 void
@@ -70,37 +74,52 @@ ChallengeCredential::parseConfigFile()
 JsonSection
 ChallengeCredential::processSelectInterest(const Interest& interest, CertificateRequest& request)
 {
+  if (m_trustAnchors.empty()) {
+    parseConfigFile();
+  }
+
   // interest format: /caName/CA/_SELECT/{"request-id":"id"}/CREDENTIAL/{"credential":"..."}/<signature>
   request.setChallengeType(CHALLENGE_TYPE);
-  JsonSection credentialJson = getJsonFromNameComponent(interest.getName(),
-                                                        request.getCaName().size() + 4);
-  std::istringstream ss(credentialJson.get<std::string>(JSON_CREDENTIAL));
+  JsonSection credentialJson = getJsonFromNameComponent(interest.getName(), request.getCaName().size() + 4);
 
-  security::v2::Certificate credential;
+  // load credential parameters
+  std::istringstream ss1(credentialJson.get<std::string>(JSON_CREDENTIAL_CERT));
+  security::v2::Certificate cert;
   try {
-    credential = *(io::load<security::v2::Certificate>(ss));
+    cert = *(io::load<security::v2::Certificate>(ss1));
   }
   catch (const std::exception& e) {
-    _LOG_TRACE("Cannot load credential parameter" << e.what());
+    _LOG_TRACE("Cannot load credential parameter: cert" << e.what());
     request.setStatus(FAILURE_INVALID_FORMAT);
     return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE_INVALID_FORMAT);
   }
+  ss1.str("");
+  ss1.clear();
 
-  if (credential.getContent() != request.getCert().getContent()
-      || credential.getKeyName() != request.getCert().getKeyName()) {
-    request.setStatus(FAILURE_INVALID_CREDENTIAL);
-    return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE_INVALID_CREDENTIAL);
+  std::istringstream ss2(credentialJson.get<std::string>(JSON_CREDENTIAL_SELF));
+  security::v2::Certificate self;
+  try {
+    self = *(io::load<security::v2::Certificate>(ss2));
   }
-  Name signingKeyName = credential.getSignature().getKeyLocator().getName();
+  catch (const std::exception& e) {
+    _LOG_TRACE("Cannot load credential parameter: self-signed cert" << e.what());
+    request.setStatus(FAILURE_INVALID_FORMAT);
+    return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE_INVALID_FORMAT);
+  }
+  ss2.str("");
+  ss2.clear();
 
+  // verify two parameters
+  Name signingKeyName = cert.getSignature().getKeyLocator().getName();
   for (auto anchor : m_trustAnchors) {
     if (anchor.getKeyName() == signingKeyName) {
-      if (security::verifySignature(credential, anchor)) {
+      if (security::verifySignature(cert, anchor) && security::verifySignature(self, cert)) {
         request.setStatus(SUCCESS);
         return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, SUCCESS);
       }
     }
   }
+
   request.setStatus(FAILURE_INVALID_CREDENTIAL);
   return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE_INVALID_CREDENTIAL);
 }
@@ -116,7 +135,8 @@ std::list<std::string>
 ChallengeCredential::getSelectRequirements()
 {
   std::list<std::string> result;
-  result.push_back("Please input the bytes of a same key certificate signed by trust anchor");
+  result.push_back("Please input the bytes of a certificate issued by the trusted CA");
+  result.push_back("Please input the bytes of a self-signed certificate for the corresponding key");
   return result;
 }
 
@@ -134,8 +154,9 @@ ChallengeCredential::doGenSelectParamsJson(const std::string& status,
 {
   JsonSection result;
   BOOST_ASSERT(status == WAIT_SELECTION);
-  BOOST_ASSERT(paramList.size() == 1);
-  result.put(JSON_CREDENTIAL, paramList.front());
+  BOOST_ASSERT(paramList.size() == 2);
+  result.put(JSON_CREDENTIAL_CERT, paramList.front());
+  result.put(JSON_CREDENTIAL_SELF, paramList.back());
   return result;
 }
 

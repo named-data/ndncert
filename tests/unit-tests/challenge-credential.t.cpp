@@ -32,8 +32,9 @@ BOOST_FIXTURE_TEST_SUITE(TestChallengeCredential, IdentityManagementV2Fixture)
 BOOST_AUTO_TEST_CASE(LoadConfig)
 {
   ChallengeCredential challenge("./tests/unit-tests/challenge-credential.conf.test");
-  BOOST_CHECK_EQUAL(challenge.CHALLENGE_TYPE, "CREDENTIAL");
+  BOOST_CHECK_EQUAL(challenge.CHALLENGE_TYPE, "Credential");
 
+  challenge.parseConfigFile();
   BOOST_CHECK_EQUAL(challenge.m_trustAnchors.size(), 1);
   auto cert = challenge.m_trustAnchors.front();
   BOOST_CHECK_EQUAL(cert.getName(),
@@ -44,23 +45,29 @@ BOOST_AUTO_TEST_CASE(HandleSelect)
 {
   // create trust anchor
   ChallengeCredential challenge("./tests/unit-tests/challenge-credential.conf.test");
-  auto identity0 = addIdentity(Name("/trust"));
-  auto key0 = identity0.getDefaultKey();
-  auto trustAnchor = key0.getDefaultCertificate();
+  auto identity = addIdentity(Name("/trust"));
+  auto key = identity.getDefaultKey();
+  auto trustAnchor = key.getDefaultCertificate();
+  challenge.parseConfigFile();
   challenge.m_trustAnchors.front() = trustAnchor;
 
   // create certificate request
-  auto identity = addIdentity(Name("/example"));
-  auto key = identity.getDefaultKey();
-  auto cert = key.getDefaultCertificate();
-  CertificateRequest request(Name("/example"), "123", cert);
+  auto identityA = addIdentity(Name("/example"));
+  auto keyA = identityA.getDefaultKey();
+  auto certA = key.getDefaultCertificate();
+  CertificateRequest request(Name("/example"), "123", certA);
+
+  // create requester's existing cert
+  auto identityB = addIdentity(Name("/trust/cert"));
+  auto keyB = identityB.getDefaultKey();
+  auto certB = key.getDefaultCertificate();
 
   // using trust anchor to sign cert request to get credential
-  Name credentialName = cert.getKeyName();
+  Name credentialName = certB.getKeyName();
   credentialName.append("Credential").appendVersion();
-  security::v2::Certificate credential = cert;
+  security::v2::Certificate credential = certB;
   credential.setName(credentialName);
-  credential.setContent(cert.getContent());
+  credential.setContent(certB.getContent());
   m_keyChain.sign(credential, signingByCertificate(trustAnchor));
 
   // generate SELECT interest
@@ -71,14 +78,19 @@ BOOST_AUTO_TEST_CASE(HandleSelect)
   ss.str("");
   ss.clear();
 
-  io::save<security::v2::Certificate>(credential, ss);
   std::list<std::string> paramList;
-  std::string jsonString = ss.str();
-  paramList.push_back(jsonString);
-  JsonSection credentialJson = challenge.genSelectParamsJson(ChallengeModule::WAIT_SELECTION, paramList);
-  BOOST_CHECK_EQUAL(credentialJson.get<std::string>(ChallengeCredential::JSON_CREDENTIAL), jsonString);
+  io::save<security::v2::Certificate>(credential, ss);
+  std::string paramString = ss.str();
+  paramList.push_back(paramString);
   ss.str("");
   ss.clear();
+
+  io::save<security::v2::Certificate>(certB, ss);
+  paramString = ss.str();
+  paramList.push_back(paramString);
+  ss.str("");
+  ss.clear();
+  JsonSection credentialJson = challenge.genSelectParamsJson(ChallengeModule::WAIT_SELECTION, paramList);
 
   boost::property_tree::write_json(ss, credentialJson);
   Block jsonContent = makeStringBlock(ndn::tlv::NameComponent, ss.str());

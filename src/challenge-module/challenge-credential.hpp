@@ -32,6 +32,10 @@ namespace ndncert {
  * could proof his/her possession of an existing certificate from other certificate, th
  * requester could finish the challenge.
  *
+ * The requester needs to provide the proof of the possession of a certificate issued by
+ * a trust anchor. The challenge require the requester to pass the BASE64 certificate and
+ * a BASE64 self-signed certificate whose key is the same as the key in certificate.
+ *
  * The main process of this challenge module is:
  *   1. Requester provides a certificate signed by that trusted certificate as credential.
  *   2. The challenge module will verify the signature of the credential.
@@ -42,7 +46,7 @@ namespace ndncert {
 class ChallengeCredential : public ChallengeModule
 {
 public:
-  ChallengeCredential(const std::string& configPath = "challenge-credential.conf");
+  ChallengeCredential(const std::string& configPath = "");
 
 PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   JsonSection
@@ -72,7 +76,8 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   static const std::string FAILURE_INVALID_CREDENTIAL;
   static const std::string FAILURE_INVALID_FORMAT;
-  static const std::string JSON_CREDENTIAL;
+  static const std::string JSON_CREDENTIAL_CERT;
+  static const std::string JSON_CREDENTIAL_SELF;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::list<security::v2::Certificate> m_trustAnchors;
