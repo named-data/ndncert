@@ -85,7 +85,7 @@ CaModule::CaModule(Face& face, security::v2::KeyChain& keyChain,
       m_registeredPrefixIds.push_back(prefixId);
     }
     catch (const std::exception& e) {
-      _LOG_TRACE("Error: " << e.what());
+      _LOG_ERROR(e.what());
     }
   }
 }
@@ -137,9 +137,19 @@ CaModule::handleNew(const Interest& request, const CaItem& caItem)
     clientCert.wireDecode(request.getName().at(caItem.m_caName.size() + 2).blockFromValue());
   }
   catch (const std::exception& e) {
-    _LOG_TRACE("Unrecognized certificate request " << e.what());
+    _LOG_ERROR("Unrecognized certificate request " << e.what());
     return;
   }
+
+  if (!security::verifySignature(clientCert, clientCert)) {
+    _LOG_TRACE("Cert request with bad signature.");
+    return;
+  }
+  if (!security::verifySignature(request, clientCert)) {
+    _LOG_TRACE("Interest with bad signature.");
+    return;
+  }
+
   std::string requestId = std::to_string(random::generateWord64());
   CertificateRequest certRequest(caItem.m_caName, requestId, clientCert);
   certRequest.setStatus(ChallengeModule::WAIT_SELECTION);
@@ -174,7 +184,7 @@ CaModule::handleSelect(const Interest& request, const CaItem& caItem)
   }
 
   if (!security::verifySignature(request, certRequest.getCert())) {
-    _LOG_TRACE("Error: Interest with bad signature.");
+    _LOG_TRACE("Interest with bad signature.");
     return;
   }
 
@@ -183,7 +193,7 @@ CaModule::handleSelect(const Interest& request, const CaItem& caItem)
     challengeType = readString(request.getName().at(caItem.m_caName.size() + 3));
   }
   catch (const std::exception& e) {
-    _LOG_TRACE(e.what());
+    _LOG_ERROR(e.what());
     return;
   }
   _LOG_TRACE("SELECT request choosing challenge " << challengeType);
@@ -228,7 +238,7 @@ CaModule::handleValidate(const Interest& request, const CaItem& caItem)
   }
 
   if (!security::verifySignature(request, certRequest.getCert())) {
-    _LOG_TRACE("Error: Interest with bad signature.");
+    _LOG_TRACE("Interest with bad signature.");
     return;
   }
 
@@ -276,7 +286,7 @@ CaModule::handleStatus(const Interest& request, const CaItem& caItem)
   }
 
   if (!security::verifySignature(request, certRequest.getCert())) {
-    _LOG_TRACE("Error: Interest with bad signature.");
+    _LOG_TRACE("Interest with bad signature.");
     return;
   }
 
@@ -308,7 +318,7 @@ CaModule::handleDownload(const Interest& request, const CaItem& caItem)
     signedCert = m_storage->getCertificate(requestId);
   }
   catch (const std::exception& e) {
-    _LOG_TRACE("Error: " << e.what());
+    _LOG_ERROR(e.what());
     return;
   }
 
@@ -327,6 +337,7 @@ CaModule::issueCertificate(const CertificateRequest& certRequest, const CaItem& 
   security::v2::Certificate newCert;
   newCert.setName(certName);
   newCert.setContent(certRequest.getCert().getContent());
+  _LOG_TRACE("cert request content " << certRequest.getCert());
   SignatureInfo signatureInfo;
   security::ValidityPeriod period(time::system_clock::now(),
                                   time::system_clock::now() + caItem.m_validityPeriod);
@@ -336,13 +347,14 @@ CaModule::issueCertificate(const CertificateRequest& certRequest, const CaItem& 
   newCert.setFreshnessPeriod(caItem.m_freshnessPeriod);
 
   m_keyChain.sign(newCert, signingInfo);
+  _LOG_TRACE("new cert got signed" << newCert);
   try {
     m_storage->addCertificate(certRequest.getRequestId(), newCert);
     m_storage->deleteRequest(certRequest.getRequestId());
     _LOG_TRACE("New Certificate Issued " << certName);
   }
   catch (const std::exception& e) {
-    _LOG_TRACE("Error: Cannot add issued cert and remove the request " << e.what());
+    _LOG_ERROR("Cannot add issued cert and remove the request " << e.what());
     return;
   }
 }
@@ -357,7 +369,7 @@ CaModule::getCertificateRequest(const Interest& request, const Name& caName)
     certRequest = m_storage->getRequest(requestId);
   }
   catch (const std::exception& e) {
-    _LOG_TRACE("Error: " << e.what());
+    _LOG_ERROR(e.what());
   }
   return certRequest;
 }
@@ -365,7 +377,7 @@ CaModule::getCertificateRequest(const Interest& request, const Name& caName)
 void
 CaModule::onRegisterFailed(const std::string& reason)
 {
-  _LOG_TRACE("Error: failed to register prefix in local hub's daemon, REASON: " << reason);
+  _LOG_ERROR("Failed to register prefix in local hub's daemon, REASON: " << reason);
 }
 
 Block
@@ -384,7 +396,7 @@ CaModule::jsonFromNameComponent(const Name& name, int pos)
     jsonString = encoding::readString(name.at(pos));
   }
   catch (const std::exception& e) {
-    _LOG_TRACE(e.what());
+    _LOG_ERROR(e.what());
     return JsonSection();
   }
   std::istringstream ss(jsonString);
