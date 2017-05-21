@@ -31,9 +31,10 @@ NDNCERT_REGISTER_CHALLENGE(ChallengeEmail, "Email");
 
 const std::string ChallengeEmail::NEED_CODE = "need-code";
 const std::string ChallengeEmail::WRONG_CODE = "wrong-code";
-const std::string ChallengeEmail::FAILURE_TIMEOUT = "failure-timeout";
-const std::string ChallengeEmail::FAILURE_MAXRETRY = "failure-max-retry";
+
 const std::string ChallengeEmail::FAILURE_INVALID_EMAIL = "failure-invalid-email";
+const std::string ChallengeEmail::FAILURE_TIMEOUT = "timeout";
+const std::string ChallengeEmail::FAILURE_MAXRETRY = "max-retry";
 
 const std::string ChallengeEmail::JSON_EMAIL = "email";
 const std::string ChallengeEmail::JSON_CODE_TP = "code-timepoint";
@@ -43,7 +44,7 @@ const std::string ChallengeEmail::JSON_ATTEMPT_TIMES = "attempt-times";
 ChallengeEmail::ChallengeEmail(const std::string& scriptPath,
                                const size_t& maxAttemptTimes,
                                const time::seconds secretLifetime)
-  : ChallengeModule("EMAIL")
+  : ChallengeModule("Email")
   , m_sendEmailScript(scriptPath)
   , m_maxAttemptTimes(maxAttemptTimes)
   , m_secretLifetime(secretLifetime)
@@ -60,7 +61,7 @@ ChallengeEmail::processSelectInterest(const Interest& interest, CertificateReque
   if (!isValidEmailAddress(emailAddress)) {
     request.setStatus(FAILURE_INVALID_EMAIL);
     request.setChallengeType(CHALLENGE_TYPE);
-    return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE_INVALID_EMAIL);
+    return genFailureJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE, FAILURE_INVALID_EMAIL);
   }
 
   std::string emailCode = generateSecretCode();
@@ -69,8 +70,7 @@ ChallengeEmail::processSelectInterest(const Interest& interest, CertificateReque
   request.setStatus(NEED_CODE);
   request.setChallengeType(CHALLENGE_TYPE);
   request.setChallengeSecrets(generateStoredSecrets(time::system_clock::now(),
-                                                    emailCode,
-                                                    m_maxAttemptTimes));
+                                                    emailCode, m_maxAttemptTimes));
   return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, NEED_CODE);
 }
 
@@ -86,7 +86,7 @@ ChallengeEmail::processValidateInterest(const Interest& interest, CertificateReq
     // secret expires
     request.setStatus(FAILURE_TIMEOUT);
     request.setChallengeSecrets(JsonSection());
-    return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE_TIMEOUT);
+    return genFailureJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE, FAILURE_TIMEOUT);
   }
   else if (givenCode == std::get<1>(parsedSecret)) {
     request.setStatus(SUCCESS);
@@ -108,7 +108,7 @@ ChallengeEmail::processValidateInterest(const Interest& interest, CertificateReq
       // run out times
       request.setStatus(FAILURE_MAXRETRY);
       request.setChallengeSecrets(JsonSection());
-      return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE_MAXRETRY);
+      return genFailureJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE, FAILURE_MAXRETRY);
     }
   }
 }
@@ -129,7 +129,7 @@ ChallengeEmail::getValidateRequirements(const std::string& status)
     result.push_back("Please input your verification code:");
   }
   else if (status == WRONG_CODE) {
-    result.push_back("Incorrect PIN code, please input your verification code:");
+    result.push_back("Incorrect PIN code, please try again and input your verification code:");
   }
   return result;
 }

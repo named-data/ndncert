@@ -192,12 +192,17 @@ CaModule::handleSelect(const Interest& request, const CaItem& caItem)
     return;
   }
   JsonSection contentJson = challenge->handleChallengeRequest(request, certRequest);
-  try {
-    m_storage->updateRequest(certRequest);
+  if (certRequest.getStatus() == ChallengeModule::FAILURE) {
+    m_storage->deleteRequest(certRequest.getRequestId());
   }
-  catch (const std::exception& e) {
-    _LOG_TRACE("Cannot update request instance " << e.what());
-    return;
+  else {
+    try {
+      m_storage->updateRequest(certRequest);
+    }
+    catch (const std::exception& e) {
+      _LOG_TRACE("Cannot update request instance " << e.what());
+      return;
+    }
   }
 
   Data result;
@@ -233,14 +238,18 @@ CaModule::handleValidate(const Interest& request, const CaItem& caItem)
     return;
   }
   JsonSection contentJson = challenge->handleChallengeRequest(request, certRequest);
-  try {
-    m_storage->updateRequest(certRequest);
+  if (certRequest.getStatus() == ChallengeModule::FAILURE) {
+    m_storage->deleteRequest(certRequest.getRequestId());
   }
-  catch (const std::exception& e) {
-    _LOG_TRACE("Cannot update request instance " << e.what());
-    return;
+  else {
+    try {
+      m_storage->updateRequest(certRequest);
+    }
+    catch (const std::exception& e) {
+      _LOG_TRACE("Cannot update request instance " << e.what());
+      return;
+    }
   }
-
   Data result;
   result.setName(request.getName());
   result.setContent(dataContentFromJson(contentJson));

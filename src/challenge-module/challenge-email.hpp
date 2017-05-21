@@ -40,9 +40,11 @@ namespace ndncert {
  * There are several challenge status in EMAIL challenge:
  *   NEED_CODE: When email address is provided and the verification code has been sent out.
  *   WRONG_CODE: Wrong code but still within secret lifetime and within max try times.
+ *
+ * Failure info when application fails:
+ *   FAILURE_MAXRETRY: When run out retry times.
  *   FAILURE_INVALID_EMAIL: When the email is invalid.
  *   FAILURE_TIMEOUT: When the secret lifetime expires.
- *   FAILURE_MAXRETRY: When run out retry times.
  */
 class ChallengeEmail : public ChallengeModule
 {
@@ -90,8 +92,9 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   static const std::string NEED_CODE;
   static const std::string WRONG_CODE;
-  static const std::string FAILURE_INVALID_EMAIL;
+
   static const std::string FAILURE_TIMEOUT;
+  static const std::string FAILURE_INVALID_EMAIL;
   static const std::string FAILURE_MAXRETRY;
 
   static const std::string JSON_EMAIL;

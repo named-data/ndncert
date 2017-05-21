@@ -32,7 +32,7 @@ const std::string JSON_STATUS = "status";
 const std::string JSON_REQUEST_ID = "request-id";
 const std::string JSON_CHALLENGES = "challenges";
 const std::string JSON_CHALLENGE_TYPE = "challenge-type";
-const std::string JSON_ERROR_INFO = "error-info";
+const std::string JSON_FAILURE_INFO = "failure-info";
 const std::string JSON_CERTIFICATE = "certificate";
 
 /**
@@ -100,12 +100,15 @@ genResponseChallengeJson(const std::string& requestId, const std::string& challe
  *
  * Target JSON format:
  * {
- *   "status": "error",
- *   "error-info": "@p errorInfo"
+ *   "request-id": "@p requestId",
+ *   "challenge-type": "@p challengeType",
+ *   "status": "failure",
+ *   "failure-info": "@p errorInfo",
  * }
  */
 const JsonSection
-genErrorJson(const std::string& errorInfo);
+genFailureJson(const std::string& requestId, const std::string& challengeType,
+               const std::string& status, const std::string& failureInfo);
 
 } // namespace ndncert
 } // namespace ndn

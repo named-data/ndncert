@@ -67,11 +67,12 @@ BOOST_AUTO_TEST_CASE(GenerateChallengeResponseJson)
   BOOST_CHECK_EQUAL(result.get<std::string>(JSON_CERTIFICATE), "/ndn/test");
 }
 
-BOOST_AUTO_TEST_CASE(GenerateErrorJson)
+BOOST_AUTO_TEST_CASE(GenerateFailureJson)
 {
-  auto result = genErrorJson("The certificate name already exists");
-  BOOST_CHECK_EQUAL(result.get<std::string>(JSON_STATUS), "error");
-  BOOST_CHECK_EQUAL(result.get<std::string>(JSON_ERROR_INFO),
+  auto result = genFailureJson("598234759", "EMAIL", "failure",
+                               "The certificate name already exists");
+  BOOST_CHECK_EQUAL(result.get<std::string>(JSON_STATUS), "failure");
+  BOOST_CHECK_EQUAL(result.get<std::string>(JSON_FAILURE_INFO),
                     "The certificate name already exists");
 }
 

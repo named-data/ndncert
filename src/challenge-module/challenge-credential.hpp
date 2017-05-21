@@ -40,8 +40,10 @@ namespace ndncert {
  *   1. Requester provides a certificate signed by that trusted certificate as credential.
  *   2. The challenge module will verify the signature of the credential.
  *
- * There are several challenge status in EMAIL challenge:
- *   FAILURE_INVALID_SIG: When the credential cannot be validated.
+ * Failure info when application fails:
+ *   FAILURE_INVALID_CREDENTIAL: When the cert issued from trust anchor or self-signed cert
+ *     cannot be validated.
+ *   FAILURE_INVALID_FORMAT: When the credential format is wrong.
  */
 class ChallengeCredential : public ChallengeModule
 {
@@ -76,6 +78,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   static const std::string FAILURE_INVALID_CREDENTIAL;
   static const std::string FAILURE_INVALID_FORMAT;
+
   static const std::string JSON_CREDENTIAL_CERT;
   static const std::string JSON_CREDENTIAL_SELF;
 

@@ -173,6 +173,7 @@ public:
   static const std::string WAIT_SELECTION;
   static const std::string SUCCESS;
   static const std::string PENDING;
+  static const std::string FAILURE;
 
 private:
   typedef function<unique_ptr<ChallengeModule> ()> ChallengeCreateFunc;

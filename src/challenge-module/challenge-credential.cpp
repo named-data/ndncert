@@ -91,7 +91,7 @@ ChallengeCredential::processSelectInterest(const Interest& interest, Certificate
   catch (const std::exception& e) {
     _LOG_TRACE("Cannot load credential parameter: cert" << e.what());
     request.setStatus(FAILURE_INVALID_FORMAT);
-    return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE_INVALID_FORMAT);
+    return genFailureJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE, FAILURE_INVALID_FORMAT);
   }
   ss1.str("");
   ss1.clear();
@@ -104,7 +104,7 @@ ChallengeCredential::processSelectInterest(const Interest& interest, Certificate
   catch (const std::exception& e) {
     _LOG_TRACE("Cannot load credential parameter: self-signed cert" << e.what());
     request.setStatus(FAILURE_INVALID_FORMAT);
-    return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE_INVALID_FORMAT);
+    return genFailureJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE, FAILURE_INVALID_FORMAT);
   }
   ss2.str("");
   ss2.clear();
@@ -128,7 +128,7 @@ JsonSection
 ChallengeCredential::processValidateInterest(const Interest& interest, CertificateRequest& request)
 {
   // there is no validate request here, do nothing
-  return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE_INVALID_FORMAT);
+  return genFailureJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE, FAILURE_INVALID_FORMAT);
 }
 
 std::list<std::string>

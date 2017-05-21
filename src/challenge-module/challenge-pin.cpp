@@ -32,6 +32,7 @@ NDNCERT_REGISTER_CHALLENGE(ChallengePin, "PIN");
 
 const std::string ChallengePin::NEED_CODE = "need-code";
 const std::string ChallengePin::WRONG_CODE = "wrong-code";
+
 const std::string ChallengePin::FAILURE_TIMEOUT = "failure-timeout";
 const std::string ChallengePin::FAILURE_MAXRETRY = "failure-max-retry";
 
@@ -72,7 +73,7 @@ ChallengePin::processValidateInterest(const Interest& interest, CertificateReque
     // secret expires
     request.setStatus(FAILURE_TIMEOUT);
     request.setChallengeSecrets(JsonSection());
-    return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE_TIMEOUT);
+    return genFailureJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE, FAILURE_TIMEOUT);
   }
   else if (givenCode == std::get<1>(parsedSecret)) {
     request.setStatus(SUCCESS);
@@ -94,7 +95,7 @@ ChallengePin::processValidateInterest(const Interest& interest, CertificateReque
       // run out times
       request.setStatus(FAILURE_MAXRETRY);
       request.setChallengeSecrets(JsonSection());
-      return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE_MAXRETRY);
+      return genFailureJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE, FAILURE_MAXRETRY);
     }
   }
 }
@@ -114,7 +115,7 @@ ChallengePin::getValidateRequirements(const std::string& status)
     result.push_back("Please input your verification code:");
   }
   else if (status == WRONG_CODE) {
-    result.push_back("Incorrect PIN code, please input your verification code:");
+    result.push_back("Incorrect PIN code, please try again and input your verification code:");
   }
   return result;
 }

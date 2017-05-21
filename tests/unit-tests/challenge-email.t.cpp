@@ -30,7 +30,7 @@ BOOST_FIXTURE_TEST_SUITE(TestChallengeEmail, IdentityManagementV2Fixture)
 BOOST_AUTO_TEST_CASE(TestChallengeType)
 {
   ChallengeEmail challenge;
-  BOOST_CHECK_EQUAL(challenge.CHALLENGE_TYPE, "EMAIL");
+  BOOST_CHECK_EQUAL(challenge.CHALLENGE_TYPE, "Email");
 }
 
 BOOST_AUTO_TEST_CASE(ParseStoredSecret)
@@ -75,7 +75,7 @@ BOOST_AUTO_TEST_CASE(OnSelectInterestComingWithEmail)
   challenge.handleChallengeRequest(interest, request);
 
   BOOST_CHECK_EQUAL(request.getStatus(), ChallengeEmail::NEED_CODE);
-  BOOST_CHECK_EQUAL(request.getChallengeType(), "EMAIL");
+  BOOST_CHECK_EQUAL(request.getChallengeType(), "Email");
 }
 
 BOOST_AUTO_TEST_CASE(OnSelectInterestComingWithInvalidEmail)
@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE(OnSelectInterestComingWithInvalidEmail)
   challenge.handleChallengeRequest(interest, request);
 
   BOOST_CHECK_EQUAL(request.getStatus(), ChallengeEmail::FAILURE_INVALID_EMAIL);
-  BOOST_CHECK_EQUAL(request.getChallengeType(), "EMAIL");
+  BOOST_CHECK_EQUAL(request.getChallengeType(), "Email");
 }
 
 BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithCode)

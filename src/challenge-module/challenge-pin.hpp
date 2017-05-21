@@ -40,6 +40,8 @@ namespace ndncert {
  * There are four specific status defined in this challenge:
  *   NEED_CODE: When selection is made.
  *   WRONG_CODE: Get wrong verification code but still with secret lifetime and max retry times.
+ *
+ * Failure info when application fails:
  *   FAILURE_TIMEOUT: When secret is out-dated.
  *   FAILURE_MAXRETRY: When requester tries too many times.
  */
@@ -81,6 +83,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   static const std::string NEED_CODE;
   static const std::string WRONG_CODE;
+
   static const std::string FAILURE_TIMEOUT;
   static const std::string FAILURE_MAXRETRY;
 

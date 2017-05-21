@@ -21,6 +21,7 @@
 #include "client-module.hpp"
 #include "logging.hpp"
 #include "json-helper.hpp"
+#include "challenge-module.hpp"
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
 
@@ -391,8 +392,8 @@ bool
 ClientModule::checkStatus(const RequestState& state, const JsonSection& json,
                           const ErrorCallback& errorCallback)
 {
-  if (state.m_status == "error") {
-    errorCallback(json.get(JSON_ERROR_INFO, ""));
+  if (state.m_status == ChallengeModule::FAILURE) {
+    errorCallback(json.get(JSON_FAILURE_INFO, ""));
     return false;
   }
   if (state.m_requestId.empty() || state.m_status.empty()) {

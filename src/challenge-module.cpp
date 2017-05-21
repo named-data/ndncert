@@ -30,6 +30,7 @@ _LOG_INIT(ndncert.challenge-module);
 const std::string ChallengeModule::WAIT_SELECTION = "wait-selection";
 const std::string ChallengeModule::SUCCESS = "success";
 const std::string ChallengeModule::PENDING = "pending";
+const std::string ChallengeModule::FAILURE = "failure";
 
 ChallengeModule::ChallengeModule(const std::string& uniqueType)
   : CHALLENGE_TYPE(uniqueType)

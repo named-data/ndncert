@@ -69,11 +69,14 @@ genResponseChallengeJson(const std::string& requestId, const std::string& challe
 }
 
 const JsonSection
-genErrorJson(const std::string& errorInfo)
+genFailureJson(const std::string& requestId, const std::string& challengeType,
+               const std::string& status, const std::string& failureInfo)
 {
   JsonSection root;
-  root.put(JSON_STATUS, "error");
-  root.put(JSON_ERROR_INFO, errorInfo);
+  root.put(JSON_REQUEST_ID, requestId);
+  root.put(JSON_CHALLENGE_TYPE, challengeType);
+  root.put(JSON_STATUS, status);
+  root.put(JSON_FAILURE_INFO, failureInfo);
   return root;
 }
 
