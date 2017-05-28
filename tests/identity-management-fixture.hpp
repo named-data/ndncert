@@ -29,7 +29,6 @@
 #define NDNCERT_TESTS_IDENTITY_MANAGEMENT_FIXTURE_HPP
 
 #include "test-common.hpp"
-#include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/security/v2/key-chain.hpp>
 #include <ndn-cxx/security/v2/additional-description.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
@@ -37,41 +36,6 @@
 namespace ndn {
 namespace ndncert {
 namespace tests {
-
-/** \brief a fixture that cleans up KeyChain identities and certificate files upon destruction
- */
-class IdentityManagementFixture : public virtual BaseFixture
-{
-public:
-  IdentityManagementFixture();
-
-  /** \brief deletes created identities and saved certificate files
-   */
-  ~IdentityManagementFixture();
-
-  /** \brief add identity
-   *  \return whether successful
-   */
-  bool
-  addIdentity(const Name& identity,
-              const ndn::KeyParams& params = ndn::KeyChain::DEFAULT_KEY_PARAMS);
-
-  /** \brief save identity certificate to a file
-   *  \param identity identity name
-   *  \param filename file name, should be writable
-   *  \param wantAdd if true, add new identity when necessary
-   *  \return whether successful
-   */
-  bool
-  saveIdentityCertificate(const Name& identity, const std::string& filename, bool wantAdd = false);
-
-protected:
-  ndn::KeyChain m_keyChain;
-
-private:
-  std::vector<ndn::Name> m_identities;
-  std::vector<std::string> m_certFiles;
-};
 
 /**
  * @brief A test suite level fixture to help with identity management
@@ -126,14 +90,6 @@ protected:
   std::set<Name> m_identities;
   std::set<std::string> m_certFiles;
   security::v2::KeyChain m_keyChain;
-};
-
-/** \brief convenience base class for inheriting from both UnitTestTimeFixture
- *         and IdentityManagementFixture
- */
-class IdentityManagementTimeFixture : public UnitTestTimeFixture
-                                    , public IdentityManagementFixture
-{
 };
 
 /** \brief convenience base class for inheriting from both UnitTestTimeFixture

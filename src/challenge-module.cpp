@@ -20,7 +20,7 @@
 
 #include "challenge-module.hpp"
 #include "logging.hpp"
-#include <random>
+#include <ndn-cxx/util/random.hpp>
 
 namespace ndn {
 namespace ndncert {

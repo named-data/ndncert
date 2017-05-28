@@ -56,43 +56,44 @@ BOOST_AUTO_TEST_CASE(ProbeAndNew)
   client.getClientConf().m_caItems.push_back(item);
 
   int nInterest = 0;
-  face.onSendInterest.connect([&] (const Interest& interest) {
-      nInterest++;
-      if (nInterest == 1) {
-        // PROBE interest and return identifier
-        BOOST_CHECK_EQUAL(interest.getName().toUri(), "/site/CA/_PROBE/zhiyi%40cs.ucla.edu");
-        BOOST_CHECK_EQUAL(interest.getMustBeFresh(), 1);
+  auto processInterest = [&] (const Interest& interest) {
+    nInterest++;
+    if (nInterest == 1) {
+      // PROBE interest and return identifier
+      BOOST_CHECK_EQUAL(interest.getName().toUri(), "/site/CA/_PROBE/zhiyi%40cs.ucla.edu");
+      BOOST_CHECK_EQUAL(interest.getMustBeFresh(), 1);
 
-        auto data = make_shared<Data>();
-        data->setName(interest.getName());
-        JsonSection json = genResponseProbeJson(Name("/site/CA/ucla-cs-zhiyi"), Name(""));
-        std::stringstream ss;
-        boost::property_tree::write_json(ss, json);
-        Block dataContent = makeStringBlock(ndn::tlv::Content, ss.str());
-        data->setContent(dataContent);
-        m_keyChain.sign(*data, signingByCertificate(cert));
-        face.receive(*data);
-      }
-      else {
-        // NEW interest and return challenge list, request ID
-        BOOST_CHECK_EQUAL(interest.getName().getPrefix(3).toUri(), "/site/CA/_NEW");
-        BOOST_CHECK_EQUAL(interest.getName().size(), 6);
+      auto data = make_shared<Data>();
+      data->setName(interest.getName());
+      JsonSection json = genResponseProbeJson(Name("/site/CA/ucla-cs-zhiyi"), Name(""));
+      std::stringstream ss;
+      boost::property_tree::write_json(ss, json);
+      Block dataContent = makeStringBlock(ndn::tlv::Content, ss.str());
+      data->setContent(dataContent);
+      m_keyChain.sign(*data, signingByCertificate(cert));
+      face.receive(*data);
+    }
+    else {
+      // NEW interest and return challenge list, request ID
+      BOOST_CHECK_EQUAL(interest.getName().getPrefix(3).toUri(), "/site/CA/_NEW");
+      BOOST_CHECK_EQUAL(interest.getName().size(), 6);
 
-        auto data = make_shared<Data>();
-        data->setName(interest.getName());
-        std::list<std::string> challenges;
-        challenges.push_back("EMAIL");
-        challenges.push_back("PIN");
-        JsonSection json = genResponseNewJson("1234", ChallengeModule::WAIT_SELECTION, challenges);
-        std::stringstream ss;
-        boost::property_tree::write_json(ss, json);
-        Block dataContent = makeStringBlock(ndn::tlv::Content, ss.str());
-        data->setContent(dataContent);
-        m_keyChain.sign(*data, signingByCertificate(cert));
+      auto data = make_shared<Data>();
+      data->setName(interest.getName());
+      std::list<std::string> challenges;
+      challenges.push_back("EMAIL");
+      challenges.push_back("PIN");
+      JsonSection json = genResponseNewJson("1234", ChallengeModule::WAIT_SELECTION, challenges);
+      std::stringstream ss;
+      boost::property_tree::write_json(ss, json);
+      Block dataContent = makeStringBlock(ndn::tlv::Content, ss.str());
+      data->setContent(dataContent);
+      m_keyChain.sign(*data, signingByCertificate(cert));
 
-        face.receive(*data);
-      }
-    });
+      face.receive(*data);
+    }
+  };
+  face.onSendInterest.connect([=] (const Interest& interest) { m_io.post([=] { processInterest(interest); }); });
 
   int nCallback = 0;
   shared_ptr<RequestState> requestState = nullptr;
