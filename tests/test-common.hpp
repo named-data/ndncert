@@ -36,6 +36,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 
+#include <ndn-cxx/link.hpp>
 #include <ndn-cxx/name.hpp>
 #include <ndn-cxx/data.hpp>
 #include <ndn-cxx/lp/nack.hpp>
@@ -132,7 +133,7 @@ signData(shared_ptr<Data> data)
  *        If a real signature is desired, sign again with KeyChain.
  */
 shared_ptr<Link>
-makeLink(const Name& name, std::initializer_list<std::pair<uint32_t, Name>> delegations);
+makeLink(const Name& name, std::initializer_list<Delegation> delegations);
 
 /** \brief create a Nack
  *  \param name Interest name
@@ -174,7 +175,5 @@ digestFromFile(const boost::filesystem::path& filename);
 } // namespace tests
 } // namespace ndncert
 } // namespace ndn
-
-#include "identity-management-fixture.hpp"
 
 #endif // NDNCERT_TESTS_TEST_COMMON_HPP

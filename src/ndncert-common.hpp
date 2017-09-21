@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_COMMON_HPP
-#define NDNCERT_COMMON_HPP
+#ifndef NDNCERT_NDNCERT_COMMON_HPP
+#define NDNCERT_NDNCERT_COMMON_HPP
 
 #include "ndncert-config.hpp"
 
@@ -49,13 +49,13 @@
 #include <ndn-cxx/interest.hpp>
 #include <ndn-cxx/data.hpp>
 #include <ndn-cxx/name.hpp>
+#include <ndn-cxx/face.hpp>
+#include <ndn-cxx/link.hpp>
 #include <ndn-cxx/encoding/block.hpp>
 #include <ndn-cxx/lp/nack.hpp>
 #include <ndn-cxx/util/backports.hpp>
-#include <ndn-cxx/util/face-uri.hpp>
 #include <ndn-cxx/util/signal.hpp>
-#include <ndn-cxx/security/v2/key-chain.hpp>
-#include <ndn-cxx/security/validator.hpp>
+#include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/security/v2/certificate.hpp>
 
 #include <boost/algorithm/string.hpp>
@@ -94,4 +94,4 @@ using ndn::time::toUnixTimestamp;
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_COMMON_HPP
+#endif // NDNCERT_NDNCERT_COMMON_HPP

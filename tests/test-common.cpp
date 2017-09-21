@@ -27,7 +27,7 @@
 
 #include "test-common.hpp"
 
-#include <ndn-cxx/util/digest.hpp>
+#include <ndn-cxx/util/sha256.hpp>
 #include <ndn-cxx/security/signature-sha256-with-rsa.hpp>
 
 namespace ndn {
@@ -106,7 +106,7 @@ signData(Data& data)
 }
 
 shared_ptr<Link>
-makeLink(const Name& name, std::initializer_list<std::pair<uint32_t, Name>> delegations)
+makeLink(const Name& name, std::initializer_list<Delegation> delegations)
 {
   auto link = make_shared<Link>(name, delegations);
   signData(link);
