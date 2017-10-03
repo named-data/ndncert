@@ -99,7 +99,7 @@ IdentityManagementV2Fixture::addCertificate(const security::Key& key, const std:
   certificate.setFreshnessPeriod(time::hours(1));
 
   // set content
-  certificate.setContent(key.getPublicKey().get<uint8_t>(), key.getPublicKey().size());
+  certificate.setContent(key.getPublicKey().data(), key.getPublicKey().size());
 
   // set signature-info
   SignatureInfo info;

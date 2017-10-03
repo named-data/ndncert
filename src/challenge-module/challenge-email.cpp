@@ -65,7 +65,7 @@ ChallengeEmail::processSelectInterest(const Interest& interest, CertificateReque
   }
 
   std::string emailCode = generateSecretCode();
-  sendEmail(emailAddress, emailCode);
+  sendEmail(emailAddress, emailCode, request.getCaName().toUri());
 
   request.setStatus(NEED_CODE);
   request.setChallengeType(CHALLENGE_TYPE);
@@ -185,30 +185,17 @@ ChallengeEmail::isValidEmailAddress(const std::string& emailAddress)
 }
 
 void
-ChallengeEmail::sendEmail(const std::string& emailAddress, const std::string& secret) const
+ChallengeEmail::sendEmail(const std::string& emailAddress, const std::string& secret,
+                          const std::string& caName) const
 {
-  pid_t pid = fork();
-
-  if (pid < 0) {
-    _LOG_TRACE("Cannot fork before trying to call email sending script");
+  std::string command = m_sendEmailScript;
+  command += " \"" + emailAddress + "\" \"" + secret + "\" \"" + caName + "\"";
+  int result = system(command.c_str());
+  if (result == -1) {
+    _LOG_TRACE("EmailSending Script " + m_sendEmailScript + " fails.");
   }
-  else if (pid == 0) {
-    int ret;
-    std::vector<char> emailParam(emailAddress.begin(), emailAddress.end());
-    emailParam.push_back('\0');
-
-    std::vector<char> secretParam(secret.begin(), secret.end());
-    secretParam.push_back('\0');
-
-    std::vector<char> defaultParam(m_sendEmailScript.begin(), m_sendEmailScript.end());
-    defaultParam.push_back('\0');
-
-    char* argv[] = {&defaultParam[0], &emailParam[0], &secretParam[0], nullptr};
-    ret = execve(m_sendEmailScript.c_str(), argv, nullptr);
-
-    BOOST_THROW_EXCEPTION(Error("Email sending script went wrong, error code: " + std::to_string(ret)));
-  }
-
+  _LOG_TRACE("EmailSending Script " + m_sendEmailScript +
+             " was executed successfully with return value" + std::to_string(result) + ".");
   return;
 }
 

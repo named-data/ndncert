@@ -91,6 +91,15 @@ def build(bld):
 
     bld.install_files("${SYSCONFDIR}/ndncert", "client.conf.sample")
 
+    bld.install_files("${SYSCONFDIR}/ndncert", "ndncert-mail.conf.sample")
+
+    bld(features="subst",
+        source='ndncert-send-email-challenge.py',
+        target='ndncert-send-email-challenge',
+        install_path="${BINDIR}",
+        chmod=Utils.O755,
+       )
+
     bld(features = "subst",
         source='libndn-cert.pc.in',
         target='libndn-cert.pc',

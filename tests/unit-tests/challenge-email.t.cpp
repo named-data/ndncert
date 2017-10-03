@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "identity-management-fixture.hpp"
 #include "challenge-module/challenge-email.hpp"
+#include "identity-management-fixture.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -76,6 +76,23 @@ BOOST_AUTO_TEST_CASE(OnSelectInterestComingWithEmail)
 
   BOOST_CHECK_EQUAL(request.getStatus(), ChallengeEmail::NEED_CODE);
   BOOST_CHECK_EQUAL(request.getChallengeType(), "Email");
+
+  std::string line = "";
+  std::string delimiter = " ";
+  std::ifstream emailFile("tmp.txt");
+  if (emailFile.is_open())
+  {
+    getline(emailFile, line);
+    emailFile.close();
+  }
+  std::string recipientEmail = line.substr(0, line.find(delimiter));
+  std::string secret = line.substr(line.find(delimiter) + 1);
+
+  BOOST_CHECK_EQUAL(recipientEmail, "zhiyi@cs.ucla.edu");
+  auto stored_secret = request.getChallengeSecrets().get<std::string>(ChallengeEmail::JSON_CODE);
+  BOOST_CHECK_EQUAL(secret, stored_secret);
+
+  std::remove("tmp.txt");
 }
 
 BOOST_AUTO_TEST_CASE(OnSelectInterestComingWithInvalidEmail)

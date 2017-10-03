@@ -30,7 +30,10 @@ namespace ndncert {
 /**
  * @brief Provide Email based challenge
  *
+ * For challenge design
  * @sa https://github.com/named-data/ndncert/wiki/NDN-Certificate-Management-Protocol
+ * For deployment instructions:
+ * @sa https://github.com/named-data/ndncert/wiki/Deploy-Email-Challenge
  *
  * The main process of this challenge module is:
  *   1. Requester provides its email address.
@@ -49,7 +52,7 @@ namespace ndncert {
 class ChallengeEmail : public ChallengeModule
 {
 public:
-  ChallengeEmail(const std::string& scriptPath = "send-mail.sh",
+  ChallengeEmail(const std::string& scriptPath = "ndncert-send-email-challenge",
                  const size_t& maxAttemptTimes = 3,
                  const time::seconds secretLifetime = time::minutes(20));
 
@@ -79,7 +82,8 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   isValidEmailAddress(const std::string& emailAddress);
 
   void
-  sendEmail(const std::string& emailAddress, const std::string& secret) const;
+  sendEmail(const std::string& emailAddress, const std::string& secret,
+            const std::string& caName) const;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   static std::tuple<time::system_clock::TimePoint, std::string, int>
