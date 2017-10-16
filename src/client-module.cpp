@@ -94,7 +94,7 @@ ClientModule::sendNew(const ClientCaItem& ca, const Name& identityName,
   certRequest.setName(Name(state->m_key.getName()).append("cert-request").appendVersion());
   certRequest.setContentType(tlv::ContentType_Key);
   certRequest.setFreshnessPeriod(time::hours(24));
-  certRequest.setContent(state->m_key.getPublicKey().buf(), state->m_key.getPublicKey().size());
+  certRequest.setContent(state->m_key.getPublicKey().get<uint8_t>(), state->m_key.getPublicKey().size());
   SignatureInfo signatureInfo;
   signatureInfo.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
                                                            time::system_clock::now() + time::days(10)));
