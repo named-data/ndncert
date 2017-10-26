@@ -2,10 +2,29 @@
   "ca-list":
   [
     {
+        "ca-prefix": "/ndn",
+        "issuing-freshness": "720",
+        "validity-period": "360",
+        "ca-info": "NDN Testbed CA",
+
+        "probe": "Use the university/organization name as input",
+
+        "targeted-list": "Use your email address (edu preferred) as input",
+        "related-ca-list":
+        [
+          { "ca-prefix": "/ndn/edu/arizona" },
+          { "ca-prefix": "/ndn/edu/memphis" }
+        ],
+
+        "supported-challenges":
+        [
+            { "type": "PIN" }
+        ]
+    },
+    {
         "ca-prefix": "/example",
         "issuing-freshness": "720",
         "validity-period": "360",
-        "ca-anchor": "/example/KEY/%9A%E0%C6%C6%09%7C%92i/self/%FD%00%00%01Z%B0%2AJ%B4",
         "supported-challenges":
         [
             { "type": "PIN" }

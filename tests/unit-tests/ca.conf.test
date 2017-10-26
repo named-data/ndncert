@@ -2,10 +2,29 @@
   "ca-list":
   [
     {
+        "ca-prefix": "/ndn",
+        "issuing-freshness": "720",
+        "validity-period": "360",
+        "ca-info": "ndn testbed ca",
+
+        "probe": "input email address",
+
+        "targeted-list": "Use your email address (edu preferred) as input",
+        "related-ca-list":
+        [
+          { "ca-prefix": "/ndn/edu/arizona" },
+          { "ca-prefix": "/ndn/edu/memphis" }
+        ],
+
+        "supported-challenges":
+        [
+            { "type": "PIN" }
+        ]
+    },
+    {
         "ca-prefix": "/ndn/edu/ucla/cs/zhiyi",
         "issuing-freshness": "720",
         "validity-period": "360",
-        "ca-anchor": "/ndn/edu/ucla/cs/zhiyi/KEY/%9A%E0%C6%C6%09%7C%92i/self/%FD%00%00%01Z%B0%2AJ%B4",
         "supported-challenges":
         [
             { "type": "PIN" }
@@ -13,10 +32,9 @@
     },
     {
         "ca-prefix": "/ndn/site1",
-        "probe": "true",
+        "probe": "input email address",
         "issuing-freshness": "720",
         "validity-period": "360",
-        "ca-anchor": "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5",
         "supported-challenges":
         [
             { "type": "PIN" }

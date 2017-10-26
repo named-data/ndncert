@@ -22,6 +22,7 @@
 #define NDNCERT_CA_CONFIG_HPP
 
 #include "certificate-request.hpp"
+#include "client-config.hpp"
 #include <ndn-cxx/security/v2/certificate.hpp>
 
 namespace ndn {
@@ -30,16 +31,30 @@ namespace ndncert {
 class CaItem
 {
 public:
+  // basic info
   Name m_caName;
-  bool m_probe;
+
+  // related CAs
+  std::list<ClientCaItem> m_relatedCaList;
+
+  // essential config
   time::seconds m_freshnessPeriod;
   time::days m_validityPeriod;
   std::list<std::string> m_supportedChallenges;
-  Name m_anchor;
+
+  // optional parameters
+  std::string m_probe;
+  std::string m_targetedList;
+  std::string m_caInfo;
 };
 
 /**
  * @brief Represents a CA configuration instance
+ *
+ * For CA configuration format, please refer to:
+ *   https://github.com/named-data/ndncert/wiki/Ca-Configuration-Sample
+ *
+ * @note Changes made to CaConfig won't be written back to the config
  */
 class CaConfig
 {
@@ -59,16 +74,16 @@ public:
 
 private:
   void
-  parse();
+  parse(const JsonSection& configJson);
 
   std::list<std::string>
   parseChallengeList(const JsonSection& configSection);
 
+  std::list<ClientCaItem>
+  parseRelatedCaList(const JsonSection& section);
+
 public:
   std::list<CaItem> m_caItems;
-
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  JsonSection m_config;
 };
 
 } // namespace ndncert

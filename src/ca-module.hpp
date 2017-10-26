@@ -70,6 +70,7 @@ public:
     return m_storage;
   }
 
+  // @Deprecated This function should be set for each CA
   void
   setProbeHandler(const ProbeHandler& handler)
   {

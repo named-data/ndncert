@@ -18,8 +18,9 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "identity-management-fixture.hpp"
 #include "ca-config.hpp"
+
+#include "identity-management-fixture.hpp"
 #include <ndn-cxx/security/transform/base64-encode.hpp>
 #include <ndn-cxx/security/transform/buffer-source.hpp>
 #include <ndn-cxx/security/transform/stream-sink.hpp>
@@ -34,23 +35,45 @@ BOOST_AUTO_TEST_CASE(ReadConfigFileWithFileAnchor)
 {
   CaConfig config;
   config.load("tests/unit-tests/ca.conf.test");
-  auto itemA = config.m_caItems.front();
-  BOOST_CHECK_EQUAL(itemA.m_caName.toUri(), "/ndn/edu/ucla/cs/zhiyi");
-  BOOST_CHECK(!itemA.m_probe);
-  BOOST_CHECK_EQUAL(itemA.m_freshnessPeriod, time::seconds(720));
-  BOOST_CHECK_EQUAL(itemA.m_validityPeriod, time::days(360));
-  BOOST_CHECK_EQUAL(itemA.m_anchor.toUri(),
-                    "/ndn/edu/ucla/cs/zhiyi/KEY/%9A%E0%C6%C6%09%7C%92i/self/%FD%00%00%01Z%B0%2AJ%B4");
-  BOOST_CHECK_EQUAL(itemA.m_supportedChallenges.size(), 1);
 
-  auto itemB = config.m_caItems.back();
-  BOOST_CHECK_EQUAL(itemB.m_caName.toUri(), "/ndn/site1");
-  BOOST_CHECK(itemB.m_probe);
-  BOOST_CHECK_EQUAL(itemB.m_freshnessPeriod, time::seconds(720));
-  BOOST_CHECK_EQUAL(itemB.m_validityPeriod, time::days(360));
-  BOOST_CHECK_EQUAL(itemB.m_anchor.toUri(),
-                    "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
-  BOOST_CHECK_EQUAL(itemB.m_supportedChallenges.size(), 1);
+  int count = 0;
+  for (auto item : config.m_caItems) {
+    if (item.m_caName.toUri() == "/ndn") {
+      BOOST_CHECK_EQUAL(item.m_freshnessPeriod, time::seconds(720));
+      BOOST_CHECK_EQUAL(item.m_validityPeriod, time::days(360));
+      BOOST_CHECK_EQUAL(item.m_probe, "input email address");
+      BOOST_CHECK_EQUAL(item.m_caInfo, "ndn testbed ca");
+      BOOST_CHECK_EQUAL(item.m_targetedList,
+                        "Use your email address (edu preferred) as input");
+      BOOST_CHECK_EQUAL(item.m_relatedCaList.size(), 2);
+
+      // check related ca
+      auto relatedCaA = item.m_relatedCaList.front();
+      BOOST_CHECK_EQUAL(relatedCaA.m_caName.toUri(), "/ndn/edu/arizona");
+      auto relatedCaB = item.m_relatedCaList.back();
+      BOOST_CHECK_EQUAL(relatedCaB.m_caName.toUri(), "/ndn/edu/memphis");
+
+      BOOST_CHECK_EQUAL(count, 0);
+      count++;
+    }
+    else if (item.m_caName.toUri() == "/ndn/edu/ucla/cs/zhiyi") {
+      BOOST_CHECK_EQUAL(item.m_probe, "");
+      BOOST_CHECK_EQUAL(item.m_freshnessPeriod, time::seconds(720));
+      BOOST_CHECK_EQUAL(item.m_validityPeriod, time::days(360));
+      BOOST_CHECK_EQUAL(item.m_supportedChallenges.size(), 1);
+
+      BOOST_CHECK_EQUAL(count, 1);
+      count++;
+    }
+    else if (item.m_caName.toUri() == "/ndn/site1") {
+      BOOST_CHECK(item.m_probe != "");
+      BOOST_CHECK_EQUAL(item.m_freshnessPeriod, time::seconds(720));
+      BOOST_CHECK_EQUAL(item.m_validityPeriod, time::days(360));
+      BOOST_CHECK_EQUAL(item.m_supportedChallenges.size(), 1);
+
+      BOOST_CHECK_EQUAL(count, 2);
+    }
+  }
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TestCaConfig

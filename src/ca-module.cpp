@@ -55,30 +55,32 @@ CaModule::CaModule(Face& face, security::v2::KeyChain& keyChain,
     try {
       const RegisteredPrefixId* prefixId = m_face.registerPrefix(prefix,
         [&] (const Name& name) {
-          const InterestFilterId* filterId = m_face.setInterestFilter(Name(name).append("_PROBE"),
-                                                                      bind(&CaModule::handleProbe, this, _2, item));
-          m_interestFilterIds.push_back(filterId);
-
-          filterId = m_face.setInterestFilter(Name(name).append("_NEW"),
+          // NEW
+          const InterestFilterId* filterId = m_face.setInterestFilter(Name(name).append("_NEW"),
                                               bind(&CaModule::handleNew, this, _2, item));
           m_interestFilterIds.push_back(filterId);
-
+          // SELECT
           filterId = m_face.setInterestFilter(Name(name).append("_SELECT"),
                                               bind(&CaModule::handleSelect, this, _2, item));
           m_interestFilterIds.push_back(filterId);
-
+          // VALIDATE
           filterId = m_face.setInterestFilter(Name(name).append("_VALIDATE"),
                                               bind(&CaModule::handleValidate, this, _2, item));
           m_interestFilterIds.push_back(filterId);
-
+          // STATUS
           filterId = m_face.setInterestFilter(Name(name).append("_STATUS"),
                                               bind(&CaModule::handleStatus, this, _2, item));
           m_interestFilterIds.push_back(filterId);
-
+          // DOWNLOAD
           filterId = m_face.setInterestFilter(Name(name).append("_DOWNLOAD"),
                                               bind(&CaModule::handleDownload, this, _2, item));
           m_interestFilterIds.push_back(filterId);
-
+          // PROBE
+          if (item.m_probe != "") {
+            filterId = m_face.setInterestFilter(Name(name).append("_PROBE"),
+                                                bind(&CaModule::handleProbe, this, _2, item));
+            m_interestFilterIds.push_back(filterId);
+          }
           _LOG_TRACE("Prefix " << name << " got registered");
         },
         bind(&CaModule::onRegisterFailed, this, _2));
@@ -120,7 +122,7 @@ CaModule::handleProbe(const Interest& request, const CaItem& caItem)
   Data result;
   result.setName(request.getName());
   result.setContent(dataContentFromJson(genResponseProbeJson(identityName, "")));
-  m_keyChain.sign(result, signingByCertificate(caItem.m_anchor));
+  m_keyChain.sign(result, signingByIdentity(caItem.m_caName));
   m_face.put(result);
 
   _LOG_TRACE("Handle PROBE: generate identity " << identityName);
@@ -165,7 +167,7 @@ CaModule::handleNew(const Interest& request, const CaItem& caItem)
   result.setName(request.getName());
   result.setContent(dataContentFromJson(genResponseNewJson(requestId, certRequest.getStatus(),
                                                            caItem.m_supportedChallenges)));
-  m_keyChain.sign(result, signingByCertificate(caItem.m_anchor));
+  m_keyChain.sign(result, signingByIdentity(caItem.m_caName));
   m_face.put(result);
 
   m_requestUpdateCallback(certRequest);
@@ -219,7 +221,7 @@ CaModule::handleSelect(const Interest& request, const CaItem& caItem)
   Data result;
   result.setName(request.getName());
   result.setContent(dataContentFromJson(contentJson));
-  m_keyChain.sign(result, signingByCertificate(caItem.m_anchor));
+  m_keyChain.sign(result, signingByIdentity(caItem.m_caName));
   m_face.put(result);
 
   m_requestUpdateCallback(certRequest);
@@ -264,7 +266,7 @@ CaModule::handleValidate(const Interest& request, const CaItem& caItem)
   Data result;
   result.setName(request.getName());
   result.setContent(dataContentFromJson(contentJson));
-  m_keyChain.sign(result, signingByCertificate(caItem.m_anchor));
+  m_keyChain.sign(result, signingByIdentity(caItem.m_caName));
   m_face.put(result);
 
   m_requestUpdateCallback(certRequest);
@@ -301,7 +303,7 @@ CaModule::handleStatus(const Interest& request, const CaItem& caItem)
   Data result;
   result.setName(request.getName());
   result.setContent(dataContentFromJson(contentJson));
-  m_keyChain.sign(result, signingByCertificate(caItem.m_anchor));
+  m_keyChain.sign(result, signingByIdentity(caItem.m_caName));
   m_face.put(result);
 }
 
@@ -325,7 +327,7 @@ CaModule::handleDownload(const Interest& request, const CaItem& caItem)
   Data result;
   result.setName(request.getName());
   result.setContent(signedCert.wireEncode());
-  m_keyChain.sign(result, signingByCertificate(caItem.m_anchor));
+  m_keyChain.sign(result, signingByIdentity(caItem.m_caName));
   m_face.put(result);
 }
 
@@ -342,8 +344,8 @@ CaModule::issueCertificate(const CertificateRequest& certRequest, const CaItem& 
   security::ValidityPeriod period(time::system_clock::now(),
                                   time::system_clock::now() + caItem.m_validityPeriod);
   signatureInfo.setValidityPeriod(period);
-  security::SigningInfo signingInfo(security::SigningInfo::SIGNER_TYPE_CERT,
-                                    caItem.m_anchor, signatureInfo);
+  security::SigningInfo signingInfo(security::SigningInfo::SIGNER_TYPE_ID,
+                                    caItem.m_caName, signatureInfo);
   newCert.setFreshnessPeriod(caItem.m_freshnessPeriod);
 
   m_keyChain.sign(newCert, signingInfo);

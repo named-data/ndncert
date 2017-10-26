@@ -28,37 +28,51 @@ namespace ndncert {
 void
 CaConfig::load(const std::string& fileName)
 {
+  JsonSection configJson;
   try {
-    boost::property_tree::read_json(fileName, m_config);
+    boost::property_tree::read_json(fileName, configJson);
   }
   catch (const boost::property_tree::info_parser_error& error) {
     BOOST_THROW_EXCEPTION(Error("Failed to parse configuration file " + fileName +
                                 " " + error.message() + " line " + std::to_string(error.line())));
   }
 
-  if (m_config.begin() == m_config.end()) {
+  if (configJson.begin() == configJson.end()) {
     BOOST_THROW_EXCEPTION(Error("Error processing configuration file: " + fileName + " no data"));
   }
 
-  parse();
+  parse(configJson);
 }
 
 void
-CaConfig::parse()
+CaConfig::parse(const JsonSection& configJson)
 {
   m_caItems.clear();
-  auto caList = m_config.get_child("ca-list");
+  auto caList = configJson.get_child("ca-list");
   auto it = caList.begin();
   for (; it != caList.end(); it++) {
     CaItem item;
-    item.m_caName = Name(it->second.get<std::string>("ca-prefix"));
-    item.m_probe = it->second.get("probe", false);
-    item.m_freshnessPeriod = time::seconds(it->second.get<uint64_t>("issuing-freshness"));
-    item.m_validityPeriod = time::days(it->second.get<uint64_t>("validity-period"));
 
+    // essential info
+    item.m_caName = Name(it->second.get<std::string>("ca-prefix"));
+    item.m_freshnessPeriod = time::seconds(it->second.get("issuing-freshness", 720));
+    item.m_validityPeriod = time::days(it->second.get("validity-period", 360));
+
+    // optional info
+    item.m_probe = it->second.get("probe", "");
+    item.m_caInfo = it->second.get("ca-info", "");
+    item.m_targetedList = it->second.get("targeted-list", "");
+
+    // optional supported challenges
     auto challengeList = it->second.get_child("supported-challenges");
     item.m_supportedChallenges = parseChallengeList(challengeList);
-    item.m_anchor = Name(it->second.get<std::string>("ca-anchor"));
+
+    // related cas
+    auto relatedCaList = it->second.get_child_optional("related-ca-list");
+    if (relatedCaList) {
+      item.m_relatedCaList = parseRelatedCaList(*relatedCaList);
+    }
+
     m_caItems.push_back(item);
   }
 }
@@ -70,6 +84,19 @@ CaConfig::parseChallengeList(const JsonSection& section)
   auto it = section.begin();
   for (; it != section.end(); it++) {
     result.push_back(it->second.get<std::string>("type"));
+  }
+  return result;
+}
+
+std::list<ClientCaItem>
+CaConfig::parseRelatedCaList(const JsonSection& section)
+{
+  std::list<ClientCaItem> result;
+  auto it = section.begin();
+  for (; it != section.end(); it++) {
+    ClientCaItem item;
+    item.m_caName = Name(it->second.get<std::string>("ca-prefix"));
+    result.push_back(item);
   }
   return result;
 }

@@ -18,8 +18,9 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "database-fixture.hpp"
 #include "ca-module.hpp"
+
+#include "database-fixture.hpp"
 #include "client-module.hpp"
 #include "challenge-module.hpp"
 #include <ndn-cxx/util/dummy-client-face.hpp>
@@ -37,7 +38,7 @@ BOOST_AUTO_TEST_CASE(Initialization)
 {
   util::DummyClientFace face(m_io, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test");
-  BOOST_CHECK_EQUAL(ca.getCaConf().m_caItems.front().m_caName.toUri(), "/ndn/edu/ucla/cs/zhiyi");
+  BOOST_CHECK_EQUAL(ca.getCaConf().m_caItems.front().m_caName.toUri(), "/ndn");
   BOOST_CHECK_EQUAL(ca.getCaConf().m_caItems.back().m_caName.toUri(), "/ndn/site1");
 
   auto identity = addIdentity(Name("/ndn/site2"));
@@ -47,8 +48,8 @@ BOOST_AUTO_TEST_CASE(Initialization)
   BOOST_CHECK_EQUAL(ca.getCaStorage()->getCertificate("111").getIdentity(), Name("/ndn/site2"));
 
   advanceClocks(time::milliseconds(20), 60);
-  BOOST_CHECK_EQUAL(ca.m_registeredPrefixIds.size(), 2);
-  BOOST_CHECK_EQUAL(ca.m_interestFilterIds.size(), 12);
+  BOOST_CHECK_EQUAL(ca.m_registeredPrefixIds.size(), 3);
+  BOOST_CHECK_EQUAL(ca.m_interestFilterIds.size(), 17);
 }
 
 BOOST_AUTO_TEST_CASE(HandleProbe)
@@ -62,7 +63,6 @@ BOOST_AUTO_TEST_CASE(HandleProbe)
   ca.setProbeHandler([&] (const std::string& probeInfo) {
       return probeInfo;
     });
-  ca.getCaConf().m_caItems.back().m_anchor = cert.getName();
 
   advanceClocks(time::milliseconds(20), 60);
 
@@ -91,7 +91,6 @@ BOOST_AUTO_TEST_CASE(HandleProbeUsingDefaultHandler)
 
   util::DummyClientFace face(m_io, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test");
-  ca.getCaConf().m_caItems.back().m_anchor = cert.getName();
 
   advanceClocks(time::milliseconds(20), 60);
 
@@ -125,7 +124,6 @@ BOOST_AUTO_TEST_CASE(HandleNew)
   ca.setProbeHandler([&] (const std::string& probeInfo) {
       return probeInfo;
     });
-  ca.getCaConf().m_caItems.back().m_anchor = cert.getName();
   advanceClocks(time::milliseconds(20), 60);
 
   Name identityName("/ndn/site1");
