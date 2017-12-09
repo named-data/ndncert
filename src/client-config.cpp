@@ -27,52 +27,40 @@ namespace ndncert {
 void
 ClientConfig::load(const std::string& fileName)
 {
+  JsonSection config;
   try {
-    boost::property_tree::read_json(fileName, m_config);
+    boost::property_tree::read_json(fileName, config);
   }
   catch (const boost::property_tree::info_parser_error& error) {
     BOOST_THROW_EXCEPTION(Error("Failed to parse configuration file " + fileName +
                                 " " + error.message() + " line " + std::to_string(error.line())));
   }
 
-  if (m_config.begin() == m_config.end()) {
+  if (config.begin() == config.end()) {
     BOOST_THROW_EXCEPTION(Error("Error processing configuration file: " + fileName + " no data"));
   }
 
-  parse();
+  load(config);
 }
 
 void
-ClientConfig::parse()
+ClientConfig::load(const JsonSection& configSection)
 {
   m_caItems.clear();
-  auto caList = m_config.get_child("ca-list");
+  auto caList = configSection.get_child("ca-list");
   auto it = caList.begin();
   for (; it != caList.end(); it++) {
     ClientCaItem item;
     item.m_caName = Name(it->second.get<std::string>("ca-prefix"));
     item.m_caInfo = it->second.get<std::string>("ca-info");
     item.m_probe = it->second.get("probe", "");
+    item.m_targetedList = it->second.get("target-list", "");
 
     std::istringstream ss(it->second.get<std::string>("certificate"));
     item.m_anchor = *(io::load<security::v2::Certificate>(ss));
 
-    auto challengeList = it->second.get_child("supported-challenges");
-    item.m_supportedChallenges = parseChallengeList(challengeList);
-
     m_caItems.push_back(item);
   }
-}
-
-std::list<std::string>
-ClientConfig::parseChallengeList(const JsonSection& section)
-{
-  std::list<std::string> result;
-  auto it = section.begin();
-  for (; it != section.end(); it++) {
-    result.push_back(it->second.get<std::string>("type"));
-  }
-  return result;
 }
 
 void

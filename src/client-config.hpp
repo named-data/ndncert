@@ -27,16 +27,33 @@
 namespace ndn {
 namespace ndncert {
 
+/**
+ * @brief The configuration for a trusted CA from a requester's perspective
+ */
 class ClientCaItem
 {
 public:
+  // The identity name of the CA. Extracted from config field "ca-prefix"
   Name m_caName;
+
+  // TODO: remove the caInfo, probe, and targetedList. Put them into the cert
+  // A brief introduction to the CA. Extracted from config field "ca-info"
   std::string m_caInfo;
+  // An instruction for requesters to use _PROBE. Extracted from config field "probe"
   std::string m_probe;
-  std::list<std::string> m_supportedChallenges;
+  // An instruction for requesters to get a recommended CA. Extracted from config field "target-list"
+  std::string m_targetedList;
+
+  // CA's certificate
   security::v2::Certificate m_anchor;
 };
 
+/**
+ * @brief Represents Client configuration
+ *
+ * For Client configuration format, please refer to:
+ *   https://github.com/named-data/ndncert/wiki/Client-Configuration-Sample
+ */
 class ClientConfig
 {
 public:
@@ -51,17 +68,13 @@ public:
   load(const std::string& fileName);
 
   void
+  load(const JsonSection& configSection);
+
+  void
   addNewCaItem(const ClientCaItem& item);
 
   void
   removeCaItem(const Name& caName);
-
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  void
-  parse();
-
-  std::list<std::string>
-  parseChallengeList(const JsonSection& section);
 
 public:
   std::list<ClientCaItem> m_caItems;
