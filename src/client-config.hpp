@@ -76,11 +76,12 @@ public:
   void
   removeCaItem(const Name& caName);
 
+  static ClientCaItem
+  extractCaItem(const JsonSection& configSection);
+
 public:
   std::list<ClientCaItem> m_caItems;
-
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  JsonSection m_config;
+  std::string m_localNdncertAnchor;
 };
 
 } // namespace ndncert

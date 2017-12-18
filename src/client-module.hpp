@@ -29,6 +29,7 @@ namespace ndncert {
 
 class RequestState
 {
+
 public:
   ClientCaItem m_ca;
   security::Key m_key;
@@ -57,6 +58,8 @@ public:
     using std::runtime_error::runtime_error;
   };
 
+  using LocalhostListCallback = function<void (const ClientConfig&)>;
+  using ListCallback = function<void (const std::list<Name>&, const Name&, const Name&)>;
   using RequestCallback = function<void (const shared_ptr<RequestState>&)>;
   using ErrorCallback = function<void (const std::string&)>;
 
@@ -69,6 +72,37 @@ public:
   {
     return m_config;
   }
+
+  /**
+   * @brief Send /CA-prefix/CA/_DOWNLOAD/ANCHOR to get CA's latest anchor with the config
+   */
+  void
+  requestCaTrustAnchor(const Name& caName, const DataCallback& trustAnchorCallback,
+                       const ErrorCallback& errorCallback);
+
+  /**
+   * @brief Send /localhost/CA/List to query local available CAs
+   *
+   * For more information:
+   *   https://github.com/named-data/ndncert/wiki/Intra-Node-Design
+   */
+  void
+  requestLocalhostList(const LocalhostListCallback& listCallback, const ErrorCallback& errorCallback);
+
+  /**
+   * @brief Handle the list request response
+   */
+  void
+  handleLocalhostListResponse(const Interest& request, const Data& reply,
+                              const LocalhostListCallback& listCallback, const ErrorCallback& errorCallback);
+
+  void
+  requestList(const ClientCaItem& ca, const std::string& additionalInfo,
+              const ListCallback& listCallback, const ErrorCallback& errorCallback);
+
+  void
+  handleListResponse(const Interest& request, const Data& reply, const ClientCaItem& ca,
+                     const ListCallback& listCallback, const ErrorCallback& errorCallback);
 
   void
   sendProbe(const ClientCaItem& ca, const std::string& probeInfo,
@@ -136,8 +170,8 @@ public:
 
 protected:
   virtual void
-  onTimeout(const Interest& interest, int nRetriesLeft, const DataCallback& dataCallback,
-            const RequestCallback& requestCallback, const ErrorCallback& errorCallback);
+  onTimeout(const Interest& interest, int nRetriesLeft,
+            const DataCallback& dataCallback, const ErrorCallback& errorCallback);
 
   virtual void
   onNack(const Interest& interest, const lp::Nack& nack, const ErrorCallback& errorCallback);

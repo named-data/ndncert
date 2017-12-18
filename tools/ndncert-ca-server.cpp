@@ -29,6 +29,7 @@
 namespace ndn {
 namespace ndncert {
 
+
 int
 main(int argc, char* argv[])
 {
@@ -56,8 +57,23 @@ main(int argc, char* argv[])
   Face face;
   security::v2::KeyChain keyChain;
   CaModule ca(face, keyChain, configFilePath);
-  face.processEvents();
 
+  ca.setRecommendCaHandler(Name("/ndn"),
+    [] (const std::string& input, const std::list<Name>& list) -> std::tuple<Name, std::string> {
+      Name recommendedCa;
+      std::string identity;
+      for (auto caName : list) {
+        std::string univName = readString(caName.get(-1));
+        if (input.find(univName) != std::string::npos) {
+          recommendedCa = caName;
+          identity = input.substr(0, input.find("@"));
+          break;
+        }
+      }
+      return std::make_tuple(recommendedCa, identity);
+    });
+
+  face.processEvents();
   return 0;
 }
 

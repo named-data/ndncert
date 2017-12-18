@@ -21,7 +21,7 @@
 #include "ca-module.hpp"
 #include "challenge-module.hpp"
 #include "logging.hpp"
-#include <ndn-cxx/face.hpp>
+#include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/util/random.hpp>
@@ -40,48 +40,7 @@ CaModule::CaModule(Face& face, security::v2::KeyChain& keyChain,
   m_config.load(configPath);
   m_storage = CaStorage::createCaStorage(storageType);
 
-  // register prefix
-  for (const auto& item : m_config.m_caItems) {
-    Name prefix = item.m_caName;
-    prefix.append("CA");
-    try {
-      const RegisteredPrefixId* prefixId = m_face.registerPrefix(prefix,
-        [&] (const Name& name) {
-          // NEW
-          const InterestFilterId* filterId = m_face.setInterestFilter(Name(name).append("_NEW"),
-                                              bind(&CaModule::handleNew, this, _2, item));
-          m_interestFilterIds.push_back(filterId);
-          // SELECT
-          filterId = m_face.setInterestFilter(Name(name).append("_SELECT"),
-                                              bind(&CaModule::handleSelect, this, _2, item));
-          m_interestFilterIds.push_back(filterId);
-          // VALIDATE
-          filterId = m_face.setInterestFilter(Name(name).append("_VALIDATE"),
-                                              bind(&CaModule::handleValidate, this, _2, item));
-          m_interestFilterIds.push_back(filterId);
-          // STATUS
-          filterId = m_face.setInterestFilter(Name(name).append("_STATUS"),
-                                              bind(&CaModule::handleStatus, this, _2, item));
-          m_interestFilterIds.push_back(filterId);
-          // DOWNLOAD
-          filterId = m_face.setInterestFilter(Name(name).append("_DOWNLOAD"),
-                                              bind(&CaModule::handleDownload, this, _2, item));
-          m_interestFilterIds.push_back(filterId);
-          // PROBE
-          if (item.m_probe != "") {
-            filterId = m_face.setInterestFilter(Name(name).append("_PROBE"),
-                                                bind(&CaModule::handleProbe, this, _2, item));
-            m_interestFilterIds.push_back(filterId);
-          }
-          _LOG_TRACE("Prefix " << name << " got registered");
-        },
-        bind(&CaModule::onRegisterFailed, this, _2));
-      m_registeredPrefixIds.push_back(prefixId);
-    }
-    catch (const std::exception& e) {
-      _LOG_ERROR(e.what());
-    }
-  }
+  registerPrefix();
 }
 
 CaModule::~CaModule()
@@ -91,6 +50,63 @@ CaModule::~CaModule()
   }
   for (auto prefixId : m_registeredPrefixIds) {
     m_face.unregisterPrefix(prefixId, nullptr, nullptr);
+  }
+}
+
+void
+CaModule::registerPrefix()
+{
+  // register localhost list prefix
+  Name localProbePrefix("/localhost/CA/_LIST");
+  auto prefixId = m_face.setInterestFilter(InterestFilter(localProbePrefix),
+                                           bind(&CaModule::handleLocalhostList, this, _2),
+                                           bind(&CaModule::onRegisterFailed, this, _2));
+  m_registeredPrefixIds.push_back(prefixId);
+  _LOG_TRACE("Prefix " << localProbePrefix << " got registered");
+
+  // register prefixes for each CA
+  for (const auto& item : m_config.m_caItems) {
+    Name prefix = item.m_caName;
+    prefix.append("CA");
+
+    prefixId = m_face.registerPrefix(prefix,
+      [&] (const Name& name) {
+        // NEW
+        auto filterId = m_face.setInterestFilter(Name(name).append("_NEW"),
+                                                 bind(&CaModule::handleNew, this, _2, item));
+        m_interestFilterIds.push_back(filterId);
+        // SELECT
+        filterId = m_face.setInterestFilter(Name(name).append("_SELECT"),
+                                            bind(&CaModule::handleSelect, this, _2, item));
+        m_interestFilterIds.push_back(filterId);
+        // VALIDATE
+        filterId = m_face.setInterestFilter(Name(name).append("_VALIDATE"),
+                                            bind(&CaModule::handleValidate, this, _2, item));
+        m_interestFilterIds.push_back(filterId);
+        // STATUS
+        filterId = m_face.setInterestFilter(Name(name).append("_STATUS"),
+                                            bind(&CaModule::handleStatus, this, _2, item));
+        m_interestFilterIds.push_back(filterId);
+        // DOWNLOAD
+        filterId = m_face.setInterestFilter(Name(name).append("_DOWNLOAD"),
+                                            bind(&CaModule::handleDownload, this, _2, item));
+        m_interestFilterIds.push_back(filterId);
+        // PROBE
+        if (item.m_probe != "") {
+          filterId = m_face.setInterestFilter(Name(name).append("_PROBE"),
+                                              bind(&CaModule::handleProbe, this, _2, item));
+          m_interestFilterIds.push_back(filterId);
+        }
+        // LIST
+        if (item.m_relatedCaList.size() > 0) {
+          filterId = m_face.setInterestFilter(Name(name).append("_LIST"),
+                                              bind(&CaModule::handleList, this, _2, item));
+          m_interestFilterIds.push_back(filterId);
+        }
+        _LOG_TRACE("Prefix " << name << " got registered");
+      },
+      bind(&CaModule::onRegisterFailed, this, _2));
+    m_registeredPrefixIds.push_back(prefixId);
   }
 }
 
@@ -122,6 +138,123 @@ CaModule::setRequestUpdateCallback(const Name caName, const RequestUpdateCallbac
       entry.m_requestUpdateCallback = onUpateCallback;
     }
   }
+}
+
+void
+CaModule::handleLocalhostList(const Interest& request)
+{
+  _LOG_TRACE("Got Localhost LIST request");
+
+  JsonSection root;
+  JsonSection caListSection;
+
+  for (const auto& entry : m_config.m_caItems) {
+    JsonSection caItem;
+
+    const auto& pib = m_keyChain.getPib();
+    auto identity = pib.getIdentity(entry.m_caName);
+    auto cert = identity.getDefaultKey().getDefaultCertificate();
+
+    // ca-prefix
+    Name caName = entry.m_caName;
+    caName.append("CA");
+    caItem.put("ca-prefix", caName.toUri());
+
+    // ca-info
+    std::string caInfo;
+    if (entry.m_caInfo == "") {
+      caInfo = "Issued by " + cert.getSignature().getKeyLocator().getName().toUri();
+    }
+    else {
+      caInfo = entry.m_caInfo;
+    }
+    caItem.put("ca-info", caInfo);
+
+    // probe is always false for local client
+
+    // ca-target list
+    caItem.put("target-list", entry.m_targetedList);
+
+    // certificate
+    std::stringstream ss;
+    io::save(cert, ss);
+    caItem.put("certificate", ss.str());
+
+    caListSection.push_back(std::make_pair("", caItem));
+  }
+  root.add_child("ca-list", caListSection);
+
+  Data result;
+  Name dataName = request.getName();
+  dataName.appendTimestamp();
+  result.setName(dataName);
+  result.setContent(dataContentFromJson(root));
+  m_keyChain.sign(result, signingByIdentity(m_keyChain.getPib().getDefaultIdentity().getName()));
+  m_face.put(result);
+}
+
+void
+CaModule::handleList(const Interest& request, const CaItem& caItem)
+{
+  _LOG_TRACE("Got LIST request");
+
+  bool getRecommendation = false;
+  Name recommendedCaName;
+  std::string identityName;
+
+  // LIST naming convention: /CA-prefix/CA/_LIST/[optional info]
+  if (readString(request.getName().at(-1)) != "_LIST" && caItem.m_recommendCaHandler) {
+    const auto& additionInfo = readString(request.getName().at(-1));
+    try {
+      std::tie(recommendedCaName, identityName) = caItem.m_recommendCaHandler(additionInfo, caItem.m_relatedCaList);
+      getRecommendation = true;
+    }
+    catch (const std::exception& e) {
+      _LOG_TRACE("Cannot recommend CA for LIST request. Degrade to non-target list." << e.what());
+    }
+  }
+
+  JsonSection root;
+  JsonSection caListSection;
+  if (getRecommendation) {
+    // JSON format
+    // {
+    //   "recommended-ca": "/ndn/edu/ucla"
+    //   "recommended-identity": "something"
+    //   "trust-schema": "schema Data packet name"
+    // }
+    root.put("recommended-ca", recommendedCaName.toUri());
+    root.put("recommended-identity", identityName);
+  }
+  else {
+    // JSON format
+    // {
+    //   "ca-list": [
+    //     {"ca-prefix": "/ndn/edu/ucla"},
+    //     {"ca-prefix": "/ndn/edu/memphis"},
+    //     ...
+    //   ]
+    //   "trust-schema": "schema Data packet name"
+    // }
+    for (const auto& entry : caItem.m_relatedCaList) {
+      JsonSection caItem;
+      caItem.put("ca-prefix", entry.toUri());
+      caListSection.push_back(std::make_pair("", caItem));
+    }
+    root.add_child("ca-list", caListSection);
+  }
+
+  // TODO: add trust schema
+  std::string schemaDataName = "TODO: add trust schema";
+  root.put("trust-schema", schemaDataName);
+
+  Data result;
+  Name dataName = request.getName();
+  dataName.appendTimestamp();
+  result.setName(dataName);
+  result.setContent(dataContentFromJson(root));
+  m_keyChain.sign(result, signingByIdentity(caItem.m_caName));
+  m_face.put(result);
 }
 
 void
@@ -346,20 +479,56 @@ CaModule::handleDownload(const Interest& request, const CaItem& caItem)
   // DOWNLOAD Naming Convention: /CA-prefix/CA/_DOWNLOAD/{Request-ID JSON}
   _LOG_TRACE("Handle DOWNLOAD request");
 
-  JsonSection requestIdJson = jsonFromNameComponent(request.getName(), caItem.m_caName.size() + 2);
-  std::string requestId = requestIdJson.get(JSON_REQUEST_ID, "");
-  security::v2::Certificate signedCert;
-  try {
-    signedCert = m_storage->getCertificate(requestId);
-  }
-  catch (const std::exception& e) {
-    _LOG_ERROR(e.what());
-    return;
-  }
-
   Data result;
   result.setName(request.getName());
-  result.setContent(signedCert.wireEncode());
+  if (readString(request.getName().at(-1)) == "ANCHOR") {
+    JsonSection contentJson;
+
+    const auto& pib = m_keyChain.getPib();
+    auto identity = pib.getIdentity(caItem.m_caName);
+    auto cert = identity.getDefaultKey().getDefaultCertificate();
+
+    // ca-prefix
+    Name caName = caItem.m_caName;
+    caName.append("CA");
+    contentJson.put("ca-prefix", caName.toUri());
+
+    // ca-info
+    std::string caInfo;
+    if (caItem.m_caInfo == "") {
+      caInfo = "Issued by " + cert.getSignature().getKeyLocator().getName().toUri();
+    }
+    else {
+      caInfo = caItem.m_caInfo;
+    }
+    contentJson.put("ca-info", caInfo);
+
+    // probe
+    contentJson.put("probe", caItem.m_probe);
+
+    // ca-target list
+    contentJson.put("target-list", caItem.m_targetedList);
+
+    // certificate
+    std::stringstream ss;
+    io::save(cert, ss);
+    contentJson.put("certificate", ss.str());
+
+    result.setContent(dataContentFromJson(contentJson));
+  }
+  else {
+    JsonSection requestIdJson = jsonFromNameComponent(request.getName(), caItem.m_caName.size() + 2);
+    std::string requestId = requestIdJson.get(JSON_REQUEST_ID, "");
+    security::v2::Certificate signedCert;
+    try {
+      signedCert = m_storage->getCertificate(requestId);
+    }
+    catch (const std::exception& e) {
+      _LOG_ERROR(e.what());
+      return;
+    }
+    result.setContent(signedCert.wireEncode());
+  }
   m_keyChain.sign(result, signingByIdentity(caItem.m_caName));
   m_face.put(result);
 }

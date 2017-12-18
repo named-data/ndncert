@@ -23,6 +23,7 @@
 #include "database-fixture.hpp"
 #include "client-module.hpp"
 #include "challenge-module.hpp"
+
 #include <ndn-cxx/util/dummy-client-face.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/transform/public-key.hpp>
@@ -48,8 +49,8 @@ BOOST_AUTO_TEST_CASE(Initialization)
   BOOST_CHECK_EQUAL(ca.getCaStorage()->getCertificate("111").getIdentity(), Name("/ndn/site2"));
 
   advanceClocks(time::milliseconds(20), 60);
-  BOOST_CHECK_EQUAL(ca.m_registeredPrefixIds.size(), 3);
-  BOOST_CHECK_EQUAL(ca.m_interestFilterIds.size(), 17);
+  BOOST_CHECK_EQUAL(ca.m_registeredPrefixIds.size(), 4);
+  BOOST_CHECK_EQUAL(ca.m_interestFilterIds.size(), 18);
 }
 
 BOOST_AUTO_TEST_CASE(HandleProbe)
@@ -158,6 +159,95 @@ BOOST_AUTO_TEST_CASE(HandleNew)
   BOOST_CHECK_EQUAL(nClientCallback, 1);
   BOOST_CHECK_EQUAL(nCaData, 1);
   BOOST_CHECK_EQUAL(nClientInterest, 1);
+}
+
+BOOST_AUTO_TEST_CASE(HandleLocalhostList)
+{
+  auto identity0 = addIdentity(Name("/ndn"));
+  auto identity1 = addIdentity(Name("/ndn/edu/ucla/cs/zhiyi"));
+  auto identity2 = addIdentity(Name("/ndn/site1"));
+  m_keyChain.setDefaultIdentity(identity0);
+
+  util::DummyClientFace face(m_io, {true, true});
+  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test");
+
+  advanceClocks(time::milliseconds(20), 60);
+  Interest interest(Name("/localhost/CA/_LIST"));
+
+  int count = 0;
+  face.onSendData.connect([&] (const Data& response) {
+      count++;
+      JsonSection contentJson = ClientModule::getJsonFromData(response);
+      ClientConfig clientConf;
+      clientConf.load(contentJson);
+      BOOST_CHECK_EQUAL(clientConf.m_caItems.size(), 3);
+    });
+  face.receive(interest);
+
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK_EQUAL(count, 1);
+}
+
+BOOST_AUTO_TEST_CASE(HandleList)
+{
+  auto identity0 = addIdentity(Name("/ndn"));
+  util::DummyClientFace face(m_io, {true, true});
+  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test");
+
+  advanceClocks(time::milliseconds(20), 60);
+  Interest interest(Name("/ndn/CA/_LIST"));
+
+  int count = 0;
+  face.onSendData.connect([&] (const Data& response) {
+      count++;
+      JsonSection contentJson = ClientModule::getJsonFromData(response);
+      BOOST_CHECK_EQUAL(contentJson.get_child("ca-list").size(), 2);
+      std::string schemaDataName = contentJson.get<std::string>("trust-schema");
+      BOOST_CHECK_EQUAL(schemaDataName, "TODO: add trust schema");
+    });
+  face.receive(interest);
+
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK_EQUAL(count, 1);
+}
+
+BOOST_AUTO_TEST_CASE(HandleTargetList)
+{
+  auto identity0 = addIdentity(Name("/ndn"));
+  util::DummyClientFace face(m_io, {true, true});
+  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test");
+  ca.setRecommendCaHandler(Name("/ndn"),
+    [] (const std::string& input, const std::list<Name>& list) -> std::tuple<Name, std::string> {
+      Name recommendedCa;
+      std::string identity;
+      for (auto caName : list) {
+        std::string univName = readString(caName.get(-1));
+        if (input.find(univName) != std::string::npos) {
+          recommendedCa = caName;
+          identity = input.substr(0, input.find("@"));
+        }
+      }
+      return std::make_tuple(recommendedCa, identity);
+    });
+
+  advanceClocks(time::milliseconds(20), 60);
+  Interest interest(Name("/ndn/CA/_LIST/example@memphis.edu"));
+
+  int count = 0;
+  face.onSendData.connect([&] (const Data& response) {
+      count++;
+      JsonSection contentJson = ClientModule::getJsonFromData(response);
+      std::string recommendedCA = contentJson.get<std::string>("recommended-ca");
+      std::string recommendedIdentity = contentJson.get<std::string>("recommended-identity");
+      std::string schemaDataName = contentJson.get<std::string>("trust-schema");
+      BOOST_CHECK_EQUAL(recommendedCA, "/ndn/edu/memphis");
+      BOOST_CHECK_EQUAL(recommendedIdentity, "example");
+      BOOST_CHECK_EQUAL(schemaDataName, "TODO: add trust schema");
+    });
+  face.receive(interest);
+
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK_EQUAL(count, 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TestCaModule

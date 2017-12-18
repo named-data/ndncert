@@ -41,6 +41,8 @@ BOOST_AUTO_TEST_CASE(ReadConfigFile)
   BOOST_CHECK_EQUAL(item.m_targetedList, "Use your email address (edu preferred) as input");
   BOOST_CHECK_EQUAL(item.m_anchor.getName().toUri(),
                     "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
+
+  BOOST_CHECK_EQUAL(config.m_localNdncertAnchor, "/usr/local/etc/ndncert/anchor.key");
 }
 
 BOOST_AUTO_TEST_CASE(AddAndRemoveCaItem)
@@ -53,7 +55,7 @@ BOOST_AUTO_TEST_CASE(AddAndRemoveCaItem)
   item.m_caInfo = "test";
   item.m_probe = "test";
 
-  config.addNewCaItem(item);
+  config.m_caItems.push_back(item);
   BOOST_CHECK_EQUAL(config.m_caItems.size(), 3);
   auto lastItem = config.m_caItems.back();
   BOOST_CHECK_EQUAL(lastItem.m_caName.toUri(), "/test");

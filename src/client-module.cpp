@@ -22,6 +22,7 @@
 #include "logging.hpp"
 #include "json-helper.hpp"
 #include "challenge-module.hpp"
+#include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
 
@@ -38,17 +39,124 @@ ClientModule::ClientModule(Face& face, security::v2::KeyChain& keyChain, size_t 
 }
 
 void
+ClientModule::requestCaTrustAnchor(const Name& caName, const DataCallback& trustAnchorCallback,
+                                   const ErrorCallback& errorCallback)
+{
+  Name interestName = caName;
+  interestName.append("CA").append("_DOWNLOAD").append("ANCHOR");
+  Interest interest(interestName);
+  interest.setMustBeFresh(true);
+
+  m_face.expressInterest(interest, trustAnchorCallback,
+                         bind(&ClientModule::onNack, this, _1, _2, errorCallback),
+                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes,
+                              trustAnchorCallback, errorCallback));
+}
+
+void
+ClientModule::requestLocalhostList(const LocalhostListCallback& listCallback,
+                                   const ErrorCallback& errorCallback)
+{
+  Interest interest(Name("/localhost/CA/_LIST"));
+  interest.setMustBeFresh(true);
+  DataCallback dataCb = bind(&ClientModule::handleLocalhostListResponse,
+                             this, _1, _2, listCallback, errorCallback);
+  m_face.expressInterest(interest, dataCb,
+                         bind(&ClientModule::onNack, this, _1, _2, errorCallback),
+                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes,
+                              dataCb, errorCallback));
+}
+
+void
+ClientModule::handleLocalhostListResponse(const Interest& request, const Data& reply,
+                                          const LocalhostListCallback& listCallback,
+                                          const ErrorCallback& errorCallback)
+{
+  // TODO: use the file path to replace the cert
+  // const auto& pib = m_keyChain.getPib();
+  // auto identity = pib.getDefaultIdentity();
+  // auto key = identity.getDefaultKey();
+  // auto cert = key.getDefaultCertificate();
+
+  auto cert = *(io::load<security::v2::Certificate>(m_config.m_localNdncertAnchor));
+
+  if (!security::verifySignature(reply, cert)) {
+    errorCallback("Cannot verify data from localhost CA");
+    return;
+  };
+
+  JsonSection contentJson = getJsonFromData(reply);
+  ClientConfig clientConf;
+  clientConf.load(contentJson);
+  listCallback(clientConf);
+}
+
+void
+ClientModule::requestList(const ClientCaItem& ca, const std::string& additionalInfo,
+                          const ListCallback& listCallback, const ErrorCallback& errorCallback)
+{
+  Name requestName(ca.m_caName);
+  requestName.append("_LIST");
+  if (additionalInfo != "") {
+    requestName.append(additionalInfo);
+  }
+  Interest interest(requestName);
+  interest.setMustBeFresh(true);
+  DataCallback dataCb = bind(&ClientModule::handleListResponse,
+                             this, _1, _2, ca, listCallback, errorCallback);
+  m_face.expressInterest(interest, dataCb,
+                         bind(&ClientModule::onNack, this, _1, _2, errorCallback),
+                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes,
+                              dataCb, errorCallback));
+}
+
+void
+ClientModule::handleListResponse(const Interest& request, const Data& reply,
+                                 const ClientCaItem& ca,
+                                 const ListCallback& listCallback,
+                                 const ErrorCallback& errorCallback)
+{
+  if (!security::verifySignature(reply, ca.m_anchor)) {
+    errorCallback("Cannot verify data from " + ca.m_caName.toUri());
+    return;
+  };
+
+  std::list<Name> caList;
+  Name assignedName;
+
+  JsonSection contentJson = getJsonFromData(reply);
+  auto recommendedName = contentJson.get("recommended-identity", "");
+  if (recommendedName == "") {
+    // without recommendation
+    auto caListJson = contentJson.get_child("ca-list");
+    auto it = caListJson.begin();
+    for(; it != caListJson.end(); it++) {
+      caList.push_back(Name(it->second.get<std::string>("ca-prefix")));
+    }
+  }
+  else {
+    // with recommendation
+    Name caName(contentJson.get<std::string>("recommended-ca"));
+    caList.push_back(caName);
+    assignedName = caName.append(recommendedName);
+  }
+  Name schemaDataName(contentJson.get("trust-schema", ""));
+  listCallback(caList, assignedName, schemaDataName);
+}
+
+void
 ClientModule::sendProbe(const ClientCaItem& ca, const std::string& probeInfo,
                         const RequestCallback& requestCallback,
                         const ErrorCallback& errorCallback)
 {
   Interest interest(Name(ca.m_caName).append("_PROBE").append(probeInfo));
   interest.setMustBeFresh(true);
-  DataCallback dataCb = bind(&ClientModule::handleProbeResponse, this, _1, _2, ca, requestCallback, errorCallback);
+  DataCallback dataCb = bind(&ClientModule::handleProbeResponse,
+                             this, _1, _2, ca, requestCallback, errorCallback);
   m_face.expressInterest(interest, dataCb,
                          bind(&ClientModule::onNack, this, _1, _2, errorCallback),
-                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes, dataCb,
-                              requestCallback, errorCallback));
+                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes,
+                              dataCb, errorCallback));
 
   _LOG_TRACE("PROBE interest sent with Probe info " << probeInfo);
 }
@@ -104,11 +212,12 @@ ClientModule::sendNew(const ClientCaItem& ca, const Name& identityName,
   Interest interest(Name(ca.m_caName).append(Name("_NEW")).append(certRequest.wireEncode()));
   m_keyChain.sign(interest, signingByKey(state->m_key.getName()));
 
-  DataCallback dataCb = bind(&ClientModule::handleNewResponse, this, _1, _2, state, requestCallback, errorCallback);
+  DataCallback dataCb = bind(&ClientModule::handleNewResponse,
+                             this, _1, _2, state, requestCallback, errorCallback);
   m_face.expressInterest(interest, dataCb,
                          bind(&ClientModule::onNack, this, _1, _2, errorCallback),
-                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes, dataCb,
-                              requestCallback, errorCallback));
+                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes,
+                              dataCb, errorCallback));
 
   _LOG_TRACE("NEW interest sent with identity " << identityName);
 }
@@ -166,11 +275,12 @@ ClientModule::sendSelect(const shared_ptr<RequestState>& state,
   Interest interest(interestName);
   m_keyChain.sign(interest, signingByKey(state->m_key.getName()));
 
-  DataCallback dataCb = bind(&ClientModule::handleSelectResponse, this, _1, _2, state, requestCallback, errorCallback);
+  DataCallback dataCb = bind(&ClientModule::handleSelectResponse,
+                             this, _1, _2, state, requestCallback, errorCallback);
   m_face.expressInterest(interest, dataCb,
                          bind(&ClientModule::onNack, this, _1, _2, errorCallback),
-                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes, dataCb,
-                              requestCallback, errorCallback));
+                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes,
+                              dataCb, errorCallback));
 
    _LOG_TRACE("SELECT interest sent with challenge type " << challengeType);
 }
@@ -189,7 +299,8 @@ ClientModule::handleSelectResponse(const Interest& request,
 
   JsonSection json = getJsonFromData(reply);
 
-  _LOG_TRACE("SELECT response would change the status from " << state->m_status << " to " + json.get<std::string>(JSON_STATUS));
+  _LOG_TRACE("SELECT response would change the status from "
+             << state->m_status << " to " + json.get<std::string>(JSON_STATUS));
 
   state->m_status = json.get<std::string>(JSON_STATUS);
 
@@ -219,11 +330,12 @@ ClientModule::sendValidate(const shared_ptr<RequestState>& state,
   Interest interest(interestName);
   m_keyChain.sign(interest, signingByKey(state->m_key.getName()));
 
-  DataCallback dataCb = bind(&ClientModule::handleValidateResponse, this, _1, _2, state, requestCallback, errorCallback);
+  DataCallback dataCb = bind(&ClientModule::handleValidateResponse,
+                             this, _1, _2, state, requestCallback, errorCallback);
   m_face.expressInterest(interest, dataCb,
                          bind(&ClientModule::onNack, this, _1, _2, errorCallback),
-                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes, dataCb,
-                              requestCallback, errorCallback));
+                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes,
+                              dataCb, errorCallback));
 
   _LOG_TRACE("VALIDATE interest sent");
 }
@@ -267,11 +379,12 @@ ClientModule::requestStatus(const shared_ptr<RequestState>& state,
 
   m_keyChain.sign(interest, signingByKey(state->m_key.getName()));
 
-  DataCallback dataCb = bind(&ClientModule::handleStatusResponse, this, _1, _2, state, requestCallback, errorCallback);
+  DataCallback dataCb = bind(&ClientModule::handleStatusResponse,
+                             this, _1, _2, state, requestCallback, errorCallback);
   m_face.expressInterest(interest, dataCb,
                          bind(&ClientModule::onNack, this, _1, _2, errorCallback),
-                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes, dataCb,
-                              requestCallback, errorCallback));
+                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes,
+                              dataCb, errorCallback));
 
   _LOG_TRACE("STATUS interest sent");
 }
@@ -312,11 +425,12 @@ ClientModule::requestDownload(const shared_ptr<RequestState>& state,
   Interest interest(interestName);
   interest.setMustBeFresh(true);
 
-  DataCallback dataCb = bind(&ClientModule::handleDownloadResponse, this, _1, _2, state, requestCallback, errorCallback);
+  DataCallback dataCb = bind(&ClientModule::handleDownloadResponse,
+                             this, _1, _2, state, requestCallback, errorCallback);
   m_face.expressInterest(interest, dataCb,
                          bind(&ClientModule::onNack, this, _1, _2, errorCallback),
-                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes, dataCb,
-                              requestCallback, errorCallback));
+                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes,
+                              dataCb, errorCallback));
 
   _LOG_TRACE("DOWNLOAD interest sent");
 }
@@ -349,13 +463,13 @@ ClientModule::handleDownloadResponse(const Interest& request, const Data& reply,
 
 void
 ClientModule::onTimeout(const Interest& interest, int nRetriesLeft, const DataCallback& dataCallback,
-                        const RequestCallback& requestCallback, const ErrorCallback& errorCallback)
+                        const ErrorCallback& errorCallback)
 {
   if (nRetriesLeft > 0) {
     m_face.expressInterest(interest, dataCallback,
                            bind(&ClientModule::onNack, this, _1, _2, errorCallback),
-                           bind(&ClientModule::onTimeout, this, _1, nRetriesLeft - 1, dataCallback,
-                                requestCallback, errorCallback));
+                           bind(&ClientModule::onTimeout, this, _1, nRetriesLeft - 1,
+                                dataCallback, errorCallback));
   }
   else {
     errorCallback("Run out retries: still timeout");

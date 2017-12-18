@@ -50,23 +50,24 @@ ClientConfig::load(const JsonSection& configSection)
   auto caList = configSection.get_child("ca-list");
   auto it = caList.begin();
   for (; it != caList.end(); it++) {
-    ClientCaItem item;
-    item.m_caName = Name(it->second.get<std::string>("ca-prefix"));
-    item.m_caInfo = it->second.get<std::string>("ca-info");
-    item.m_probe = it->second.get("probe", "");
-    item.m_targetedList = it->second.get("target-list", "");
-
-    std::istringstream ss(it->second.get<std::string>("certificate"));
-    item.m_anchor = *(io::load<security::v2::Certificate>(ss));
-
-    m_caItems.push_back(item);
+    m_caItems.push_back(extractCaItem(it->second));
   }
+  m_localNdncertAnchor = configSection.get("local-ndncert-anchor", "");
 }
 
-void
-ClientConfig::addNewCaItem(const ClientCaItem& item)
+ClientCaItem
+ClientConfig::extractCaItem(const JsonSection& configSection)
 {
-  m_caItems.push_back(item);
+  ClientCaItem item;
+  item.m_caName = Name(configSection.get<std::string>("ca-prefix"));
+  item.m_caInfo = configSection.get<std::string>("ca-info");
+  item.m_probe = configSection.get("probe", "");
+  item.m_targetedList = configSection.get("target-list", "");
+
+  std::istringstream ss(configSection.get<std::string>("certificate"));
+  item.m_anchor = *(io::load<security::v2::Certificate>(ss));
+
+  return item;
 }
 
 void

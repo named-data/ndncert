@@ -67,8 +67,13 @@ public:
   void
   setRequestUpdateCallback(const Name caName, const RequestUpdateCallback& onUpateCallback);
 
-
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+  void
+  handleLocalhostList(const Interest& query);
+
+  void
+  handleList(const Interest& request, const CaItem& caItem);
+
   void
   handleProbe(const Interest& request, const CaItem& caItem);
 
@@ -101,6 +106,9 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 
   static Block
   dataContentFromJson(const JsonSection& jsonSection);
+
+  void
+  registerPrefix();
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   Face& m_face;
