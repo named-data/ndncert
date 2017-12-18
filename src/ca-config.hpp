@@ -35,7 +35,7 @@ public:
   Name m_caName;
 
   // related CAs
-  std::list<ClientCaItem> m_relatedCaList;
+  std::list<Name> m_relatedCaList;
 
   // essential config
   time::seconds m_freshnessPeriod;
@@ -79,7 +79,7 @@ private:
   std::list<std::string>
   parseChallengeList(const JsonSection& configSection);
 
-  std::list<ClientCaItem>
+  std::list<Name>
   parseRelatedCaList(const JsonSection& section);
 
 public:

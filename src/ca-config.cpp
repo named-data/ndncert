@@ -88,14 +88,13 @@ CaConfig::parseChallengeList(const JsonSection& section)
   return result;
 }
 
-std::list<ClientCaItem>
+std::list<Name>
 CaConfig::parseRelatedCaList(const JsonSection& section)
 {
-  std::list<ClientCaItem> result;
+  std::list<Name> result;
   auto it = section.begin();
   for (; it != section.end(); it++) {
-    ClientCaItem item;
-    item.m_caName = Name(it->second.get<std::string>("ca-prefix"));
+    Name item(it->second.get<std::string>("ca-prefix"));
     result.push_back(item);
   }
   return result;

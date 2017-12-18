@@ -49,9 +49,9 @@ BOOST_AUTO_TEST_CASE(ReadConfigFileWithFileAnchor)
 
       // check related ca
       auto relatedCaA = item.m_relatedCaList.front();
-      BOOST_CHECK_EQUAL(relatedCaA.m_caName.toUri(), "/ndn/edu/arizona");
+      BOOST_CHECK_EQUAL(relatedCaA.toUri(), "/ndn/edu/arizona");
       auto relatedCaB = item.m_relatedCaList.back();
-      BOOST_CHECK_EQUAL(relatedCaB.m_caName.toUri(), "/ndn/edu/memphis");
+      BOOST_CHECK_EQUAL(relatedCaB.toUri(), "/ndn/edu/memphis");
 
       BOOST_CHECK_EQUAL(count, 0);
       count++;
