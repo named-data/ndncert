@@ -56,10 +56,6 @@ main(int argc, char* argv[])
   Face face;
   security::v2::KeyChain keyChain;
   CaModule ca(face, keyChain, configFilePath);
-
-  ca.setProbeHandler([&] (const std::string& probeInfo) {
-      return probeInfo;
-    });
   face.processEvents();
 
   return 0;

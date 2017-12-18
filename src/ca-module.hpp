@@ -40,18 +40,6 @@ public:
     using std::runtime_error::runtime_error;
   };
 
-  /**
-   * @brief The function should be able to convert a probe info string to an identity name
-   *
-   * The function should throw exceptions when there is an unexpected probe info.
-   */
-  using ProbeHandler = function<std::string (const std::string&)>;
-
-  /**
-   * @brief The function would be invoked whenever the certificate request gets update
-   */
-  using RequestUpdateCallback = function<void (const CertificateRequest&)>;
-
 public:
   CaModule(Face& face, security::v2::KeyChain& keyChain, const std::string& configPath,
            const std::string& storageType = "ca-storage-sqlite3");
@@ -70,18 +58,15 @@ public:
     return m_storage;
   }
 
-  // @Deprecated This function should be set for each CA
   void
-  setProbeHandler(const ProbeHandler& handler)
-  {
-    m_probeHandler = handler;
-  }
+  setProbeHandler(const Name caName, const ProbeHandler& handler);
 
   void
-  setRequestUpdateCallback(const RequestUpdateCallback& onUpateCallback)
-  {
-    m_requestUpdateCallback = onUpateCallback;
-  }
+  setRecommendCaHandler(const Name caName, const RecommendCaHandler& handler);
+
+  void
+  setRequestUpdateCallback(const Name caName, const RequestUpdateCallback& onUpateCallback);
+
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
@@ -123,8 +108,6 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   unique_ptr<CaStorage> m_storage;
   security::v2::KeyChain& m_keyChain;
 
-  ProbeHandler m_probeHandler;
-  RequestUpdateCallback m_requestUpdateCallback;
   std::list<const RegisteredPrefixId*> m_registeredPrefixIds;
   std::list<const InterestFilterId*> m_interestFilterIds;
 };

@@ -60,8 +60,8 @@ BOOST_AUTO_TEST_CASE(HandleProbe)
 
   util::DummyClientFace face(m_io, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test");
-  ca.setProbeHandler([&] (const std::string& probeInfo) {
-      return probeInfo;
+  ca.setProbeHandler(Name("/ndn/site1"), [&] (const std::string& probeInfo) {
+      return probeInfo + "example";
     });
 
   advanceClocks(time::milliseconds(20), 60);
@@ -75,7 +75,7 @@ BOOST_AUTO_TEST_CASE(HandleProbe)
       count++;
       BOOST_CHECK(security::verifySignature(response, cert));
       JsonSection contentJson = ClientModule::getJsonFromData(response);
-      BOOST_CHECK_EQUAL(contentJson.get(JSON_IDNENTIFIER, ""), "/ndn/site1/zhiyi");
+      BOOST_CHECK_EQUAL(contentJson.get(JSON_IDNENTIFIER, ""), "/ndn/site1/zhiyiexample");
     });
   face.receive(interest);
 
@@ -121,9 +121,6 @@ BOOST_AUTO_TEST_CASE(HandleNew)
   util::DummyClientFace face2(m_io, {true, true});
 
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test");
-  ca.setProbeHandler([&] (const std::string& probeInfo) {
-      return probeInfo;
-    });
   advanceClocks(time::milliseconds(20), 60);
 
   Name identityName("/ndn/site1");

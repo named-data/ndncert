@@ -40,14 +40,6 @@ CaModule::CaModule(Face& face, security::v2::KeyChain& keyChain,
   m_config.load(configPath);
   m_storage = CaStorage::createCaStorage(storageType);
 
-  // set default handler and callback
-  m_probeHandler = [&] (const std::string& probeInfo) {
-    return probeInfo;
-  };
-  m_requestUpdateCallback = [&] (const CertificateRequest& CertRequest) {
-    // do nothing
-  };
-
   // register prefix
   for (const auto& item : m_config.m_caItems) {
     Name prefix = item.m_caName;
@@ -103,18 +95,53 @@ CaModule::~CaModule()
 }
 
 void
+CaModule::setProbeHandler(const Name caName, const ProbeHandler& handler)
+{
+  for (auto& entry : m_config.m_caItems) {
+    if (entry.m_caName == caName) {
+      entry.m_probeHandler = handler;
+    }
+  }
+}
+
+void
+CaModule::setRecommendCaHandler(const Name caName, const RecommendCaHandler& handler)
+{
+  for (auto& entry : m_config.m_caItems) {
+    if (entry.m_caName == caName) {
+      entry.m_recommendCaHandler = handler;
+    }
+  }
+}
+
+void
+CaModule::setRequestUpdateCallback(const Name caName, const RequestUpdateCallback& onUpateCallback)
+{
+  for (auto& entry : m_config.m_caItems) {
+    if (entry.m_caName == caName) {
+      entry.m_requestUpdateCallback = onUpateCallback;
+    }
+  }
+}
+
+void
 CaModule::handleProbe(const Interest& request, const CaItem& caItem)
 {
   // PROBE Naming Convention: /CA-prefix/CA/_PROBE/<Probe Information>
   _LOG_TRACE("Handle PROBE request");
 
   std::string identifier;
-  try {
-    identifier = m_probeHandler(readString(request.getName().at(caItem.m_caName.size() + 2)));
+  if (caItem.m_probeHandler) {
+    try {
+      identifier = caItem.m_probeHandler(readString(request.getName().at(caItem.m_caName.size() + 2)));
+    }
+    catch (const std::exception& e) {
+      _LOG_TRACE("Cannot generate identifier for PROBE request " << e.what());
+      return;
+    }
   }
-  catch (const std::exception& e) {
-    _LOG_TRACE("Cannot generate identifier for PROBE request " << e.what());
-    return;
+  else {
+    identifier = readString(request.getName().at(caItem.m_caName.size() + 2));
   }
   Name identityName = caItem.m_caName;
   identityName.append(identifier);
@@ -170,7 +197,9 @@ CaModule::handleNew(const Interest& request, const CaItem& caItem)
   m_keyChain.sign(result, signingByIdentity(caItem.m_caName));
   m_face.put(result);
 
-  m_requestUpdateCallback(certRequest);
+  if (caItem.m_requestUpdateCallback) {
+    caItem.m_requestUpdateCallback(certRequest);
+  }
 }
 
 void
@@ -224,7 +253,9 @@ CaModule::handleSelect(const Interest& request, const CaItem& caItem)
   m_keyChain.sign(result, signingByIdentity(caItem.m_caName));
   m_face.put(result);
 
-  m_requestUpdateCallback(certRequest);
+  if (caItem.m_requestUpdateCallback) {
+    caItem.m_requestUpdateCallback(certRequest);
+  }
 }
 
 void
@@ -269,7 +300,9 @@ CaModule::handleValidate(const Interest& request, const CaItem& caItem)
   m_keyChain.sign(result, signingByIdentity(caItem.m_caName));
   m_face.put(result);
 
-  m_requestUpdateCallback(certRequest);
+  if (caItem.m_requestUpdateCallback) {
+    caItem.m_requestUpdateCallback(certRequest);
+  }
 
   if (certRequest.getStatus() == ChallengeModule::SUCCESS) {
     issueCertificate(certRequest, caItem);

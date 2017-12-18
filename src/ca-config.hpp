@@ -28,6 +28,28 @@
 namespace ndn {
 namespace ndncert {
 
+/**
+ * @brief The function should be able to convert a probe info string to an identity name
+ *
+ * The function should throw exceptions when there is an unexpected input.
+ */
+using ProbeHandler = function<std::string/*identity name*/ (const std::string&/*requester input*/)>;
+
+/**
+ * @brief The function should recommend a CA plus an identity name from the given list
+ *        based on LIST additional info
+ *
+ * The function should throw exceptions when there is an unexpected input.
+ */
+using RecommendCaHandler = function<std::tuple<Name/*CA name*/, std::string/*identity*/>
+                                    (const std::string&/*requester input*/,
+                                     const std::list<Name>&/*related CA list*/)>;
+
+/**
+ * @brief The function would be invoked whenever the certificate request gets update
+ */
+using RequestUpdateCallback = function<void (const CertificateRequest&/*the latest request info*/)>;
+
 class CaItem
 {
 public:
@@ -46,6 +68,11 @@ public:
   std::string m_probe;
   std::string m_targetedList;
   std::string m_caInfo;
+
+  // callbacks
+  ProbeHandler m_probeHandler;
+  RecommendCaHandler m_recommendCaHandler;
+  RequestUpdateCallback m_requestUpdateCallback;
 };
 
 /**
