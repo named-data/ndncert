@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2018, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -46,9 +46,13 @@ using RecommendCaHandler = function<std::tuple<Name/*CA name*/, std::string/*ide
                                      const std::list<Name>&/*related CA list*/)>;
 
 /**
- * @brief The function would be invoked whenever the certificate request gets update
+ * @brief The function would be invoked whenever the certificate request status gets update
+ *
+ * The callback is used to notice the CA application or CA command line tool. The callback is
+ * fired whenever a request instance is created, challenge status is updated, and when certificate
+ * is issued.
  */
-using RequestUpdateCallback = function<void (const CertificateRequest&/*the latest request info*/)>;
+using StatusUpdateCallback = function<void (const CertificateRequest&/*the latest request info*/)>;
 
 class CaItem
 {
@@ -72,7 +76,7 @@ public:
   // callbacks
   ProbeHandler m_probeHandler;
   RecommendCaHandler m_recommendCaHandler;
-  RequestUpdateCallback m_requestUpdateCallback;
+  StatusUpdateCallback m_statusUpdateCallback;
 };
 
 /**

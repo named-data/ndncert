@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2018, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -58,14 +58,14 @@ public:
     return m_storage;
   }
 
-  void
+  bool
   setProbeHandler(const Name caName, const ProbeHandler& handler);
 
-  void
+  bool
   setRecommendCaHandler(const Name caName, const RecommendCaHandler& handler);
 
-  void
-  setRequestUpdateCallback(const Name caName, const RequestUpdateCallback& onUpateCallback);
+  bool
+  setStatusUpdateCallback(const Name caName, const StatusUpdateCallback& onUpateCallback);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
@@ -98,7 +98,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   CertificateRequest
   getCertificateRequest(const Interest& request, const Name& caName);
 
-  void
+  security::v2::Certificate
   issueCertificate(const CertificateRequest& certRequest, const CaItem& caItem);
 
   static JsonSection

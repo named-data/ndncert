@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2018, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -110,34 +110,40 @@ CaModule::registerPrefix()
   }
 }
 
-void
+bool
 CaModule::setProbeHandler(const Name caName, const ProbeHandler& handler)
 {
   for (auto& entry : m_config.m_caItems) {
     if (entry.m_caName == caName) {
       entry.m_probeHandler = handler;
+      return true;
     }
   }
+  return false;
 }
 
-void
+bool
 CaModule::setRecommendCaHandler(const Name caName, const RecommendCaHandler& handler)
 {
   for (auto& entry : m_config.m_caItems) {
     if (entry.m_caName == caName) {
       entry.m_recommendCaHandler = handler;
+      return true;
     }
   }
+  return false;
 }
 
-void
-CaModule::setRequestUpdateCallback(const Name caName, const RequestUpdateCallback& onUpateCallback)
+bool
+CaModule::setStatusUpdateCallback(const Name caName, const StatusUpdateCallback& onUpateCallback)
 {
   for (auto& entry : m_config.m_caItems) {
     if (entry.m_caName == caName) {
-      entry.m_requestUpdateCallback = onUpateCallback;
+      entry.m_statusUpdateCallback = onUpateCallback;
+      return true;
     }
   }
+  return false;
 }
 
 void
@@ -330,8 +336,8 @@ CaModule::handleNew(const Interest& request, const CaItem& caItem)
   m_keyChain.sign(result, signingByIdentity(caItem.m_caName));
   m_face.put(result);
 
-  if (caItem.m_requestUpdateCallback) {
-    caItem.m_requestUpdateCallback(certRequest);
+  if (caItem.m_statusUpdateCallback) {
+    caItem.m_statusUpdateCallback(certRequest);
   }
 }
 
@@ -386,8 +392,8 @@ CaModule::handleSelect(const Interest& request, const CaItem& caItem)
   m_keyChain.sign(result, signingByIdentity(caItem.m_caName));
   m_face.put(result);
 
-  if (caItem.m_requestUpdateCallback) {
-    caItem.m_requestUpdateCallback(certRequest);
+  if (caItem.m_statusUpdateCallback) {
+    caItem.m_statusUpdateCallback(certRequest);
   }
 }
 
@@ -433,12 +439,21 @@ CaModule::handleValidate(const Interest& request, const CaItem& caItem)
   m_keyChain.sign(result, signingByIdentity(caItem.m_caName));
   m_face.put(result);
 
-  if (caItem.m_requestUpdateCallback) {
-    caItem.m_requestUpdateCallback(certRequest);
-  }
-
   if (certRequest.getStatus() == ChallengeModule::SUCCESS) {
-    issueCertificate(certRequest, caItem);
+    auto issuedCert = issueCertificate(certRequest, caItem);
+    if (caItem.m_statusUpdateCallback) {
+      certRequest.setCert(issuedCert);
+      caItem.m_statusUpdateCallback(certRequest);
+    }
+    try {
+      m_storage->addCertificate(certRequest.getRequestId(), issuedCert);
+      m_storage->deleteRequest(certRequest.getRequestId());
+      _LOG_TRACE("New Certificate Issued " << issuedCert.getName());
+    }
+    catch (const std::exception& e) {
+      _LOG_ERROR("Cannot add issued cert and remove the request " << e.what());
+      return;
+    }
   }
 }
 
@@ -533,7 +548,7 @@ CaModule::handleDownload(const Interest& request, const CaItem& caItem)
   m_face.put(result);
 }
 
-void
+security::v2::Certificate
 CaModule::issueCertificate(const CertificateRequest& certRequest, const CaItem& caItem)
 {
   Name certName = certRequest.getCert().getKeyName();
@@ -552,15 +567,7 @@ CaModule::issueCertificate(const CertificateRequest& certRequest, const CaItem& 
 
   m_keyChain.sign(newCert, signingInfo);
   _LOG_TRACE("new cert got signed" << newCert);
-  try {
-    m_storage->addCertificate(certRequest.getRequestId(), newCert);
-    m_storage->deleteRequest(certRequest.getRequestId());
-    _LOG_TRACE("New Certificate Issued " << certName);
-  }
-  catch (const std::exception& e) {
-    _LOG_ERROR("Cannot add issued cert and remove the request " << e.what());
-    return;
-  }
+  return newCert;
 }
 
 CertificateRequest
