@@ -6,6 +6,9 @@ source "$JDIR"/util.sh
 
 set -x
 
+# Prepare environment
+rm -Rf ~/.ndn
+
 BOOST_VERSION=$(python -c "import sys; sys.path.append('build/c4che'); import _cache; print(_cache.BOOST_VERSION_NUMBER);")
 
 ut_log_args() {
@@ -32,5 +35,5 @@ ASAN_OPTIONS+=":strict_string_checks=true"
 ASAN_OPTIONS+=":strip_path_prefix=${PWD}/"
 export ASAN_OPTIONS
 
-# First run all tests as unprivileged user
+# Run unit tests
 ./build/unit-tests $(ut_log_args)

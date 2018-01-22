@@ -8,9 +8,6 @@ ndncert relies on third-party software and libraries, licensed under the followi
 - Boost libraries licensed under conditions of
   [Boost Software License 1.0](http://www.boost.org/users/license.html)
 
-- CryptoPP library is licensed under conditions of
-  [Boost Software License 1.0](http://www.boost.org/users/license.html)
-
 - SQLite is in [public domain](http://www.sqlite.org/copyright.html)
 
 - waf build system is licensed under conditions of
