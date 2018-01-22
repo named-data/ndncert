@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2018, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -64,8 +64,10 @@ public:
   using ErrorCallback = function<void (const std::string&)>;
 
 public:
-  explicit
   ClientModule(Face& face, security::v2::KeyChain& keyChain, size_t retryTimes = 2);
+
+  virtual
+  ~ClientModule();
 
   ClientConfig&
   getClientConf()
@@ -175,7 +177,6 @@ protected:
 
   virtual void
   onNack(const Interest& interest, const lp::Nack& nack, const ErrorCallback& errorCallback);
-
 
 protected:
   ClientConfig m_config;

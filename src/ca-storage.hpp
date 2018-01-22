@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2018, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -38,8 +38,10 @@ public:
     using std::runtime_error::runtime_error;
   };
 
-public:
-  // certificate request related
+  virtual
+  ~CaStorage();
+
+public: // certificate request related
   virtual CertificateRequest
   getRequest(const std::string& requestId) = 0;
 
@@ -58,7 +60,7 @@ public:
   virtual std::list<CertificateRequest>
   listAllRequests(const Name& caName) = 0;
 
-  // certificate related
+public: // certificate related
   virtual security::v2::Certificate
   getCertificate(const std::string& certId) = 0;
 
@@ -77,7 +79,7 @@ public:
   virtual std::list<security::v2::Certificate>
   listAllIssuedCertificates(const Name& caName) = 0;
 
-public:
+public: // factory
   template<class CaStorageType>
   static void
   registerCaStorage(const std::string& caStorageType = CaStorageType::STORAGE_TYPE)

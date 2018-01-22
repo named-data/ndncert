@@ -1,8 +1,8 @@
 # -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
 VERSION = "0.1.0"
 APPNAME = "ndncert"
-BUGREPORT = "http://redmine.named-data.net/projects/ndncert"
-GIT_TAG_PREFIX = "ndncert"
+BUGREPORT = "https://redmine.named-data.net/projects/ndncert"
+GIT_TAG_PREFIX = "ndncert-"
 
 from waflib import Logs, Utils, Context
 import os
@@ -11,11 +11,12 @@ def options(opt):
     opt.load(['compiler_cxx', 'gnu_dirs'])
     opt.load(['boost', 'default-compiler-flags', 'sqlite3',
               'coverage', 'sanitizers',
-              'doxygen', 'sphinx_build'], tooldir=['.waf-tools'])
+              'doxygen', 'sphinx_build'],
+             tooldir=['.waf-tools'])
 
-    syncopt = opt.add_option_group ("ndncert options")
-    syncopt.add_option('--with-tests', action='store_true', default=False, dest='with_tests',
-                       help='''build unit tests''')
+    certopt = opt.add_option_group("ndncert options")
+    certopt.add_option('--with-tests', action='store_true', default=False, dest='with_tests',
+                       help='''Build unit tests''')
 
 def configure(conf):
     conf.load(['compiler_cxx', 'gnu_dirs',
@@ -23,8 +24,7 @@ def configure(conf):
                'doxygen', 'sphinx_build'])
 
     if 'PKG_CONFIG_PATH' not in os.environ:
-       os.environ['PKG_CONFIG_PATH'] = Utils.subst_vars('${LIBDIR}/pkgconfig', conf.env)
-
+        os.environ['PKG_CONFIG_PATH'] = Utils.subst_vars('${LIBDIR}/pkgconfig', conf.env)
     conf.check_cfg(package='libndn-cxx', args=['--cflags', '--libs'],
                    uselib_store='NDN_CXX', mandatory=True)
 
@@ -40,10 +40,12 @@ def configure(conf):
     if conf.env.BOOST_VERSION_NUMBER < 105400:
         Logs.error("Minimum required boost version is 1.54.0")
         Logs.error("Please upgrade your distribution or install custom boost libraries" +
-                    " (https://redmine.named-data.net/projects/nfd/wiki/Boost_FAQ)")
+                   " (https://redmine.named-data.net/projects/nfd/wiki/Boost_FAQ)")
         return
 
-    # Loading "late" to prevent tests to be compiled with profiling flags
+    conf.check_compiler_flags()
+
+    # Loading "late" to prevent tests from being compiled with profiling flags
     conf.load('coverage')
 
     conf.load('sanitizers')
@@ -70,7 +72,6 @@ def build(bld):
     )
 
     bld.recurse('tools')
-
     bld.recurse('tests')
 
     bld.install_files(
@@ -88,9 +89,7 @@ def build(bld):
         )
 
     bld.install_files("${SYSCONFDIR}/ndncert", "ca.conf.sample")
-
     bld.install_files("${SYSCONFDIR}/ndncert", "client.conf.sample")
-
     bld.install_files("${SYSCONFDIR}/ndncert", "ndncert-mail.conf.sample")
 
     bld(features="subst",
