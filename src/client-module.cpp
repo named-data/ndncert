@@ -192,10 +192,17 @@ ClientModule::sendNew(const ClientCaItem& ca, const Name& identityName,
                       const RequestCallback& requestCallback,
                       const ErrorCallback& errorCallback)
 {
-  security::Identity identity = m_keyChain.createIdentity(identityName);
+  const auto& pib = m_keyChain.getPib();
 
   auto state = make_shared<RequestState>();
-  state->m_key = m_keyChain.createKey(identity);
+  try {
+    auto identity = pib.getIdentity(identityName);
+    state->m_key = m_keyChain.createKey(identity);
+  }
+  catch (const security::Pib::Error& e) {
+    auto identity = m_keyChain.createIdentity(identityName);
+    state->m_key = identity.getDefaultKey();
+  }
   state->m_ca = ca;
   state->m_isInstalled = false;
 

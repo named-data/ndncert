@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2018, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "identity-management-fixture.hpp"
 #include "client-module.hpp"
+#include "identity-management-fixture.hpp"
 #include "challenge-module.hpp"
 #include <ndn-cxx/util/dummy-client-face.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
@@ -46,7 +46,7 @@ BOOST_AUTO_TEST_CASE(ProbeAndNew)
   ClientModule client(face, m_keyChain);
   client.getClientConf().load("tests/unit-tests/client.conf.test");
 
-  auto identity = addIdentity(Name("/site/CA"));
+  auto identity = addIdentity(Name("/site"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE(ProbeAndNew)
 
       auto data = make_shared<Data>();
       data->setName(interest.getName());
-      JsonSection json = genResponseProbeJson(Name("/site/CA/ucla-cs-zhiyi"), Name(""));
+      JsonSection json = genResponseProbeJson(Name("/site/ucla-cs-zhiyi"), Name(""));
       std::stringstream ss;
       boost::property_tree::write_json(ss, json);
       Block dataContent = makeStringBlock(ndn::tlv::Content, ss.str());
@@ -110,7 +110,12 @@ BOOST_AUTO_TEST_CASE(ProbeAndNew)
   BOOST_CHECK_EQUAL(nInterest, 2);
   BOOST_CHECK_EQUAL(nCallback, 1);
   BOOST_CHECK_EQUAL(requestState->m_ca.m_caName.toUri(), "/site/CA");
-  BOOST_CHECK_EQUAL(requestState->m_key.getName().getPrefix(4).toUri(), "/site/CA/ucla-cs-zhiyi/KEY");
+  BOOST_CHECK_EQUAL(requestState->m_key.getName().getPrefix(3).toUri(), "/site/ucla-cs-zhiyi/KEY");
+
+  // make sure the client did not generate duplicated new keys
+  auto clientIdentity = m_keyChain.getPib().getIdentity(Name("/site/ucla-cs-zhiyi"));
+  const auto& clientKeys = clientIdentity.getKeys();
+  BOOST_CHECK_EQUAL(clientKeys.size(), 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TestClientModule
