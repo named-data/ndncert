@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2018, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -62,6 +62,13 @@ ClientConfig::extractCaItem(const JsonSection& configSection)
   item.m_caName = Name(configSection.get<std::string>("ca-prefix"));
   item.m_caInfo = configSection.get<std::string>("ca-info");
   item.m_probe = configSection.get("probe", "");
+  std::string listEnabledField = configSection.get("is-list-enabled", "false");
+  if (listEnabledField == "true") {
+    item.m_isListEnabled = true;
+  }
+  else {
+    item.m_isListEnabled = false;
+  }
   item.m_targetedList = configSection.get("target-list", "");
 
   std::istringstream ss(configSection.get<std::string>("certificate"));

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2018, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -52,7 +52,7 @@ public:
   downloadCb(const shared_ptr<RequestState>& state)
   {
     std::cerr << "Step " << nStep++
-              << "DONE! Certificate has already been installed to local keychain" << std::endl;
+              << "DONE! Certificate has already been installed to local keychain\n";
     return;
   }
 
@@ -76,7 +76,7 @@ public:
     }
     else {
       if (caItem.m_probe != "") {
-        std::cerr <<"Step " << nStep++ << ": Probe Requirement-" << caItem.m_probe << std::endl;
+        std::cerr << "Step " << nStep++ << ": Probe Requirement-" << caItem.m_probe << std::endl;
         std::string probeInfo;
         getline(std::cin, probeInfo);
         client.sendProbe(caItem, probeInfo,
@@ -84,7 +84,7 @@ public:
                          bind(&ClientTool::errorCb, this, _1));
       }
       else {
-        std::cerr <<"Step " << nStep++ << ": Please type in the identity name" << std::endl;
+        std::cerr << "Step " << nStep++ << ": Please type in the identity name\n";
         std::string nameComponent;
         getline(std::cin, nameComponent);
         Name identityName = caItem.m_caName.getPrefix(-1);
@@ -113,12 +113,12 @@ public:
       // without recommendation
       int count = 0;
       for (auto name : caList) {
-        std::cerr << "***************************************" << "\n"
+        std::cerr << "***************************************\n"
                   << "Index: " << count++ << "\n"
                   << "CA prefix:" << name << "\n"
-                  << "***************************************" << std::endl;
+                  << "***************************************\n";
       }
-      std::cerr << "Select an index to apply for a certificate."<< std::endl;
+      std::cerr << "Select an index to apply for a certificate\n";
 
       std::string option;
       getline(std::cin, option);
@@ -137,7 +137,7 @@ public:
   validateCb(const shared_ptr<RequestState>& state)
   {
     if (state->m_status == ChallengeModule::SUCCESS) {
-      std::cerr << "DONE! Certificate has already been issued" << std::endl;
+      std::cerr << "DONE! Certificate has already been issued \n";
       client.requestDownload(state,
                              bind(&ClientTool::downloadCb, this, _1),
                              bind(&ClientTool::errorCb, this, _1));
@@ -147,7 +147,7 @@ public:
     auto challenge = ChallengeModule::createChallengeModule(state->m_challengeType);
     auto requirementList = challenge->getRequirementForValidate(state->m_status);
 
-    std::cerr << "Step" << nStep++ << ": Please satisfy following instruction(s)" << std::endl;
+    std::cerr << "Step " << nStep++ << ": Please satisfy following instruction(s)\n";
     for (auto requirement : requirementList) {
       std::cerr << "\t" << requirement << std::endl;
     }
@@ -169,7 +169,7 @@ public:
     auto challenge = ChallengeModule::createChallengeModule(state->m_challengeType);
     auto requirementList = challenge->getRequirementForValidate(state->m_status);
 
-    std::cerr << "Step" << nStep++ << ": Please satisfy following instruction(s)" << std::endl;
+    std::cerr << "Step " << nStep++ << ": Please satisfy following instruction(s)" << std::endl;
     for (auto item : requirementList) {
       std::cerr << "\t" << item << std::endl;
     }
@@ -189,7 +189,7 @@ public:
   void
   newCb(const shared_ptr<RequestState>& state)
   {
-    std::cerr << "Step" << nStep++ << ": Please select one challenge from following types." << std::endl;
+    std::cerr << "Step " << nStep++ << ": Please select one challenge from following types\n";
     for (auto item : state->m_challengeList) {
       std::cerr << "\t" << item << std::endl;
     }
@@ -200,7 +200,7 @@ public:
     auto requirementList = challenge->getRequirementForSelect();
     std::list<std::string> paraList;
     if (requirementList.size() != 0) {
-      std::cerr << "Step" << nStep++ << ": Please satisfy following instruction(s)" << std::endl;
+      std::cerr << "Step " << nStep++ << ": Please satisfy following instruction(s)\n";
       for (auto item : requirementList) {
         std::cerr << "\t" << item << std::endl;
       }
@@ -228,10 +228,12 @@ main(int argc, char* argv[])
   bool isIntra = false;
   po::options_description description("General Usage\n ndncert-client [-h] [-i] [-f]\n");
   description.add_options()
-    ("help,h", "produce help message")
-    ("intra-node,i", "optional, if specified, switch on the intra-node mode")
-    ("config-file,f", po::value<std::string>(&configFilePath), "config file name")
-    ;
+    ("help,h",
+     "produce help message")
+    ("intra-node,i",
+     "optional, if specified, switch on the intra-node mode")
+    ("config-file,f", po::value<std::string>(&configFilePath),
+     "config file name");
   po::positional_options_description p;
 
   po::variables_map vm;
@@ -263,15 +265,15 @@ main(int argc, char* argv[])
         auto caList = config.m_caItems;
         int count = 0;
         for (auto item : caList) {
-          std::cerr << "***************************************" << "\n"
+          std::cerr << "***************************************\n"
                     << "Index: " << count++ << "\n"
                     << "CA prefix:" << item.m_caName << "\n"
                     << "Introduction: " << item.m_caInfo << "\n"
-                    << "***************************************" << std::endl;
+                    << "***************************************\n";
         }
         std::vector<ClientCaItem> caVector{std::begin(caList), std::end(caList)};
-        std::cerr << "Step" << nStep++
-                  << ": Please type in the CA namespace index that you want to apply" << std::endl;
+        std::cerr << "Step " << nStep++
+                  << ": Please type in the CA namespace index that you want to apply\n";
         std::string caIndexS;
         getline(std::cin, caIndexS);
         int caIndex = std::stoi(caIndexS);
@@ -280,7 +282,7 @@ main(int argc, char* argv[])
 
         auto targetCaItem = caVector[caIndex];
         if (targetCaItem.m_probe != "") {
-          std::cerr <<"Step" << nStep++ << ": Probe Requirement-" << targetCaItem.m_probe << std::endl;
+          std::cerr << "Step " << nStep++ << ": Probe Requirement-" << targetCaItem.m_probe << std::endl;
           std::string probeInfo;
           getline(std::cin, probeInfo);
           client.sendProbe(targetCaItem, probeInfo,
@@ -288,7 +290,7 @@ main(int argc, char* argv[])
                            bind(&ClientTool::errorCb, &tool, _1));
         }
         else {
-          std::cerr <<"Step" << nStep++ << ": Please type in the identity name" << std::endl;
+          std::cerr << "Step " << nStep++ << ": Please type in the identity name\n";
           std::string nameComponent;
           getline(std::cin, nameComponent);
           Name identityName = targetCaItem.m_caName.getPrefix(-1);
@@ -301,34 +303,58 @@ main(int argc, char* argv[])
       bind(&ClientTool::errorCb, &tool, _1));
   }
   else {
+    // Inter-node Application
+    bool listFirst = false;
     auto caList = client.getClientConf().m_caItems;
     int count = 0;
     for (auto item : caList) {
-      std::cerr << "***************************************" << "\n"
+      std::cerr << "***************************************\n"
                 << "Index: " << count++ << "\n"
                 << "CA prefix:" << item.m_caName << "\n"
                 << "Introduction: " << item.m_caInfo << "\n"
-                << "***************************************" << std::endl;
+                << "***************************************\n";
     }
     std::vector<ClientCaItem> caVector{std::begin(caList), std::end(caList)};
-    std::cerr << "Step " << nStep++ << ": Please type in the CA namespace index that you want to apply" << std::endl;
+    std::cerr << "Step " << nStep++ << ": Please type in the CA namespace index that you want to apply\n";
 
     std::string caIndexS;
     getline(std::cin, caIndexS);
-
     int caIndex = std::stoi(caIndexS);
-
     BOOST_ASSERT(caIndex <= count);
-
     auto targetCaItem = caVector[caIndex];
-    std::cerr << "You want a namespace with prefix (A) /ndn or (B) a sub-namespace of "
-              << targetCaItem.m_caName << "?" << std::endl;
-    std::string listOption;
-    getline(std::cin, listOption);
-    if (listOption == "A" || listOption == "a") {
-      // should directly send _PROBE or _NEW
+
+    if (targetCaItem.m_isListEnabled) {
+      std::cerr << "This CA provides several sub-namepace CAs \n"
+                << "Do you want to (A) get a certificate from " << targetCaItem.m_caName << "directly? \n"
+                << "Or (B) get a certificate from one of its sub-namespace CAs? \n"
+                << "Please type in your choice (A or B) \n";
+      std::string listOption;
+      getline(std::cin, listOption);
+      if (listOption == "A" || listOption == "a") {
+        listFirst = false;
+      }
+      else if (listOption == "B" || listOption == "b") {
+        listFirst = true;
+        std::string additionalInfo = "";
+        if (targetCaItem.m_targetedList != "") {
+          std::cerr << "Step " << nStep++
+                    << ": Enter nothing if you want to see all available sub-namespace CAs"
+                    << " or follow the instruction to get a recommended CA\n"
+                    << "\t" << targetCaItem.m_targetedList << std::endl;
+          getline(std::cin, additionalInfo);
+        }
+        client.requestList(targetCaItem, additionalInfo,
+                           bind(&ClientTool::listCb, &tool, _1, _2, _3, targetCaItem),
+                           bind(&ClientTool::errorCb, &tool, _1));
+      }
+      else {
+        std::cerr << "Your input is not an option." << std::endl;
+        return 1;
+      }
+    }
+    if (!listFirst) {
       if (targetCaItem.m_probe != "") {
-        std::cerr <<"Step " << nStep++ << ": Probe Requirement-" << targetCaItem.m_probe << std::endl;
+        std::cerr << "Step " << nStep++ << ": Probe Requirement-" << targetCaItem.m_probe << std::endl;
         std::string probeInfo;
         getline(std::cin, probeInfo);
         client.sendProbe(targetCaItem, probeInfo,
@@ -336,7 +362,7 @@ main(int argc, char* argv[])
                          bind(&ClientTool::errorCb, &tool, _1));
       }
       else {
-        std::cerr <<"Step " << nStep++ << ": Please type in the identity name" << std::endl;
+        std::cerr << "Step " << nStep++ << ": Please type in the identity name\n";
         std::string nameComponent;
         getline(std::cin, nameComponent);
         Name identityName = targetCaItem.m_caName.getPrefix(-1);
@@ -345,22 +371,6 @@ main(int argc, char* argv[])
                        bind(&ClientTool::newCb, &tool, _1),
                        bind(&ClientTool::errorCb, &tool, _1));
       }
-    }
-    else if (listOption == "B" || listOption == "b") {
-      std::string additionalInfo = "";
-      if (targetCaItem.m_targetedList != "") {
-        std::cerr <<"Step " << nStep++
-                  << ": Enter nothing if you want to see all available sub-namespace CAs"
-                  << "or follow the instruction to get a recommended CA\n"
-                  << "\t" << targetCaItem.m_targetedList << std::endl;
-        getline(std::cin, additionalInfo);
-      }
-      client.requestList(targetCaItem, additionalInfo,
-                         bind(&ClientTool::listCb, &tool, _1, _2, _3, targetCaItem),
-                         bind(&ClientTool::errorCb, &tool, _1));
-    }
-    else {
-      std::cerr << "Your input is not an option." << std::endl;
     }
   }
 
@@ -371,8 +381,7 @@ main(int argc, char* argv[])
 } // namespace ndncert
 } // namespace ndn
 
-int
-main(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
   return ndn::ndncert::main(argc, argv);
 }

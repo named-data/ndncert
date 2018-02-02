@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2018, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -39,6 +39,7 @@ BOOST_AUTO_TEST_CASE(ReadConfigFile)
   BOOST_CHECK_EQUAL(item.m_caInfo, "UCLA's ceritificate authority, located in BH4805.");
   BOOST_CHECK_EQUAL(item.m_probe, "Please use your email address to apply a namespace first. UCLA email is preferred.");
   BOOST_CHECK_EQUAL(item.m_targetedList, "Use your email address (edu preferred) as input");
+  BOOST_CHECK_EQUAL(item.m_isListEnabled, true);
   BOOST_CHECK_EQUAL(item.m_anchor.getName().toUri(),
                     "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
 
@@ -54,6 +55,7 @@ BOOST_AUTO_TEST_CASE(AddAndRemoveCaItem)
   item.m_caName = Name("/test");
   item.m_caInfo = "test";
   item.m_probe = "test";
+  item.m_isListEnabled = false;
 
   config.m_caItems.push_back(item);
   BOOST_CHECK_EQUAL(config.m_caItems.size(), 3);
