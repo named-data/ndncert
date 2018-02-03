@@ -69,6 +69,7 @@ def build(bld):
         use = 'NDN_CXX BOOST',
         includes = ['src'],
         export_includes=['src'],
+        install_path='${LIBDIR}'
     )
 
     bld.recurse('tools')
