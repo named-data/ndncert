@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2018, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "identity-management-fixture.hpp"
 #include "challenge-module/challenge-pin.hpp"
+#include "identity-management-fixture.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithCode)
   std::stringstream ss;
   boost::property_tree::write_json(ss, infoJson);
   std::string jsonString = ss.str();
-  Block jsonContent = makeStringBlock(ndn::tlv::NameComponent, ss.str());
+  Block jsonContent = makeStringBlock(ndn::tlv::GenericNameComponent, ss.str());
 
   Name interestName("/ndn/site1/CA");
   interestName.append("_VALIDATE").append("Fake-Request-ID").append("PIN").append(jsonContent);
@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithWrongCode)
   std::stringstream ss;
   boost::property_tree::write_json(ss, infoJson);
   std::string jsonString = ss.str();
-  Block jsonContent = makeStringBlock(ndn::tlv::NameComponent, ss.str());
+  Block jsonContent = makeStringBlock(ndn::tlv::GenericNameComponent, ss.str());
 
   Name interestName("/ndn/site1/CA");
   interestName.append("_VALIDATE").append("Fake-Request-ID").append("PIN").append(jsonContent);

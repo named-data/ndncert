@@ -124,7 +124,7 @@ ChallengeModule::genDownloadName(const Name& caName, const std::string& requestI
   json.put(JSON_REQUEST_ID, requestId);
   std::stringstream ss;
   boost::property_tree::write_json(ss, json);
-  Block jsonBlock = makeStringBlock(ndn::tlv::NameComponent, ss.str());
+  Block jsonBlock = makeStringBlock(ndn::tlv::GenericNameComponent, ss.str());
   Name name = caName;
   name.append("_DOWNLOAD").append(jsonBlock);
   return name;

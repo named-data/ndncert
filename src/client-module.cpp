@@ -508,7 +508,7 @@ ClientModule::nameBlockFromJson(const JsonSection& json)
 {
   std::stringstream ss;
   boost::property_tree::write_json(ss, json);
-  return makeStringBlock(ndn::tlv::NameComponent, ss.str());
+  return makeStringBlock(ndn::tlv::GenericNameComponent, ss.str());
 }
 
 bool

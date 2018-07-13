@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2018, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE(OnSelectInterestComingWithEmail)
   emailJson.put(ChallengeEmail::JSON_EMAIL, "zhiyi@cs.ucla.edu");
   std::stringstream ss;
   boost::property_tree::write_json(ss, emailJson);
-  Block jsonContent = makeStringBlock(ndn::tlv::NameComponent, ss.str());
+  Block jsonContent = makeStringBlock(ndn::tlv::GenericNameComponent, ss.str());
 
   Name interestName("/ndn/site1/CA");
   interestName.append("_SELECT").append("Fake-Request-ID").append("EMAIL").append(jsonContent);
@@ -106,7 +106,7 @@ BOOST_AUTO_TEST_CASE(OnSelectInterestComingWithInvalidEmail)
   emailJson.put(ChallengeEmail::JSON_EMAIL, "zhiyi@cs");
   std::stringstream ss;
   boost::property_tree::write_json(ss, emailJson);
-  Block jsonContent = makeStringBlock(ndn::tlv::NameComponent, ss.str());
+  Block jsonContent = makeStringBlock(ndn::tlv::GenericNameComponent, ss.str());
 
   Name interestName("/ndn/site1/CA");
   interestName.append("_SELECT").append("Fake-Request-ID").append("EMAIL").append(jsonContent);
@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithCode)
   infoJson.put(ChallengeEmail::JSON_CODE, "4567");
   std::stringstream ss;
   boost::property_tree::write_json(ss, infoJson);
-  Block jsonContent = makeStringBlock(ndn::tlv::NameComponent, ss.str());
+  Block jsonContent = makeStringBlock(ndn::tlv::GenericNameComponent, ss.str());
 
   Name interestName("/ndn/site1/CA");
   interestName.append("_VALIDATE").append("Fake-Request-ID").append("EMAIL").append(jsonContent);
@@ -174,7 +174,7 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithWrongCode)
   infoJson.put(ChallengeEmail::JSON_CODE, "1234");
   std::stringstream ss;
   boost::property_tree::write_json(ss, infoJson);
-  Block jsonContent = makeStringBlock(ndn::tlv::NameComponent, ss.str());
+  Block jsonContent = makeStringBlock(ndn::tlv::GenericNameComponent, ss.str());
 
   Name interestName("/ndn/site1/CA");
   interestName.append("_VALIDATE").append("Fake-Request-ID").append("EMAIL").append(jsonContent);
