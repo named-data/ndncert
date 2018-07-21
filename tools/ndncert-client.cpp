@@ -325,7 +325,7 @@ main(int argc, char* argv[])
 
     if (targetCaItem.m_isListEnabled) {
       std::cerr << "This CA provides several sub-namepace CAs \n"
-                << "Do you want to (A) get a certificate from " << targetCaItem.m_caName << "directly? \n"
+                << "Do you want to (A) get a certificate from " << targetCaItem.m_caName << " directly? \n"
                 << "Or (B) get a certificate from one of its sub-namespace CAs? \n"
                 << "Please type in your choice (A or B) \n";
       std::string listOption;
