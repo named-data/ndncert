@@ -1,10 +1,11 @@
 # -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
+
 VERSION = "0.1.0"
 APPNAME = "ndncert"
 BUGREPORT = "https://redmine.named-data.net/projects/ndncert"
 GIT_TAG_PREFIX = "ndncert-"
 
-from waflib import Logs, Utils, Context
+from waflib import Context, Utils
 import os
 
 def options(opt):
@@ -15,8 +16,8 @@ def options(opt):
              tooldir=['.waf-tools'])
 
     certopt = opt.add_option_group("ndncert options")
-    certopt.add_option('--with-tests', action='store_true', default=False, dest='with_tests',
-                       help='''Build unit tests''')
+    certopt.add_option('--with-tests', action='store_true', default=False,
+                       help='Build unit tests')
 
 def configure(conf):
     conf.load(['compiler_cxx', 'gnu_dirs',
@@ -37,11 +38,10 @@ def configure(conf):
         conf.define('HAVE_TESTS', 1)
 
     conf.check_boost(lib=USED_BOOST_LIBS, mt=True)
-    if conf.env.BOOST_VERSION_NUMBER < 105400:
-        Logs.error("Minimum required boost version is 1.54.0")
-        Logs.error("Please upgrade your distribution or install custom boost libraries" +
-                   " (https://redmine.named-data.net/projects/nfd/wiki/Boost_FAQ)")
-        return
+    if conf.env.BOOST_VERSION_NUMBER < 105800:
+        conf.fatal('Minimum required Boost version is 1.58.0\n'
+                   'Please upgrade your distribution or manually install a newer version of Boost'
+                   ' (https://redmine.named-data.net/projects/nfd/wiki/Boost_FAQ)')
 
     conf.check_compiler_flags()
 
@@ -60,51 +60,51 @@ def configure(conf):
     conf.write_config_header('src/ndncert-config.hpp')
 
 def build(bld):
-    core = bld(
-        target = "ndn-cert",
-        features=['cxx', 'cxxshlib'],
-        source =  bld.path.ant_glob(['src/**/*.cpp']),
-        vnum = VERSION,
-        cnum = VERSION,
-        use = 'NDN_CXX BOOST',
-        includes = ['src'],
-        export_includes=['src'],
-        install_path='${LIBDIR}'
-    )
+    bld.shlib(target='ndn-cert',
+              source=bld.path.ant_glob('src/**/*.cpp'),
+              vnum=VERSION,
+              cnum=VERSION,
+              use='NDN_CXX BOOST',
+              includes='src',
+              export_includes='src',
+              install_path='${LIBDIR}')
+
+    bld(features='subst',
+        source='libndn-cert.pc.in',
+        target='libndn-cert.pc',
+        install_path = '${LIBDIR}/pkgconfig',
+        PREFIX       = bld.env['PREFIX'],
+        INCLUDEDIR   = '${INCLUDEDIR}/ndncert',
+        VERSION      = VERSION)
 
     bld.recurse('tools')
     bld.recurse('tests')
 
     bld.install_files(
-        dest = "%s/ndncert" % bld.env['INCLUDEDIR'],
-        files = bld.path.ant_glob(['src/**/*.hpp', 'src/**/*.h']),
-        cwd = bld.path.find_dir("src"),
-        relative_trick = True,
-        )
+        dest='${INCLUDEDIR}/ndncert',
+        files=bld.path.ant_glob(['src/**/*.hpp', 'src/**/*.h']),
+        cwd=bld.path.find_dir('src'),
+        relative_trick=True)
 
     bld.install_files(
-        dest = "%s/ndncert" % bld.env['INCLUDEDIR'],
-        files = bld.path.get_bld().ant_glob(['src/**/*.hpp']),
-        cwd = bld.path.get_bld().find_dir("src"),
-        relative_trick = False,
-        )
+        dest='${INCLUDEDIR}/ndncert',
+        files=bld.path.get_bld().ant_glob(['src/**/*.hpp']),
+        cwd=bld.path.get_bld().find_dir('src'),
+        relative_trick=False)
 
     bld.install_files("${SYSCONFDIR}/ndncert", "ca.conf.sample")
     bld.install_files("${SYSCONFDIR}/ndncert", "client.conf.sample")
     bld.install_files("${SYSCONFDIR}/ndncert", "ndncert-mail.conf.sample")
 
-    bld(features="subst",
+    bld(features='subst',
+        name='ndncert-send-email-challenge',
         source='ndncert-send-email-challenge.py',
-        target='ndncert-send-email-challenge',
-        install_path="${BINDIR}",
-        chmod=Utils.O755,
-       )
+        target='bin/ndncert-send-email-challenge',
+        install_path='${BINDIR}',
+        chmod=Utils.O755)
 
-    bld(features = "subst",
-        source='libndn-cert.pc.in',
-        target='libndn-cert.pc',
-        install_path = '${LIBDIR}/pkgconfig',
-        PREFIX       = bld.env['PREFIX'],
-        INCLUDEDIR   = "%s/ndncert" % bld.env['INCLUDEDIR'],
-        VERSION      = VERSION,
-        )
+    if Utils.unversioned_sys_platform() == 'linux':
+        bld(features='subst',
+            name='ndncert-server.service',
+            source='systemd/ndncert-server.service.in',
+            target='systemd/ndncert-server.service')

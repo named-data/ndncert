@@ -1,0 +1,35 @@
+[Unit]
+Description=Certificate Management Service for NDN
+BindsTo=nfd.service
+After=nfd.service
+
+[Service]
+Environment=HOME=%S/ndn/ndncert
+EnvironmentFile=-@SYSCONFDIR@/default/ndncert
+ExecStart=@BINDIR@/ndncert-ca-server $FLAGS
+Restart=on-failure
+RestartPreventExitStatus=2
+User=ndncert
+
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+NoNewPrivileges=yes
+PrivateDevices=yes
+PrivateTmp=yes
+PrivateUsers=yes
+ProtectControlGroups=yes
+ProtectHome=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectSystem=full
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=yes
+RestrictRealtime=yes
+StateDirectory=ndn/ndncert
+SystemCallArchitectures=native
+SystemCallErrorNumber=EPERM
+SystemCallFilter=~@clock @cpu-emulation @debug @module @mount @obsolete @privileged @raw-io @reboot @setuid @swap
+
+[Install]
+WantedBy=multi-user.target
+WantedBy=nfd.service

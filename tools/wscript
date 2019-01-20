@@ -3,18 +3,20 @@
 top = '..'
 
 def build(bld):
-
-    bld(features='cxx cxxprogram',
+    bld.program(
+        name='ndncert-client',
         target='../bin/ndncert-client',
         source='ndncert-client.cpp',
         use='ndn-cert')
 
-    bld(features='cxx cxxprogram',
+    bld.program(
+        name='ndncert-ca-server',
         target='../bin/ndncert-ca-server',
         source='ndncert-ca-server.cpp',
         use='ndn-cert')
 
-    bld(features='cxx cxxprogram',
+    bld.program(
+        name='ndncert-ca-status',
         target='../bin/ndncert-ca-status',
         source='ndncert-ca-status.cpp',
         use='ndn-cert')
