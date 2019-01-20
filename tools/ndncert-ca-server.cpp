@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2018, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -21,60 +21,60 @@
 #include "ca-module.hpp"
 #include "challenge-module.hpp"
 
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <ndn-cxx/util/io.hpp>
-#include <boost/program_options/options_description.hpp>
-#include <boost/program_options/variables_map.hpp>
-#include <boost/program_options/parsers.hpp>
+#include <ndn-cxx/face.hpp>
+#include <ndn-cxx/security/v2/key-chain.hpp>
+
+#include <boost/asio/ip/tcp.hpp>
+#if BOOST_VERSION < 106700
 #include <boost/date_time/posix_time/posix_time_duration.hpp>
-#include <boost/asio.hpp>
+#endif
+#include <boost/program_options/options_description.hpp>
+#include <boost/program_options/parsers.hpp>
+#include <boost/program_options/variables_map.hpp>
+
+#include <iostream>
 
 namespace ndn {
 namespace ndncert {
 
-int
+static int
 main(int argc, char* argv[])
 {
-  std::string configFilePath = std::string(SYSCONFDIR) + "/ndncert/ca.conf";
-  std::string repoPrefix;
-  std::string repoCaIdentity;
-  std::string repoHost;
-  std::string repoPort;
-  bool isRepoOut = false;
+  std::string configFilePath(SYSCONFDIR "/ndncert/ca.conf");
+  std::string repoHost("localhost");
+  std::string repoPort("7376");
+  bool wantRepoOut = false;
 
   namespace po = boost::program_options;
-  po::options_description description("General Usage\n  ndncert-ca [-h] [-f] [-r] [-c]\n");
-  description.add_options()
-    ("help,h",
-     "produce help message")
-    ("config-file,f", po::value<std::string>(&configFilePath),
-     "config file name")
-    ("repo-output,r",
-     "when enabled, all issued certificates will be published to repo-ng")
-    ("repo-host,H", po::value<std::string>(&repoHost)->default_value("localhost"),
-     "repo-ng host")
-    ("repo-port,P", po::value<std::string>(&repoPort)->default_value("7376"),
-     "repo-ng port");
+  po::options_description optsDesc("Options");
+  optsDesc.add_options()
+    ("help,h",        "print this help message and exit")
+    ("config-file,c", po::value<std::string>(&configFilePath)->default_value(configFilePath),
+                      "path to configuration file")
+    ("repo-output,r", po::bool_switch(&wantRepoOut),
+                      "when enabled, all issued certificates will be published to repo-ng")
+    ("repo-host,H",   po::value<std::string>(&repoHost)->default_value(repoHost), "repo-ng host")
+    ("repo-port,P",   po::value<std::string>(&repoPort)->default_value(repoPort), "repo-ng port");
 
-  po::positional_options_description p;
   po::variables_map vm;
   try {
-    po::store(po::command_line_parser(argc, argv).options(description).positional(p).run(), vm);
+    po::store(po::parse_command_line(argc, argv, optsDesc), vm);
     po::notify(vm);
   }
-  catch (const std::exception& e) {
-    std::cerr << "ERROR: " << e.what()
-              << "\n" << description << std::endl;
-    return 1;
+  catch (const po::error& e) {
+    std::cerr << "ERROR: " << e.what() << std::endl;
+    return 2;
   }
+  catch (const boost::bad_any_cast& e) {
+    std::cerr << "ERROR: " << e.what() << std::endl;
+    return 2;
+  }
+
   if (vm.count("help") != 0) {
-    std::cerr << description << std::endl;
+    std::cout << "Usage: " << argv[0] << " [options]\n"
+              << "\n"
+              << optsDesc;
     return 0;
-  }
-  if (vm.count("repo-ng-output") != 0) {
-    isRepoOut = true;
   }
 
   Face face;
@@ -96,15 +96,13 @@ main(int argc, char* argv[])
       return std::make_tuple(recommendedCa, identity);
     });
 
-  if (isRepoOut) {
-    auto config = ca.getCaConf();
-    for (const auto& caItem : config.m_caItems) {
+  if (wantRepoOut) {
+    for (const auto& caItem : ca.getCaConf().m_caItems) {
       ca.setStatusUpdateCallback(caItem.m_caName,
         [&] (const CertificateRequest& request) {
           if (request.getStatus() == ChallengeModule::SUCCESS) {
             auto issuedCert = request.getCert();
-            using namespace boost::asio::ip;
-            tcp::iostream requestStream;
+            boost::asio::ip::tcp::iostream requestStream;
 #if BOOST_VERSION >= 106700
             requestStream.expires_after(std::chrono::seconds(3));
 #else
@@ -113,14 +111,13 @@ main(int argc, char* argv[])
             requestStream.connect(repoHost, repoPort);
             if (!requestStream) {
               std::cerr << "ERROR: Cannot publish certificate to repo-ng"
-                        << " (" << requestStream.error().message() << ")"
-                        << std::endl;
+                        << " (" << requestStream.error().message() << ")" << std::endl;
               return;
             }
             requestStream.write(reinterpret_cast<const char*>(issuedCert.wireEncode().wire()),
                                 issuedCert.wireEncode().size());
           }
-        });
+      });
     }
   }
 
