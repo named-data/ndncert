@@ -12,3 +12,5 @@ ndncert authors
 The following is an inevitably incomplete list of MUCH-APPRECIATED CONTRIBUTORS,
 people who have reported bugs, submitted patches, and implemented new features
 in the library:
+
+* Davide Pesavento       <https://www.linkedin.com/in/davidepesavento>

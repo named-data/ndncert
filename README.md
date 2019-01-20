@@ -1,5 +1,6 @@
-NDN Certificate Management Protocol (NDNCERT)
-=============================================
+# NDN Certificate Management Protocol (NDNCERT)
+
+[![Build Status](https://travis-ci.org/named-data/ndncert.svg?branch=master)](https://travis-ci.org/named-data/ndncert)
 
 NDN certificate management protocol (NDNCERT) enables automatic certificate management in
 NDN. In Named Data Networking (NDN), every entity should have corresponding identity
@@ -15,4 +16,5 @@ This specification provides details and packet formats to request certificates, 
 certificates after one of the validation mechanism, and how the issued certificate is retrieved
 by the original requester.
 
-[See detail on our github wiki page.](https://github.com/named-data/ndncert/wiki/NDN-Certificate-Management-Protocol)
+See [our GitHub wiki](https://github.com/named-data/ndncert/wiki/NDN-Certificate-Management-Protocol)
+for more details.
