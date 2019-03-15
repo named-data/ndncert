@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014-2017, Regents of the University of California,
+ * Copyright (c) 2014-2019, Regents of the University of California,
  *                          Arizona Board of Regents,
  *                          Colorado State University,
  *                          University Pierre & Marie Curie, Sorbonne University,
@@ -34,13 +34,36 @@ namespace ndn {
 namespace ndncert {
 namespace tests {
 
-IdentityManagementV2Fixture::IdentityManagementV2Fixture()
+namespace v2 = security::v2;
+
+IdentityManagementBaseFixture::~IdentityManagementBaseFixture()
+{
+  boost::system::error_code ec;
+  for (const auto& certFile : m_certFiles) {
+    boost::filesystem::remove(certFile, ec); // ignore error
+  }
+}
+
+bool
+IdentityManagementBaseFixture::saveCertToFile(const Data& obj, const std::string& filename)
+{
+  m_certFiles.insert(filename);
+  try {
+    io::save(obj, filename);
+    return true;
+  }
+  catch (const io::Error&) {
+    return false;
+  }
+}
+
+IdentityManagementFixture::IdentityManagementFixture()
   : m_keyChain("pib-memory:", "tpm-memory:")
 {
 }
 
 security::Identity
-IdentityManagementV2Fixture::addIdentity(const Name& identityName, const KeyParams& params)
+IdentityManagementFixture::addIdentity(const Name& identityName, const KeyParams& params)
 {
   auto identity = m_keyChain.createIdentity(identityName, params);
   m_identities.insert(identityName);
@@ -48,8 +71,7 @@ IdentityManagementV2Fixture::addIdentity(const Name& identityName, const KeyPara
 }
 
 bool
-IdentityManagementV2Fixture::saveIdentityCertificate(const security::Identity& identity,
-                                                     const std::string& filename)
+IdentityManagementFixture::saveCertificate(const security::Identity& identity, const std::string& filename)
 {
   try {
     auto cert = identity.getDefaultKey().getDefaultCertificate();
@@ -61,20 +83,20 @@ IdentityManagementV2Fixture::saveIdentityCertificate(const security::Identity& i
 }
 
 security::Identity
-IdentityManagementV2Fixture::addSubCertificate(const Name& subIdentityName,
-                                               const security::Identity& issuer, const KeyParams& params)
+IdentityManagementFixture::addSubCertificate(const Name& subIdentityName,
+                                             const security::Identity& issuer, const KeyParams& params)
 {
   auto subIdentity = addIdentity(subIdentityName, params);
 
-  security::v2::Certificate request = subIdentity.getDefaultKey().getDefaultCertificate();
+  v2::Certificate request = subIdentity.getDefaultKey().getDefaultCertificate();
 
   request.setName(request.getKeyName().append("parent").appendVersion());
 
   SignatureInfo info;
-  info.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
-                                                  time::system_clock::now() + time::days(7300)));
+  auto now = time::system_clock::now();
+  info.setValidityPeriod(security::ValidityPeriod(now, now + 7300_days));
 
-  security::v2::AdditionalDescription description;
+  v2::AdditionalDescription description;
   description.set("type", "sub-certificate");
   info.appendTypeSpecificTlv(description.wireEncode());
 
@@ -84,43 +106,30 @@ IdentityManagementV2Fixture::addSubCertificate(const Name& subIdentityName,
   return subIdentity;
 }
 
-security::v2::Certificate
-IdentityManagementV2Fixture::addCertificate(const security::Key& key, const std::string& issuer)
+v2::Certificate
+IdentityManagementFixture::addCertificate(const security::Key& key, const std::string& issuer)
 {
   Name certificateName = key.getName();
   certificateName
     .append(issuer)
     .appendVersion();
-  security::v2::Certificate certificate;
+  v2::Certificate certificate;
   certificate.setName(certificateName);
 
   // set metainfo
   certificate.setContentType(tlv::ContentType_Key);
-  certificate.setFreshnessPeriod(time::hours(1));
+  certificate.setFreshnessPeriod(1_h);
 
   // set content
   certificate.setContent(key.getPublicKey().data(), key.getPublicKey().size());
 
   // set signature-info
   SignatureInfo info;
-  info.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
-                                                  time::system_clock::now() + time::days(10)));
+  auto now = time::system_clock::now();
+  info.setValidityPeriod(security::ValidityPeriod(now, now + 10_days));
 
   m_keyChain.sign(certificate, signingByKey(key).setSignatureInfo(info));
   return certificate;
-}
-
-bool
-IdentityManagementV2Fixture::saveCertToFile(const Data& obj, const std::string& filename)
-{
-  m_certFiles.insert(filename);
-  try {
-    io::save(obj, filename);
-    return true;
-  }
-  catch (const io::Error&) {
-    return false;
-  }
 }
 
 } // namespace tests

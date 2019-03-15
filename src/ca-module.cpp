@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2018, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -21,6 +21,7 @@
 #include "ca-module.hpp"
 #include "challenge-module.hpp"
 #include "logging.hpp"
+#include "crypto-support/enc-tlv.hpp"
 #include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
@@ -28,6 +29,8 @@
 
 namespace ndn {
 namespace ndncert {
+
+static const int IS_SUBNAME_MIN_OFFSET = 5;
 
 _LOG_INIT(ndncert.ca);
 
@@ -45,525 +48,336 @@ CaModule::CaModule(Face& face, security::v2::KeyChain& keyChain,
 
 CaModule::~CaModule()
 {
-  for (auto prefixId : m_interestFilterIds) {
-    m_face.unsetInterestFilter(prefixId);
+  for (auto handle : m_interestFilterHandles) {
+    handle.cancel();
   }
-  for (auto prefixId : m_registeredPrefixIds) {
-    m_face.unregisterPrefix(prefixId, nullptr, nullptr);
+  for (auto handle : m_registeredPrefixHandles) {
+    handle.unregister();
   }
 }
 
 void
 CaModule::registerPrefix()
 {
-  // register localhost list prefix
-  Name localProbePrefix("/localhost/CA/_LIST");
-  auto prefixId = m_face.setInterestFilter(InterestFilter(localProbePrefix),
-                                           bind(&CaModule::handleLocalhostList, this, _2),
+  // register localhop discovery prefix
+  Name localhopProbePrefix("/localhop/CA/PROBE/INFO");
+  auto prefixId = m_face.setInterestFilter(InterestFilter(localhopProbePrefix),
+                                           bind(&CaModule::onProbe, this, _2),
                                            bind(&CaModule::onRegisterFailed, this, _2));
-  m_registeredPrefixIds.push_back(prefixId);
-  _LOG_TRACE("Prefix " << localProbePrefix << " got registered");
+  m_registeredPrefixHandles.push_back(prefixId);
+  _LOG_TRACE("Prefix " << localhopProbePrefix << " got registered");
 
-  // register prefixes for each CA
-  for (const auto& item : m_config.m_caItems) {
-    Name prefix = item.m_caName;
-    prefix.append("CA");
+  // register prefixes
+  Name prefix = m_config.m_caName;
+  prefix.append("CA");
 
-    prefixId = m_face.registerPrefix(prefix,
-      [&] (const Name& name) {
-        // NEW
-        auto filterId = m_face.setInterestFilter(Name(name).append("_NEW"),
-                                                 bind(&CaModule::handleNew, this, _2, item));
-        m_interestFilterIds.push_back(filterId);
-        // SELECT
-        filterId = m_face.setInterestFilter(Name(name).append("_SELECT"),
-                                            bind(&CaModule::handleSelect, this, _2, item));
-        m_interestFilterIds.push_back(filterId);
-        // VALIDATE
-        filterId = m_face.setInterestFilter(Name(name).append("_VALIDATE"),
-                                            bind(&CaModule::handleValidate, this, _2, item));
-        m_interestFilterIds.push_back(filterId);
-        // STATUS
-        filterId = m_face.setInterestFilter(Name(name).append("_STATUS"),
-                                            bind(&CaModule::handleStatus, this, _2, item));
-        m_interestFilterIds.push_back(filterId);
-        // DOWNLOAD
-        filterId = m_face.setInterestFilter(Name(name).append("_DOWNLOAD"),
-                                            bind(&CaModule::handleDownload, this, _2, item));
-        m_interestFilterIds.push_back(filterId);
-        // PROBE
-        if (item.m_probe != "") {
-          filterId = m_face.setInterestFilter(Name(name).append("_PROBE"),
-                                              bind(&CaModule::handleProbe, this, _2, item));
-          m_interestFilterIds.push_back(filterId);
-        }
-        // LIST
-        if (item.m_relatedCaList.size() > 0) {
-          filterId = m_face.setInterestFilter(Name(name).append("_LIST"),
-                                              bind(&CaModule::handleList, this, _2, item));
-          m_interestFilterIds.push_back(filterId);
-        }
-        _LOG_TRACE("Prefix " << name << " got registered");
-      },
-      bind(&CaModule::onRegisterFailed, this, _2));
-    m_registeredPrefixIds.push_back(prefixId);
-  }
+  prefixId = m_face.registerPrefix(prefix,
+    [&] (const Name& name) {
+      // register PROBE prefix
+      auto filterId = m_face.setInterestFilter(Name(name).append("_PROBE"),
+                                               bind(&CaModule::onProbe, this, _2));
+      m_interestFilterHandles.push_back(filterId);
+
+      // register NEW prefix
+      filterId = m_face.setInterestFilter(Name(name).append("_NEW"),
+                                          bind(&CaModule::onNew, this, _2));
+      m_interestFilterHandles.push_back(filterId);
+
+      // register SELECT prefix
+      filterId = m_face.setInterestFilter(Name(name).append("_CHALLENGE"),
+                                          bind(&CaModule::onChallenge, this, _2));
+      m_interestFilterHandles.push_back(filterId);
+
+      // register DOWNLOAD prefix
+      filterId = m_face.setInterestFilter(Name(name).append("_DOWNLOAD"),
+                                          bind(&CaModule::onDownload, this, _2));
+      m_interestFilterHandles.push_back(filterId);
+      _LOG_TRACE("Prefix " << name << " got registered");
+    },
+    bind(&CaModule::onRegisterFailed, this, _2));
+  m_registeredPrefixHandles.push_back(prefixId);
 }
 
 bool
-CaModule::setProbeHandler(const Name caName, const ProbeHandler& handler)
+CaModule::setProbeHandler(const ProbeHandler& handler)
 {
-  for (auto& entry : m_config.m_caItems) {
-    if (entry.m_caName == caName) {
-      entry.m_probeHandler = handler;
-      return true;
-    }
-  }
+  m_config.m_probeHandler = handler;
   return false;
 }
 
 bool
-CaModule::setRecommendCaHandler(const Name caName, const RecommendCaHandler& handler)
+CaModule::setStatusUpdateCallback(const StatusUpdateCallback& onUpdateCallback)
 {
-  for (auto& entry : m_config.m_caItems) {
-    if (entry.m_caName == caName) {
-      entry.m_recommendCaHandler = handler;
-      return true;
-    }
-  }
-  return false;
-}
-
-bool
-CaModule::setStatusUpdateCallback(const Name caName, const StatusUpdateCallback& onUpateCallback)
-{
-  for (auto& entry : m_config.m_caItems) {
-    if (entry.m_caName == caName) {
-      entry.m_statusUpdateCallback = onUpateCallback;
-      return true;
-    }
-  }
+  m_config.m_statusUpdateCallback = onUpdateCallback;
   return false;
 }
 
 void
-CaModule::handleLocalhostList(const Interest& request)
+CaModule::onProbe(const Interest& request)
 {
-  _LOG_TRACE("Got Localhost LIST request");
+  // PROBE Naming Convention: /<CA-Prefix>/CA/PROBE/[ParametersSha256DigestComponent|INFO]
+  _LOG_TRACE("Receive PROBE request");
+  JsonSection contentJson;
 
-  JsonSection root;
-  JsonSection caListSection;
-
-  for (const auto& entry : m_config.m_caItems) {
-    JsonSection caItem;
-
-    const auto& pib = m_keyChain.getPib();
-    auto identity = pib.getIdentity(entry.m_caName);
-    auto cert = identity.getDefaultKey().getDefaultCertificate();
-
-    // ca-prefix
-    Name caName = entry.m_caName;
-    caName.append("CA");
-    caItem.put("ca-prefix", caName.toUri());
-
-    // ca-info
-    std::string caInfo;
-    if (entry.m_caInfo == "") {
-      caInfo = "Issued by " + cert.getSignature().getKeyLocator().getName().toUri();
+  // process PROBE INFO requests
+  if (readString(request.getName().at(-1)) == "INFO") {
+    contentJson = genProbeResponseJson();
+  }
+  else {
+    // if not a PROBE INFO, find an available name
+    std::string availableId = "";
+    const auto& parameterJson = jsonFromBlock(request.getApplicationParameters());
+    std::string probeInfoStr = parameterJson.get(JSON_CLIENT_PROBE_INFO, "");
+    if (m_config.m_probeHandler) {
+      try {
+        availableId = m_config.m_probeHandler(probeInfoStr);
+      }
+      catch (const std::exception& e) {
+        _LOG_TRACE("Cannot find PROBE input from PROBE parameters " << e.what());
+        return;
+      }
     }
     else {
-      caInfo = entry.m_caInfo;
+      // if there is no app-specified name lookup, use a random name id
+      availableId = std::to_string(random::generateSecureWord64());
     }
-    caItem.put("ca-info", caInfo);
-
-    // probe is always false for local client
-
-    // ca-target list
-    caItem.put("target-list", entry.m_targetedList);
-
-    // certificate
-    std::stringstream ss;
-    io::save(cert, ss);
-    caItem.put("certificate", ss.str());
-
-    caListSection.push_back(std::make_pair("", caItem));
+    Name newIdentityName = m_config.m_caName;
+    _LOG_TRACE("Handle PROBE: generate an identity " << newIdentityName);
+    newIdentityName.append(availableId);
+    contentJson = genProbeResponseJson(newIdentityName.toUri());
   }
-  root.add_child("ca-list", caListSection);
-
-  Data result;
-  Name dataName = request.getName();
-  dataName.appendTimestamp();
-  result.setName(dataName);
-  result.setContent(dataContentFromJson(root));
-  m_keyChain.sign(result, signingByIdentity(m_keyChain.getPib().getDefaultIdentity().getName()));
-  m_face.put(result);
-}
-
-void
-CaModule::handleList(const Interest& request, const CaItem& caItem)
-{
-  _LOG_TRACE("Got LIST request");
-
-  bool getRecommendation = false;
-  Name recommendedCaName;
-  std::string identityName;
-
-  // LIST naming convention: /CA-prefix/CA/_LIST/[optional info]
-  if (readString(request.getName().at(-1)) != "_LIST" && caItem.m_recommendCaHandler) {
-    const auto& additionInfo = readString(request.getName().at(-1));
-    try {
-      std::tie(recommendedCaName, identityName) = caItem.m_recommendCaHandler(additionInfo, caItem.m_relatedCaList);
-      getRecommendation = true;
-    }
-    catch (const std::exception& e) {
-      _LOG_TRACE("Cannot recommend CA for LIST request. Degrade to non-target list." << e.what());
-    }
-  }
-
-  JsonSection root;
-  JsonSection caListSection;
-  if (getRecommendation) {
-    // JSON format
-    // {
-    //   "recommended-ca": "/ndn/edu/ucla"
-    //   "recommended-identity": "something"
-    //   "trust-schema": "schema Data packet name"
-    // }
-    root.put("recommended-ca", recommendedCaName.toUri());
-    root.put("recommended-identity", identityName);
-  }
-  else {
-    // JSON format
-    // {
-    //   "ca-list": [
-    //     {"ca-prefix": "/ndn/edu/ucla"},
-    //     {"ca-prefix": "/ndn/edu/memphis"},
-    //     ...
-    //   ]
-    //   "trust-schema": "schema Data packet name"
-    // }
-    for (const auto& entry : caItem.m_relatedCaList) {
-      JsonSection caItem;
-      caItem.put("ca-prefix", entry.toUri());
-      caListSection.push_back(std::make_pair("", caItem));
-    }
-    root.add_child("ca-list", caListSection);
-  }
-
-  // TODO: add trust schema
-  std::string schemaDataName = "TODO: add trust schema";
-  root.put("trust-schema", schemaDataName);
-
-  Data result;
-  Name dataName = request.getName();
-  dataName.appendTimestamp();
-  result.setName(dataName);
-  result.setContent(dataContentFromJson(root));
-  m_keyChain.sign(result, signingByIdentity(caItem.m_caName));
-  m_face.put(result);
-}
-
-void
-CaModule::handleProbe(const Interest& request, const CaItem& caItem)
-{
-  // PROBE Naming Convention: /CA-prefix/CA/_PROBE/<Probe Information>
-  _LOG_TRACE("Handle PROBE request");
-
-  std::string identifier;
-  if (caItem.m_probeHandler) {
-    try {
-      identifier = caItem.m_probeHandler(readString(request.getName().at(caItem.m_caName.size() + 2)));
-    }
-    catch (const std::exception& e) {
-      _LOG_TRACE("Cannot generate identifier for PROBE request " << e.what());
-      return;
-    }
-  }
-  else {
-    identifier = readString(request.getName().at(caItem.m_caName.size() + 2));
-  }
-  Name identityName = caItem.m_caName;
-  identityName.append(identifier);
 
   Data result;
   result.setName(request.getName());
-  result.setContent(dataContentFromJson(genResponseProbeJson(identityName, "")));
-  m_keyChain.sign(result, signingByIdentity(caItem.m_caName));
+  result.setContent(dataContentFromJson(contentJson));
+  m_keyChain.sign(result, signingByIdentity(m_config.m_caName));
   m_face.put(result);
-
-  _LOG_TRACE("Handle PROBE: generate identity " << identityName);
+  _LOG_TRACE("Handle PROBE: send out the PROBE response");
 }
 
 void
-CaModule::handleNew(const Interest& request, const CaItem& caItem)
+CaModule::onNew(const Interest& request)
 {
-  // NEW Naming Convention: /CA-prefix/CA/_NEW/<certificate-request>/[signature]
-  _LOG_TRACE("Handle NEW request");
+  // NEW Naming Convention: /<CA-prefix>/CA/NEW/[SignedInterestParameters_Digest]
 
-  security::v2::Certificate clientCert;
+  // get ECDH pub key and cert request
+  const auto& parameterJson = jsonFromBlock(request.getApplicationParameters());
+  std::string peerKeyBase64 = parameterJson.get(JSON_CLIENT_ECDH, "");
+
+  // get server's ECDH pub key
+  auto myEcdhPubKeyBase64 = m_ecdh.getBase64PubKey();
+  m_ecdh.deriveSecret(peerKeyBase64);
+  // generate salt for HKDF
+  auto saltInt = random::generateSecureWord64();
+  uint8_t salt[sizeof(saltInt)];
+  std::memcpy(salt, &saltInt, sizeof(saltInt));
+  // hkdf
+  hkdf(m_ecdh.context->sharedSecret, m_ecdh.context->sharedSecretLen,
+       salt, sizeof(saltInt), m_aesKey, 32);
+
+  // parse certificate request
+  std::string certRequestStr = parameterJson.get(JSON_CLIENT_CERT_REQ, "");
+  shared_ptr<security::v2::Certificate> clientCert = nullptr;
   try {
-    clientCert.wireDecode(request.getName().at(caItem.m_caName.size() + 2).blockFromValue());
+    std::stringstream ss(certRequestStr);
+    clientCert = io::load<security::v2::Certificate>(ss);
   }
   catch (const std::exception& e) {
     _LOG_ERROR("Unrecognized certificate request " << e.what());
     return;
   }
 
-  if (!security::verifySignature(clientCert, clientCert)) {
+  // verify the self-signed certificate and the request
+  if (!m_config.m_caName.isPrefixOf(clientCert->getName()) // under ca prefix
+      || !security::v2::Certificate::isValidName(clientCert->getName()) // is valid cert name
+      || clientCert->getName().size() != m_config.m_caName.size() + IS_SUBNAME_MIN_OFFSET) {
+    _LOG_ERROR("Invalid self-signed certificate name " << clientCert->getName());
+    return;
+  }
+  if (!security::verifySignature(*clientCert, *clientCert)) {
     _LOG_TRACE("Cert request with bad signature.");
     return;
   }
-  if (!security::verifySignature(request, clientCert)) {
+  if (!security::verifySignature(request, *clientCert)) {
     _LOG_TRACE("Interest with bad signature.");
     return;
   }
 
+  // create new request instance
   std::string requestId = std::to_string(random::generateWord64());
-  CertificateRequest certRequest(caItem.m_caName, requestId, clientCert);
-  certRequest.setStatus(ChallengeModule::WAIT_SELECTION);
+  CertificateRequest certRequest(m_config.m_caName, requestId, STATUS_BEFORE_CHALLENGE, *clientCert);
   try {
     m_storage->addRequest(certRequest);
   }
   catch (const std::exception& e) {
-    _LOG_TRACE("Cannot add new request instance " << e.what());
+    _LOG_TRACE("Cannot add new request instance into the storage" << e.what());
     return;
   }
 
   Data result;
   result.setName(request.getName());
-  result.setContent(dataContentFromJson(genResponseNewJson(requestId, certRequest.getStatus(),
-                                                           caItem.m_supportedChallenges)));
-  m_keyChain.sign(result, signingByIdentity(caItem.m_caName));
+  result.setContent(dataContentFromJson(genNewResponseJson(myEcdhPubKeyBase64,
+                                                           std::to_string(saltInt),
+                                                           certRequest,
+                                                           m_config.m_supportedChallenges)));
+  m_keyChain.sign(result, signingByIdentity(m_config.m_caName));
   m_face.put(result);
 
-  if (caItem.m_statusUpdateCallback) {
-    caItem.m_statusUpdateCallback(certRequest);
+  if (m_config.m_statusUpdateCallback) {
+    m_config.m_statusUpdateCallback(certRequest);
   }
 }
 
 void
-CaModule::handleSelect(const Interest& request, const CaItem& caItem)
+CaModule::onChallenge(const Interest& request)
 {
-  // SELECT Naming Convention: /CA-prefix/CA/_SELECT/{Request-ID JSON}/<ChallengeID>/
-  // {Param JSON}/[Signature components]
-  _LOG_TRACE("Handle SELECT request");
-
-  CertificateRequest certRequest = getCertificateRequest(request, caItem.m_caName);
-  if (certRequest.getRequestId().empty()) {
+  // get certificate request state
+  CertificateRequest certRequest = getCertificateRequest(request);
+  if (certRequest.m_requestId == "") {
+    // cannot get the request state
     return;
   }
-
-  if (!security::verifySignature(request, certRequest.getCert())) {
+  // verify signature
+  if (!security::verifySignature(request, certRequest.m_cert)) {
     _LOG_TRACE("Interest with bad signature.");
     return;
   }
+  // decrypt the parameters
+  auto paramJsonPayload = parseEncBlock(m_ecdh.context->sharedSecret,
+                                        m_ecdh.context->sharedSecretLen,
+                                        request.getApplicationParameters());
+  std::string paramJsonStr((const char*)paramJsonPayload.data(), paramJsonPayload.size());
+  std::istringstream ss(paramJsonStr);
+  JsonSection paramJson;
+  boost::property_tree::json_parser::read_json(ss, paramJson);
 
-  std::string challengeType;
-  try {
-    challengeType = readString(request.getName().at(caItem.m_caName.size() + 3));
-  }
-  catch (const std::exception& e) {
-    _LOG_ERROR(e.what());
-    return;
-  }
-  _LOG_TRACE("SELECT request choosing challenge " << challengeType);
+  // load the corresponding challenge module
+  std::string challengeType = paramJson.get<std::string>(JSON_CLIENT_SELECTED_CHALLENGE);
   auto challenge = ChallengeModule::createChallengeModule(challengeType);
+  JsonSection contentJson;
   if (challenge == nullptr) {
     _LOG_TRACE("Unrecognized challenge type " << challengeType);
-    return;
-  }
-  JsonSection contentJson = challenge->handleChallengeRequest(request, certRequest);
-  if (certRequest.getStatus() == ChallengeModule::FAILURE) {
-    m_storage->deleteRequest(certRequest.getRequestId());
+    certRequest.m_status = STATUS_FAILURE;
+    certRequest.m_challengeStatus = CHALLENGE_STATUS_UNKNOWN_CHALLENGE;
+    contentJson = genChallengeResponseJson(certRequest);
   }
   else {
-    try {
-      m_storage->updateRequest(certRequest);
+    _LOG_TRACE("CHALLENGE module to be load: " << challengeType);
+    // let challenge module handle the request
+    challenge->handleChallengeRequest(paramJson, certRequest);
+    if (certRequest.m_status == STATUS_FAILURE) {
+      // if challenge failed
+      m_storage->deleteRequest(certRequest.m_requestId);
+      contentJson = genChallengeResponseJson(certRequest);
+      _LOG_TRACE("Challenge failed");
     }
-    catch (const std::exception& e) {
-      _LOG_TRACE("Cannot update request instance " << e.what());
-      return;
-    }
-  }
-
-  Data result;
-  result.setName(request.getName());
-  result.setContent(dataContentFromJson(contentJson));
-  m_keyChain.sign(result, signingByIdentity(caItem.m_caName));
-  m_face.put(result);
-
-  if (caItem.m_statusUpdateCallback) {
-    caItem.m_statusUpdateCallback(certRequest);
-  }
-}
-
-void
-CaModule::handleValidate(const Interest& request, const CaItem& caItem)
-{
-  // VALIDATE Naming Convention: /CA-prefix/CA/_VALIDATE/{Request-ID JSON}/<ChallengeID>/
-  // {Param JSON}/[Signature components]
-  _LOG_TRACE("Handle VALIDATE request");
-
-  CertificateRequest certRequest = getCertificateRequest(request, caItem.m_caName);
-  if (certRequest.getRequestId().empty()) {
-    return;
-  }
-
-  if (!security::verifySignature(request, certRequest.getCert())) {
-    _LOG_TRACE("Interest with bad signature.");
-    return;
-  }
-
-  std::string challengeType = certRequest.getChallengeType();
-  auto challenge = ChallengeModule::createChallengeModule(challengeType);
-  if (challenge == nullptr) {
-    _LOG_TRACE("Unrecognized challenge type " << challengeType);
-    return;
-  }
-  JsonSection contentJson = challenge->handleChallengeRequest(request, certRequest);
-  if (certRequest.getStatus() == ChallengeModule::FAILURE) {
-    m_storage->deleteRequest(certRequest.getRequestId());
-  }
-  else {
-    try {
-      m_storage->updateRequest(certRequest);
-    }
-    catch (const std::exception& e) {
-      _LOG_TRACE("Cannot update request instance " << e.what());
-      return;
-    }
-  }
-  Data result;
-  result.setName(request.getName());
-  result.setContent(dataContentFromJson(contentJson));
-  m_keyChain.sign(result, signingByIdentity(caItem.m_caName));
-  m_face.put(result);
-
-  if (certRequest.getStatus() == ChallengeModule::SUCCESS) {
-    auto issuedCert = issueCertificate(certRequest, caItem);
-    if (caItem.m_statusUpdateCallback) {
-      certRequest.setCert(issuedCert);
-      caItem.m_statusUpdateCallback(certRequest);
-    }
-    try {
-      m_storage->addCertificate(certRequest.getRequestId(), issuedCert);
-      m_storage->deleteRequest(certRequest.getRequestId());
-      _LOG_TRACE("New Certificate Issued " << issuedCert.getName());
-    }
-    catch (const std::exception& e) {
-      _LOG_ERROR("Cannot add issued cert and remove the request " << e.what());
-      return;
-    }
-  }
-}
-
-void
-CaModule::handleStatus(const Interest& request, const CaItem& caItem)
-{
-  // STATUS Naming Convention: /CA-prefix/CA/_STATUS/{Request-ID JSON}/[Signature components]
-  _LOG_TRACE("Handle STATUS request");
-
-  CertificateRequest certRequest = getCertificateRequest(request, caItem.m_caName);
-  if (certRequest.getRequestId().empty()) {
-    return;
-  }
-
-  if (!security::verifySignature(request, certRequest.getCert())) {
-    _LOG_TRACE("Interest with bad signature.");
-    return;
-  }
-
-  std::string challengeType = certRequest.getChallengeType();
-  auto challenge = ChallengeModule::createChallengeModule(challengeType);
-  if (challenge == nullptr) {
-    _LOG_TRACE("Unrecognized challenge type " << challengeType);
-    return;
-  }
-  JsonSection contentJson = challenge->handleChallengeRequest(request, certRequest);
-
-  Data result;
-  result.setName(request.getName());
-  result.setContent(dataContentFromJson(contentJson));
-  m_keyChain.sign(result, signingByIdentity(caItem.m_caName));
-  m_face.put(result);
-}
-
-void
-CaModule::handleDownload(const Interest& request, const CaItem& caItem)
-{
-  // DOWNLOAD Naming Convention: /CA-prefix/CA/_DOWNLOAD/{Request-ID JSON}
-  _LOG_TRACE("Handle DOWNLOAD request");
-
-  Data result;
-  result.setName(request.getName());
-  if (readString(request.getName().at(-1)) == "ANCHOR") {
-    JsonSection contentJson;
-
-    const auto& pib = m_keyChain.getPib();
-    auto identity = pib.getIdentity(caItem.m_caName);
-    auto cert = identity.getDefaultKey().getDefaultCertificate();
-
-    // ca-prefix
-    Name caName = caItem.m_caName;
-    caName.append("CA");
-    contentJson.put("ca-prefix", caName.toUri());
-
-    // ca-info
-    std::string caInfo;
-    if (caItem.m_caInfo == "") {
-      caInfo = "Issued by " + cert.getSignature().getKeyLocator().getName().toUri();
+    else if (certRequest.m_status == STATUS_PENDING) {
+      // if challenge succeeded
+      auto issuedCert = issueCertificate(certRequest);
+      certRequest.m_cert = issuedCert;
+      certRequest.m_status = STATUS_SUCCESS;
+      try {
+        m_storage->addCertificate(certRequest.m_requestId, issuedCert);
+        m_storage->deleteRequest(certRequest.m_requestId);
+        _LOG_TRACE("New Certificate Issued " << issuedCert.getName());
+      }
+      catch (const std::exception& e) {
+        _LOG_ERROR("Cannot add issued cert and remove the request " << e.what());
+        return;
+      }
+      if (m_config.m_statusUpdateCallback) {
+        m_config.m_statusUpdateCallback(certRequest);
+      }
+      contentJson = genChallengeResponseJson(certRequest);
+      contentJson.add(JSON_CA_CERT_ID, readString(issuedCert.getName().at(-1)));
+      _LOG_TRACE("Challenge succeeded. Certificate has been issued");
     }
     else {
-      caInfo = caItem.m_caInfo;
+      try {
+        m_storage->updateRequest(certRequest);
+      }
+      catch (const std::exception& e) {
+        _LOG_TRACE("Cannot update request instance " << e.what());
+        return;
+      }
+      contentJson = genChallengeResponseJson(certRequest);
+      _LOG_TRACE("No failure no success. Challenge moves on");
     }
-    contentJson.put("ca-info", caInfo);
-
-    // probe
-    contentJson.put("probe", caItem.m_probe);
-
-    // ca-target list
-    contentJson.put("target-list", caItem.m_targetedList);
-
-    // certificate
-    std::stringstream ss;
-    io::save(cert, ss);
-    contentJson.put("certificate", ss.str());
-
-    result.setContent(dataContentFromJson(contentJson));
   }
-  else {
-    JsonSection requestIdJson = jsonFromNameComponent(request.getName(), caItem.m_caName.size() + 2);
-    std::string requestId = requestIdJson.get(JSON_REQUEST_ID, "");
-    security::v2::Certificate signedCert;
-    try {
-      signedCert = m_storage->getCertificate(requestId);
-    }
-    catch (const std::exception& e) {
-      _LOG_ERROR(e.what());
-      return;
-    }
-    result.setContent(signedCert.wireEncode());
+
+  Data result;
+  result.setName(request.getName());
+
+  // encrypt the content
+  std::stringstream ss2;
+  boost::property_tree::write_json(ss2, contentJson);
+  auto payload = ss2.str();
+  auto contentBlock = genEncBlock(tlv::Content, m_ecdh.context->sharedSecret,
+                                  m_ecdh.context->sharedSecretLen,
+                                  (const uint8_t*)payload.c_str(), payload.size());
+  result.setContent(contentBlock);
+  m_keyChain.sign(result, signingByIdentity(m_config.m_caName));
+  m_face.put(result);
+
+  if (m_config.m_statusUpdateCallback) {
+    m_config.m_statusUpdateCallback(certRequest);
   }
-  m_keyChain.sign(result, signingByIdentity(caItem.m_caName));
+}
+
+void
+CaModule::onDownload(const Interest& request)
+{
+  auto requestId = readString(request.getName().at(-1));
+  security::v2::Certificate signedCert;
+  try {
+    signedCert = m_storage->getCertificate(requestId);
+  }
+  catch (const std::exception& e) {
+    _LOG_ERROR("Cannot read signed cert " << requestId << " from ca database " << e.what());
+    return;
+  }
+  Data result;
+  result.setName(request.getName());
+  result.setContent(signedCert.wireEncode());
+  m_keyChain.sign(result, signingByIdentity(m_config.m_caName));
   m_face.put(result);
 }
 
 security::v2::Certificate
-CaModule::issueCertificate(const CertificateRequest& certRequest, const CaItem& caItem)
+CaModule::issueCertificate(const CertificateRequest& certRequest)
 {
-  Name certName = certRequest.getCert().getKeyName();
-  certName.append("NDNCERT").appendVersion();
+  auto expectedPeriod =
+    certRequest.m_cert.getValidityPeriod().getPeriod();
+
+  time::system_clock::TimePoint startingTime, endingTime;
+  if (expectedPeriod.first > time::system_clock::now()
+      && expectedPeriod.first <  time::system_clock::now()
+      + m_config.m_validityPeriod)
+    {
+      startingTime = expectedPeriod.first;
+    }
+  else {
+    startingTime = time::system_clock::now();
+  }
+  if (expectedPeriod.second < time::system_clock::now() + m_config.m_validityPeriod) {
+    endingTime = expectedPeriod.second;
+  }
+  else {
+    endingTime = time::system_clock::now() + m_config.m_validityPeriod;
+  }
+  security::ValidityPeriod period(startingTime, endingTime);
   security::v2::Certificate newCert;
+
+  Name certName = certRequest.m_cert.getKeyName();
+  certName.append("NDNCERT").append(std::to_string(random::generateSecureWord64()));
   newCert.setName(certName);
-  newCert.setContent(certRequest.getCert().getContent());
-  _LOG_TRACE("cert request content " << certRequest.getCert());
+  newCert.setContent(certRequest.m_cert.getContent());
+  _LOG_TRACE("cert request content " << certRequest.m_cert);
   SignatureInfo signatureInfo;
-  security::ValidityPeriod period(time::system_clock::now(),
-                                  time::system_clock::now() + caItem.m_validityPeriod);
   signatureInfo.setValidityPeriod(period);
   security::SigningInfo signingInfo(security::SigningInfo::SIGNER_TYPE_ID,
-                                    caItem.m_caName, signatureInfo);
-  newCert.setFreshnessPeriod(caItem.m_freshnessPeriod);
+                                    m_config.m_caName, signatureInfo);
+  newCert.setFreshnessPeriod(m_config.m_freshnessPeriod);
 
   m_keyChain.sign(newCert, signingInfo);
   _LOG_TRACE("new cert got signed" << newCert);
@@ -571,10 +385,10 @@ CaModule::issueCertificate(const CertificateRequest& certRequest, const CaItem& 
 }
 
 CertificateRequest
-CaModule::getCertificateRequest(const Interest& request, const Name& caName)
+CaModule::getCertificateRequest(const Interest& request)
 {
-  JsonSection requestIdJson = jsonFromNameComponent(request.getName(), caName.size() + 2);
-  std::string requestId = requestIdJson.get(JSON_REQUEST_ID, "");
+  std::string requestId = readString(request.getName().at(m_config.m_caName.size() + 2));
+  _LOG_TRACE("Requet Id to query the database " << requestId);
   CertificateRequest certRequest;
   try {
     certRequest = m_storage->getRequest(requestId);
@@ -583,6 +397,108 @@ CaModule::getCertificateRequest(const Interest& request, const Name& caName)
     _LOG_ERROR(e.what());
   }
   return certRequest;
+}
+
+/**
+ * @brief Generate JSON file to response PROBE insterest
+ *
+ * PROBE response JSON format:
+ * {
+ *   "name": "@p identifier",
+ *   "ca-config": "@p caInformation"
+ * }
+ */
+const JsonSection
+CaModule::genProbeResponseJson(const Name& identifier)
+{
+  JsonSection root;
+  root.put(JSON_CA_NAME, identifier.toUri());
+  return root;
+}
+
+/**
+ * @brief Generate JSON file to response NEW interest
+ *
+ * Target JSON format:
+ * {
+ *   "ecdh-pub": "@p echdPub",
+ *   "salt": "@p salt"
+ *   "request-id": "@p requestId",
+ *   "status": "@p status",
+ *   "challenges": [
+ *     {
+ *       "challenge-id": ""
+ *     },
+ *     {
+ *       "challenge-id": ""
+ *     },
+ *     ...
+ *   ]
+ * }
+ */
+const JsonSection
+CaModule::genProbeResponseJson()
+{
+  JsonSection root;
+  // ca-prefix
+  Name caName = m_config.m_caName;
+  root.put("ca-prefix", caName.toUri());
+
+  // ca-info
+  const auto& pib = m_keyChain.getPib();
+  auto identity = pib.getIdentity(m_config.m_caName);
+  auto cert = identity.getDefaultKey().getDefaultCertificate();
+  std::string caInfo = "";
+  if (m_config.m_caInfo == "") {
+    caInfo = "Issued by " + cert.getSignature().getKeyLocator().getName().toUri();
+  }
+  else {
+    caInfo = m_config.m_caInfo;
+  }
+  root.put("ca-info", caInfo);
+
+  // probe
+  root.put("probe", m_config.m_probe);
+
+  // certificate
+  std::stringstream ss;
+  io::save(cert, ss);
+  root.put("certificate", ss.str());
+
+  return root;
+}
+
+const JsonSection
+CaModule::genNewResponseJson(const std::string& ecdhKey, const std::string& salt,
+                             const CertificateRequest& request,
+                             const std::list<std::string>& challenges)
+{
+  JsonSection root;
+  JsonSection challengesSection;
+  root.put(JSON_CA_ECDH, ecdhKey);
+  root.put(JSON_CA_SALT, salt);
+  root.put(JSON_CA_EQUEST_ID, request.m_requestId);
+  root.put(JSON_CA_STATUS, std::to_string(request.m_status));
+
+  for (const auto& entry : challenges) {
+    JsonSection challenge;
+    challenge.put(JSON_CA_CHALLENGE_ID, entry);
+    challengesSection.push_back(std::make_pair("", challenge));
+  }
+  root.add_child(JSON_CA_CHALLENGES, challengesSection);
+  return root;
+}
+
+const JsonSection
+CaModule::genChallengeResponseJson(const CertificateRequest& request)
+{
+  JsonSection root;
+  JsonSection challengesSection;
+  root.put(JSON_CA_STATUS, request.m_status);
+  root.put(JSON_CHALLENGE_STATUS, request.m_challengeStatus);
+  root.put(JSON_CHALLENGE_REMAINING_TRIES, std::to_string(request.m_remainingTries));
+  root.put(JSON_CHALLENGE_REMAINING_TIME, std::to_string(request.m_remainingTime));
+  return root;
 }
 
 void
@@ -600,14 +516,14 @@ CaModule::dataContentFromJson(const JsonSection& jsonSection)
 }
 
 JsonSection
-CaModule::jsonFromNameComponent(const Name& name, int pos)
+CaModule::jsonFromBlock(const Block& block)
 {
   std::string jsonString;
   try {
-    jsonString = encoding::readString(name.at(pos));
+    jsonString = encoding::readString(block);
   }
   catch (const std::exception& e) {
-    _LOG_ERROR(e.what());
+    _LOG_ERROR("Cannot read JSON string from TLV Value" << e.what());
     return JsonSection();
   }
   std::istringstream ss(jsonString);

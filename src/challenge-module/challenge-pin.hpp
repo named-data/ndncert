@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -51,45 +51,23 @@ public:
   ChallengePin(const size_t& maxAttemptTimes = 3,
                const time::seconds& secretLifetime = time::seconds(3600));
 
-PUBLIC_WITH_TESTS_ELSE_PROTECTED:
+  // For CA
+  void
+  handleChallengeRequest(const JsonSection& params, CertificateRequest& request) override;
+
+  // For Client
   JsonSection
-  processSelectInterest(const Interest& interest, CertificateRequest& request) override;
-
-  JsonSection
-  processValidateInterest(const Interest& interest, CertificateRequest& request) override;
-
-  std::list<std::string>
-  getSelectRequirements() override;
-
-  std::list<std::string>
-  getValidateRequirements(const std::string& status) override;
+  getRequirementForChallenge(int status, const std::string& challengeStatus) override;
 
   JsonSection
-  doGenSelectParamsJson(const std::string& status,
-                        const std::list<std::string>& paramList) override;
-
-  JsonSection
-  doGenValidateParamsJson(const std::string& status,
-                          const std::list<std::string>& paramList) override;
+  genChallengeRequestJson(int status, const std::string& challengeStatus, const JsonSection& params) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  static std::tuple<time::system_clock::TimePoint, std::string, int>
-  parseStoredSecrets(const JsonSection& storedSecret);
-
-  static JsonSection
-  generateStoredSecrets(const time::system_clock::TimePoint& tp, const std::string& secretCode,
-                        int attempTimes);
-
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+  // challenge status
   static const std::string NEED_CODE;
   static const std::string WRONG_CODE;
-
-  static const std::string FAILURE_TIMEOUT;
-  static const std::string FAILURE_MAXRETRY;
-
-  static const std::string JSON_CODE_TP;
+  // JSON attribute
   static const std::string JSON_PIN_CODE;
-  static const std::string JSON_ATTEMPT_TIMES;
 
 private:
   time::seconds m_secretLifetime;

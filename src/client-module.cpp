@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2018, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -20,511 +20,323 @@
 
 #include "client-module.hpp"
 #include "logging.hpp"
-#include "json-helper.hpp"
 #include "challenge-module.hpp"
+#include "crypto-support/enc-tlv.hpp"
 #include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
+#include <ndn-cxx/util/random.hpp>
+#include <ndn-cxx/security/transform/base64-encode.hpp>
+#include <ndn-cxx/security/transform/buffer-source.hpp>
+#include <ndn-cxx/security/transform/stream-sink.hpp>
 
 namespace ndn {
 namespace ndncert {
 
 _LOG_INIT(ndncert.client);
 
-ClientModule::ClientModule(Face& face, security::v2::KeyChain& keyChain, size_t retryTimes)
-  : m_face(face)
-  , m_keyChain(keyChain)
-  , m_retryTimes(retryTimes)
+ClientModule::ClientModule(security::v2::KeyChain& keyChain)
+  : m_keyChain(keyChain)
 {
 }
 
 ClientModule::~ClientModule() = default;
 
-void
-ClientModule::requestCaTrustAnchor(const Name& caName, const DataCallback& trustAnchorCallback,
-                                   const ErrorCallback& errorCallback)
+shared_ptr<Interest>
+ClientModule::generateProbeInfoInterest(const Name& caName)
 {
   Name interestName = caName;
-  interestName.append("CA").append("_DOWNLOAD").append("ANCHOR");
-  Interest interest(interestName);
-  interest.setMustBeFresh(true);
-
-  m_face.expressInterest(interest, trustAnchorCallback,
-                         bind(&ClientModule::onNack, this, _1, _2, errorCallback),
-                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes,
-                              trustAnchorCallback, errorCallback));
+  if (readString(caName.at(-1)) != "CA")
+    interestName.append("CA");
+  interestName.append("_PROBE").append("INFO");
+  auto interest = make_shared<Interest>(interestName);
+  interest->setMustBeFresh(true);
+  interest->setCanBePrefix(false);
+  return interest;
 }
 
 void
-ClientModule::requestLocalhostList(const LocalhostListCallback& listCallback,
-                                   const ErrorCallback& errorCallback)
+ClientModule::onProbeInfoResponse(const Data& reply)
 {
-  Interest interest(Name("/localhost/CA/_LIST"));
-  interest.setMustBeFresh(true);
-  DataCallback dataCb = bind(&ClientModule::handleLocalhostListResponse,
-                             this, _1, _2, listCallback, errorCallback);
-  m_face.expressInterest(interest, dataCb,
-                         bind(&ClientModule::onNack, this, _1, _2, errorCallback),
-                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes,
-                              dataCb, errorCallback));
-}
+  // parse the ca item
+  auto contentJson = getJsonFromData(reply);
+  auto caItem = ClientConfig::extractCaItem(contentJson);
 
-void
-ClientModule::handleLocalhostListResponse(const Interest& request, const Data& reply,
-                                          const LocalhostListCallback& listCallback,
-                                          const ErrorCallback& errorCallback)
-{
-  // TODO: use the file path to replace the cert
-  // const auto& pib = m_keyChain.getPib();
-  // auto identity = pib.getDefaultIdentity();
-  // auto key = identity.getDefaultKey();
-  // auto cert = key.getDefaultCertificate();
-
-  auto cert = *(io::load<security::v2::Certificate>(m_config.m_localNdncertAnchor));
-
-  if (!security::verifySignature(reply, cert)) {
-    errorCallback("Cannot verify data from localhost CA");
-    return;
-  };
-
-  JsonSection contentJson = getJsonFromData(reply);
-  ClientConfig clientConf;
-  clientConf.load(contentJson);
-  listCallback(clientConf);
-}
-
-void
-ClientModule::requestList(const ClientCaItem& ca, const std::string& additionalInfo,
-                          const ListCallback& listCallback, const ErrorCallback& errorCallback)
-{
-  Name requestName(ca.m_caName);
-  requestName.append("_LIST");
-  if (additionalInfo != "") {
-    requestName.append(additionalInfo);
-  }
-  Interest interest(requestName);
-  interest.setMustBeFresh(true);
-  DataCallback dataCb = bind(&ClientModule::handleListResponse,
-                             this, _1, _2, ca, listCallback, errorCallback);
-  m_face.expressInterest(interest, dataCb,
-                         bind(&ClientModule::onNack, this, _1, _2, errorCallback),
-                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes,
-                              dataCb, errorCallback));
-}
-
-void
-ClientModule::handleListResponse(const Interest& request, const Data& reply,
-                                 const ClientCaItem& ca,
-                                 const ListCallback& listCallback,
-                                 const ErrorCallback& errorCallback)
-{
-  if (!security::verifySignature(reply, ca.m_anchor)) {
-    errorCallback("Cannot verify data from " + ca.m_caName.toUri());
-    return;
-  };
-
-  std::list<Name> caList;
-  Name assignedName;
-
-  JsonSection contentJson = getJsonFromData(reply);
-  auto recommendedName = contentJson.get("recommended-identity", "");
-  if (recommendedName == "") {
-    // without recommendation
-    auto caListJson = contentJson.get_child("ca-list");
-    auto it = caListJson.begin();
-    for(; it != caListJson.end(); it++) {
-      caList.push_back(Name(it->second.get<std::string>("ca-prefix")));
+  // update the local config
+  bool findItem = false;
+  for (auto& item : m_config.m_caItems) {
+    if (item.m_caName == caItem.m_caName) {
+      findItem = true;
+      item = caItem;
     }
   }
-  else {
-    // with recommendation
-    Name caName(contentJson.get<std::string>("recommended-ca"));
-    caList.push_back(caName);
-    assignedName = caName.append(recommendedName);
+  if (!findItem) {
+    m_config.m_caItems.push_back(caItem);
   }
-  Name schemaDataName(contentJson.get("trust-schema", ""));
-  listCallback(caList, assignedName, schemaDataName);
-}
 
-void
-ClientModule::sendProbe(const ClientCaItem& ca, const std::string& probeInfo,
-                        const RequestCallback& requestCallback,
-                        const ErrorCallback& errorCallback)
-{
-  Interest interest(Name(ca.m_caName).append("_PROBE").append(probeInfo));
-  interest.setMustBeFresh(true);
-  DataCallback dataCb = bind(&ClientModule::handleProbeResponse,
-                             this, _1, _2, ca, requestCallback, errorCallback);
-  m_face.expressInterest(interest, dataCb,
-                         bind(&ClientModule::onNack, this, _1, _2, errorCallback),
-                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes,
-                              dataCb, errorCallback));
-
-  _LOG_TRACE("PROBE interest sent with Probe info " << probeInfo);
-}
-
-void
-ClientModule::handleProbeResponse(const Interest& request, const Data& reply,
-                                  const ClientCaItem& ca,
-                                  const RequestCallback& requestCallback,
-                                  const ErrorCallback& errorCallback)
-{
-  if (!security::verifySignature(reply, ca.m_anchor)) {
-    errorCallback("Cannot verify data from " + ca.m_caName.toUri());
-    return;
-  };
-  JsonSection contentJson = getJsonFromData(reply);
-  std::string identityNameString = contentJson.get(JSON_IDNENTIFIER, "");
-  if (!identityNameString.empty()) {
-    Name identityName(identityNameString);
-    sendNew(ca, identityName, requestCallback, errorCallback);
-
-    _LOG_TRACE("Got PROBE response with identity " << identityName);
-  }
-  else {
-    errorCallback("The response does not carry required fields.");
+  // verify the probe Data's sig
+  if (!security::verifySignature(reply, caItem.m_anchor)) {
+    _LOG_ERROR("Cannot verify data signature from " << m_ca.m_caName.toUri());
     return;
   }
 }
 
-void
-ClientModule::sendNew(const ClientCaItem& ca, const Name& identityName,
-                      const RequestCallback& requestCallback,
-                      const ErrorCallback& errorCallback)
+shared_ptr<Interest>
+ClientModule::generateProbeInterest(const ClientCaItem& ca, const std::string& probeInfo)
 {
+  Name interestName = ca.m_caName;
+  interestName.append("CA").append("_PROBE");
+  auto interest = make_shared<Interest>(interestName);
+  interest->setMustBeFresh(true);
+  interest->setCanBePrefix(false);
+  auto paramJson = genProbeRequestJson(probeInfo);
+  interest->setApplicationParameters(paramFromJson(paramJson));
+
+  // update local state
+  m_ca = ca;
+  return interest;
+}
+
+void
+ClientModule::onProbeResponse(const Data& reply)
+{
+  if (!security::verifySignature(reply, m_ca.m_anchor)) {
+    _LOG_ERROR("Cannot verify data signature from " << m_ca.m_caName.toUri());
+    return;
+  }
+  auto contentJson = getJsonFromData(reply);
+
+  // read the available name and put it into the state
+  auto nameUri = contentJson.get<std::string>(JSON_CA_NAME, "");
+  if (nameUri != "") {
+    m_identityName = Name(nameUri);
+  }
+}
+
+shared_ptr<Interest>
+ClientModule::generateNewInterest(const time::system_clock::TimePoint& notBefore,
+                                  const time::system_clock::TimePoint& notAfter,
+                                  const Name& identityName)
+{
+  // Name requestedName = identityName;
+  if (!identityName.empty()) { // if identityName is not empty, find the corresponding CA
+    bool findCa = false;
+    for (const auto& caItem : m_config.m_caItems) {
+      if (caItem.m_caName.isPrefixOf(identityName)) {
+        m_ca = caItem;
+        findCa = true;
+      }
+    }
+    if (!findCa) { // if cannot find, cannot proceed
+      return nullptr;
+    }
+    m_identityName = identityName;
+  }
+  else { // if identityName is empty, check m_identityName or generate a random name
+    if (!m_identityName.empty()) {
+      // do nothing
+    }
+    else {
+      auto id = std::to_string(random::generateSecureWord64());
+      m_identityName = m_ca.m_caName;
+      m_identityName.append(id);
+    }
+  }
+
+  // generate a newly key pair or use an existing key
   const auto& pib = m_keyChain.getPib();
-
-  auto state = make_shared<RequestState>();
   try {
-    auto identity = pib.getIdentity(identityName);
-    state->m_key = m_keyChain.createKey(identity);
+    auto identity = pib.getIdentity(m_identityName);
+    m_key = m_keyChain.createKey(identity);
   }
   catch (const security::Pib::Error& e) {
-    auto identity = m_keyChain.createIdentity(identityName);
-    state->m_key = identity.getDefaultKey();
+    auto identity = m_keyChain.createIdentity(m_identityName);
+    m_key = identity.getDefaultKey();
   }
-  state->m_ca = ca;
-  state->m_isInstalled = false;
 
   // generate certificate request
   security::v2::Certificate certRequest;
-  certRequest.setName(Name(state->m_key.getName()).append("cert-request").appendVersion());
+  certRequest.setName(Name(m_key.getName()).append("cert-request").appendVersion());
   certRequest.setContentType(tlv::ContentType_Key);
   certRequest.setFreshnessPeriod(time::hours(24));
-  certRequest.setContent(state->m_key.getPublicKey().data(), state->m_key.getPublicKey().size());
+  certRequest.setContent(m_key.getPublicKey().data(), m_key.getPublicKey().size());
   SignatureInfo signatureInfo;
-  signatureInfo.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
-                                                           time::system_clock::now() + time::days(10)));
-  m_keyChain.sign(certRequest, signingByKey(state->m_key.getName()).setSignatureInfo(signatureInfo));
+  signatureInfo.setValidityPeriod(security::ValidityPeriod(notBefore, notAfter));
+  m_keyChain.sign(certRequest, signingByKey(m_key.getName()).setSignatureInfo(signatureInfo));
 
-  // generate interest
-  Interest interest(Name(ca.m_caName).append(Name("_NEW")).append(certRequest.wireEncode()));
-  m_keyChain.sign(interest, signingByKey(state->m_key.getName()));
+  // generate Interest packet
+  Name interestName = m_ca.m_caName;
+  interestName.append("CA").append("_NEW");
+  auto interest = make_shared<Interest>(interestName);
+  interest->setMustBeFresh(true);
+  interest->setCanBePrefix(false);
+  interest->setApplicationParameters(paramFromJson(genNewRequestJson(m_ecdh.getBase64PubKey(), certRequest)));
 
-  DataCallback dataCb = bind(&ClientModule::handleNewResponse,
-                             this, _1, _2, state, requestCallback, errorCallback);
-  m_face.expressInterest(interest, dataCb,
-                         bind(&ClientModule::onNack, this, _1, _2, errorCallback),
-                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes,
-                              dataCb, errorCallback));
-
-  _LOG_TRACE("NEW interest sent with identity " << identityName);
+  // sign the Interest packet
+  m_keyChain.sign(*interest, signingByKey(m_key.getName()));
+  return interest;
 }
 
-void
-ClientModule::handleNewResponse(const Interest& request, const Data& reply,
-                                const shared_ptr<RequestState>& state,
-                                const RequestCallback& requestCallback,
-                                const ErrorCallback& errorCallback)
+std::list<std::string>
+ClientModule::onNewResponse(const Data& reply)
 {
-  if (!security::verifySignature(reply, state->m_ca.m_anchor)) {
-    errorCallback("Cannot verify data from " + state->m_ca.m_caName.toUri());
-    return;
+  if (!security::verifySignature(reply, m_ca.m_anchor)) {
+    _LOG_ERROR("Cannot verify data signature from " << m_ca.m_caName.toUri());
+    return std::list<std::string>();
   }
+  auto contentJson = getJsonFromData(reply);
 
-  const JsonSection& json = getJsonFromData(reply);
-  state->m_status = json.get(JSON_STATUS, "");
-  state->m_requestId = json.get(JSON_REQUEST_ID, "");
+  // ECDH
+  const auto& peerKeyBase64Str = contentJson.get<std::string>(JSON_CA_ECDH, "");
+  const auto& saltStr = contentJson.get<std::string>(JSON_CA_SALT, "");
+  uint64_t saltInt = std::stoull(saltStr);
+  uint8_t salt[sizeof(saltInt)];
+  std::memcpy(salt, &saltInt, sizeof(saltInt));
+  m_ecdh.deriveSecret(peerKeyBase64Str);
 
-  if (!checkStatus(*state, json, errorCallback)) {
-    return;
-  }
+  // HKDF
+  hkdf(m_ecdh.context->sharedSecret, m_ecdh.context->sharedSecretLen, salt, sizeof(saltInt), m_aesKey, 32);
 
-  JsonSection challengesJson = json.get_child(JSON_CHALLENGES);
-  std::list<std::string> challengeList;
+  // update state
+  m_status = contentJson.get<int>(JSON_CA_STATUS);
+  m_requestId = contentJson.get<std::string>(JSON_CA_EQUEST_ID, "");
+
+  auto challengesJson = contentJson.get_child(JSON_CA_CHALLENGES);
+  m_challengeList.clear();
   for (const auto& challengeJson : challengesJson) {
-    challengeList.push_back(challengeJson.second.get<std::string>(JSON_CHALLENGE_TYPE));
+    m_challengeList.push_back(challengeJson.second.get<std::string>(JSON_CA_CHALLENGE_ID, ""));
   }
-  state->m_challengeList = challengeList;
+  return m_challengeList;
+}
 
-  _LOG_TRACE("Got NEW response with requestID " << state->m_requestId
-             << " with status " << state->m_status
-             << " with challenge number " << challengeList.size());
+shared_ptr<Interest>
+ClientModule::generateChallengeInterest(const JsonSection& paramJson)
+{
+  m_challengeType = paramJson.get<std::string>(JSON_CLIENT_SELECTED_CHALLENGE);
 
-  requestCallback(state);
+  Name interestName = m_ca.m_caName;
+  interestName.append("CA").append("_CHALLENGE").append(m_requestId);
+  auto interest = make_shared<Interest>(interestName);
+  interest->setMustBeFresh(true);
+  interest->setCanBePrefix(false);
+
+  // encrypt the Interest parameters
+  std::stringstream ss;
+  boost::property_tree::write_json(ss, paramJson);
+  auto payload = ss.str();
+  auto paramBlock = genEncBlock(tlv::ApplicationParameters, m_ecdh.context->sharedSecret, m_ecdh.context->sharedSecretLen,
+                                (const uint8_t*)payload.c_str(), payload.size());
+  interest->setApplicationParameters(paramBlock);
+
+  m_keyChain.sign(*interest, signingByKey(m_key.getName()));
+  return interest;
 }
 
 void
-ClientModule::sendSelect(const shared_ptr<RequestState>& state,
-                         const std::string& challengeType,
-                         const JsonSection& selectParams,
-                         const RequestCallback& requestCallback,
-                         const ErrorCallback& errorCallback)
+ClientModule::onChallengeResponse(const Data& reply)
 {
-  JsonSection requestIdJson;
-  requestIdJson.put(JSON_REQUEST_ID, state->m_requestId);
-
-  state->m_challengeType = challengeType;
-
-  Name interestName(state->m_ca.m_caName);
-  interestName.append("_SELECT")
-    .append(nameBlockFromJson(requestIdJson))
-    .append(challengeType)
-    .append(nameBlockFromJson(selectParams));
-  Interest interest(interestName);
-  m_keyChain.sign(interest, signingByKey(state->m_key.getName()));
-
-  DataCallback dataCb = bind(&ClientModule::handleSelectResponse,
-                             this, _1, _2, state, requestCallback, errorCallback);
-  m_face.expressInterest(interest, dataCb,
-                         bind(&ClientModule::onNack, this, _1, _2, errorCallback),
-                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes,
-                              dataCb, errorCallback));
-
-   _LOG_TRACE("SELECT interest sent with challenge type " << challengeType);
-}
-
-void
-ClientModule::handleSelectResponse(const Interest& request,
-                                   const Data& reply,
-                                   const shared_ptr<RequestState>& state,
-                                   const RequestCallback& requestCallback,
-                                   const ErrorCallback& errorCallback)
-{
-  if (!security::verifySignature(reply, state->m_ca.m_anchor)) {
-    errorCallback("Cannot verify data from " + state->m_ca.m_caName.toUri());
+  if (!security::verifySignature(reply, m_ca.m_anchor)) {
+    _LOG_ERROR("Cannot verify data signature from " << m_ca.m_caName.toUri());
     return;
   }
+  auto result = parseEncBlock(m_ecdh.context->sharedSecret, m_ecdh.context->sharedSecretLen, reply.getContent());
+  std::string payload((const char*)result.data(), result.size());
+  std::istringstream ss(payload);
+  JsonSection contentJson;
+  boost::property_tree::json_parser::read_json(ss, contentJson);
 
-  JsonSection json = getJsonFromData(reply);
+  // update state
+  m_status = contentJson.get<int>(JSON_CA_STATUS);
+  m_challengeStatus = contentJson.get<std::string>(JSON_CHALLENGE_STATUS);
+  m_remainingTries = contentJson.get<int>(JSON_CHALLENGE_REMAINING_TRIES);
+  m_freshBefore = time::system_clock::now() + time::seconds(contentJson.get<int>(JSON_CHALLENGE_REMAINING_TIME));
+}
 
-  _LOG_TRACE("SELECT response would change the status from "
-             << state->m_status << " to " + json.get<std::string>(JSON_STATUS));
+shared_ptr<Interest>
+ClientModule::generateDownloadInterest()
+{
+  Name interestName = m_ca.m_caName;
+  interestName.append("CA").append("_DOWNLOAD").append(m_requestId);
+  auto interest = make_shared<Interest>(interestName);
+  interest->setMustBeFresh(true);
+  interest->setCanBePrefix(false);
+  return interest;
+}
 
-  state->m_status = json.get<std::string>(JSON_STATUS);
-
-  if (!checkStatus(*state, json, errorCallback)) {
-    return;
-  }
-
-  _LOG_TRACE("Got SELECT response with status " << state->m_status);
-
-  requestCallback(state);
+shared_ptr<Interest>
+ClientModule::generateCertFetchInterest()
+{
+  Name interestName = m_identityName;
+  interestName.append("KEY").append(m_certId);
+  auto interest = make_shared<Interest>(interestName);
+  interest->setMustBeFresh(true);
+  interest->setCanBePrefix(false);
+  return interest;
 }
 
 void
-ClientModule::sendValidate(const shared_ptr<RequestState>& state,
-                           const JsonSection& validateParams,
-                           const RequestCallback& requestCallback,
-                           const ErrorCallback& errorCallback)
+ClientModule::onDownloadResponse(const Data& reply)
 {
-  JsonSection requestIdJson;
-  requestIdJson.put(JSON_REQUEST_ID, state->m_requestId);
-
-  Name interestName(state->m_ca.m_caName);
-  interestName.append("_VALIDATE")
-    .append(nameBlockFromJson(requestIdJson))
-    .append(state->m_challengeType)
-    .append(nameBlockFromJson(validateParams));
-  Interest interest(interestName);
-  m_keyChain.sign(interest, signingByKey(state->m_key.getName()));
-
-  DataCallback dataCb = bind(&ClientModule::handleValidateResponse,
-                             this, _1, _2, state, requestCallback, errorCallback);
-  m_face.expressInterest(interest, dataCb,
-                         bind(&ClientModule::onNack, this, _1, _2, errorCallback),
-                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes,
-                              dataCb, errorCallback));
-
-  _LOG_TRACE("VALIDATE interest sent");
-}
-
-void
-ClientModule::handleValidateResponse(const Interest& request,
-                                     const Data& reply,
-                                     const shared_ptr<RequestState>& state,
-                                     const RequestCallback& requestCallback,
-                                     const ErrorCallback& errorCallback)
-{
-  if (!security::verifySignature(reply, state->m_ca.m_anchor)) {
-    errorCallback("Cannot verify data from " + state->m_ca.m_caName.toUri());
-    return;
-  }
-
-  JsonSection json = getJsonFromData(reply);
-  state->m_status = json.get<std::string>(JSON_STATUS);
-
-  if (!checkStatus(*state, json, errorCallback)) {
-    return;
-  }
-
-  _LOG_TRACE("Got VALIDATE response with status " << state->m_status);
-
-  requestCallback(state);
-}
-
-
-void
-ClientModule::requestStatus(const shared_ptr<RequestState>& state,
-                            const RequestCallback& requestCallback,
-                            const ErrorCallback& errorCallback)
-{
-  JsonSection requestIdJson;
-  requestIdJson.put(JSON_REQUEST_ID, state->m_requestId);
-
-  Name interestName(state->m_ca.m_caName);
-  interestName.append("_STATUS").append(nameBlockFromJson(requestIdJson));
-  Interest interest(interestName);
-
-  m_keyChain.sign(interest, signingByKey(state->m_key.getName()));
-
-  DataCallback dataCb = bind(&ClientModule::handleStatusResponse,
-                             this, _1, _2, state, requestCallback, errorCallback);
-  m_face.expressInterest(interest, dataCb,
-                         bind(&ClientModule::onNack, this, _1, _2, errorCallback),
-                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes,
-                              dataCb, errorCallback));
-
-  _LOG_TRACE("STATUS interest sent");
-}
-
-void
-ClientModule::handleStatusResponse(const Interest& request, const Data& reply,
-                                   const shared_ptr<RequestState>& state,
-                                   const RequestCallback& requestCallback,
-                                   const ErrorCallback& errorCallback)
-{
-  if (!security::verifySignature(reply, state->m_ca.m_anchor)) {
-    errorCallback("Cannot verify data from " + state->m_ca.m_caName.toUri());
-    return;
-  }
-
-  JsonSection json = getJsonFromData(reply);
-  state->m_status = json.get<std::string>(JSON_STATUS);
-
-  if (!checkStatus(*state, json, errorCallback)) {
-    return;
-  }
-
-  _LOG_TRACE("Got STATUS response with status " << state->m_status);
-
-  requestCallback(state);
-}
-
-void
-ClientModule::requestDownload(const shared_ptr<RequestState>& state,
-                              const RequestCallback& requestCallback,
-                              const ErrorCallback& errorCallback)
-{
-  JsonSection requestIdJson;
-  requestIdJson.put(JSON_REQUEST_ID, state->m_requestId);
-
-  Name interestName(state->m_ca.m_caName);
-  interestName.append("_DOWNLOAD").append(nameBlockFromJson(requestIdJson));
-  Interest interest(interestName);
-  interest.setMustBeFresh(true);
-
-  DataCallback dataCb = bind(&ClientModule::handleDownloadResponse,
-                             this, _1, _2, state, requestCallback, errorCallback);
-  m_face.expressInterest(interest, dataCb,
-                         bind(&ClientModule::onNack, this, _1, _2, errorCallback),
-                         bind(&ClientModule::onTimeout, this, _1, m_retryTimes,
-                              dataCb, errorCallback));
-
-  _LOG_TRACE("DOWNLOAD interest sent");
-}
-
-void
-ClientModule::handleDownloadResponse(const Interest& request, const Data& reply,
-                                     const shared_ptr<RequestState>& state,
-                                     const RequestCallback& requestCallback,
-                                     const ErrorCallback& errorCallback)
-{
-  if (!security::verifySignature(reply, state->m_ca.m_anchor)) {
-    errorCallback("Cannot verify data from " + state->m_ca.m_caName.toUri());
-    return;
-  }
-
   try {
     security::v2::Certificate cert(reply.getContent().blockFromValue());
-    m_keyChain.addCertificate(state->m_key, cert);
-
+    m_keyChain.addCertificate(m_key, cert);
     _LOG_TRACE("Got DOWNLOAD response and installed the cert " << cert.getName());
   }
   catch (const std::exception& e) {
-    errorCallback(std::string(e.what()));
+    _LOG_ERROR("Cannot add replied certificate into the keychain " << e.what());
     return;
   }
-
-  state->m_isInstalled = true;
-  requestCallback(state);
+  m_isCertInstalled = true;
 }
 
 void
-ClientModule::onTimeout(const Interest& interest, int nRetriesLeft, const DataCallback& dataCallback,
-                        const ErrorCallback& errorCallback)
+ClientModule::onCertFetchResponse(const Data& reply)
 {
-  if (nRetriesLeft > 0) {
-    m_face.expressInterest(interest, dataCallback,
-                           bind(&ClientModule::onNack, this, _1, _2, errorCallback),
-                           bind(&ClientModule::onTimeout, this, _1, nRetriesLeft - 1,
-                                dataCallback, errorCallback));
-  }
-  else {
-    errorCallback("Run out retries: still timeout");
-    return;
-  }
-}
-
-void
-ClientModule::onNack(const Interest& interest, const lp::Nack& nack, const ErrorCallback& errorCallback)
-{
-  errorCallback("Got Nack");
+  onDownloadResponse(reply);
 }
 
 JsonSection
 ClientModule::getJsonFromData(const Data& data)
 {
-  Block jsonBlock = data.getContent();
-  std::string jsonString = encoding::readString(jsonBlock);
-  std::istringstream ss(jsonString);
+  std::istringstream ss(encoding::readString(data.getContent()));
   JsonSection json;
   boost::property_tree::json_parser::read_json(ss, json);
   return json;
 }
 
+const JsonSection
+ClientModule::genProbeRequestJson(const std::string& probeInfo)
+{
+  JsonSection root;
+  root.put(JSON_CLIENT_PROBE_INFO, probeInfo);
+  return root;
+}
+
+const JsonSection
+ClientModule::genNewRequestJson(const std::string& ecdhPub, const security::v2::Certificate& certRequest)
+{
+  JsonSection root;
+  std::stringstream ss;
+  try {
+    security::transform::bufferSource(certRequest.wireEncode().wire(), certRequest.wireEncode().size())
+    >> security::transform::base64Encode(true)
+    >> security::transform::streamSink(ss);
+  }
+  catch (const security::transform::Error& e) {
+    _LOG_ERROR("Cannot convert self-signed cert into BASE64 string " << e.what());
+    return root;
+  }
+  root.put(JSON_CLIENT_ECDH, ecdhPub);
+  root.put(JSON_CLIENT_CERT_REQ, ss.str());
+  return root;
+}
+
 Block
-ClientModule::nameBlockFromJson(const JsonSection& json)
+ClientModule::paramFromJson(const JsonSection& json)
 {
   std::stringstream ss;
   boost::property_tree::write_json(ss, json);
-  return makeStringBlock(ndn::tlv::GenericNameComponent, ss.str());
-}
-
-bool
-ClientModule::checkStatus(const RequestState& state, const JsonSection& json,
-                          const ErrorCallback& errorCallback)
-{
-  if (state.m_status == ChallengeModule::FAILURE) {
-    errorCallback(json.get(JSON_FAILURE_INFO, ""));
-    return false;
-  }
-  if (state.m_requestId.empty() || state.m_status.empty()) {
-    errorCallback("The response does not carry required fields. requestID: " + state.m_requestId
-                  + " status: " + state.m_status);
-    return false;
-  }
-  return true;
+  return makeStringBlock(ndn::tlv::ApplicationParameters, ss.str());
 }
 
 } // namespace ndncert

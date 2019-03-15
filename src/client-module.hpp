@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2018, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -22,25 +22,11 @@
 #define NDNCERT_CLIENT_MODULE_HPP
 
 #include "client-config.hpp"
+#include "crypto-support/crypto-helper.hpp"
 #include "certificate-request.hpp"
 
 namespace ndn {
 namespace ndncert {
-
-class RequestState
-{
-
-public:
-  ClientCaItem m_ca;
-  security::Key m_key;
-
-  std::string m_requestId;
-  std::string m_status;
-  std::string m_challengeType;
-  std::list<std::string> m_challengeList;
-
-  bool m_isInstalled = false;
-};
 
 // TODO
 // For each CA item in Client.Conf, create a validator instance and initialize it with CA's cert
@@ -58,13 +44,8 @@ public:
     using std::runtime_error::runtime_error;
   };
 
-  using LocalhostListCallback = function<void (const ClientConfig&)>;
-  using ListCallback = function<void (const std::list<Name>&, const Name&, const Name&)>;
-  using RequestCallback = function<void (const shared_ptr<RequestState>&)>;
-  using ErrorCallback = function<void (const std::string&)>;
-
 public:
-  ClientModule(Face& face, security::v2::KeyChain& keyChain, size_t retryTimes = 2);
+  ClientModule(security::v2::KeyChain& keyChain);
 
   virtual
   ~ClientModule();
@@ -75,114 +56,97 @@ public:
     return m_config;
   }
 
-  /**
-   * @brief Send /CA-prefix/CA/_DOWNLOAD/ANCHOR to get CA's latest anchor with the config
-   */
-  void
-  requestCaTrustAnchor(const Name& caName, const DataCallback& trustAnchorCallback,
-                       const ErrorCallback& errorCallback);
+  int
+  getApplicationStatus() const
+  {
+    return m_status;
+  }
+
+  std::string
+  getChallengeStatus() const
+  {
+    return m_challengeStatus;
+  }
+
+  shared_ptr<Interest>
+  generateProbeInfoInterest(const Name& caName);
 
   /**
-   * @brief Send /localhost/CA/List to query local available CAs
-   *
-   * For more information:
-   *   https://github.com/named-data/ndncert/wiki/Intra-Node-Design
+   * @brief Process the replied PROBE INFO Data packet
+   * Warning: this function will add a new trust anchor into the application.
+   * Please invoke this function only when reply can be fully trusted or the CA
+   * can be verified in later challenge phase.
    */
   void
-  requestLocalhostList(const LocalhostListCallback& listCallback, const ErrorCallback& errorCallback);
+  onProbeInfoResponse(const Data& reply);
 
-  /**
-   * @brief Handle the list request response
-   */
-  void
-  handleLocalhostListResponse(const Interest& request, const Data& reply,
-                              const LocalhostListCallback& listCallback, const ErrorCallback& errorCallback);
+  shared_ptr<Interest>
+  generateProbeInterest(const ClientCaItem& ca, const std::string& probeInfo);
 
   void
-  requestList(const ClientCaItem& ca, const std::string& additionalInfo,
-              const ListCallback& listCallback, const ErrorCallback& errorCallback);
+  onProbeResponse(const Data& reply);
+
+  shared_ptr<Interest>
+  generateNewInterest(const time::system_clock::TimePoint& notBefore,
+                      const time::system_clock::TimePoint& notAfter,
+                      const Name& identityName = Name());
+
+  std::list<std::string>
+  onNewResponse(const Data& reply);
+
+  shared_ptr<Interest>
+  generateChallengeInterest(const JsonSection& paramJson);
 
   void
-  handleListResponse(const Interest& request, const Data& reply, const ClientCaItem& ca,
-                     const ListCallback& listCallback, const ErrorCallback& errorCallback);
+  onChallengeResponse(const Data& reply);
+
+  shared_ptr<Interest>
+  generateDownloadInterest();
+
+  shared_ptr<Interest>
+  generateCertFetchInterest();
 
   void
-  sendProbe(const ClientCaItem& ca, const std::string& probeInfo,
-            const RequestCallback& requestCallback, const ErrorCallback& errorCallback);
+  onDownloadResponse(const Data& reply);
 
   void
-  handleProbeResponse(const Interest& request, const Data& reply, const ClientCaItem& ca,
-                      const RequestCallback& requestCallback, const ErrorCallback& errorCallback);
-
-  void
-  sendNew(const ClientCaItem& ca, const Name& identityName,
-          const RequestCallback& requestCallback, const ErrorCallback& errorCallback);
-
-  void
-  handleNewResponse(const Interest& request, const Data& reply,
-                    const shared_ptr<RequestState>& state,
-                    const RequestCallback& requestCallback, const ErrorCallback& errorCallback);
-
-  void
-  sendSelect(const shared_ptr<RequestState>& state, const std::string& challengeType,
-             const JsonSection& selectParams,
-             const RequestCallback& requestCallback, const ErrorCallback& errorCallback);
-
-  void
-  handleSelectResponse(const Interest& request, const Data& reply,
-                       const shared_ptr<RequestState>& state,
-                       const RequestCallback& requestCallback, const ErrorCallback& errorCallback);
-
-  void
-  sendValidate(const shared_ptr<RequestState>& state, const JsonSection& validateParams,
-               const RequestCallback& requestCallback, const ErrorCallback& errorCallback);
-
-  void
-  handleValidateResponse(const Interest& request, const Data& reply,
-                         const shared_ptr<RequestState>& state,
-                         const RequestCallback& requestCallback, const ErrorCallback& errorCallback);
-
-  void
-  requestStatus(const shared_ptr<RequestState>& state,
-                const RequestCallback& requestCallback, const ErrorCallback& errorCallback);
-
-  void
-  handleStatusResponse(const Interest& request, const Data& reply,
-                       const shared_ptr<RequestState>& state,
-                       const RequestCallback& requestCallback, const ErrorCallback& errorCallback);
-
-  void
-  requestDownload(const shared_ptr<RequestState>& state, const RequestCallback& requestCallback,
-                  const ErrorCallback& errorCallback);
-
-  void
-  handleDownloadResponse(const Interest& request, const Data& reply,
-                         const shared_ptr<RequestState>& state,
-                         const RequestCallback& requestCallback, const ErrorCallback& errorCallback);
+  onCertFetchResponse(const Data& reply);
 
   // helper functions
   static JsonSection
   getJsonFromData(const Data& data);
 
   static Block
-  nameBlockFromJson(const JsonSection& json);
+  paramFromJson(const JsonSection& json);
 
-  static bool
-  checkStatus(const RequestState& state, const JsonSection& json, const ErrorCallback& errorCallback);
+PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+  const JsonSection
+  genProbeRequestJson(const std::string& probeInfo);
 
-protected:
-  virtual void
-  onTimeout(const Interest& interest, int nRetriesLeft,
-            const DataCallback& dataCallback, const ErrorCallback& errorCallback);
+  const JsonSection
+  genNewRequestJson(const std::string& ecdhPub, const security::v2::Certificate& certRequest);
 
-  virtual void
-  onNack(const Interest& interest, const lp::Nack& nack, const ErrorCallback& errorCallback);
-
-protected:
+PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   ClientConfig m_config;
-  Face& m_face;
   security::v2::KeyChain& m_keyChain;
-  size_t m_retryTimes;
+
+  ClientCaItem m_ca;
+  security::Key m_key;
+  Name m_identityName;
+
+  std::string m_requestId = "";
+  int m_status = STATUS_NOT_STARTED;
+  std::string m_challengeStatus = "";
+  std::string m_challengeType = "";
+  std::string m_certId = "";
+  std::list<std::string> m_challengeList;
+  bool m_isCertInstalled = false;
+
+  int m_remainingTries = 0;
+  time::system_clock::TimePoint m_freshBefore;
+
+  ECDHState m_ecdh;
+  uint8_t m_aesKey[32] = {0};
 };
 
 } // namespace ndncert

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2018, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -36,16 +36,6 @@ namespace ndncert {
 using ProbeHandler = function<std::string/*identity name*/ (const std::string&/*requester input*/)>;
 
 /**
- * @brief The function should recommend a CA plus an identity name from the given list
- *        based on LIST additional info
- *
- * The function should throw exceptions when there is an unexpected input.
- */
-using RecommendCaHandler = function<std::tuple<Name/*CA name*/, std::string/*identity*/>
-                                    (const std::string&/*requester input*/,
-                                     const std::list<Name>&/*related CA list*/)>;
-
-/**
  * @brief The function would be invoked whenever the certificate request status gets update
  *
  * The callback is used to notice the CA application or CA command line tool. The callback is
@@ -53,31 +43,6 @@ using RecommendCaHandler = function<std::tuple<Name/*CA name*/, std::string/*ide
  * is issued.
  */
 using StatusUpdateCallback = function<void (const CertificateRequest&/*the latest request info*/)>;
-
-class CaItem
-{
-public:
-  // basic info
-  Name m_caName;
-
-  // related CAs
-  std::list<Name> m_relatedCaList;
-
-  // essential config
-  time::seconds m_freshnessPeriod;
-  time::days m_validityPeriod;
-  std::list<std::string> m_supportedChallenges;
-
-  // optional parameters
-  std::string m_probe;
-  std::string m_targetedList;
-  std::string m_caInfo;
-
-  // callbacks
-  ProbeHandler m_probeHandler;
-  RecommendCaHandler m_recommendCaHandler;
-  StatusUpdateCallback m_statusUpdateCallback;
-};
 
 /**
  * @brief Represents a CA configuration instance
@@ -110,11 +75,22 @@ private:
   std::list<std::string>
   parseChallengeList(const JsonSection& configSection);
 
-  std::list<Name>
-  parseRelatedCaList(const JsonSection& section);
-
 public:
-  std::list<CaItem> m_caItems;
+  // basic info
+  Name m_caName;
+
+  // essential config
+  time::seconds m_freshnessPeriod;
+  time::days m_validityPeriod;
+  std::list<std::string> m_supportedChallenges;
+
+  // optional parameters
+  std::string m_probe;
+  std::string m_caInfo;
+
+  // callbacks
+  ProbeHandler m_probeHandler;
+  StatusUpdateCallback m_statusUpdateCallback;
 };
 
 } // namespace ndncert

@@ -1,44 +1,12 @@
 {
-  "ca-list":
+  "ca-prefix": "/ndn",
+  "issuing-freshness": "720",
+  "validity-period": "360",
+  "ca-info": "ndn testbed ca",
+
+  "probe": "input email address",
+  "supported-challenges":
   [
-    {
-        "ca-prefix": "/ndn",
-        "issuing-freshness": "720",
-        "validity-period": "360",
-        "ca-info": "ndn testbed ca",
-
-        "probe": "input email address",
-
-        "targeted-list": "Use your email address (edu preferred) as input",
-        "related-ca-list":
-        [
-          { "ca-prefix": "/ndn/edu/arizona" },
-          { "ca-prefix": "/ndn/edu/memphis" }
-        ],
-
-        "supported-challenges":
-        [
-            { "type": "PIN" }
-        ]
-    },
-    {
-        "ca-prefix": "/ndn/edu/ucla/cs/zhiyi",
-        "issuing-freshness": "720",
-        "validity-period": "360",
-        "supported-challenges":
-        [
-            { "type": "PIN" }
-        ]
-    },
-    {
-        "ca-prefix": "/ndn/site1",
-        "probe": "input email address",
-        "issuing-freshness": "720",
-        "validity-period": "360",
-        "supported-challenges":
-        [
-            { "type": "PIN" }
-        ]
-    }
+      { "type": "PIN" }
   ]
 }

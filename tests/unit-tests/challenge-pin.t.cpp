@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2018, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -25,7 +25,7 @@ namespace ndn {
 namespace ndncert {
 namespace tests {
 
-BOOST_FIXTURE_TEST_SUITE(TestChallengePin, IdentityManagementV2Fixture)
+BOOST_FIXTURE_TEST_SUITE(TestChallengePin, IdentityManagementFixture)
 
 BOOST_AUTO_TEST_CASE(TestGetInitInfo)
 {
@@ -33,130 +33,61 @@ BOOST_AUTO_TEST_CASE(TestGetInitInfo)
   BOOST_CHECK_EQUAL(challenge.CHALLENGE_TYPE, "PIN");
 }
 
-BOOST_AUTO_TEST_CASE(ParseStoredSecret)
-{
-  time::system_clock::TimePoint tp = time::fromIsoString("20170207T120000");
-  JsonSection json;
-  json.put(ChallengePin::JSON_CODE_TP, time::toIsoString(tp));
-  json.put(ChallengePin::JSON_PIN_CODE, "1234");
-  json.put(ChallengePin::JSON_ATTEMPT_TIMES, std::to_string(3));
-
-  auto result = ChallengePin::parseStoredSecrets(json);
-  BOOST_CHECK_EQUAL(std::get<0>(result), tp);
-  BOOST_CHECK_EQUAL(std::get<1>(result), "1234");
-  BOOST_CHECK_EQUAL(std::get<2>(result), 3);
-}
-
-BOOST_AUTO_TEST_CASE(OnSelectInterestComingWithEmptyInfo)
+BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmptyInfo)
 {
   auto identity = addIdentity(Name("/ndn/site1"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
-  CertificateRequest request(Name("/ndn/site1"), "123", cert);
-
-  Name interestName("/ndn/site1/CA");
-  interestName.append("_SELECT").append("Fake-Request-ID").append("PIN");
-  Interest interest(interestName);
+  CertificateRequest request(Name("/ndn/site1"), "123", STATUS_BEFORE_CHALLENGE, cert);
 
   ChallengePin challenge;
-  challenge.handleChallengeRequest(interest, request);
+  challenge.handleChallengeRequest(JsonSection(), request);
 
-  BOOST_CHECK_EQUAL(request.getStatus(), ChallengePin::NEED_CODE);
-  BOOST_CHECK_EQUAL(request.getChallengeType(), "PIN");
+  BOOST_CHECK_EQUAL(request.m_status, STATUS_CHALLENGE);
+  BOOST_CHECK_EQUAL(request.m_challengeStatus, ChallengePin::NEED_CODE);
+  BOOST_CHECK_EQUAL(request.m_challengeType, "PIN");
 }
 
-BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithCode)
+BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
 {
   auto identity = addIdentity(Name("/ndn/site1"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
-  CertificateRequest request(Name("/ndn/site1"), "123", cert);
-  request.setChallengeType("PIN");
-  request.setStatus(ChallengePin::NEED_CODE);
+  JsonSection secret;
+  secret.add(ChallengePin::JSON_PIN_CODE, "12345");
+  CertificateRequest request(Name("/ndn/site1"), "123", STATUS_CHALLENGE, ChallengePin::NEED_CODE, "PIN",
+                             time::toIsoString(time::system_clock::now()), 3600, 3, secret, cert);
 
-  time::system_clock::TimePoint tp = time::system_clock::now();
-  JsonSection json;
-  json.put(ChallengePin::JSON_CODE_TP, time::toIsoString(tp));
-  json.put(ChallengePin::JSON_PIN_CODE, "1234");
-  json.put(ChallengePin::JSON_ATTEMPT_TIMES, std::to_string(3));
-
-  request.setChallengeSecrets(json);
-
-  JsonSection infoJson;
-  infoJson.put(ChallengePin::JSON_PIN_CODE, "1234");
-  std::stringstream ss;
-  boost::property_tree::write_json(ss, infoJson);
-  std::string jsonString = ss.str();
-  Block jsonContent = makeStringBlock(ndn::tlv::GenericNameComponent, ss.str());
-
-  Name interestName("/ndn/site1/CA");
-  interestName.append("_VALIDATE").append("Fake-Request-ID").append("PIN").append(jsonContent);
-  Interest interest(interestName);
+  JsonSection paramJson;
+  paramJson.put(ChallengePin::JSON_PIN_CODE, "12345");
 
   ChallengePin challenge;
-  challenge.handleChallengeRequest(interest, request);
+  challenge.handleChallengeRequest(paramJson, request);
 
-  BOOST_CHECK_EQUAL(request.getStatus(), ChallengeModule::SUCCESS);
-  BOOST_CHECK_EQUAL(request.getChallengeSecrets().empty(), true);
+  BOOST_CHECK_EQUAL(request.m_status, STATUS_PENDING);
+  BOOST_CHECK_EQUAL(request.m_challengeStatus, CHALLENGE_STATUS_SUCCESS);
+  BOOST_CHECK_EQUAL(request.m_challengeSecrets.empty(), true);
 }
 
-BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithWrongCode)
+BOOST_AUTO_TEST_CASE(OnChallengeRequestWithWrongCode)
 {
   auto identity = addIdentity(Name("/ndn/site1"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
-  CertificateRequest request(Name("/ndn/site1"), "123", cert);
-  request.setChallengeType("PIN");
-  request.setStatus(ChallengePin::NEED_CODE);
+  JsonSection secret;
+  secret.add(ChallengePin::JSON_PIN_CODE, "12345");
+  CertificateRequest request(Name("/ndn/site1"), "123", STATUS_CHALLENGE, ChallengePin::NEED_CODE, "PIN",
+                             time::toIsoString(time::system_clock::now()), 3600, 3, secret, cert);
 
-  time::system_clock::TimePoint tp = time::system_clock::now();
-  JsonSection json;
-  json.put(ChallengePin::JSON_CODE_TP, time::toIsoString(tp));
-  json.put(ChallengePin::JSON_PIN_CODE, "1234");
-  json.put(ChallengePin::JSON_ATTEMPT_TIMES, std::to_string(3));
-
-  request.setChallengeSecrets(json);
-
-  JsonSection infoJson;
-  infoJson.put(ChallengePin::JSON_PIN_CODE, "4567");
-  std::stringstream ss;
-  boost::property_tree::write_json(ss, infoJson);
-  std::string jsonString = ss.str();
-  Block jsonContent = makeStringBlock(ndn::tlv::GenericNameComponent, ss.str());
-
-  Name interestName("/ndn/site1/CA");
-  interestName.append("_VALIDATE").append("Fake-Request-ID").append("PIN").append(jsonContent);
-  Interest interest(interestName);
+  JsonSection paramJson;
+  paramJson.put(ChallengePin::JSON_PIN_CODE, "45678");
 
   ChallengePin challenge;
-  challenge.handleChallengeRequest(interest, request);
+  challenge.handleChallengeRequest(paramJson, request);
 
-  BOOST_CHECK_EQUAL(request.getStatus(), ChallengePin::WRONG_CODE);
-  BOOST_CHECK_EQUAL(request.getChallengeSecrets().empty(), false);
-}
-
-BOOST_AUTO_TEST_CASE(ClientSendSelect)
-{
-  ChallengePin challenge;
-  auto requirementList = challenge.getSelectRequirements();
-  BOOST_CHECK_EQUAL(requirementList.size(), 0);
-
-  auto json = challenge.doGenSelectParamsJson(ChallengeModule::WAIT_SELECTION, requirementList);
-  BOOST_CHECK_EQUAL(json.empty(), true);
-}
-
-BOOST_AUTO_TEST_CASE(ClientSendValidate)
-{
-  ChallengePin challenge;
-  auto requirementList = challenge.getValidateRequirements(ChallengePin::NEED_CODE);
-  BOOST_CHECK_EQUAL(requirementList.size(), 1);
-
-  requirementList.clear();
-  requirementList.push_back("123");
-
-  auto json = challenge.doGenValidateParamsJson(ChallengePin::NEED_CODE, requirementList);
-  BOOST_CHECK_EQUAL(json.empty(), false);
-  BOOST_CHECK_EQUAL(json.get<std::string>(ChallengePin::JSON_PIN_CODE), "123");
+  BOOST_CHECK_EQUAL(request.m_status, STATUS_CHALLENGE);
+  BOOST_CHECK_EQUAL(request.m_challengeStatus, ChallengePin::WRONG_CODE);
+  BOOST_CHECK_EQUAL(request.m_challengeSecrets.empty(), false);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

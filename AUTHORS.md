@@ -3,7 +3,7 @@ ndncert authors
 
 ## The primary authors are (and/or have been):
 
-* Zhiyi Zhang            <http://irl.cs.ucla.edu/~zhiyi/>
+* Zhiyi Zhang            <https://zhiyi-zhang.com>
 * Alexander Afanasyev    <http://lasr.cs.ucla.edu/afanasyev/index.html>
 * Lixia Zhang            <http://web.cs.ucla.edu/~lixia/>
 

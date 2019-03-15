@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -18,15 +18,15 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "identity-management-fixture.hpp"
 #include "ca-detail/ca-memory.hpp"
+#include "identity-management-fixture.hpp"
 #include "ca-detail/ca-sqlite.hpp"
 
 namespace ndn {
 namespace ndncert {
 namespace tests {
 
-BOOST_FIXTURE_TEST_SUITE(TestCaMemory, IdentityManagementV2TimeFixture)
+BOOST_FIXTURE_TEST_SUITE(TestCaMemory, IdentityManagementFixture)
 
 BOOST_AUTO_TEST_CASE(Initialization)
 {
@@ -82,31 +82,31 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   auto cert1 = key1.getDefaultCertificate();
 
   // add operation
-  CertificateRequest request1(Name("/ndn/site1"), "123", cert1);
+  CertificateRequest request1(Name("/ndn/site1"), "123", STATUS_BEFORE_CHALLENGE, cert1);
   BOOST_CHECK_NO_THROW(storage.addRequest(request1));
 
   // get operation
   auto result = storage.getRequest("123");
-  BOOST_CHECK_EQUAL(request1.getCert(), result.getCert());
-  BOOST_CHECK_EQUAL(request1.getStatus(), result.getStatus());
-  BOOST_CHECK_EQUAL(request1.getCaName(), result.getCaName());
+  BOOST_CHECK_EQUAL(request1.m_cert, result.m_cert);
+  BOOST_CHECK_EQUAL(request1.m_status, result.m_status);
+  BOOST_CHECK_EQUAL(request1.m_caName, result.m_caName);
 
   JsonSection json;
   json.put("code", "1234");
 
   // update operation
-  CertificateRequest request2(Name("/ndn/site1"), "123", "need-verify", "EMAIL",
-                              CaSqlite::convertJson2String(json), cert1);
+  CertificateRequest request2(Name("/ndn/site1"), "123", STATUS_CHALLENGE, CHALLENGE_STATUS_SUCCESS,
+                             "Email", time::toIsoString(time::system_clock::now()), 3600, 3, json, cert1);
   storage.updateRequest(request2);
   result = storage.getRequest("123");
-  BOOST_CHECK_EQUAL(request2.getCert(), result.getCert());
-  BOOST_CHECK_EQUAL(request2.getStatus(), result.getStatus());
-  BOOST_CHECK_EQUAL(request2.getCaName(), result.getCaName());
+  BOOST_CHECK_EQUAL(request2.m_cert, result.m_cert);
+  BOOST_CHECK_EQUAL(request2.m_status, result.m_status);
+  BOOST_CHECK_EQUAL(request2.m_caName, result.m_caName);
 
   auto identity2 = addIdentity(Name("/ndn/site2"));
   auto key2 = identity2.getDefaultKey();
   auto cert2 = key2.getDefaultCertificate();
-  CertificateRequest request3(Name("/ndn/site2"), "456", cert2);
+  CertificateRequest request3(Name("/ndn/site2"), "456", STATUS_BEFORE_CHALLENGE, cert2);
   storage.addRequest(request3);
 
   // list operation

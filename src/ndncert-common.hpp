@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -70,19 +70,15 @@ namespace ndn {
 namespace ndncert {
 
 using std::size_t;
-
 using boost::noncopyable;
-
 using std::shared_ptr;
 using std::unique_ptr;
 using std::weak_ptr;
 using std::make_shared;
 using ndn::make_unique;
 using std::enable_shared_from_this;
-
 using std::function;
 using std::bind;
-
 using ndn::Interest;
 using ndn::Data;
 using ndn::Name;
@@ -90,6 +86,44 @@ using ndn::PartialName;
 using ndn::Block;
 using ndn::time::system_clock;
 using ndn::time::toUnixTimestamp;
+
+// JSON format for Certificate Issuer (CA)
+const std::string JSON_CA_NAME = "name";
+const std::string JSON_CA_CONFIG = "ca-config";
+const std::string JSON_CA_ECDH = "ecdh-pub";
+const std::string JSON_CA_SALT = "salt";
+const std::string JSON_CA_EQUEST_ID = "request-id";
+const std::string JSON_CA_STATUS = "status";
+const std::string JSON_CA_CHALLENGES = "challenges";
+const std::string JSON_CA_CHALLENGE_ID = "challenge-id";
+const std::string JSON_CA_CERT_ID = "certificate-id";
+
+// JSON format for Challenge Module
+const std::string JSON_CHALLENGE_STATUS = "challenge-status";
+const std::string JSON_CHALLENGE_REMAINING_TRIES = "remaining-tries";
+const std::string JSON_CHALLENGE_REMAINING_TIME = "remaining-time";
+
+// JSON format for Certificate Requester
+const std::string JSON_CLIENT_PROBE_INFO = "probe-info";
+const std::string JSON_CLIENT_ECDH = "ecdh-pub";
+const std::string JSON_CLIENT_CERT_REQ = "cert-request";
+const std::string JSON_CLIENT_SELECTED_CHALLENGE = "selected-challenge";
+
+// NDNCERT Status Enum
+enum {
+  STATUS_BEFORE_CHALLENGE = 0,
+  STATUS_CHALLENGE = 1,
+  STATUS_PENDING = 2,
+  STATUS_SUCCESS = 3,
+  STATUS_FAILURE = 4,
+  STATUS_NOT_STARTED = 5
+};
+
+// Pre-defined challenge status
+const std::string CHALLENGE_STATUS_SUCCESS = "success";
+const std::string CHALLENGE_STATUS_FAILURE_TIMEOUT = "failure-timeout";
+const std::string CHALLENGE_STATUS_FAILURE_MAXRETRY = "failure-max-retry";
+const std::string CHALLENGE_STATUS_UNKNOWN_CHALLENGE = "unknown-challenge";
 
 } // namespace ndncert
 } // namespace ndn

@@ -18,35 +18,27 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "test-common.hpp"
+#ifndef NDNCERT_CRYPTO_SUPPORT_ENC_TLV_HPP
+#define NDNCERT_CRYPTO_SUPPORT_ENC_TLV_HPP
+
+#include <ndn-cxx/encoding/block-helpers.hpp>
 
 namespace ndn {
 namespace ndncert {
-namespace tests {
 
-// See https://redmine.named-data.net/projects/nfd/wiki/UnitTesting on how to name a test suite.
-BOOST_AUTO_TEST_SUITE(TestSkeleton)
+enum {
+  ENCRYPTED_PAYLOAD = 630,
+  INITIAL_VECTOR = 632,
+};
 
-BOOST_AUTO_TEST_CASE(Test1)
-{
-  int i = 0;
+Block
+genEncBlock(uint32_t tlv_type, const uint8_t* key, size_t keyLen, const uint8_t* payload, size_t payloadSize);
 
-  // For reference of available Boost.Test macros, see
-  // http://www.boost.org/doc/libs/1_54_0/libs/test/doc/html/utf/testing-tools/reference.html
+Buffer
+parseEncBlock(const uint8_t* key, size_t keyLen, const Block& block);
 
-  BOOST_REQUIRE_NO_THROW(i = 1);
-  BOOST_REQUIRE_EQUAL(i, 1);
-}
 
-// Use UnitTestTimeFixture to mock clocks.
-BOOST_FIXTURE_TEST_CASE(Test2, UnitTestTimeFixture)
-{
-  // this->advanceClocks increments mock clocks.
-  advanceClocks(time::milliseconds(500), 2);
-}
-
-BOOST_AUTO_TEST_SUITE_END()
-
-} // namespace tests
 } // namespace ndncert
 } // namespace ndn
+
+#endif // NDNCERT_CRYPTO_SUPPORT_ENC_TLV_HPP

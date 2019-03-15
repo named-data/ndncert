@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2018, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -31,15 +31,9 @@ NDNCERT_REGISTER_CHALLENGE(ChallengeEmail, "Email");
 
 const std::string ChallengeEmail::NEED_CODE = "need-code";
 const std::string ChallengeEmail::WRONG_CODE = "wrong-code";
-
 const std::string ChallengeEmail::FAILURE_INVALID_EMAIL = "failure-invalid-email";
-const std::string ChallengeEmail::FAILURE_TIMEOUT = "timeout";
-const std::string ChallengeEmail::FAILURE_MAXRETRY = "max-retry";
-
 const std::string ChallengeEmail::JSON_EMAIL = "email";
-const std::string ChallengeEmail::JSON_CODE_TP = "code-timepoint";
 const std::string ChallengeEmail::JSON_CODE = "code";
-const std::string ChallengeEmail::JSON_ATTEMPT_TIMES = "attempt-times";
 
 ChallengeEmail::ChallengeEmail(const std::string& scriptPath,
                                const size_t& maxAttemptTimes,
@@ -51,129 +45,121 @@ ChallengeEmail::ChallengeEmail(const std::string& scriptPath,
 {
 }
 
-JsonSection
-ChallengeEmail::processSelectInterest(const Interest& interest, CertificateRequest& request)
+// For CA
+void
+ChallengeEmail::handleChallengeRequest(const JsonSection& params, CertificateRequest& request)
 {
-  // interest format: /caName/CA/_SELECT/{"request-id":"id"}/EMAIL/{"Email":"email"}/<signature>
-  JsonSection emailJson = getJsonFromNameComponent(interest.getName(),
-                                                   request.getCaName().size() + 4);
-  std::string emailAddress = emailJson.get<std::string>(JSON_EMAIL);
-  if (!isValidEmailAddress(emailAddress)) {
-    request.setStatus(FAILURE_INVALID_EMAIL);
-    request.setChallengeType(CHALLENGE_TYPE);
-    return genFailureJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE, FAILURE_INVALID_EMAIL);
+  if (request.m_challengeStatus == "") {
+    // for the first time, init the challenge
+    std::string emailAddress = params.get<std::string>(JSON_EMAIL);
+    if (!isValidEmailAddress(emailAddress)) {
+      request.m_status = STATUS_FAILURE;
+      request.m_challengeStatus = FAILURE_INVALID_EMAIL;
+      return;
+    }
+    request.m_status = STATUS_CHALLENGE;
+    request.m_challengeStatus = NEED_CODE;
+    request.m_challengeType = CHALLENGE_TYPE;
+    std::string emailCode = generateSecretCode();
+    JsonSection secretJson;
+    secretJson.add(JSON_CODE, emailCode);
+    request.m_challengeSecrets = secretJson;
+    request.m_challengeTp = time::toIsoString(time::system_clock::now());
+    request.m_remainingTime = m_secretLifetime.count();
+    request.m_remainingTries = m_maxAttemptTimes;
+    // send out the email
+    sendEmail(emailAddress, emailCode, request);
+    _LOG_TRACE("Secret for request " << request.m_requestId << " : " << emailCode);
+    return;
   }
-
-  std::string emailCode = generateSecretCode();
-  sendEmail(emailAddress, emailCode, request.getCaName().toUri());
-
-  request.setStatus(NEED_CODE);
-  request.setChallengeType(CHALLENGE_TYPE);
-  request.setChallengeSecrets(generateStoredSecrets(time::system_clock::now(),
-                                                    emailCode, m_maxAttemptTimes));
-  return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, NEED_CODE);
-}
-
-JsonSection
-ChallengeEmail::processValidateInterest(const Interest& interest, CertificateRequest& request)
-{
-  // interest format: /caName/CA/_VALIDATION/{"request-id":"id"}/EMAIL/{"code":"code"}/<signature>
-  JsonSection infoJson = getJsonFromNameComponent(interest.getName(), request.getCaName().size() + 4);
-  std::string givenCode = infoJson.get<std::string>(JSON_CODE);
-
-  const auto parsedSecret = parseStoredSecrets(request.getChallengeSecrets());
-  if (time::system_clock::now() - std::get<0>(parsedSecret) >= m_secretLifetime) {
-    // secret expires
-    request.setStatus(FAILURE_TIMEOUT);
-    request.setChallengeSecrets(JsonSection());
-    return genFailureJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE, FAILURE_TIMEOUT);
-  }
-  else if (givenCode == std::get<1>(parsedSecret)) {
-    request.setStatus(SUCCESS);
-    request.setChallengeSecrets(JsonSection());
-    Name downloadName = genDownloadName(request.getCaName(), request.getRequestId());
-    return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, SUCCESS, downloadName);
-  }
-  else {
-    // check rest attempt times
-    if (std::get<2>(parsedSecret) > 1) {
-      int restAttemptTimes = std::get<2>(parsedSecret) - 1;
-      request.setStatus(WRONG_CODE);
-      request.setChallengeSecrets(generateStoredSecrets(std::get<0>(parsedSecret),
-                                                        std::get<1>(parsedSecret),
-                                                        restAttemptTimes));
-      return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, WRONG_CODE);
+  else if (request.m_challengeStatus == NEED_CODE || request.m_challengeStatus == WRONG_CODE) {
+    _LOG_TRACE("Challenge Interest arrives. Challenge Status: " << request.m_challengeStatus);
+    // the incoming interest should bring the pin code
+    std::string givenCode = params.get<std::string>(JSON_CODE);
+    const auto realCode = request.m_challengeSecrets.get<std::string>(JSON_CODE);
+    if (time::system_clock::now() - time::fromIsoString(request.m_challengeTp) >= m_secretLifetime) {
+      // secret expires
+      request.m_status = STATUS_FAILURE;
+      request.m_challengeStatus = CHALLENGE_STATUS_FAILURE_TIMEOUT;
+      updateRequestOnChallengeEnd(request);
+      _LOG_TRACE("Secret expired. Challenge failed.");
+      return;
+    }
+    else if (givenCode == realCode) {
+      // the code is correct
+      request.m_status = STATUS_PENDING;
+      request.m_challengeStatus = CHALLENGE_STATUS_SUCCESS;
+      updateRequestOnChallengeEnd(request);
+      _LOG_TRACE("Secret code matched. Challenge succeeded.");
+      return;
     }
     else {
-      // run out times
-      request.setStatus(FAILURE_MAXRETRY);
-      request.setChallengeSecrets(JsonSection());
-      return genFailureJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE, FAILURE_MAXRETRY);
+      // check rest attempt times
+      if (request.m_remainingTries > 1) {
+        request.m_challengeStatus = WRONG_CODE;
+        request.m_remainingTries = request.m_remainingTries - 1;
+        auto remainTime = m_secretLifetime - (time::system_clock::now() - time::fromIsoString(request.m_challengeTp));
+        request.m_remainingTime = remainTime.count();
+        _LOG_TRACE("Secret code didn't match. Remaining Tries - 1.");
+        return;
+      }
+      else {
+        // run out times
+        request.m_status = STATUS_FAILURE;
+        request.m_challengeStatus = CHALLENGE_STATUS_FAILURE_MAXRETRY;
+        updateRequestOnChallengeEnd(request);
+        _LOG_TRACE("Secret code didn't match. Ran out tires. Challenge failed.");
+        return;
+      }
     }
   }
-}
-
-std::list<std::string>
-ChallengeEmail::getSelectRequirements()
-{
-  std::list<std::string> result;
-  result.push_back("Please input your email address:");
-  return result;
-}
-
-std::list<std::string>
-ChallengeEmail::getValidateRequirements(const std::string& status)
-{
-  std::list<std::string> result;
-  if (status == NEED_CODE) {
-    result.push_back("Please input your verification code:");
+  else {
+    _LOG_ERROR("The challenge status is wrong");
+    request.m_status = STATUS_FAILURE;
+    return;
   }
-  else if (status == WRONG_CODE) {
-    result.push_back("Incorrect PIN code, please try again and input your verification code:");
-  }
-  return result;
 }
 
+// For Client
 JsonSection
-ChallengeEmail::doGenSelectParamsJson(const std::string& status,
-                                      const std::list<std::string>& paramList)
+ChallengeEmail::getRequirementForChallenge(int status, const std::string& challengeStatus)
 {
   JsonSection result;
-  BOOST_ASSERT(status == WAIT_SELECTION);
-  BOOST_ASSERT(paramList.size() == 1);
-  result.put(JSON_EMAIL, paramList.front());
+  if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
+    result.put(JSON_EMAIL, "Please_input_your_email_address");
+  }
+  else if (status == STATUS_CHALLENGE && challengeStatus == NEED_CODE) {
+    result.put(JSON_CODE, "Please_input_your_verification_code");
+  }
+  else if (status == STATUS_CHALLENGE && challengeStatus == WRONG_CODE) {
+    result.put(JSON_CODE, "Incorrect_code_please_try_again");
+  }
+  else {
+    _LOG_ERROR("CA's status and challenge status are wrong");
+  }
   return result;
 }
 
 JsonSection
-ChallengeEmail::doGenValidateParamsJson(const std::string& status,
-                                        const std::list<std::string>& paramList)
+ChallengeEmail::genChallengeRequestJson(int status, const std::string& challengeStatus, const JsonSection& params)
 {
   JsonSection result;
-  BOOST_ASSERT(paramList.size() == 1);
-  result.put(JSON_CODE, paramList.front());
+  if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
+    result.put(JSON_CLIENT_SELECTED_CHALLENGE, CHALLENGE_TYPE);
+    result.put(JSON_EMAIL, params.get<std::string>(JSON_EMAIL, ""));
+  }
+  else if (status == STATUS_CHALLENGE && challengeStatus == NEED_CODE) {
+    result.put(JSON_CLIENT_SELECTED_CHALLENGE, CHALLENGE_TYPE);
+    result.put(JSON_CODE, params.get<std::string>(JSON_CODE, ""));
+  }
+  else if (status == STATUS_CHALLENGE && challengeStatus == WRONG_CODE) {
+    result.put(JSON_CLIENT_SELECTED_CHALLENGE, CHALLENGE_TYPE);
+    result.put(JSON_CODE, params.get<std::string>(JSON_CODE, ""));
+  }
+  else {
+    _LOG_ERROR("Client's status and challenge status are wrong");
+  }
   return result;
-}
-
-std::tuple<time::system_clock::TimePoint, std::string, int>
-ChallengeEmail::parseStoredSecrets(const JsonSection& storedSecrets)
-{
-  auto tp = time::fromIsoString(storedSecrets.get<std::string>(JSON_CODE_TP));
-  std::string rightCode= storedSecrets.get<std::string>(JSON_CODE);
-  int attemptTimes = std::stoi(storedSecrets.get<std::string>(JSON_ATTEMPT_TIMES));
-
-  return std::make_tuple(tp, rightCode, attemptTimes);
-}
-
-JsonSection
-ChallengeEmail::generateStoredSecrets(const time::system_clock::TimePoint& tp,
-                                    const std::string& secretCode, int attempTimes)
-{
-  JsonSection json;
-  json.put(JSON_CODE_TP, time::toIsoString(tp));
-  json.put(JSON_CODE, secretCode);
-  json.put(JSON_ATTEMPT_TIMES, std::to_string(attempTimes));
-  return json;
 }
 
 bool
@@ -186,10 +172,10 @@ ChallengeEmail::isValidEmailAddress(const std::string& emailAddress)
 
 void
 ChallengeEmail::sendEmail(const std::string& emailAddress, const std::string& secret,
-                          const std::string& caName) const
+                          const CertificateRequest& request) const
 {
   std::string command = m_sendEmailScript;
-  command += " \"" + emailAddress + "\" \"" + secret + "\" \"" + caName + "\"";
+  command += " \"" + emailAddress + "\" \"" + secret + "\" \"" + request.m_caName.toUri() + "\"";
   int result = system(command.c_str());
   if (result == -1) {
     _LOG_TRACE("EmailSending Script " + m_sendEmailScript + " fails.");

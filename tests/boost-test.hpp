@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014-2017, Regents of the University of California,
+ * Copyright (c) 2014-2019, Regents of the University of California,
  *                          Arizona Board of Regents,
  *                          Colorado State University,
  *                          University Pierre & Marie Curie, Sorbonne University,
@@ -25,15 +25,16 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef CERT_TESTS_BOOST_TEST_HPP
-#define CERT_TESTS_BOOST_TEST_HPP
+#ifndef NDNCERT_TESTS_BOOST_TEST_HPP
+#define NDNCERT_TESTS_BOOST_TEST_HPP
 
 // suppress warnings from Boost.Test
 #pragma GCC system_header
 #pragma clang system_header
 
+#define BOOST_TEST_DYN_LINK
 #include <boost/test/unit_test.hpp>
 #include <boost/concept_check.hpp>
 #include <boost/test/output_test_stream.hpp>
 
-#endif // CERT_TESTS_BOOST_TEST_HPP
+#endif // NDNCERT_TESTS_BOOST_TEST_HPP

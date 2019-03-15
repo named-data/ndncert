@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -40,41 +40,24 @@ CaConfig::load(const std::string& fileName)
   if (configJson.begin() == configJson.end()) {
     BOOST_THROW_EXCEPTION(Error("Error processing configuration file: " + fileName + " no data"));
   }
-
   parse(configJson);
 }
 
 void
 CaConfig::parse(const JsonSection& configJson)
 {
-  m_caItems.clear();
-  auto caList = configJson.get_child("ca-list");
-  auto it = caList.begin();
-  for (; it != caList.end(); it++) {
-    CaItem item;
-
     // essential info
-    item.m_caName = Name(it->second.get<std::string>("ca-prefix"));
-    item.m_freshnessPeriod = time::seconds(it->second.get("issuing-freshness", 720));
-    item.m_validityPeriod = time::days(it->second.get("validity-period", 360));
+    m_caName = Name(configJson.get<std::string>("ca-prefix"));
+    m_freshnessPeriod = time::seconds(configJson.get("issuing-freshness", 720));
+    m_validityPeriod = time::days(configJson.get("max-validity-period", 360));
 
     // optional info
-    item.m_probe = it->second.get("probe", "");
-    item.m_caInfo = it->second.get("ca-info", "");
-    item.m_targetedList = it->second.get("targeted-list", "");
+    m_probe = configJson.get("probe", "");
+    m_caInfo = configJson.get("ca-info", "");
 
     // optional supported challenges
-    auto challengeList = it->second.get_child("supported-challenges");
-    item.m_supportedChallenges = parseChallengeList(challengeList);
-
-    // related cas
-    auto relatedCaList = it->second.get_child_optional("related-ca-list");
-    if (relatedCaList) {
-      item.m_relatedCaList = parseRelatedCaList(*relatedCaList);
-    }
-
-    m_caItems.push_back(item);
-  }
+    auto challengeList = configJson.get_child("supported-challenges");
+    m_supportedChallenges = parseChallengeList(challengeList);
 }
 
 std::list<std::string>
@@ -84,18 +67,6 @@ CaConfig::parseChallengeList(const JsonSection& section)
   auto it = section.begin();
   for (; it != section.end(); it++) {
     result.push_back(it->second.get<std::string>("type"));
-  }
-  return result;
-}
-
-std::list<Name>
-CaConfig::parseRelatedCaList(const JsonSection& section)
-{
-  std::list<Name> result;
-  auto it = section.begin();
-  for (; it != section.end(); it++) {
-    Name item(it->second.get<std::string>("ca-prefix"));
-    result.push_back(item);
   }
   return result;
 }

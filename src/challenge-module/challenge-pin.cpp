@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -20,7 +20,6 @@
 
 #include "challenge-pin.hpp"
 #include "logging.hpp"
-#include "json-helper.hpp"
 #include <ndn-cxx/util/random.hpp>
 
 namespace ndn {
@@ -32,13 +31,7 @@ NDNCERT_REGISTER_CHALLENGE(ChallengePin, "PIN");
 
 const std::string ChallengePin::NEED_CODE = "need-code";
 const std::string ChallengePin::WRONG_CODE = "wrong-code";
-
-const std::string ChallengePin::FAILURE_TIMEOUT = "failure-timeout";
-const std::string ChallengePin::FAILURE_MAXRETRY = "failure-max-retry";
-
-const std::string ChallengePin::JSON_CODE_TP = "code-timepoint";
-const std::string ChallengePin::JSON_PIN_CODE = "code";
-const std::string ChallengePin::JSON_ATTEMPT_TIMES = "attempt-times";
+const std::string ChallengePin::JSON_PIN_CODE = "pin-code";
 
 ChallengePin::ChallengePin(const size_t& maxAttemptTimes, const time::seconds& secretLifetime)
   : ChallengeModule("PIN")
@@ -47,118 +40,114 @@ ChallengePin::ChallengePin(const size_t& maxAttemptTimes, const time::seconds& s
 {
 }
 
-JsonSection
-ChallengePin::processSelectInterest(const Interest& interest, CertificateRequest& request)
+// For CA
+void
+ChallengePin::handleChallengeRequest(const JsonSection& params, CertificateRequest& request)
 {
-  // interest format: /caName/CA/_SELECT/{"request-id":"id"}/PIN/<signature>
-  request.setStatus(NEED_CODE);
-  request.setChallengeType(CHALLENGE_TYPE);
-  std::string secretCode = generateSecretCode();
-  request.setChallengeSecrets(generateStoredSecrets(time::system_clock::now(),
-                                                    secretCode,
-                                                    m_maxAttemptTimes));
-  _LOG_TRACE("Secret for request " << request.getRequestId() << " : " << secretCode);
-  return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, NEED_CODE);
-}
-
-JsonSection
-ChallengePin::processValidateInterest(const Interest& interest, CertificateRequest& request)
-{
-  // interest format: /caName/CA/_VALIDATION/{"request-id":"id"}/PIN/{"code":"code"}/<signature>
-  JsonSection infoJson = getJsonFromNameComponent(interest.getName(), request.getCaName().size() + 4);
-  std::string givenCode = infoJson.get<std::string>(JSON_PIN_CODE);
-
-  const auto parsedSecret = parseStoredSecrets(request.getChallengeSecrets());
-  if (time::system_clock::now() - std::get<0>(parsedSecret) >= m_secretLifetime) {
-    // secret expires
-    request.setStatus(FAILURE_TIMEOUT);
-    request.setChallengeSecrets(JsonSection());
-    return genFailureJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE, FAILURE_TIMEOUT);
+  if (request.m_challengeStatus == "") {
+    _LOG_TRACE("Challenge Interest arrives. Init the challenge");
+    // for the first time, init the challenge
+    request.m_status = STATUS_CHALLENGE;
+    request.m_challengeStatus = NEED_CODE;
+    request.m_challengeType = CHALLENGE_TYPE;
+    std::string secretCode = generateSecretCode();
+    JsonSection secretJson;
+    secretJson.add(JSON_PIN_CODE, secretCode);
+    request.m_challengeSecrets = secretJson;
+    request.m_challengeTp = time::toIsoString(time::system_clock::now());
+    request.m_remainingTime = m_secretLifetime.count();
+    request.m_remainingTries = m_maxAttemptTimes;
+    _LOG_TRACE("Secret for request " << request.m_requestId << " : " << secretCode);
+    return;
   }
-  else if (givenCode == std::get<1>(parsedSecret)) {
-    request.setStatus(SUCCESS);
-    request.setChallengeSecrets(JsonSection());
-    Name downloadName = genDownloadName(request.getCaName(), request.getRequestId());
-    return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, SUCCESS, downloadName);
-  }
-  else {
-    // check rest attempt times
-    if (std::get<2>(parsedSecret) > 1) {
-      int restAttemptTimes = std::get<2>(parsedSecret) - 1;
-      request.setStatus(WRONG_CODE);
-      request.setChallengeSecrets(generateStoredSecrets(std::get<0>(parsedSecret),
-                                                        std::get<1>(parsedSecret),
-                                                        restAttemptTimes));
-      return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, WRONG_CODE);
+  else if (request.m_challengeStatus == NEED_CODE || request.m_challengeStatus == WRONG_CODE) {
+    _LOG_TRACE("Challenge Interest arrives. Challenge Status: " << request.m_challengeStatus);
+    // the incoming interest should bring the pin code
+    std::string givenCode = params.get<std::string>(JSON_PIN_CODE);
+    const auto realCode = request.m_challengeSecrets.get<std::string>(JSON_PIN_CODE);
+    if (time::system_clock::now() - time::fromIsoString(request.m_challengeTp) >= m_secretLifetime) {
+      // secret expires
+      request.m_status = STATUS_FAILURE;
+      request.m_challengeStatus = CHALLENGE_STATUS_FAILURE_TIMEOUT;
+      updateRequestOnChallengeEnd(request);
+      _LOG_TRACE("Secret expired. Challenge failed.");
+      return;
+    }
+    else if (givenCode == realCode) {
+      // the code is correct
+      request.m_status = STATUS_PENDING;
+      request.m_challengeStatus = CHALLENGE_STATUS_SUCCESS;
+      updateRequestOnChallengeEnd(request);
+      _LOG_TRACE("PIN code matched. Challenge succeeded.");
+      return;
     }
     else {
-      // run out times
-      request.setStatus(FAILURE_MAXRETRY);
-      request.setChallengeSecrets(JsonSection());
-      return genFailureJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE, FAILURE_MAXRETRY);
+      // check rest attempt times
+      if (request.m_remainingTries > 1) {
+        request.m_challengeStatus = WRONG_CODE;
+        request.m_remainingTries = request.m_remainingTries - 1;
+        auto remainTime = m_secretLifetime - (time::system_clock::now() - time::fromIsoString(request.m_challengeTp));
+        request.m_remainingTime = remainTime.count();
+        _LOG_TRACE("PIN code didn't match. Remaining Tries - 1.");
+        return;
+      }
+      else {
+        // run out times
+        request.m_status = STATUS_FAILURE;
+        request.m_challengeStatus = CHALLENGE_STATUS_FAILURE_MAXRETRY;
+        updateRequestOnChallengeEnd(request);
+        _LOG_TRACE("PIN code didn't match. Ran out tires. Challenge failed.");
+        return;
+      }
     }
   }
-}
-
-std::list<std::string>
-ChallengePin::getSelectRequirements()
-{
-  std::list<std::string> result;
-  return result;
-}
-
-std::list<std::string>
-ChallengePin::getValidateRequirements(const std::string& status)
-{
-  std::list<std::string> result;
-  if (status == NEED_CODE) {
-    result.push_back("Please input your verification code:");
+  else {
+    _LOG_ERROR("The challenge status is wrong");
+    request.m_status = STATUS_FAILURE;
+    return;
   }
-  else if (status == WRONG_CODE) {
-    result.push_back("Incorrect PIN code, please try again and input your verification code:");
-  }
-  return result;
 }
 
+// For Client
 JsonSection
-ChallengePin::doGenSelectParamsJson(const std::string& status,
-                                    const std::list<std::string>& paramList)
+ChallengePin::getRequirementForChallenge(int status, const std::string& challengeStatus)
 {
   JsonSection result;
-  BOOST_ASSERT(status == WAIT_SELECTION);
-  BOOST_ASSERT(paramList.size() == 0);
+  if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
+    // do nothing
+  }
+  else if (status == STATUS_CHALLENGE && challengeStatus == NEED_CODE) {
+    result.put(JSON_PIN_CODE, "Please_input_your_verification_code");
+  }
+  else if (status == STATUS_CHALLENGE && challengeStatus == WRONG_CODE) {
+    result.put(JSON_PIN_CODE, "Incorrect_PIN_code_please_try_again");
+  }
+  else {
+    _LOG_ERROR("Client's status and challenge status are wrong");
+  }
   return result;
 }
 
 JsonSection
-ChallengePin::doGenValidateParamsJson(const std::string& status,
-                                      const std::list<std::string>& paramList)
+ChallengePin::genChallengeRequestJson(int status, const std::string& challengeStatus, const JsonSection& params)
 {
   JsonSection result;
-  BOOST_ASSERT(paramList.size() == 1);
-  result.put(JSON_PIN_CODE, paramList.front());
+  if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
+    // do nothing
+    result.put(JSON_CLIENT_SELECTED_CHALLENGE, CHALLENGE_TYPE);
+  }
+  else if (status == STATUS_CHALLENGE && challengeStatus == NEED_CODE) {
+    result.put(JSON_CLIENT_SELECTED_CHALLENGE, CHALLENGE_TYPE);
+    result.put(JSON_PIN_CODE, params.get<std::string>(JSON_PIN_CODE, ""));
+  }
+  else if (status == STATUS_CHALLENGE && challengeStatus == WRONG_CODE) {
+    result.put(JSON_CLIENT_SELECTED_CHALLENGE, CHALLENGE_TYPE);
+    result.put(JSON_PIN_CODE, params.get<std::string>(JSON_PIN_CODE, ""));
+  }
+  else {
+    _LOG_ERROR("Client's status and challenge status are wrong");
+  }
   return result;
-}
-
-std::tuple<time::system_clock::TimePoint, std::string, int>
-ChallengePin::parseStoredSecrets(const JsonSection& storedSecrets)
-{
-  auto tp = time::fromIsoString(storedSecrets.get<std::string>(JSON_CODE_TP));
-  std::string rightCode= storedSecrets.get<std::string>(JSON_PIN_CODE);
-  int attemptTimes = std::stoi(storedSecrets.get<std::string>(JSON_ATTEMPT_TIMES));
-
-  return std::make_tuple(tp, rightCode, attemptTimes);
-}
-
-JsonSection
-ChallengePin::generateStoredSecrets(const time::system_clock::TimePoint& tp,
-                                    const std::string& secretCode, int attempTimes)
-{
-  JsonSection json;
-  json.put(JSON_CODE_TP, time::toIsoString(tp));
-  json.put(JSON_PIN_CODE, secretCode);
-  json.put(JSON_ATTEMPT_TIMES, std::to_string(attempTimes));
-  return json;
 }
 
 } // namespace ndncert

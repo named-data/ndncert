@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -29,51 +29,17 @@ namespace ndn {
 namespace ndncert {
 namespace tests {
 
-BOOST_FIXTURE_TEST_SUITE(TestCaConfig, IdentityManagementV2Fixture)
+BOOST_FIXTURE_TEST_SUITE(TestCaConfig, IdentityManagementFixture)
 
 BOOST_AUTO_TEST_CASE(ReadConfigFileWithFileAnchor)
 {
   CaConfig config;
   config.load("tests/unit-tests/ca.conf.test");
-
-  int count = 0;
-  for (auto item : config.m_caItems) {
-    if (item.m_caName.toUri() == "/ndn") {
-      BOOST_CHECK_EQUAL(item.m_freshnessPeriod, time::seconds(720));
-      BOOST_CHECK_EQUAL(item.m_validityPeriod, time::days(360));
-      BOOST_CHECK_EQUAL(item.m_probe, "input email address");
-      BOOST_CHECK_EQUAL(item.m_caInfo, "ndn testbed ca");
-      BOOST_CHECK_EQUAL(item.m_targetedList,
-                        "Use your email address (edu preferred) as input");
-      BOOST_CHECK_EQUAL(item.m_relatedCaList.size(), 2);
-
-      // check related ca
-      auto relatedCaA = item.m_relatedCaList.front();
-      BOOST_CHECK_EQUAL(relatedCaA.toUri(), "/ndn/edu/arizona");
-      auto relatedCaB = item.m_relatedCaList.back();
-      BOOST_CHECK_EQUAL(relatedCaB.toUri(), "/ndn/edu/memphis");
-
-      BOOST_CHECK_EQUAL(count, 0);
-      count++;
-    }
-    else if (item.m_caName.toUri() == "/ndn/edu/ucla/cs/zhiyi") {
-      BOOST_CHECK_EQUAL(item.m_probe, "");
-      BOOST_CHECK_EQUAL(item.m_freshnessPeriod, time::seconds(720));
-      BOOST_CHECK_EQUAL(item.m_validityPeriod, time::days(360));
-      BOOST_CHECK_EQUAL(item.m_supportedChallenges.size(), 1);
-
-      BOOST_CHECK_EQUAL(count, 1);
-      count++;
-    }
-    else if (item.m_caName.toUri() == "/ndn/site1") {
-      BOOST_CHECK(item.m_probe != "");
-      BOOST_CHECK_EQUAL(item.m_freshnessPeriod, time::seconds(720));
-      BOOST_CHECK_EQUAL(item.m_validityPeriod, time::days(360));
-      BOOST_CHECK_EQUAL(item.m_supportedChallenges.size(), 1);
-
-      BOOST_CHECK_EQUAL(count, 2);
-    }
-  }
+  BOOST_CHECK_EQUAL(config.m_caName.toUri(), "/ndn");
+  BOOST_CHECK_EQUAL(config.m_freshnessPeriod, time::seconds(720));
+  BOOST_CHECK_EQUAL(config.m_validityPeriod, time::days(360));
+  BOOST_CHECK_EQUAL(config.m_probe, "input email address");
+  BOOST_CHECK_EQUAL(config.m_caInfo, "ndn testbed ca");
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TestCaConfig

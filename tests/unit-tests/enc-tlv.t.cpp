@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -18,38 +18,34 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "boost-test.hpp"
-#include "challenge-module.hpp"
+#include "crypto-support/enc-tlv.hpp"
+#include "crypto-support/crypto-helper.hpp"
+#include "test-common.hpp"
 
 namespace ndn {
 namespace ndncert {
 namespace tests {
 
-BOOST_AUTO_TEST_SUITE(TestChallengeModule)
+BOOST_AUTO_TEST_SUITE(TestEncTlv)
 
-BOOST_AUTO_TEST_CASE(GetJsonFromNameComponent)
+BOOST_AUTO_TEST_CASE(Test0)
 {
-  JsonSection json;
-  json.put("test", "123");
-  std::stringstream ss;
-  boost::property_tree::write_json(ss, json);
-  std::string jsonString = ss.str();
-  Block jsonContent = makeStringBlock(ndn::tlv::NameComponent, ss.str());
+  ECDHState aliceState;
+  auto alicePub = aliceState.getRawSelfPubKey();
+  BOOST_CHECK(aliceState.context->publicKeyLen != 0);
 
-  Name name("ndn");
-  name.append(jsonContent);
-  BOOST_CHECK(ChallengeModule::getJsonFromNameComponent(name, 1) == json);
-}
+  ECDHState bobState;
+  auto bobPub = bobState.getRawSelfPubKey();
+  BOOST_CHECK(bobState.context->publicKeyLen != 0);
 
-BOOST_AUTO_TEST_CASE(GenDownloadName)
-{
-  Name interestName = ChallengeModule::genDownloadName(Name("ca"), "123");
-  BOOST_CHECK_EQUAL(interestName.getSubName(0, 1), Name("ca"));
-  BOOST_CHECK_EQUAL(interestName.getSubName(1, 1), Name("_DOWNLOAD"));
+  auto aliceResult = aliceState.deriveSecret(bobPub, bobState.context->publicKeyLen);
+  BOOST_CHECK(aliceState.context->sharedSecretLen != 0);
 
-  JsonSection json;
-  json.put(JSON_REQUEST_ID, "123");
-  BOOST_CHECK(ChallengeModule::getJsonFromNameComponent(interestName, 2) == json);
+  auto bobResult = bobState.deriveSecret(alicePub, aliceState.context->publicKeyLen);
+  BOOST_CHECK(bobState.context->sharedSecretLen != 0);
+
+  BOOST_CHECK_EQUAL_COLLECTIONS(aliceResult, aliceResult + 32,
+                                bobResult, bobResult + 32);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

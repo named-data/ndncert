@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2018, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -40,95 +40,23 @@ class CertificateRequest
 {
 public:
   CertificateRequest();
-
-  CertificateRequest(const Name& caName, const std::string& requestId,
-                     const security::v2::Certificate& cert);
-
-  CertificateRequest(const Name& caName, const std::string& requestId,
-                     const std::string& status, const std::string& challengeType,
-                     const std::string& challengeSecrets,
-                     const security::v2::Certificate& cert);
-
-  const Name&
-  getCaName() const
-  {
-    return m_caName;
-  }
-
-  const std::string&
-  getRequestId() const
-  {
-    return m_requestId;
-  }
-
-  const std::string&
-  getStatus() const
-  {
-    return m_status;
-  }
-
-  const std::string&
-  getChallengeType() const
-  {
-    return m_challengeType;
-  }
-
-  const JsonSection&
-  getChallengeSecrets() const
-  {
-    return m_challengeSecrets;
-  }
-
-  const security::v2::Certificate&
-  getCert() const
-  {
-    return m_cert;
-  }
-
-  void
-  setCert(security::v2::Certificate cert)
-  {
-    m_cert = std::move(cert);
-  }
-
-  void
-  setStatus(const std::string& status)
-  {
-    m_status = status;
-  }
-
-  void
-  setChallengeType(const std::string& challengeType)
-  {
-    m_challengeType = challengeType;
-  }
-
-  void
-  setChallengeSecrets(const JsonSection& challengeSecrets)
-  {
-    m_challengeSecrets = challengeSecrets;
-  }
-
-  bool
-  isEmpty()
-  {
-    return m_requestId == "";
-  }
-
-private:
+  CertificateRequest(const Name& caName, const std::string& requestId, int status, const security::v2::Certificate& cert);
+  CertificateRequest(const Name& caName, const std::string& requestId, int status,
+                     const std::string& challengeStatus, const std::string& challengeType,
+                     const std::string& challengeTp, int remainingTime, int remainingTries,
+                     const JsonSection& challengeSecrets, const security::v2::Certificate& cert);
+public:
   Name m_caName;
-  std::string m_requestId;
-  std::string m_status;
-  std::string m_challengeType;
-
-  /**
-   * @brief Defined by ChallengeModule to store secret information.
-   *
-   * This field will be stored by CA.
-   */
-  JsonSection m_challengeSecrets;
-
+  std::string m_requestId = "";
+  int m_status = -1;
   security::v2::Certificate m_cert;
+
+  std::string m_challengeStatus = "";
+  std::string m_challengeType = "";
+  std::string m_challengeTp = "";
+  int m_remainingTime = 0;
+  int m_remainingTries = 0;
+  JsonSection m_challengeSecrets;
 };
 
 std::ostream&

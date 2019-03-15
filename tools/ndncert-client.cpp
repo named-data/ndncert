@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2018, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -20,10 +20,8 @@
 
 #include "client-module.hpp"
 #include "challenge-module.hpp"
-
 #include <iostream>
 #include <string>
-
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -32,208 +30,252 @@
 namespace ndn {
 namespace ndncert {
 
+static void startApplication();
+
 int nStep;
+Face face;
+security::v2::KeyChain keyChain;
+std::string challengeType;
+ClientModule client(keyChain);
 
-class ClientTool
+static std::list<std::string>
+captureParams(const JsonSection& requirement)
 {
-public:
-  ClientTool(ClientModule& clientModule)
-    : client(clientModule)
-  {
+  std::list<std::string> results;
+  for (auto& item : requirement) {
+    std::cerr << item.second.get<std::string>("") << std::endl;
+    std::cerr << "Please provide the argument: " << item.first << " : " << std::endl;
+    std::string tempParam;
+    getline(std::cin, tempParam);
+    results.push_back(tempParam);
   }
-
-  void
-  errorCb(const std::string& errorInfo)
-  {
-    std::cerr << "Error: " << errorInfo << std::endl;
+  std::cerr << "Got it. This is what you've provided:" << std::endl;
+  auto it1 = results.begin();
+  auto it2 = requirement.begin();
+  for (; it1 != results.end() && it2 != requirement.end(); it1++, it2++) {
+    std::cerr << it2->first << " : " << *it1 << std::endl;
   }
+  return results;
+}
 
-  void
-  downloadCb(const shared_ptr<RequestState>& state)
-  {
-    std::cerr << "Step " << nStep++
-              << "DONE! Certificate has already been installed to local keychain\n";
+static void
+onNackCb()
+{
+  std::cerr << "Got NACK\n";
+}
+
+static void
+timeoutCb()
+{
+  std::cerr << "Interest sent time out\n";
+}
+
+static void
+downloadCb(const Data& reply)
+{
+  client.onDownloadResponse(reply);
+  std::cerr << "Step " << nStep++
+            << ": DONE! Certificate has already been installed to local keychain\n";
+  return;
+}
+
+static void
+challengeCb(const Data& reply)
+{
+  client.onChallengeResponse(reply);
+  if (client.getApplicationStatus() == STATUS_SUCCESS) {
+    std::cerr << "DONE! Certificate has already been issued \n";
+    face.expressInterest(*client.generateDownloadInterest(), bind(&downloadCb, _2),
+                         bind(&onNackCb), bind(&timeoutCb));
     return;
   }
 
-  void
-  anchorCb(const Interest& request, const Data& reply,
-           const ClientCaItem& anchorItem, const Name& assignedName)
-  {
-    auto contentJson = ClientModule::getJsonFromData(reply);
-    auto caItem = ClientConfig::extractCaItem(contentJson);
-
-    if (!security::verifySignature(caItem.m_anchor, anchorItem.m_anchor)) {
-      std::cerr << "Fail to verify fetched anchor" << std::endl;
-      return;
-    }
-    client.getClientConf().m_caItems.push_back(caItem);
-
-    if (assignedName.toUri() != "/") {
-      client.sendNew(caItem, assignedName,
-                     bind(&ClientTool::newCb, this, _1),
-                     bind(&ClientTool::errorCb, this, _1));
-    }
-    else {
-      if (caItem.m_probe != "") {
-        std::cerr << "Step " << nStep++ << ": Probe Requirement-" << caItem.m_probe << std::endl;
-        std::string probeInfo;
-        getline(std::cin, probeInfo);
-        client.sendProbe(caItem, probeInfo,
-                         bind(&ClientTool::newCb, this, _1),
-                         bind(&ClientTool::errorCb, this, _1));
-      }
-      else {
-        std::cerr << "Step " << nStep++ << ": Please type in the identity name\n";
-        std::string nameComponent;
-        getline(std::cin, nameComponent);
-        Name identityName = caItem.m_caName.getPrefix(-1);
-        identityName.append(nameComponent);
-        client.sendNew(caItem, identityName,
-                       bind(&ClientTool::newCb, this, _1),
-                       bind(&ClientTool::errorCb, this, _1));
-      }
-    }
-  }
-
-  void
-  listCb(const std::list<Name>& caList, const Name& assignedName, const Name& schema,
-         const ClientCaItem& caItem)
-  {
-    if (assignedName.toUri() != "" && caList.size() == 1) {
-      // with recommendation
-
-      std::cerr << "Get recommended CA: " << caList.front()
-                << "Get recommended Identity: " << assignedName << std::endl;
-      client.requestCaTrustAnchor(caList.front(),
-                                  bind(&ClientTool::anchorCb, this, _1, _2, caItem, assignedName),
-                                  bind(&ClientTool::errorCb, this, _1));
-    }
-    else {
-      // without recommendation
-      int count = 0;
-      for (auto name : caList) {
-        std::cerr << "***************************************\n"
-                  << "Index: " << count++ << "\n"
-                  << "CA prefix:" << name << "\n"
-                  << "***************************************\n";
-      }
-      std::cerr << "Select an index to apply for a certificate\n";
-
-      std::string option;
-      getline(std::cin, option);
-      int caIndex = std::stoi(option);
-
-      std::vector<Name> caVector{std::begin(caList), std::end(caList)};
-      Name targetCaName = caVector[caIndex];
-
-      client.requestCaTrustAnchor(targetCaName,
-                                  bind(&ClientTool::anchorCb, this, _1, _2, caItem, Name("")),
-                                  bind(&ClientTool::errorCb, this, _1));
-    }
-  }
-
-  void
-  validateCb(const shared_ptr<RequestState>& state)
-  {
-    if (state->m_status == ChallengeModule::SUCCESS) {
-      std::cerr << "DONE! Certificate has already been issued \n";
-      client.requestDownload(state,
-                             bind(&ClientTool::downloadCb, this, _1),
-                             bind(&ClientTool::errorCb, this, _1));
-      return;
-    }
-
-    auto challenge = ChallengeModule::createChallengeModule(state->m_challengeType);
-    auto requirementList = challenge->getRequirementForValidate(state->m_status);
-
+  auto challenge = ChallengeModule::createChallengeModule(challengeType);
+  auto requirement = challenge->getRequirementForChallenge(client.getApplicationStatus(), client.getChallengeStatus());
+  if (requirement.size() > 0) {
     std::cerr << "Step " << nStep++ << ": Please satisfy following instruction(s)\n";
-    for (auto requirement : requirementList) {
-      std::cerr << "\t" << requirement << std::endl;
+    std::string redo = "";
+    std::list<std::string> capturedParams;
+    do {
+      capturedParams = captureParams(requirement);
+      std::cerr << "If anything is wrong, please type in OK; otherwise, type in REDO" << std::endl;
+      getline(std::cin, redo);
+    } while (redo == "REDO");
+    auto it1 = capturedParams.begin();
+    auto it2 = requirement.begin();
+    for (; it1 != capturedParams.end() && it2 != requirement.end(); it1++, it2++) {
+      it2->second.put("", *it1);
     }
-    std::list<std::string> paraList;
-    for (size_t i = 0; i < requirementList.size(); i++) {
-      std::string tempParam;
-      getline(std::cin, tempParam);
-      paraList.push_back(tempParam);
-    }
-    auto paramJson = challenge->genValidateParamsJson(state->m_status, paraList);
-    client.sendValidate(state, paramJson,
-                        bind(&ClientTool::validateCb, this, _1),
-                        bind(&ClientTool::errorCb, this, _1));
   }
+  face.expressInterest(*client.generateChallengeInterest(
+                        challenge->genChallengeRequestJson(
+                                   client.getApplicationStatus(),
+                                   client.getChallengeStatus(),
+                                   requirement)),
+                       bind(&challengeCb, _2),
+                       bind(&onNackCb),
+                       bind(&timeoutCb));
+}
 
-  void
-  selectCb(const shared_ptr<RequestState>& state)
-  {
-    auto challenge = ChallengeModule::createChallengeModule(state->m_challengeType);
-    auto requirementList = challenge->getRequirementForValidate(state->m_status);
-
-    std::cerr << "Step " << nStep++ << ": Please satisfy following instruction(s)" << std::endl;
-    for (auto item : requirementList) {
-      std::cerr << "\t" << item << std::endl;
-    }
-    std::list<std::string> paraList;
-    for (size_t i = 0; i < requirementList.size(); i++) {
-      std::string tempParam;
-      getline(std::cin, tempParam);
-      paraList.push_back(tempParam);
-    }
-
-    auto paramJson = challenge->genValidateParamsJson(state->m_status, paraList);
-    client.sendValidate(state, paramJson,
-                        bind(&ClientTool::validateCb, this, _1),
-                        bind(&ClientTool::errorCb, this, _1));
+static void
+newCb(const Data& reply)
+{
+  auto challengeList = client.onNewResponse(reply);
+  std::cerr << "Step " << nStep++ << ": Please type in the challenge ID from the following challenges\n";
+  for (auto item : challengeList) {
+    std::cerr << "\t" << item << std::endl;
   }
+  std::string choice;
+  getline(std::cin, choice);
 
-  void
-  newCb(const shared_ptr<RequestState>& state)
-  {
-    std::cerr << "Step " << nStep++ << ": Please select one challenge from following types\n";
-    for (auto item : state->m_challengeList) {
-      std::cerr << "\t" << item << std::endl;
-    }
-    std::string choice;
-    getline(std::cin, choice);
-
-    auto challenge = ChallengeModule::createChallengeModule(choice);
-    auto requirementList = challenge->getRequirementForSelect();
-    std::list<std::string> paraList;
-    if (requirementList.size() != 0) {
-      std::cerr << "Step " << nStep++ << ": Please satisfy following instruction(s)\n";
-      for (auto item : requirementList) {
-        std::cerr << "\t" << item << std::endl;
-      }
-      for (size_t i = 0; i < requirementList.size(); i++) {
-        std::string tempParam;
-        getline(std::cin, tempParam);
-        paraList.push_back(tempParam);
-      }
-    }
-    auto paramJson = challenge->genSelectParamsJson(state->m_status, paraList);
-    client.sendSelect(state, choice, paramJson,
-                      bind(&ClientTool::selectCb, this, _1),
-                      bind(&ClientTool::errorCb, this, _1));
+  auto challenge = ChallengeModule::createChallengeModule(choice);
+  if (challenge != nullptr) {
+    challengeType = choice;
   }
+  else {
+    std::cerr << "Cannot recognize the specified challenge. Exit";
+    return;
+  }
+  auto requirement = challenge->getRequirementForChallenge(client.getApplicationStatus(),
+                                                           client.getChallengeStatus());
+  if (requirement.size() > 0) {
+    std::cerr << "Step " << nStep++ << ": Please satisfy following instruction(s)\n";
+    std::string redo = "";
+    std::list<std::string> capturedParams;
+    do {
+      capturedParams = captureParams(requirement);
+      std::cerr << "If anything is wrong, please type in OK; otherwise, type in REDO" << std::endl;
+      getline(std::cin, redo);
+    } while (redo == "REDO");
+    auto it1 = capturedParams.begin();
+    auto it2 = requirement.begin();
+    for (; it1 != capturedParams.end() && it2 != requirement.end(); it1++, it2++) {
+      it2->second.put("", *it1);
+    }
+  }
+  face.expressInterest(*client.generateChallengeInterest(
+                               challenge->genChallengeRequestJson(
+                                          client.getApplicationStatus(),
+                                          client.getChallengeStatus(),
+                                          requirement)),
+                       bind(&challengeCb, _2),
+                       bind(&onNackCb),
+                       bind(&timeoutCb));
+}
 
-public:
-  ClientModule& client;
-};
+static void
+probeInfoCb(const Data& reply)
+{
+  auto contentJson = ClientModule::getJsonFromData(reply);
+  auto caItem = ClientConfig::extractCaItem(contentJson);
+
+  std::cerr << "Will install new trust anchor, please double check the identity info: \n"
+            << "This trust anchor packet is signed by " << reply.getSignature().getKeyLocator() << std::endl
+            << "The signing certificate is " << caItem.m_anchor << std::endl;
+  std::cerr << "Do you trust the information? Type in YES or NO" << std::endl;
+
+  std::string answer;
+  getline(std::cin, answer);
+  if (answer == "YES") {
+    client.onProbeInfoResponse(reply);
+    std::cerr << "You answered YES: new CA installed" << std::endl;
+    startApplication();
+  }
+  else {
+    std::cerr << "New CA not installed" << std::endl;
+    return;
+  }
+}
+
+static void
+probeCb(const Data& reply)
+{
+  std::cerr << "Step " << nStep++
+            << ": Please type in your expected validity period of your certificate."
+            << " Type in a number in unit of hour. The CA may change the validity"
+            << " period if your expected period is too long." << std::endl;
+  std::string periodStr;
+  getline(std::cin, periodStr);
+  int hours = std::stoi(periodStr);
+  face.expressInterest(*client.generateNewInterest(time::system_clock::now(),
+                                                   time::system_clock::now() + time::hours(hours)),
+                       bind(&newCb, _2),
+                       bind(&onNackCb),
+                       bind(&timeoutCb));
+}
+
+static void
+startApplication()
+{
+  nStep = 0;
+  auto caList = client.getClientConf().m_caItems;
+  int count = 0;
+  for (auto item : caList) {
+    std::cerr << "***************************************\n"
+              << "Index: " << count++ << "\n"
+              << "CA prefix:" << item.m_caName << "\n"
+              << "Introduction: " << item.m_caInfo << "\n"
+              << "***************************************\n";
+  }
+  std::vector<ClientCaItem> caVector{std::begin(caList), std::end(caList)};
+  std::cerr << "Step "
+            << nStep++ << ": Please type in the CA INDEX that you want to apply"
+            << " or type in NONE if your expected CA is not in the list\n";
+
+  std::string caIndexS;
+  getline(std::cin, caIndexS);
+  if (caIndexS == "NONE") {
+    std::cerr << "Step " << nStep << ": Please type in the CA Name\n";
+    face.expressInterest(*client.generateProbeInfoInterest(Name(caIndexS)),
+                         bind(&probeInfoCb, _2),
+                         bind(&onNackCb),
+                         bind(&timeoutCb));
+  }
+  else {
+    int caIndex = std::stoi(caIndexS);
+    BOOST_ASSERT(caIndex <= count);
+    auto targetCaItem = caVector[caIndex];
+
+    if (targetCaItem.m_probe != "") {
+      std::cerr << "Step " << nStep++ << ": Probe Requirement-" << targetCaItem.m_probe << std::endl;
+      std::string probeInfo;
+      getline(std::cin, probeInfo);
+      face.expressInterest(*client.generateProbeInterest(targetCaItem, probeInfo),
+                           bind(&probeCb, _2),
+                           bind(&onNackCb),
+                           bind(&timeoutCb));
+    }
+    else {
+      std::cerr << "Step " << nStep++ << ": Please type in the identity name you want to get (with CA prefix)\n";
+      std::string identityNameStr;
+      getline(std::cin, identityNameStr);
+      std::cerr << "Step "
+                << nStep++ << ": Please type in your expected validity period of your certificate."
+                << "Type in a number in unit of hour."
+                << " The CA may change the validity period if your expected period is too long.\n";
+      std::string periodStr;
+      getline(std::cin, periodStr);
+      int hours = std::stoi(periodStr);
+      face.expressInterest(*client.generateNewInterest(time::system_clock::now(),
+                                                       time::system_clock::now() + time::hours(hours),
+                                                       Name(identityNameStr)),
+                           bind(&newCb, _2),
+                           bind(&onNackCb),
+                           bind(&timeoutCb));
+    }
+  }
+}
+
 
 int
 main(int argc, char* argv[])
 {
   namespace po = boost::program_options;
   std::string configFilePath = std::string(SYSCONFDIR) + "/ndncert/client.conf";
-  bool isIntra = false;
-  po::options_description description("General Usage\n ndncert-client [-h] [-i] [-f]\n");
+  po::options_description description("General Usage\n ndncert-client [-h] [-f]\n");
   description.add_options()
-    ("help,h",
-     "produce help message")
-    ("intra-node,i",
-     "optional, if specified, switch on the intra-node mode")
-    ("config-file,f", po::value<std::string>(&configFilePath),
-     "config file name");
+    ("help,h", "produce help message")
+    ("config-file,f", po::value<std::string>(&configFilePath), "config file name");
   po::positional_options_description p;
 
   po::variables_map vm;
@@ -249,131 +291,8 @@ main(int argc, char* argv[])
     std::cerr << description << std::endl;
     return 0;
   }
-  if (vm.count("intra-node") != 0) {
-    isIntra = true;
-  }
-
-  nStep = 0;
-  Face face;
-  security::v2::KeyChain keyChain;
-  ClientModule client(face, keyChain);
   client.getClientConf().load(configFilePath);
-  ClientTool tool(client);
-
-  if (isIntra) {
-    client.requestLocalhostList([&](const ClientConfig& config) {
-        auto caList = config.m_caItems;
-        int count = 0;
-        for (auto item : caList) {
-          std::cerr << "***************************************\n"
-                    << "Index: " << count++ << "\n"
-                    << "CA prefix:" << item.m_caName << "\n"
-                    << "Introduction: " << item.m_caInfo << "\n"
-                    << "***************************************\n";
-        }
-        std::vector<ClientCaItem> caVector{std::begin(caList), std::end(caList)};
-        std::cerr << "Step " << nStep++
-                  << ": Please type in the CA namespace index that you want to apply\n";
-        std::string caIndexS;
-        getline(std::cin, caIndexS);
-        int caIndex = std::stoi(caIndexS);
-
-        BOOST_ASSERT(caIndex <= count);
-
-        auto targetCaItem = caVector[caIndex];
-        if (targetCaItem.m_probe != "") {
-          std::cerr << "Step " << nStep++ << ": Probe Requirement-" << targetCaItem.m_probe << std::endl;
-          std::string probeInfo;
-          getline(std::cin, probeInfo);
-          client.sendProbe(targetCaItem, probeInfo,
-                           bind(&ClientTool::newCb, &tool, _1),
-                           bind(&ClientTool::errorCb, &tool, _1));
-        }
-        else {
-          std::cerr << "Step " << nStep++ << ": Please type in the identity name\n";
-          std::string nameComponent;
-          getline(std::cin, nameComponent);
-          Name identityName = targetCaItem.m_caName.getPrefix(-1);
-          identityName.append(nameComponent);
-          client.sendNew(targetCaItem, identityName,
-                         bind(&ClientTool::newCb, &tool, _1),
-                         bind(&ClientTool::errorCb, &tool, _1));
-        }
-      },
-      bind(&ClientTool::errorCb, &tool, _1));
-  }
-  else {
-    // Inter-node Application
-    bool listFirst = false;
-    auto caList = client.getClientConf().m_caItems;
-    int count = 0;
-    for (auto item : caList) {
-      std::cerr << "***************************************\n"
-                << "Index: " << count++ << "\n"
-                << "CA prefix:" << item.m_caName << "\n"
-                << "Introduction: " << item.m_caInfo << "\n"
-                << "***************************************\n";
-    }
-    std::vector<ClientCaItem> caVector{std::begin(caList), std::end(caList)};
-    std::cerr << "Step " << nStep++ << ": Please type in the CA namespace index that you want to apply\n";
-
-    std::string caIndexS;
-    getline(std::cin, caIndexS);
-    int caIndex = std::stoi(caIndexS);
-    BOOST_ASSERT(caIndex <= count);
-    auto targetCaItem = caVector[caIndex];
-
-    if (targetCaItem.m_isListEnabled) {
-      std::cerr << "This CA provides several sub-namepace CAs \n"
-                << "Do you want to (A) get a certificate from " << targetCaItem.m_caName << " directly? \n"
-                << "Or (B) get a certificate from one of its sub-namespace CAs? \n"
-                << "Please type in your choice (A or B) \n";
-      std::string listOption;
-      getline(std::cin, listOption);
-      if (listOption == "A" || listOption == "a") {
-        listFirst = false;
-      }
-      else if (listOption == "B" || listOption == "b") {
-        listFirst = true;
-        std::string additionalInfo = "";
-        if (targetCaItem.m_targetedList != "") {
-          std::cerr << "Step " << nStep++
-                    << ": Enter nothing if you want to see all available sub-namespace CAs"
-                    << " or follow the instruction to get a recommended CA\n"
-                    << "\t" << targetCaItem.m_targetedList << std::endl;
-          getline(std::cin, additionalInfo);
-        }
-        client.requestList(targetCaItem, additionalInfo,
-                           bind(&ClientTool::listCb, &tool, _1, _2, _3, targetCaItem),
-                           bind(&ClientTool::errorCb, &tool, _1));
-      }
-      else {
-        std::cerr << "Your input is not an option." << std::endl;
-        return 1;
-      }
-    }
-    if (!listFirst) {
-      if (targetCaItem.m_probe != "") {
-        std::cerr << "Step " << nStep++ << ": Probe Requirement-" << targetCaItem.m_probe << std::endl;
-        std::string probeInfo;
-        getline(std::cin, probeInfo);
-        client.sendProbe(targetCaItem, probeInfo,
-                         bind(&ClientTool::newCb, &tool, _1),
-                         bind(&ClientTool::errorCb, &tool, _1));
-      }
-      else {
-        std::cerr << "Step " << nStep++ << ": Please type in the identity name\n";
-        std::string nameComponent;
-        getline(std::cin, nameComponent);
-        Name identityName = targetCaItem.m_caName.getPrefix(-1);
-        identityName.append(nameComponent);
-        client.sendNew(targetCaItem, identityName,
-                       bind(&ClientTool::newCb, &tool, _1),
-                       bind(&ClientTool::errorCb, &tool, _1));
-      }
-    }
-  }
-
+  startApplication();
   face.processEvents();
   return 0;
 }

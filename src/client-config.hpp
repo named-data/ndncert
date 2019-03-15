@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2018, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -40,10 +40,6 @@ public:
   std::string m_caInfo;
   // An instruction for requesters to use _PROBE. Extracted from config field "probe"
   std::string m_probe;
-  // Whether support list function
-  bool m_isListEnabled;
-  // An instruction for requesters to get a recommended CA. Extracted from config field "target-list"
-  std::string m_targetedList;
 
   // CA's certificate
   security::v2::Certificate m_anchor;
