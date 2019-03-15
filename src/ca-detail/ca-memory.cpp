@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -43,32 +43,32 @@ CaMemory::addRequest(const CertificateRequest& request)
 {
   for (auto& entry : m_requests) {
     const auto& existingRequest = entry.second;
-    if (existingRequest.getCert().getKeyName() == request.getCert().getKeyName()) {
-      BOOST_THROW_EXCEPTION(Error("Request for " + request.getCert().getKeyName().toUri() + " already exists"));
+    if (existingRequest.m_cert.getKeyName() == request.m_cert.getKeyName()) {
+      BOOST_THROW_EXCEPTION(Error("Request for " + request.m_cert.getKeyName().toUri() + " already exists"));
       return;
     }
   }
   for (auto& entry : m_issuedCerts) {
     const auto& cert = entry.second;
-    if (cert.getKeyName() == request.getCert().getKeyName()) {
-      BOOST_THROW_EXCEPTION(Error("Cert for " + request.getCert().getKeyName().toUri() + " already exists"));
+    if (cert.getKeyName() == request.m_cert.getKeyName()) {
+      BOOST_THROW_EXCEPTION(Error("Cert for " + request.m_cert.getKeyName().toUri() + " already exists"));
       return;
     }
   }
 
-  auto search = m_requests.find(request.getRequestId());
+  auto search = m_requests.find(request.m_requestId);
   if (search == m_requests.end()) {
-    m_requests[request.getRequestId()] = request;
+    m_requests[request.m_requestId] = request;
   }
   else {
-    BOOST_THROW_EXCEPTION(Error("Request " + request.getRequestId() + " already exists"));
+    BOOST_THROW_EXCEPTION(Error("Request " + request.m_requestId + " already exists"));
   }
 }
 
 void
 CaMemory::updateRequest(const CertificateRequest& request)
 {
-  m_requests[request.getRequestId()] = request;
+  m_requests[request.m_requestId] = request;
 }
 
 void
@@ -95,7 +95,7 @@ CaMemory::listAllRequests(const Name& caName)
 {
   std::list<CertificateRequest> result;
   for (const auto& entry : m_requests) {
-    if (entry.second.getCaName() == caName) {
+    if (entry.second.m_caName == caName) {
       result.push_back(entry.second);
     }
   }

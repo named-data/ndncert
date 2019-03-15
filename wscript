@@ -10,7 +10,7 @@ import os
 
 def options(opt):
     opt.load(['compiler_cxx', 'gnu_dirs'])
-    opt.load(['boost', 'default-compiler-flags', 'sqlite3',
+    opt.load(['boost', 'default-compiler-flags', 'sqlite3', 'openssl',
               'coverage', 'sanitizers',
               'doxygen', 'sphinx_build'],
              tooldir=['.waf-tools'])
@@ -21,7 +21,7 @@ def options(opt):
 
 def configure(conf):
     conf.load(['compiler_cxx', 'gnu_dirs',
-               'boost', 'default-compiler-flags', 'sqlite3',
+               'boost', 'default-compiler-flags', 'sqlite3', 'openssl',
                'doxygen', 'sphinx_build'])
 
     if 'PKG_CONFIG_PATH' not in os.environ:
@@ -44,6 +44,7 @@ def configure(conf):
                    ' (https://redmine.named-data.net/projects/nfd/wiki/Boost_FAQ)')
 
     conf.check_compiler_flags()
+    conf.check_openssl(mandatory=True, atleast_version=0x1010100f) # 1.1.1b
 
     # Loading "late" to prevent tests from being compiled with profiling flags
     conf.load('coverage')

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -26,49 +26,54 @@ namespace ndncert {
 
 CertificateRequest::CertificateRequest() = default;
 
-CertificateRequest::CertificateRequest(const Name& caName,
-                                       const std::string& requestId,
-                                       const security::v2::Certificate& cert)
-  : m_caName(caName)
-  , m_requestId(requestId)
-  , m_cert(static_cast<const Data&>(cert))
-{
-}
-
-CertificateRequest::CertificateRequest(const Name& caName,
-                                       const std::string& requestId,
-                                       const std::string& status,
-                                       const std::string& challengeType,
-                                       const std::string& challengeSecrets,
+CertificateRequest::CertificateRequest(const Name& caName, const std::string& requestId, int status,
                                        const security::v2::Certificate& cert)
   : m_caName(caName)
   , m_requestId(requestId)
   , m_status(status)
-  , m_challengeType(challengeType)
-  , m_cert(static_cast<const Data&>(cert))
+  , m_cert(cert)
 {
-  std::istringstream ss(challengeSecrets);
-  boost::property_tree::json_parser::read_json(ss, m_challengeSecrets);
+}
+
+CertificateRequest::CertificateRequest(const Name& caName, const std::string& requestId, int status,
+                                       const std::string& challengeStatus, const std::string& challengeType,
+                                       const std::string& challengeTp, int remainingTime, int remainingTries,
+                                       const JsonSection& challengeSecrets, const security::v2::Certificate& cert)
+  : m_caName(caName)
+  , m_requestId(requestId)
+  , m_status(status)
+  , m_challengeStatus(challengeStatus)
+  , m_challengeType(challengeType)
+  , m_challengeTp(challengeTp)
+  , m_remainingTime(remainingTime)
+  , m_remainingTries(remainingTries)
+  , m_challengeSecrets(challengeSecrets)
+  , m_cert(cert)
+{
 }
 
 std::ostream&
 operator<<(std::ostream& os, const CertificateRequest& request)
 {
   os << "Request CA name:\n";
-  os << "  " << request.getCaName() << "\n";
+  os << "  " << request.m_caName << "\n";
   os << "Request ID:\n";
-  os << "  " << request.getRequestId() << "\n";
-  if (request.getStatus() != "") {
+  os << "  " << request.m_requestId << "\n";
+  if (request.m_status != -1) {
     os << "Request Status:\n";
-    os << "  " << request.getStatus() << "\n";
+    os << "  " << request.m_status << "\n";
   }
-  if (request.getChallengeType() != "") {
+  if (request.m_challengeStatus != "") {
+    os << "Challenge Status:\n";
+    os << "  " << request.m_challengeStatus << "\n";
+  }
+  if (request.m_challengeType != "") {
     os << "Request Challenge Type:\n";
-    os << "  " << request.getChallengeType() << "\n";
+    os << "  " << request.m_challengeType << "\n";
   }
   os << "Certificate:\n";
   util::IndentedStream os2(os, "  ");
-  os2 << request.getCert();
+  os2 << request.m_cert;
   return os;
 }
 

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2018, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -19,18 +19,10 @@
  */
 
 #include "challenge-module.hpp"
-#include "logging.hpp"
 #include <ndn-cxx/util/random.hpp>
 
 namespace ndn {
 namespace ndncert {
-
-_LOG_INIT(ndncert.challenge-module);
-
-const std::string ChallengeModule::WAIT_SELECTION = "wait-selection";
-const std::string ChallengeModule::SUCCESS = "success";
-const std::string ChallengeModule::PENDING = "pending";
-const std::string ChallengeModule::FAILURE = "failure";
 
 ChallengeModule::ChallengeModule(const std::string& uniqueType)
   : CHALLENGE_TYPE(uniqueType)
@@ -45,89 +37,6 @@ ChallengeModule::createChallengeModule(const std::string& canonicalName)
   ChallengeFactory& factory = getFactory();
   auto i = factory.find(canonicalName);
   return i == factory.end() ? nullptr : i->second();
-}
-
-JsonSection
-ChallengeModule::handleChallengeRequest(const Interest& interest, CertificateRequest& request)
-{
-  int pos = request.getCaName().size() + 1;
-  const Name& interestName = interest.getName();
-  std::string interestType = interestName.get(pos).toUri();
-
-  _LOG_TRACE("Incoming challenge request. type: " << interestType);
-
-  if (interestType == "_SELECT") {
-    return processSelectInterest(interest, request);
-  }
-  else if (interestType == "_VALIDATE"){
-    return processValidateInterest(interest, request);
-  }
-  else {
-    return processStatusInterest(interest, request);
-  }
-}
-
-std::list<std::string>
-ChallengeModule::getRequirementForSelect()
-{
-  return getSelectRequirements();
-}
-
-std::list<std::string>
-ChallengeModule::getRequirementForValidate(const std::string& status)
-{
-  return getValidateRequirements(status);
-}
-
-JsonSection
-ChallengeModule::genSelectParamsJson(const std::string& status,
-                                     const std::list<std::string>& paramList)
-{
-  return doGenSelectParamsJson(status, paramList);
-}
-
-JsonSection
-ChallengeModule::genValidateParamsJson(const std::string& status,
-                                     const std::list<std::string>& paramList)
-{
-  return doGenValidateParamsJson(status, paramList);
-}
-
-JsonSection
-ChallengeModule::processStatusInterest(const Interest& interest, const CertificateRequest& request)
-{
-  // interest format: /CA/_STATUS/{"request-id":"id"}/<signature>
-  if (request.getStatus() == SUCCESS) {
-    Name downloadName = genDownloadName(request.getCaName(), request.getStatus());
-    return genResponseChallengeJson(request.getRequestId(), request.getChallengeType(),
-                                    SUCCESS, downloadName);
-  }
-  else
-    return genResponseChallengeJson(request.getRequestId(), request.getChallengeType(),
-                                    request.getStatus());
-}
-
-JsonSection
-ChallengeModule::getJsonFromNameComponent(const Name& name, int pos)
-{
-  std::string jsonString = encoding::readString(name.get(pos));
-  std::istringstream ss(jsonString);
-  JsonSection json;
-  boost::property_tree::json_parser::read_json(ss, json);
-  return json;
-}
-
-Name
-ChallengeModule::genDownloadName(const Name& caName, const std::string& requestId)
-{
-  JsonSection json;
-  json.put(JSON_REQUEST_ID, requestId);
-  std::stringstream ss;
-  boost::property_tree::write_json(ss, json);
-  Block jsonBlock = makeStringBlock(ndn::tlv::GenericNameComponent, ss.str());
-  Name name = caName;
-  name.append("_DOWNLOAD").append(jsonBlock);
-  return name;
 }
 
 ChallengeModule::ChallengeFactory&
@@ -152,6 +61,17 @@ ChallengeModule::generateSecretCode()
   }
   return result;
 }
+
+void
+ChallengeModule::updateRequestOnChallengeEnd(CertificateRequest& request)
+{
+  request.m_challengeSecrets = JsonSection();
+  request.m_challengeTp = "";
+  request.m_challengeType = "";
+  request.m_remainingTime = 0;
+  request.m_remainingTries = 0;
+}
+
 
 } // namespace ndncert
 } // namespace ndn

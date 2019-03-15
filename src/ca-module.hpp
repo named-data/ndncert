@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2018, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -22,8 +22,8 @@
 #define NDNCERT_CA_MODULE_HPP
 
 #include "ca-config.hpp"
+#include "crypto-support/crypto-helper.hpp"
 #include "ca-storage.hpp"
-#include "json-helper.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -59,50 +59,32 @@ public:
   }
 
   bool
-  setProbeHandler(const Name caName, const ProbeHandler& handler);
+  setProbeHandler(const ProbeHandler& handler);
 
   bool
-  setRecommendCaHandler(const Name caName, const RecommendCaHandler& handler);
-
-  bool
-  setStatusUpdateCallback(const Name caName, const StatusUpdateCallback& onUpateCallback);
+  setStatusUpdateCallback(const StatusUpdateCallback& onUpdateCallback);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
-  handleLocalhostList(const Interest& query);
+  onProbe(const Interest& request);
 
   void
-  handleList(const Interest& request, const CaItem& caItem);
+  onNew(const Interest& request);
 
   void
-  handleProbe(const Interest& request, const CaItem& caItem);
+  onChallenge(const Interest& request);
 
   void
-  handleNew(const Interest& request, const CaItem& caItem);
-
-  void
-  handleSelect(const Interest& request, const CaItem& caItem);
-
-  void
-  handleValidate(const Interest& request, const CaItem& caItem);
-
-  void
-  handleStatus(const Interest& request, const CaItem& caItem);
-
-  void
-  handleDownload(const Interest& request, const CaItem& caItem);
+  onDownload(const Interest& request);
 
   void
   onRegisterFailed(const std::string& reason);
 
   CertificateRequest
-  getCertificateRequest(const Interest& request, const Name& caName);
+  getCertificateRequest(const Interest& request);
 
   security::v2::Certificate
-  issueCertificate(const CertificateRequest& certRequest, const CaItem& caItem);
-
-  static JsonSection
-  jsonFromNameComponent(const Name& name, int pos);
+  issueCertificate(const CertificateRequest& certRequest);
 
   static Block
   dataContentFromJson(const JsonSection& jsonSection);
@@ -110,14 +92,34 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
   registerPrefix();
 
+  static JsonSection
+  jsonFromBlock(const Block& block);
+
+PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+  const JsonSection
+  genProbeResponseJson(const Name& identifier);
+
+  const JsonSection
+  genProbeResponseJson();
+
+  const JsonSection
+  genNewResponseJson(const std::string& ecdhKey, const std::string& salt,
+                     const CertificateRequest& request, const std::list<std::string>& challenges);
+
+  const JsonSection
+  genChallengeResponseJson(const CertificateRequest& request);
+
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   Face& m_face;
   CaConfig m_config;
   unique_ptr<CaStorage> m_storage;
   security::v2::KeyChain& m_keyChain;
 
-  std::list<const RegisteredPrefixId*> m_registeredPrefixIds;
-  std::list<const InterestFilterId*> m_interestFilterIds;
+  std::list<RegisteredPrefixHandle> m_registeredPrefixHandles;
+  std::list<InterestFilterHandle> m_interestFilterHandles;
+
+  ECDHState m_ecdh;
+  uint8_t m_aesKey[32] = {0};
 };
 
 } // namespace ndncert

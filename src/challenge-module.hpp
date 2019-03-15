@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2018, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -23,7 +23,6 @@
 
 #include "ndncert-common.hpp"
 #include "certificate-request.hpp"
-#include "json-helper.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -63,121 +62,27 @@ public:
   createChallengeModule(const std::string& ChallengeType);
 
   // For CA
-  /**
-   * @brief Handle the challenge related interest and update certificate request.
-   * @note Should be used by CA Module
-   * @note Signature of interest should already be validated by CA Module
-   *
-   * When CA receives a SELECT or a VALIDATE or a STATUS interest, CA should invoke the function
-   * to enable selected challenge to go on the verification process.
-   *
-   * @param interest The request interest packet
-   * @param request The CertificateRequest instance
-   * @return the JSON file as the response data content
-   */
-  JsonSection
-  handleChallengeRequest(const Interest& interest, CertificateRequest& request);
+  virtual void
+  handleChallengeRequest(const JsonSection& params, CertificateRequest& request) = 0;
 
   // For Client
-  /**
-   * @brief Get requirements for requester before sending SELECT interest.
-   * @note Should be used by Client Module
-   *
-   * Before requester sends a USE interest, client should invoke the function to
-   * get input instruction and expose the instruction to requester.
-   *
-   * Every item in the return list requires a input from requester. The item itself is
-   * an instruction for requester.
-   *
-   * @return the input instruction for requester
-   */
-  std::list<std::string>
-  getRequirementForSelect();
-
-  /**
-   * @brief Get requirements for requester before sending VALIDATE interest.
-   * @note Should be used by Client Module
-   *
-   * Before requester sends a POLL interest, client should invoke the function to
-   * get input instruction and expose the instruction to requester.
-   *
-   * Every item in the return list requires a input from requester. The item itself is
-   * an instruction for requester.
-   *
-   * @param status of the challenge
-   * @return the input instruction for requester
-   */
-  std::list<std::string>
-  getRequirementForValidate(const std::string& status);
-
-  /**
-   * @brief Generate ChallengeInfo part for SELECT interest.
-   * @note Should be used by Client Module
-   *
-   * After requester provides required information, client should invoke the function to
-   * generate the ChallengeInfo part of the interest.
-   *
-   * @param status of the challenge
-   * @param paramList contains all the input from requester
-   * @return the JSON file of ChallengeInfo
-   */
-  JsonSection
-  genSelectParamsJson(const std::string& status, const std::list<std::string>& paramList);
-
-  /**
-   * @brief Generate ChallengeInfo part for VALIDATE interest.
-   * @note Should be used by Client Module
-   *
-   * After requester provides required information, client should invoke the function to
-   * generate the ChallengeInfo part of the interest.
-   *
-   * @param status of the challenge
-   * @param paramList contains all the input from requester
-   * @return the JSON file of ChallengeInfo
-   */
-  JsonSection
-  genValidateParamsJson(const std::string& status, const std::list<std::string>& paramList);
-
-PUBLIC_WITH_TESTS_ELSE_PROTECTED:
-  // For CA
   virtual JsonSection
-  processSelectInterest(const Interest& interest, CertificateRequest& request) = 0;
+  getRequirementForChallenge(int status, const std::string& challengeStatus) = 0;
 
   virtual JsonSection
-  processValidateInterest(const Interest& interest, CertificateRequest& request) = 0;
+  genChallengeRequestJson(int status, const std::string& challengeStatus, const JsonSection& params) = 0;
 
-  virtual JsonSection
-  processStatusInterest(const Interest& interest, const CertificateRequest& request);
-
-  // For Client
-  virtual std::list<std::string>
-  getSelectRequirements() = 0;
-
-  virtual std::list<std::string>
-  getValidateRequirements(const std::string& status) = 0;
-
-  virtual JsonSection
-  doGenSelectParamsJson(const std::string& status, const std::list<std::string>& paramList) = 0;
-
-  virtual JsonSection
-  doGenValidateParamsJson(const std::string& status, const std::list<std::string>& paramList) = 0;
-
-  // Helpers
-  static JsonSection
-  getJsonFromNameComponent(const Name& name, int pos);
-
-  static Name
-  genDownloadName(const Name& caName, const std::string& requestId);
-
+  // helpers
   static std::string
   generateSecretCode();
 
+protected:
+
+  void
+  updateRequestOnChallengeEnd(CertificateRequest& request);
+
 public:
   const std::string CHALLENGE_TYPE;
-  static const std::string WAIT_SELECTION;
-  static const std::string SUCCESS;
-  static const std::string PENDING;
-  static const std::string FAILURE;
 
 private:
   typedef function<unique_ptr<ChallengeModule> ()> ChallengeCreateFunc;

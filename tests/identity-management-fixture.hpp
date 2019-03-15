@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014-2017, Regents of the University of California,
+ * Copyright (c) 2014-2019, Regents of the University of California,
  *                          Arizona Board of Regents,
  *                          Colorado State University,
  *                          University Pierre & Marie Curie, Sorbonne University,
@@ -29,6 +29,7 @@
 #define NDNCERT_TESTS_IDENTITY_MANAGEMENT_FIXTURE_HPP
 
 #include "test-common.hpp"
+#include "test-home-fixture.hpp"
 #include <ndn-cxx/security/v2/key-chain.hpp>
 #include <ndn-cxx/security/v2/additional-description.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
@@ -37,23 +38,38 @@ namespace ndn {
 namespace ndncert {
 namespace tests {
 
+class IdentityManagementBaseFixture : public TestHomeFixture<DefaultPibDir>
+{
+public:
+  ~IdentityManagementBaseFixture();
+
+  bool
+  saveCertToFile(const Data& obj, const std::string& filename);
+
+protected:
+  std::set<Name> m_identities;
+  std::set<std::string> m_certFiles;
+};
+
+
 /**
  * @brief A test suite level fixture to help with identity management
  *
  * Test cases in the suite can use this fixture to create identities.  Identities,
  * certificates, and saved certificates are automatically removed during test teardown.
  */
-class IdentityManagementV2Fixture
+class IdentityManagementFixture : public IdentityManagementBaseFixture
 {
 public:
-  IdentityManagementV2Fixture();
+  IdentityManagementFixture();
 
   /**
    * @brief Add identity @p identityName
    * @return name of the created self-signed certificate
    */
   security::Identity
-  addIdentity(const Name& identityName, const KeyParams& params = security::v2::KeyChain::getDefaultKeyParams());
+  addIdentity(const Name& identityName,
+              const KeyParams& params = security::v2::KeyChain::getDefaultKeyParams());
 
   /**
    *  @brief Save identity certificate to a file
@@ -62,7 +78,7 @@ public:
    *  @return whether successful
    */
   bool
-  saveIdentityCertificate(const security::Identity& identity, const std::string& filename);
+  saveCertificate(const security::Identity& identity, const std::string& filename);
 
   /**
    * @brief Issue a certificate for \p subIdentityName signed by \p issuer
@@ -83,20 +99,15 @@ public:
   security::v2::Certificate
   addCertificate(const security::Key& key, const std::string& issuer);
 
-  bool
-  saveCertToFile(const Data& obj, const std::string& filename);
-
 protected:
-  std::set<Name> m_identities;
-  std::set<std::string> m_certFiles;
-  security::v2::KeyChain m_keyChain;
+  KeyChain m_keyChain;
 };
 
 /** \brief convenience base class for inheriting from both UnitTestTimeFixture
  *         and IdentityManagementV2Fixture
  */
-class IdentityManagementV2TimeFixture : public UnitTestTimeFixture
-                                      , public IdentityManagementV2Fixture
+class IdentityManagementTimeFixture : public UnitTestTimeFixture
+                                    , public IdentityManagementFixture
 {
 };
 

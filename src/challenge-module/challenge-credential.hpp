@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -29,16 +29,17 @@ namespace ndncert {
  * @brief Provide Credential based challenge
  *
  * Credential here means the certificate issued by a trust anchor. Once the requester
- * could proof his/her possession of an existing certificate from other certificate, th
- * requester could finish the challenge.
+ * could proof his/her possession of an existing certificate from other certificate issuer,
+ * the requester could finish the challenge.
  *
  * The requester needs to provide the proof of the possession of a certificate issued by
  * a trust anchor. The challenge require the requester to pass the BASE64 certificate and
- * a BASE64 self-signed certificate whose key is the same as the key in certificate.
+ * a BASE64 Data packet signed by the credential pub key and whose content is the request id.
  *
  * The main process of this challenge module is:
  *   1. Requester provides a certificate signed by that trusted certificate as credential.
  *   2. The challenge module will verify the signature of the credential.
+ *   3. The content of the signed Data is the request id
  *
  * Failure info when application fails:
  *   FAILURE_INVALID_CREDENTIAL: When the cert issued from trust anchor or self-signed cert
@@ -50,26 +51,16 @@ class ChallengeCredential : public ChallengeModule
 public:
   ChallengeCredential(const std::string& configPath = "");
 
-PUBLIC_WITH_TESTS_ELSE_PROTECTED:
+  // For CA
+  void
+  handleChallengeRequest(const JsonSection& params, CertificateRequest& request) override;
+
+  // For Client
   JsonSection
-  processSelectInterest(const Interest& interest, CertificateRequest& request) override;
-
-  JsonSection
-  processValidateInterest(const Interest& interest, CertificateRequest& request) override;
-
-  std::list<std::string>
-  getSelectRequirements() override;
-
-  std::list<std::string>
-  getValidateRequirements(const std::string& status) override;
+  getRequirementForChallenge(int status, const std::string& challengeStatus) override;
 
   JsonSection
-  doGenSelectParamsJson(const std::string& status,
-                        const std::list<std::string>& paramList) override;
-
-  JsonSection
-  doGenValidateParamsJson(const std::string& status,
-                          const std::list<std::string>& paramList) override;
+  genChallengeRequestJson(int status, const std::string& challengeStatus, const JsonSection& params) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
@@ -77,8 +68,8 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   static const std::string FAILURE_INVALID_CREDENTIAL;
-  static const std::string FAILURE_INVALID_FORMAT;
-
+  static const std::string FAILURE_INVALID_FORMAT_CREDENTIAL;
+  static const std::string FAILURE_INVALID_FORMAT_SELF_SIGNED;
   static const std::string JSON_CREDENTIAL_CERT;
   static const std::string JSON_CREDENTIAL_SELF;
 

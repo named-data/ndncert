@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -29,9 +29,9 @@ _LOG_INIT(ndncert.ChallengeCredential);
 
 NDNCERT_REGISTER_CHALLENGE(ChallengeCredential, "Credential");
 
-const std::string ChallengeCredential::FAILURE_INVALID_FORMAT = "failure-invalid-format";
+const std::string ChallengeCredential::FAILURE_INVALID_FORMAT_CREDENTIAL = "failure-cannot-parse-credential";
+const std::string ChallengeCredential::FAILURE_INVALID_FORMAT_SELF_SIGNED = "failure-cannot-parse-self-signed";
 const std::string ChallengeCredential::FAILURE_INVALID_CREDENTIAL = "failure-invalid-credential";
-
 const std::string ChallengeCredential::JSON_CREDENTIAL_CERT = "issued-cert";
 const std::string ChallengeCredential::JSON_CREDENTIAL_SELF = "self-signed";
 
@@ -71,101 +71,91 @@ ChallengeCredential::parseConfigFile()
   }
 }
 
-JsonSection
-ChallengeCredential::processSelectInterest(const Interest& interest, CertificateRequest& request)
+// For CA
+void
+ChallengeCredential::handleChallengeRequest(const JsonSection& params, CertificateRequest& request)
 {
   if (m_trustAnchors.empty()) {
     parseConfigFile();
   }
-
-  // interest format: /caName/CA/_SELECT/{"request-id":"id"}/CREDENTIAL/{"credential":"..."}/<signature>
-  request.setChallengeType(CHALLENGE_TYPE);
-  JsonSection credentialJson = getJsonFromNameComponent(interest.getName(), request.getCaName().size() + 4);
-
-  // load credential parameters
-  std::istringstream ss1(credentialJson.get<std::string>(JSON_CREDENTIAL_CERT));
+  // load credential parameter
+  std::istringstream ss1(params.get<std::string>(JSON_CREDENTIAL_CERT));
   security::v2::Certificate cert;
   try {
     cert = *(io::load<security::v2::Certificate>(ss1));
   }
   catch (const std::exception& e) {
-    _LOG_TRACE("Cannot load credential parameter: cert" << e.what());
-    request.setStatus(FAILURE_INVALID_FORMAT);
-    return genFailureJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE, FAILURE_INVALID_FORMAT);
+    _LOG_ERROR("Cannot load credential parameter: cert" << e.what());
+    request.m_status = STATUS_FAILURE;
+    request.m_challengeStatus = FAILURE_INVALID_FORMAT_CREDENTIAL;
+    updateRequestOnChallengeEnd(request);
+    return;
   }
   ss1.str("");
   ss1.clear();
-
-  std::istringstream ss2(credentialJson.get<std::string>(JSON_CREDENTIAL_SELF));
-  security::v2::Certificate self;
+  // load self-signed data
+  std::istringstream ss2(params.get<std::string>(JSON_CREDENTIAL_SELF));
+  Data self;
   try {
-    self = *(io::load<security::v2::Certificate>(ss2));
+    self = *(io::load<Data>(ss2));
   }
   catch (const std::exception& e) {
     _LOG_TRACE("Cannot load credential parameter: self-signed cert" << e.what());
-    request.setStatus(FAILURE_INVALID_FORMAT);
-    return genFailureJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE, FAILURE_INVALID_FORMAT);
+    request.m_status = STATUS_FAILURE;
+    request.m_challengeStatus = FAILURE_INVALID_FORMAT_SELF_SIGNED;
+    updateRequestOnChallengeEnd(request);
+    return;
   }
   ss2.str("");
   ss2.clear();
 
-  // verify two parameters
+  // verify the credential and the self-signed cert
   Name signingKeyName = cert.getSignature().getKeyLocator().getName();
   for (auto anchor : m_trustAnchors) {
     if (anchor.getKeyName() == signingKeyName) {
-      if (security::verifySignature(cert, anchor) && security::verifySignature(self, cert)) {
-        request.setStatus(SUCCESS);
-        return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, SUCCESS);
+      if (security::verifySignature(cert, anchor) && security::verifySignature(self, cert)
+          && readString(self.getContent()) == request.m_requestId) {
+        request.m_status = STATUS_PENDING;
+        request.m_challengeStatus = CHALLENGE_STATUS_SUCCESS;
+        updateRequestOnChallengeEnd(request);
+        return;
       }
     }
   }
 
-  request.setStatus(FAILURE_INVALID_CREDENTIAL);
-  return genResponseChallengeJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE_INVALID_CREDENTIAL);
+  _LOG_TRACE("Cannot verify the credential + self-signed Data + data content");
+  request.m_status = STATUS_FAILURE;
+  request.m_challengeStatus = FAILURE_INVALID_CREDENTIAL;
+  updateRequestOnChallengeEnd(request);
+  return;
 }
 
+// For Client
 JsonSection
-ChallengeCredential::processValidateInterest(const Interest& interest, CertificateRequest& request)
-{
-  // there is no validate request here, do nothing
-  return genFailureJson(request.getRequestId(), CHALLENGE_TYPE, FAILURE, FAILURE_INVALID_FORMAT);
-}
-
-std::list<std::string>
-ChallengeCredential::getSelectRequirements()
-{
-  std::list<std::string> result;
-  result.push_back("Please input the bytes of a certificate issued by the trusted CA");
-  result.push_back("Please input the bytes of a self-signed certificate for the corresponding key");
-  return result;
-}
-
-std::list<std::string>
-ChallengeCredential::getValidateRequirements(const std::string& status)
-{
-  // there is no validate request here, do nothing
-  std::list<std::string> result;
-  return result;
-}
-
-JsonSection
-ChallengeCredential::doGenSelectParamsJson(const std::string& status,
-                                           const std::list<std::string>& paramList)
+ChallengeCredential::getRequirementForChallenge(int status, const std::string& challengeStatus)
 {
   JsonSection result;
-  BOOST_ASSERT(status == WAIT_SELECTION);
-  BOOST_ASSERT(paramList.size() == 2);
-  result.put(JSON_CREDENTIAL_CERT, paramList.front());
-  result.put(JSON_CREDENTIAL_SELF, paramList.back());
+  if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
+    result.put(JSON_CREDENTIAL_CERT, "Please_copy_anchor_signed_cert_here");
+    result.put(JSON_CREDENTIAL_SELF, "Please_copy_key_signed_request_id_data_here");
+  }
+  else {
+    _LOG_ERROR("Client's status and challenge status are wrong");
+  }
   return result;
 }
 
 JsonSection
-ChallengeCredential::doGenValidateParamsJson(const std::string& status,
-                                             const std::list<std::string>& paramList)
+ChallengeCredential::genChallengeRequestJson(int status, const std::string& challengeStatus, const JsonSection& params)
 {
   JsonSection result;
-  BOOST_ASSERT(paramList.size() == 0);
+  if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
+    result.put(JSON_CREDENTIAL_CERT, params.get<std::string>(JSON_CREDENTIAL_CERT, ""));
+    result.put(JSON_CREDENTIAL_SELF, params.get<std::string>(JSON_CREDENTIAL_SELF, ""));
+  }
+  else {
+    _LOG_ERROR("Client's status and challenge status are wrong");
+  }
   return result;
 }
 

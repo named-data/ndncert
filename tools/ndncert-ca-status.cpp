@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017, Regents of the University of California.
+ * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -20,9 +20,7 @@
 
 #include "ca-module.hpp"
 #include "ca-detail/ca-sqlite.hpp"
-
 #include <iostream>
-
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -77,11 +75,12 @@ main(int argc, char* argv[])
   std::cerr << "The pending requests :" << std::endl;
 
   for (const auto& entry : requestList) {
-    std::cerr << "Request ID: " << entry.getRequestId() << "\t"
-              << "Current Status: " << entry.getStatus() << std::endl
-              << "Applying CA: " << entry.getCaName().toUri() << std::endl
-              << "Applying for key: " << entry.getCert().getKeyName().toUri() << std::endl
-              << "Challenge Secret: " << convertJson2String(entry.getChallengeSecrets()) << std::endl;
+    std::cerr << "Request ID: " << entry.m_requestId << "\t"
+              << "Current Status: " << entry.m_status << std::endl
+              << "Applying CA: " << entry.m_caName << std::endl
+              << "Applying for key: " << entry.m_cert.getName() << std::endl
+              << "Challenge remaining tries: " << entry.m_remainingTries << std::endl
+              << "Challenge Secret: " << convertJson2String(entry.m_challengeSecrets) << std::endl;
   }
 
   std::cerr << "\n\n" << "The issued certs :" << std::endl;

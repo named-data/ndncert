@@ -81,27 +81,10 @@ main(int argc, char* argv[])
   security::v2::KeyChain keyChain;
   CaModule ca(face, keyChain, configFilePath);
 
-  ca.setRecommendCaHandler(Name("/ndn"),
-    [] (const std::string& input, const std::list<Name>& list) -> std::tuple<Name, std::string> {
-      Name recommendedCa;
-      std::string identity;
-      for (auto caName : list) {
-        std::string univName = readString(caName.get(-1));
-        if (input.find(univName) != std::string::npos) {
-          recommendedCa = caName;
-          identity = input.substr(0, input.find("@"));
-          break;
-        }
-      }
-      return std::make_tuple(recommendedCa, identity);
-    });
-
   if (wantRepoOut) {
-    for (const auto& caItem : ca.getCaConf().m_caItems) {
-      ca.setStatusUpdateCallback(caItem.m_caName,
-        [&] (const CertificateRequest& request) {
-          if (request.getStatus() == ChallengeModule::SUCCESS) {
-            auto issuedCert = request.getCert();
+      ca.setStatusUpdateCallback([&] (const CertificateRequest& request) {
+          if (request.m_status == STATUS_SUCCESS) {
+            auto issuedCert = request.m_cert;
             boost::asio::ip::tcp::iostream requestStream;
 #if BOOST_VERSION >= 106700
             requestStream.expires_after(std::chrono::seconds(3));
@@ -118,7 +101,6 @@ main(int argc, char* argv[])
                                 issuedCert.wireEncode().size());
           }
       });
-    }
   }
 
   face.processEvents();
