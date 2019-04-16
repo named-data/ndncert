@@ -30,6 +30,8 @@
 namespace ndn {
 namespace ndncert {
 
+static const int IS_SUBNAME_MIN_OFFSET = 5;
+
 _LOG_INIT(ndncert.ca);
 
 CaModule::CaModule(Face& face, security::v2::KeyChain& keyChain,
@@ -185,7 +187,9 @@ CaModule::onNew(const Interest& request)
   }
 
   // verify the self-signed certificate and the request
-  if (!m_config.m_caName.isPrefixOf(clientCert->getName()) || clientCert->getName().size() != m_config.m_caName.size() + 5) {
+  if (!m_config.m_caName.isPrefixOf(clientCert->getName()) // under ca prefix
+      || !security::v2::Certificate::isValidName(clientCert->getName()) // is valid cert name
+      || clientCert->getName().size() != m_config.m_caName.size() + IS_SUBNAME_MIN_OFFSET) { // is a subname under ca prefix
     _LOG_ERROR("Invalid slef-signed certificate name " << clientCert->getName());
     return;
   }
