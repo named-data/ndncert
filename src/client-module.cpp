@@ -89,7 +89,7 @@ ClientModule::generateProbeInterest(const ClientCaItem& ca, const std::string& p
   auto interest = make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
-  auto paramJson = genProbeRequestJson(probeInfo);
+  auto paramJson = genProbeRequestJson(ca, probeInfo);
   interest->setApplicationParameters(paramFromJson(paramJson));
 
   // update local state
@@ -305,10 +305,38 @@ ClientModule::getJsonFromData(const Data& data)
 }
 
 const JsonSection
-ClientModule::genProbeRequestJson(const std::string& probeInfo)
+ClientModule::genProbeRequestJson(const ClientCaItem& ca, const std::string& probeInfo)
 {
+  std::string delimiter = ":";
+  size_t last = 0;
+  size_t next = 0;
+
   JsonSection root;
-  root.put(JSON_CLIENT_PROBE_INFO, probeInfo);
+
+  std::vector<std::string> fields;
+  while ((next = ca.m_probe.find(delimiter, last)) != std::string::npos) {
+    fields.push_back(ca.m_probe.substr(last, next - last));
+    last = next + 1;
+  }
+  fields.push_back(ca.m_probe.substr(last));
+
+  std::vector<std::string> arguments;
+  last = 0;
+  next = 0;
+  while ((next = probeInfo.find(delimiter, last)) != std::string::npos) {
+    arguments.push_back(probeInfo.substr(last, next - last));
+    last = next + 1;
+  }
+  arguments.push_back(probeInfo.substr(last));
+
+  if (arguments.size() != fields.size()) {
+    BOOST_THROW_EXCEPTION(Error("Error in genProbeRequestJson: argument list does not match field list in the config file."));
+  }
+
+  for (size_t i = 0; i < fields.size(); ++i) {
+      root.put(fields.at(i), arguments.at(i));
+  }
+
   return root;
 }
 

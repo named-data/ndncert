@@ -39,7 +39,7 @@ public:
   // A brief introduction to the CA. Extracted from config field "ca-info"
   std::string m_caInfo;
   // An instruction for requesters to use _PROBE. Extracted from config field "probe"
-  std::string m_probe;
+  std::string m_probe; // "email::uid::name"
 
   // CA's certificate
   security::v2::Certificate m_anchor;

@@ -121,7 +121,7 @@ public:
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   const JsonSection
-  genProbeRequestJson(const std::string& probeInfo);
+  genProbeRequestJson(const ClientCaItem& ca, const std::string& probeInfo);
 
   const JsonSection
   genNewRequestJson(const std::string& ecdhPub, const security::v2::Certificate& certRequest);

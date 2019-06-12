@@ -97,7 +97,9 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   const JsonSection
-  genProbeResponseJson(const Name& identifier);
+  genProbeResponseJson(const Name& identifier,
+                       const std::string& m_probe,
+                       const JsonSection& parameterJson);
 
   const JsonSection
   genProbeResponseJson();

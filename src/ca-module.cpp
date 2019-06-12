@@ -127,10 +127,12 @@ CaModule::onProbe(const Interest& request)
     // if not a PROBE INFO, find an available name
     std::string availableId = "";
     const auto& parameterJson = jsonFromBlock(request.getApplicationParameters());
-    std::string probeInfoStr = parameterJson.get(JSON_CLIENT_PROBE_INFO, "");
+    //m_config.m_probe
+
+    //std::string probeInfoStr = parameterJson.get(JSON_CLIENT_PROBE_INFO, "");
     if (m_config.m_probeHandler) {
       try {
-        availableId = m_config.m_probeHandler(probeInfoStr);
+        availableId = m_config.m_probeHandler(parameterJson);
       }
       catch (const std::exception& e) {
         _LOG_TRACE("Cannot find PROBE input from PROBE parameters " << e.what());
@@ -144,7 +146,7 @@ CaModule::onProbe(const Interest& request)
     Name newIdentityName = m_config.m_caName;
     _LOG_TRACE("Handle PROBE: generate an identity " << newIdentityName);
     newIdentityName.append(availableId);
-    contentJson = genProbeResponseJson(newIdentityName.toUri());
+    contentJson = genProbeResponseJson(newIdentityName.toUri(), m_config.m_probe, parameterJson);
   }
 
   Data result;
@@ -404,14 +406,28 @@ CaModule::getCertificateRequest(const Interest& request)
  *
  * PROBE response JSON format:
  * {
- *   "name": "@p identifier",
- *   "ca-config": "@p caInformation"
+ *   "name": "@p identifier"
  * }
  */
 const JsonSection
-CaModule::genProbeResponseJson(const Name& identifier)
+CaModule::genProbeResponseJson(const Name& identifier, const std::string& m_probe, const JsonSection& parameterJson)
 {
+    std::vector<std::string> fields;
+    std::string delimiter = ":";
+    size_t last = 0;
+    size_t next = 0;
+    while ((next = m_probe.find(delimiter, last)) != std::string::npos) {
+      fields.push_back(m_probe.substr(last, next - last));
+      last = next + 1;
+    }
+    fields.push_back(m_probe.substr(last));
+
   JsonSection root;
+
+  for (size_t i = 0; i < fields.size(); ++i) {
+      root.put(fields.at(i), parameterJson.get(fields.at(i), ""));
+  }
+
   root.put(JSON_CA_NAME, identifier.toUri());
   return root;
 }

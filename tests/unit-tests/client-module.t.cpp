@@ -50,14 +50,36 @@ BOOST_AUTO_TEST_CASE(Probe)
   auto cert = key.getDefaultCertificate();
 
   ClientCaItem item;
+  item.m_probe = "email:uid:name";
   item.m_caName = Name("/site");
   item.m_anchor = cert;
   client.getClientConf().m_caItems.push_back(item);
 
-  auto firstInterest = client.generateProbeInterest(item, "zhiyi@cs.ucla.edu");
+  auto firstInterest = client.generateProbeInterest(item, "zhiyi@cs.ucla.edu:987654321:Zhiyi Zhang");
   BOOST_CHECK_EQUAL(firstInterest->getName().toUri(), "/site/CA/_PROBE");
-  BOOST_CHECK_EQUAL(CaModule::jsonFromBlock(firstInterest->getApplicationParameters()).get<std::string>(JSON_CLIENT_PROBE_INFO),
+  BOOST_CHECK_EQUAL(CaModule::jsonFromBlock(firstInterest->getApplicationParameters()).get<std::string>("email"),
                     "zhiyi@cs.ucla.edu");
+}
+
+BOOST_AUTO_TEST_CASE(genProbeRequestJson)
+{
+  ClientModule client(m_keyChain);
+  client.getClientConf().load("tests/unit-tests/client.conf.test");
+
+  auto identity = addIdentity(Name("/site"));
+  auto key = identity.getDefaultKey();
+  auto cert = key.getDefaultCertificate();
+
+  ClientCaItem item;
+  item.m_probe = "email:uid:name";
+  item.m_caName = Name("/site");
+  item.m_anchor = cert;
+  client.getClientConf().m_caItems.push_back(item);
+
+  auto interestPacket = client.genProbeRequestJson(item, "yufeng@ucla.edu:123456789:Yufeng Zhang");
+  BOOST_CHECK_EQUAL(interestPacket.get("email", ""), "yufeng@ucla.edu");
+  BOOST_CHECK_EQUAL(interestPacket.get("uid", ""), "123456789");
+  BOOST_CHECK_EQUAL(interestPacket.get("name", ""), "Yufeng Zhang");
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TestClientModule

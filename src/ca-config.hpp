@@ -33,7 +33,7 @@ namespace ndncert {
  *
  * The function should throw exceptions when there is an unexpected input.
  */
-using ProbeHandler = function<std::string/*identity name*/ (const std::string&/*requester input*/)>;
+using ProbeHandler = function<std::string/*identity name*/ (const JsonSection& json/*requester input*/)>;
 
 /**
  * @brief The function would be invoked whenever the certificate request status gets update
