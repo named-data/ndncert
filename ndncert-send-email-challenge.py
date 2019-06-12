@@ -14,6 +14,7 @@ parser = argparse.ArgumentParser(description='Email-challenge-sender for NDNCERT
 parser.add_argument("email", help="the receiver email address")
 parser.add_argument("secret", help="the secret of the challenge")
 parser.add_argument("caName", help="the CA name")
+parser.add_argument("certName", help="the Ceritifcate being requested")
 args = parser.parse_args()
 
 # open config
@@ -30,8 +31,8 @@ password = confParser.get('ndncert_smtp_settings', 'SMTP_PASSWORD')
 # read email settings
 msg_from = confParser.get('ndncert_email_settings', 'MAIL_FROM')
 subject = confParser.get('ndncert_email_settings', 'SUBJECT')
-text = confParser.get('ndncert_email_settings', 'TEXT_TEMPLATE').format(args.secret, args.caName)
-html = confParser.get('ndncert_email_settings', 'HTML_TEMPLATE').format(args.secret, args.caName)
+text = confParser.get('ndncert_email_settings', 'TEXT_TEMPLATE').format(args.secret, args.caName, args.certName)
+html = confParser.get('ndncert_email_settings', 'HTML_TEMPLATE').format(args.secret, args.caName, args.certName)
 
 # form email message
 msg = MIMEMultipart('alternative')

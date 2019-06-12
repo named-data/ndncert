@@ -64,17 +64,28 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmail)
   std::string line = "";
   std::string delimiter = " ";
   std::ifstream emailFile("tmp.txt");
-  if (emailFile.is_open())
-  {
+  if (emailFile.is_open()) {
     getline(emailFile, line);
     emailFile.close();
   }
-  std::string recipientEmail = line.substr(0, line.find(delimiter));
-  std::string secret = line.substr(line.find(delimiter) + 1);
-
+  int end = line.find(delimiter);
+  std::string recipientEmail = line.substr(0, end);
   BOOST_CHECK_EQUAL(recipientEmail, "zhiyi@cs.ucla.edu");
+  line = line.substr(end + 1);
+
+  end = line.find(delimiter);
+  std::string secret = line.substr(0, end);
   auto stored_secret = request.m_challengeSecrets.get<std::string>(ChallengeEmail::JSON_CODE);
   BOOST_CHECK_EQUAL(secret, stored_secret);
+  line = line.substr(end + 1);
+
+  end = line.find(delimiter);
+  std::string caName = line.substr(0, end);
+  BOOST_CHECK_EQUAL(caName, Name("/ndn/site1"));
+  line = line.substr(end + 1);
+
+  std::string certName = line;
+  BOOST_CHECK_EQUAL(certName, cert.getName().toUri());
   std::remove("tmp.txt");
 }
 

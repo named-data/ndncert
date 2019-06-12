@@ -175,7 +175,8 @@ ChallengeEmail::sendEmail(const std::string& emailAddress, const std::string& se
                           const CertificateRequest& request) const
 {
   std::string command = m_sendEmailScript;
-  command += " \"" + emailAddress + "\" \"" + secret + "\" \"" + request.m_caName.toUri() + "\"";
+  command += " \"" + emailAddress + "\" \"" + secret + "\" \""
+    + request.m_caName.toUri() + "\" \"" + request.m_cert.getName().toUri()  + "\"";
   int result = system(command.c_str());
   if (result == -1) {
     _LOG_TRACE("EmailSending Script " + m_sendEmailScript + " fails.");

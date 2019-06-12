@@ -8,5 +8,5 @@ SMTP_PASSWORD = leave it empty if you do not have one
 [ndncert_email_settings]
 MAIL_FROM = NDN Testbed Certificate Robot <noreply-ndncert@named-data.net>
 SUBJECT = Email Challenge Triggered by NDNCERT
-TEXT_TEMPLATE = Your PIN code: {0} from NDNCERT CA {1}. Please keep it secret and type in to your application to finish the certificiate issuance process. If you do not know what is going on, please ignore the message.
-HTML_TEMPLATE = <html><head></head><body><p><b>Your PIN code: {0} from NDNCERT CA {1}</b></p><p>Please keep it secret and type in to your application to finish the certificiate issuance process. If you do not know what is going on, please ignore the message.</p><p>Sincerely,<br/>NDN Testbed NDNCERT robot</p>
+TEXT_TEMPLATE = Your PIN code: {0} from NDNCERT CA {1}. Certificate Name: {2}. Your email has been used to apply for a digital certificate from NDNCERT. Please keep it secret and type in to your application to finish the certificiate issuance process. If you do not know what is going on, please ignore the message.
+HTML_TEMPLATE = <html><head></head><body><p><b>Your PIN code: {0} from NDNCERT CA {1}. Certificate Name: {2}.</b></p><p>Your email has been used to apply for a digital certificate from NDNCERT. Please keep it secret and type in to your application to finish the certificiate issuance process. If you do not know what is going on, please ignore the message.</p><p>Sincerely,<br/>NDN Testbed NDNCERT robot</p>
