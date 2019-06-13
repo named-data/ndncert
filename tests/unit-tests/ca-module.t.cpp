@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(HandleProbeInfo)
       auto contentJson = ClientModule::getJsonFromData(response);
       auto caItem = ClientConfig::extractCaItem(contentJson);
       BOOST_CHECK_EQUAL(caItem.m_caName.toUri(), "/ndn");
-      BOOST_CHECK_EQUAL(caItem.m_probe, "input email address");
+      BOOST_CHECK_EQUAL(caItem.m_probe, "");
       BOOST_CHECK_EQUAL(caItem.m_anchor.wireEncode(), cert.wireEncode());
       BOOST_CHECK_EQUAL(caItem.m_caInfo, "ndn testbed ca");
     });
@@ -195,6 +195,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithProbeToken)
 
   util::DummyClientFace face(m_io, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test");
+  ca.m_config.m_probe = "email";
   advanceClocks(time::milliseconds(20), 60);
 
   ClientModule client(m_keyChain);
@@ -203,7 +204,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithProbeToken)
   item.m_anchor = cert;
   client.getClientConf().m_caItems.push_back(item);
 
-  auto data = make_shared<Data>(Name("/ndn/CA/probe/123"));
+  auto data = make_shared<Data>(Name("/ndn/CA/_PROBE/123"));
   m_keyChain.sign(*data, signingByIdentity(ca.m_config.m_caName));
 
   auto interest = client.generateNewInterest(time::system_clock::now(),

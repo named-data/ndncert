@@ -1,34 +1,12 @@
 {
-  "ca-list":
+  "ca-prefix": "/example",
+  "issuing-freshness": "720",
+  "validity-period": "360",
+  "ca-info": "An example NDNCERT CA",
+  "probe": "[JSON attribute]:[JSON attribute]:[...] Example: email:UID"
+  "supported-challenges":
   [
-    {
-        "ca-prefix": "/ndn",
-        "issuing-freshness": "720",
-        "validity-period": "360",
-        "ca-info": "NDN Testbed CA",
-
-        "probe": "email",
-
-        "targeted-list": "Use your email address (edu preferred) as input",
-        "related-ca-list":
-        [
-          { "ca-prefix": "/ndn/edu/arizona" },
-          { "ca-prefix": "/ndn/edu/memphis" }
-        ],
-
-        "supported-challenges":
-        [
-            { "type": "PIN" }
-        ]
-    },
-    {
-        "ca-prefix": "/example",
-        "issuing-freshness": "720",
-        "validity-period": "360",
-        "supported-challenges":
-        [
-            { "type": "PIN" }
-        ]
-    }
+    { "type": "PIN" },
+    { "type": "Email" }
   ]
 }

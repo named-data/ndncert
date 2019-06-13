@@ -35,9 +35,9 @@ BOOST_AUTO_TEST_CASE(ReadConfigFile)
   BOOST_CHECK_EQUAL(config.m_caItems.size(), 2);
 
   const auto& item = config.m_caItems.front();
-  BOOST_CHECK_EQUAL(item.m_caName.toUri(), "/ndn/edu/ucla/CA");
+  BOOST_CHECK_EQUAL(item.m_caName.toUri(), "/ndn/edu/ucla");
   BOOST_CHECK_EQUAL(item.m_caInfo, "UCLA's ceritificate authority, located in BH4805.");
-  BOOST_CHECK_EQUAL(item.m_probe, "Please use your email address to apply a namespace first. UCLA email is preferred.");
+  BOOST_CHECK_EQUAL(item.m_probe, "email");
   BOOST_CHECK_EQUAL(item.m_anchor.getName().toUri(),
                     "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
 
@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE(AddAndRemoveCaItem)
   config.removeCaItem(Name("/test"));
   BOOST_CHECK_EQUAL(config.m_caItems.size(), 2);
   lastItem = config.m_caItems.back();
-  BOOST_CHECK_EQUAL(lastItem.m_caName.toUri(), "/ndn/edu/ucla/zhiyi/CA");
+  BOOST_CHECK_EQUAL(lastItem.m_caName.toUri(), "/ndn/edu/ucla/zhiyi");
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TestClientConfig

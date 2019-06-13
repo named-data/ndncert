@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(ReadConfigFileWithFileAnchor)
   BOOST_CHECK_EQUAL(config.m_caName.toUri(), "/ndn");
   BOOST_CHECK_EQUAL(config.m_freshnessPeriod, time::seconds(720));
   BOOST_CHECK_EQUAL(config.m_validityPeriod, time::days(360));
-  BOOST_CHECK_EQUAL(config.m_probe, "input email address");
+  BOOST_CHECK_EQUAL(config.m_probe, "");
   BOOST_CHECK_EQUAL(config.m_caInfo, "ndn testbed ca");
 }
 

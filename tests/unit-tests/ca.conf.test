@@ -3,8 +3,6 @@
   "issuing-freshness": "720",
   "validity-period": "360",
   "ca-info": "ndn testbed ca",
-
-  "probe": "input email address",
   "supported-challenges":
   [
       { "type": "PIN" }

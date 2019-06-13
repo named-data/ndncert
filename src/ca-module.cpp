@@ -195,18 +195,24 @@ CaModule::onNew(const Interest& request)
   if (probeTokenStr != "") {
     try {
       std::stringstream ss(probeTokenStr);
-      probeToken = io::load<security::v2::Certificate>(ss);
+      probeToken = io::load<Data>(ss);
     }
     catch (const std::exception& e) {
       _LOG_ERROR("Unrecognized probe token " << e.what());
       return;
     }
   }
-  if (probeToken != nullptr) {
+  if (probeToken == nullptr && m_config.m_probe != "") {
+    // the CA requires PROBE before NEW
+    _LOG_ERROR("CA requires PROBE but no PROBE token is found in NEW Interest.");
+    return;
+  }
+  else if (probeToken != nullptr) {
+    // check whether the carried probe token is a PROBE Data packet
     Name prefix = m_config.m_caName;
     prefix.append("CA").append("_PROBE");
     if (!prefix.isPrefixOf(probeToken->getName())) {
-      // the carried probe token is not a Probe Data packet
+      _LOG_ERROR("Carried PROBE token is not a valid PROBE Data packet.");
       return;
     }
   }
@@ -231,7 +237,7 @@ CaModule::onNew(const Interest& request)
     const auto& key = pib.getIdentity(m_config.m_caName).getDefaultKey();
     const auto& caCert = key.getDefaultCertificate();
     if (!security::verifySignature(*probeToken, caCert)) {
-      _LOG_TRACE("Token with bad signature.");
+      _LOG_TRACE("PROBE Token with bad signature.");
       return;
     }
   }
