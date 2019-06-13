@@ -19,6 +19,7 @@
  */
 
 #include "challenge-email.hpp"
+#include "../ca-module.hpp"
 #include "../logging.hpp"
 #include <regex>
 
@@ -56,6 +57,16 @@ ChallengeEmail::handleChallengeRequest(const JsonSection& params, CertificateReq
       request.m_status = STATUS_FAILURE;
       request.m_challengeStatus = FAILURE_INVALID_EMAIL;
       return;
+    }
+    // check whether this email is the same as the one used in PROBE
+    if (request.m_probeToken != nullptr) {
+      const auto& content = request.m_probeToken->getContent();
+      const auto& json = CaModule::jsonFromBlock(content);
+      const auto& expectedEmail = json.get("email", "");
+      Name expectedPrefix(json.get(JSON_CA_NAME, ""));
+      if (expectedEmail != emailAddress || !expectedPrefix.isPrefixOf(request.m_cert.getName())) {
+        return;
+      }
     }
     request.m_status = STATUS_CHALLENGE;
     request.m_challengeStatus = NEED_CODE;

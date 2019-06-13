@@ -189,7 +189,29 @@ CaModule::onNew(const Interest& request)
     return;
   }
 
-  // verify the self-signed certificate and the request
+  // parse probe token if any
+  std::string probeTokenStr = parameterJson.get("probe-token", "");
+  shared_ptr<Data> probeToken = nullptr;
+  if (probeTokenStr != "") {
+    try {
+      std::stringstream ss(probeTokenStr);
+      probeToken = io::load<security::v2::Certificate>(ss);
+    }
+    catch (const std::exception& e) {
+      _LOG_ERROR("Unrecognized probe token " << e.what());
+      return;
+    }
+  }
+  if (probeToken != nullptr) {
+    Name prefix = m_config.m_caName;
+    prefix.append("CA").append("_PROBE");
+    if (!prefix.isPrefixOf(probeToken->getName())) {
+      // the carried probe token is not a Probe Data packet
+      return;
+    }
+  }
+
+  // verify the self-signed certificate, the request, and the token
   if (!m_config.m_caName.isPrefixOf(clientCert->getName()) // under ca prefix
       || !security::v2::Certificate::isValidName(clientCert->getName()) // is valid cert name
       || clientCert->getName().size() != m_config.m_caName.size() + IS_SUBNAME_MIN_OFFSET) {
@@ -204,15 +226,27 @@ CaModule::onNew(const Interest& request)
     _LOG_TRACE("Interest with bad signature.");
     return;
   }
+  if (probeToken != nullptr) {
+    const auto& pib = m_keyChain.getPib();
+    const auto& key = pib.getIdentity(m_config.m_caName).getDefaultKey();
+    const auto& caCert = key.getDefaultCertificate();
+    if (!security::verifySignature(*probeToken, caCert)) {
+      _LOG_TRACE("Token with bad signature.");
+      return;
+    }
+  }
 
   // create new request instance
   std::string requestId = std::to_string(random::generateWord64());
   CertificateRequest certRequest(m_config.m_caName, requestId, STATUS_BEFORE_CHALLENGE, *clientCert);
+  if (probeToken != nullptr) {
+    certRequest.setProbeToken(probeToken);
+  }
   try {
     m_storage->addRequest(certRequest);
   }
   catch (const std::exception& e) {
-    _LOG_TRACE("Cannot add new request instance into the storage" << e.what());
+    _LOG_TRACE("Cannot add new request instance into the storage " << e.what());
     return;
   }
 
@@ -390,7 +424,7 @@ CertificateRequest
 CaModule::getCertificateRequest(const Interest& request)
 {
   std::string requestId = readString(request.getName().at(m_config.m_caName.size() + 2));
-  _LOG_TRACE("Requet Id to query the database " << requestId);
+  _LOG_TRACE("Request Id to query the database " << requestId);
   CertificateRequest certRequest;
   try {
     certRequest = m_storage->getRequest(requestId);

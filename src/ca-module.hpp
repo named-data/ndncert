@@ -64,6 +64,12 @@ public:
   bool
   setStatusUpdateCallback(const StatusUpdateCallback& onUpdateCallback);
 
+  static JsonSection
+  jsonFromBlock(const Block& block);
+
+  static Block
+  dataContentFromJson(const JsonSection& jsonSection);
+
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
   onProbe(const Interest& request);
@@ -86,14 +92,8 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   security::v2::Certificate
   issueCertificate(const CertificateRequest& certRequest);
 
-  static Block
-  dataContentFromJson(const JsonSection& jsonSection);
-
   void
   registerPrefix();
-
-  static JsonSection
-  jsonFromBlock(const Block& block);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   const JsonSection

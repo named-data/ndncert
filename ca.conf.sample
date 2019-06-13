@@ -7,7 +7,7 @@
         "validity-period": "360",
         "ca-info": "NDN Testbed CA",
 
-        "probe": "Use the university/organization name as input",
+        "probe": "email",
 
         "targeted-list": "Use your email address (edu preferred) as input",
         "related-ca-list":

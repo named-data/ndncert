@@ -116,7 +116,7 @@ ClientModule::onProbeResponse(const Data& reply)
 shared_ptr<Interest>
 ClientModule::generateNewInterest(const time::system_clock::TimePoint& notBefore,
                                   const time::system_clock::TimePoint& notAfter,
-                                  const Name& identityName)
+                                  const Name& identityName, const shared_ptr<Data>& probeToken)
 {
   // Name requestedName = identityName;
   if (!identityName.empty()) { // if identityName is not empty, find the corresponding CA
@@ -170,7 +170,7 @@ ClientModule::generateNewInterest(const time::system_clock::TimePoint& notBefore
   auto interest = make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
-  interest->setApplicationParameters(paramFromJson(genNewRequestJson(m_ecdh.getBase64PubKey(), certRequest)));
+  interest->setApplicationParameters(paramFromJson(genNewRequestJson(m_ecdh.getBase64PubKey(), certRequest, probeToken)));
 
   // sign the Interest packet
   m_keyChain.sign(*interest, signingByKey(m_key.getName()));
@@ -341,7 +341,8 @@ ClientModule::genProbeRequestJson(const ClientCaItem& ca, const std::string& pro
 }
 
 const JsonSection
-ClientModule::genNewRequestJson(const std::string& ecdhPub, const security::v2::Certificate& certRequest)
+ClientModule::genNewRequestJson(const std::string& ecdhPub, const security::v2::Certificate& certRequest,
+                                const shared_ptr<Data>& probeToken)
 {
   JsonSection root;
   std::stringstream ss;
@@ -356,6 +357,23 @@ ClientModule::genNewRequestJson(const std::string& ecdhPub, const security::v2::
   }
   root.put(JSON_CLIENT_ECDH, ecdhPub);
   root.put(JSON_CLIENT_CERT_REQ, ss.str());
+  if (probeToken != nullptr) {
+    // clear the stringstream
+    ss.str("");
+    ss.clear();
+    // transform the probe data into a base64 string
+    try {
+      security::transform::bufferSource(probeToken->wireEncode().wire(), probeToken->wireEncode().size())
+      >> security::transform::base64Encode(true)
+      >> security::transform::streamSink(ss);
+    }
+    catch (const security::transform::Error& e) {
+      _LOG_ERROR("Cannot convert self-signed cert into BASE64 string " << e.what());
+      return root;
+    }
+    // add the token into the JSON
+    root.put("probe-token", ss.str());
+  }
   return root;
 }
 

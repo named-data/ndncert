@@ -162,8 +162,10 @@ BOOST_AUTO_TEST_CASE(HandleNew)
   item.m_caName = Name("/ndn");
   item.m_anchor = cert;
   client.getClientConf().m_caItems.push_back(item);
+
   auto interest = client.generateNewInterest(time::system_clock::now(),
-                                             time::system_clock::now() + time::days(10), Name("/ndn/zhiyi"));
+                                             time::system_clock::now() + time::days(10),
+                                             Name("/ndn/zhiyi"));
 
   int count = 0;
   face.onSendData.connect([&] (const Data& response) {
@@ -178,6 +180,40 @@ BOOST_AUTO_TEST_CASE(HandleNew)
 
       client.onNewResponse(response);
       BOOST_CHECK_EQUAL_COLLECTIONS(client.m_aesKey, client.m_aesKey + 32, ca.m_aesKey, ca.m_aesKey + 32);
+    });
+  face.receive(*interest);
+
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK_EQUAL(count, 1);
+}
+
+BOOST_AUTO_TEST_CASE(HandleNewWithProbeToken)
+{
+  auto identity = addIdentity(Name("/ndn"));
+  auto key = identity.getDefaultKey();
+  auto cert = key.getDefaultCertificate();
+
+  util::DummyClientFace face(m_io, {true, true});
+  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test");
+  advanceClocks(time::milliseconds(20), 60);
+
+  ClientModule client(m_keyChain);
+  ClientCaItem item;
+  item.m_caName = Name("/ndn");
+  item.m_anchor = cert;
+  client.getClientConf().m_caItems.push_back(item);
+
+  auto data = make_shared<Data>(Name("/ndn/CA/probe/123"));
+  m_keyChain.sign(*data, signingByIdentity(ca.m_config.m_caName));
+
+  auto interest = client.generateNewInterest(time::system_clock::now(),
+                                             time::system_clock::now() + time::days(10),
+                                             Name("/ndn/zhiyi"), data);
+
+  int count = 0;
+  face.onSendData.connect([&] (const Data& response) {
+      count++;
+      BOOST_CHECK(security::verifySignature(response, cert));
     });
   face.receive(*interest);
 
@@ -204,6 +240,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
   auto newInterest = client.generateNewInterest(time::system_clock::now(),
                                                 time::system_clock::now() + time::days(10), Name("/ndn/zhiyi"));
 
+  std::cout << "hi there" << std::endl;
   // generate CHALLENGE Interest
   ChallengePin pinChallenge;
   shared_ptr<Interest> challengeInterest = nullptr;

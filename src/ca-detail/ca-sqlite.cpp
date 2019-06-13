@@ -48,7 +48,8 @@ CREATE TABLE IF NOT EXISTS
     challenge_secrets TEXT,
     challenge_tp TEXT,
     remaining_tries INTEGER,
-    remaining_time INTEGER
+    remaining_time INTEGER,
+    probe_token BLOB
   );
 CREATE UNIQUE INDEX IF NOT EXISTS
   CertRequestIdIndex ON CertRequests(request_id);
@@ -129,9 +130,14 @@ CaSqlite::getRequest(const std::string& requestId)
     std::string challengeTp = statement.getString(9);
     int remainingTries = statement.getInt(10);
     int remainingTime = statement.getInt(11);
-    return CertificateRequest(caName, requestId, status, challengeStatus, challengeType,
+    CertificateRequest request(caName, requestId, status, challengeStatus, challengeType,
                               challengeTp, remainingTime, remainingTries,
                               convertString2Json(challengeSecrets), cert);
+    if (statement.getSize(12) != 0) {
+      shared_ptr<Data> probeToken = make_shared<Data>(statement.getBlock(12));
+      request.setProbeToken(probeToken);
+    }
+    return request;
   }
   else {
     BOOST_THROW_EXCEPTION(Error("Request " + requestId + " cannot be fetched from database"));
@@ -141,6 +147,7 @@ CaSqlite::getRequest(const std::string& requestId)
 void
 CaSqlite::addRequest(const CertificateRequest& request)
 {
+  // check whether request is there already
   Sqlite3Statement statement1(m_database,
                               R"_SQLTEXT_(SELECT * FROM CertRequests where cert_key_name = ?)_SQLTEXT_");
   statement1.bind(1, request.m_cert.getKeyName().wireEncode(), SQLITE_TRANSIENT);
@@ -149,6 +156,7 @@ CaSqlite::addRequest(const CertificateRequest& request)
     return;
   }
 
+  // check whether certificate is already issued
   Sqlite3Statement statement2(m_database,
                               R"_SQLTEXT_(SELECT * FROM IssuedCerts where cert_key_name = ?)_SQLTEXT_");
   statement2.bind(1, request.m_cert.getKeyName().wireEncode(), SQLITE_TRANSIENT);
@@ -157,25 +165,54 @@ CaSqlite::addRequest(const CertificateRequest& request)
     return;
   }
 
-  Sqlite3Statement statement(m_database,
-                             R"_SQLTEXT_(INSERT INTO CertRequests (request_id, ca_name, status,
+  if (request.m_probeToken != nullptr) {
+    Sqlite3Statement statement(
+        m_database,
+        R"_SQLTEXT_(INSERT INTO CertRequests (request_id, ca_name, status,
+                             challenge_status, cert_key_name, cert_request, challenge_type, challenge_secrets,
+                             challenge_tp, remaining_tries, remaining_time, probe_token)
+                             values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
+    statement.bind(1, request.m_requestId, SQLITE_TRANSIENT);
+    statement.bind(2, request.m_caName.wireEncode(), SQLITE_TRANSIENT);
+    statement.bind(3, request.m_status);
+    statement.bind(4, request.m_challengeStatus, SQLITE_TRANSIENT);
+    statement.bind(5, request.m_cert.getKeyName().wireEncode(),
+                   SQLITE_TRANSIENT);
+    statement.bind(6, request.m_cert.wireEncode(), SQLITE_TRANSIENT);
+    statement.bind(7, request.m_challengeType, SQLITE_TRANSIENT);
+    statement.bind(8, convertJson2String(request.m_challengeSecrets),
+                   SQLITE_TRANSIENT);
+    statement.bind(9, request.m_challengeTp, SQLITE_TRANSIENT);
+    statement.bind(10, request.m_remainingTries);
+    statement.bind(11, request.m_remainingTime);
+    statement.bind(12, request.m_probeToken->wireEncode(), SQLITE_TRANSIENT);
+    if (statement.step() != SQLITE_DONE) {
+      BOOST_THROW_EXCEPTION(Error("Request " + request.m_requestId + " cannot be added to database"));
+    }
+  }
+  else {
+    Sqlite3Statement statement(
+        m_database,
+        R"_SQLTEXT_(INSERT INTO CertRequests (request_id, ca_name, status,
                              challenge_status, cert_key_name, cert_request, challenge_type, challenge_secrets,
                              challenge_tp, remaining_tries, remaining_time)
                              values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
-  statement.bind(1, request.m_requestId, SQLITE_TRANSIENT);
-  statement.bind(2, request.m_caName.wireEncode(), SQLITE_TRANSIENT);
-  statement.bind(3, request.m_status);
-  statement.bind(4, request.m_challengeStatus, SQLITE_TRANSIENT);
-  statement.bind(5, request.m_cert.getKeyName().wireEncode(), SQLITE_TRANSIENT);
-  statement.bind(6, request.m_cert.wireEncode(), SQLITE_TRANSIENT);
-  statement.bind(7, request.m_challengeType, SQLITE_TRANSIENT);
-  statement.bind(8, convertJson2String(request.m_challengeSecrets), SQLITE_TRANSIENT);
-  statement.bind(9, request.m_challengeTp, SQLITE_TRANSIENT);
-  statement.bind(10, request.m_remainingTries);
-  statement.bind(11, request.m_remainingTime);
-
-  if (statement.step() != SQLITE_DONE) {
-    BOOST_THROW_EXCEPTION(Error("Request " + request.m_requestId + " cannot be added to database"));
+    statement.bind(1, request.m_requestId, SQLITE_TRANSIENT);
+    statement.bind(2, request.m_caName.wireEncode(), SQLITE_TRANSIENT);
+    statement.bind(3, request.m_status);
+    statement.bind(4, request.m_challengeStatus, SQLITE_TRANSIENT);
+    statement.bind(5, request.m_cert.getKeyName().wireEncode(),
+                   SQLITE_TRANSIENT);
+    statement.bind(6, request.m_cert.wireEncode(), SQLITE_TRANSIENT);
+    statement.bind(7, request.m_challengeType, SQLITE_TRANSIENT);
+    statement.bind(8, convertJson2String(request.m_challengeSecrets),
+                   SQLITE_TRANSIENT);
+    statement.bind(9, request.m_challengeTp, SQLITE_TRANSIENT);
+    statement.bind(10, request.m_remainingTries);
+    statement.bind(11, request.m_remainingTime);
+    if (statement.step() != SQLITE_DONE) {
+      BOOST_THROW_EXCEPTION(Error("Request " + request.m_requestId + " cannot be added to database"));
+    }
   }
 }
 

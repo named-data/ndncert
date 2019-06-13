@@ -45,11 +45,16 @@ public:
                      const std::string& challengeStatus, const std::string& challengeType,
                      const std::string& challengeTp, int remainingTime, int remainingTries,
                      const JsonSection& challengeSecrets, const security::v2::Certificate& cert);
+
+  void
+  setProbeToken(const std::shared_ptr<Data>& probeToken);
+
 public:
   Name m_caName;
   std::string m_requestId = "";
   int m_status = -1;
   security::v2::Certificate m_cert;
+  std::shared_ptr<Data> m_probeToken = nullptr;
 
   std::string m_challengeStatus = "";
   std::string m_challengeType = "";

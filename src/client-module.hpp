@@ -89,7 +89,7 @@ public:
   shared_ptr<Interest>
   generateNewInterest(const time::system_clock::TimePoint& notBefore,
                       const time::system_clock::TimePoint& notAfter,
-                      const Name& identityName = Name());
+                      const Name& identityName = Name(), const shared_ptr<Data>& probeToken = nullptr);
 
   std::list<std::string>
   onNewResponse(const Data& reply);
@@ -124,7 +124,8 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   genProbeRequestJson(const ClientCaItem& ca, const std::string& probeInfo);
 
   const JsonSection
-  genNewRequestJson(const std::string& ecdhPub, const security::v2::Certificate& certRequest);
+  genNewRequestJson(const std::string& ecdhPub, const security::v2::Certificate& certRequest,
+                    const shared_ptr<Data>& probeToken = nullptr);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   ClientConfig m_config;
