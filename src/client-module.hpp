@@ -119,6 +119,9 @@ public:
   static Block
   paramFromJson(const JsonSection& json);
 
+  static std::vector<std::string>
+  parseProbeComponents(const std::string& probe);
+
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   const JsonSection
   genProbeRequestJson(const ClientCaItem& ca, const std::string& probeInfo);

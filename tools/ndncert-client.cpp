@@ -22,6 +22,7 @@
 #include "challenge-module.hpp"
 #include <iostream>
 #include <string>
+#include <algorithm>
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -42,7 +43,7 @@ static std::list<std::string>
 captureParams(const JsonSection& requirement)
 {
   std::list<std::string> results;
-  for (auto& item : requirement) {
+  for (const auto& item : requirement) {
     std::cerr << item.second.get<std::string>("") << std::endl;
     std::cerr << "Please provide the argument: " << item.first << " : " << std::endl;
     std::string tempParam;
@@ -54,6 +55,25 @@ captureParams(const JsonSection& requirement)
   auto it2 = requirement.begin();
   for (; it1 != results.end() && it2 != requirement.end(); it1++, it2++) {
     std::cerr << it2->first << " : " << *it1 << std::endl;
+  }
+  return results;
+}
+
+static std::list<std::string>
+captureParams(const std::vector<std::string>& requirement)
+{
+  std::list<std::string> results;
+  for (const auto& item : requirement) {
+    std::cerr << "Please provide the argument: " << item << " : " << std::endl;
+    std::string tempParam;
+    getline(std::cin, tempParam);
+    results.push_back(tempParam);
+  }
+  std::cerr << "Got it. This is what you've provided:" << std::endl;
+  auto it1 = results.begin();
+  auto it2 = requirement.begin();
+  for (; it1 != results.end() && it2 != requirement.end(); it1++, it2++) {
+    std::cerr << *it2 << " : " << *it1 << std::endl;
   }
   return results;
 }
@@ -98,8 +118,9 @@ challengeCb(const Data& reply)
     std::list<std::string> capturedParams;
     do {
       capturedParams = captureParams(requirement);
-      std::cerr << "If anything is wrong, please type in OK; otherwise, type in REDO" << std::endl;
+      std::cerr << "If everything is right, please type in OK; otherwise, type in REDO" << std::endl;
       getline(std::cin, redo);
+      std::transform(redo.begin(), redo.end(), redo.begin(), ::toupper);
     } while (redo == "REDO");
     auto it1 = capturedParams.begin();
     auto it2 = requirement.begin();
@@ -144,8 +165,9 @@ newCb(const Data& reply)
     std::list<std::string> capturedParams;
     do {
       capturedParams = captureParams(requirement);
-      std::cerr << "If anything is wrong, please type in OK; otherwise, type in REDO" << std::endl;
+      std::cerr << "If everything is right, please type in OK; otherwise, type in REDO" << std::endl;
       getline(std::cin, redo);
+      std::transform(redo.begin(), redo.end(), redo.begin(), ::toupper);
     } while (redo == "REDO");
     auto it1 = capturedParams.begin();
     auto it2 = requirement.begin();
@@ -176,6 +198,7 @@ probeInfoCb(const Data& reply)
 
   std::string answer;
   getline(std::cin, answer);
+  std::transform(answer.begin(), answer.end(), answer.begin(), ::toupper);
   if (answer == "YES") {
     client.onProbeInfoResponse(reply);
     std::cerr << "You answered YES: new CA installed" << std::endl;
@@ -222,9 +245,11 @@ startApplication()
             << nStep++ << ": Please type in the CA INDEX that you want to apply"
             << " or type in NONE if your expected CA is not in the list\n";
 
-  std::string caIndexS;
+  std::string caIndexS, caIndexSUpper;
   getline(std::cin, caIndexS);
-  if (caIndexS == "NONE") {
+  caIndexSUpper = caIndexS;
+  std::transform(caIndexSUpper.begin(), caIndexSUpper.end(), caIndexSUpper.begin(), ::toupper);
+  if (caIndexSUpper == "NONE") {
     std::cerr << "Step " << nStep << ": Please type in the CA Name\n";
     face.expressInterest(*client.generateProbeInfoInterest(Name(caIndexS)),
                          bind(&probeInfoCb, _2),
@@ -237,9 +262,22 @@ startApplication()
     auto targetCaItem = caVector[caIndex];
 
     if (targetCaItem.m_probe != "") {
-      std::cerr << "Step " << nStep++ << ": Probe Requirement-" << targetCaItem.m_probe << std::endl;
+      std::cerr << "Step " << nStep++ << ": Please provide information for name assignment" << std::endl;
+      std::vector<std::string> probeFields = ClientModule::parseProbeComponents(targetCaItem.m_probe);
+      std::string redo = "";
+      std::list<std::string> capturedParams;
+      do {
+        capturedParams = captureParams(probeFields);
+        std::cerr << "If everything is right, please type in OK; otherwise, type in REDO" << std::endl;
+        getline(std::cin, redo);
+        std::transform(redo.begin(), redo.end(), redo.begin(), ::toupper);
+      } while (redo == "REDO");
       std::string probeInfo;
-      getline(std::cin, probeInfo);
+      for (const auto& item : capturedParams) {
+        probeInfo += item;
+        probeInfo += ":";
+      }
+      probeInfo = probeInfo.substr(0, probeInfo.size() - 1);
       face.expressInterest(*client.generateProbeInterest(targetCaItem, probeInfo),
                            bind(&probeCb, _2),
                            bind(&onNackCb),

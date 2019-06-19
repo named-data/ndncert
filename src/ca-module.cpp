@@ -127,7 +127,10 @@ CaModule::onProbe(const Interest& request)
     // if not a PROBE INFO, find an available name
     std::string availableId = "";
     const auto& parameterJson = jsonFromBlock(request.getApplicationParameters());
-    //m_config.m_probe
+    if (parameterJson.empty()) {
+      _LOG_ERROR("Empty JSON obtained from the Interest parameter.");
+      return;
+    }
 
     //std::string probeInfoStr = parameterJson.get(JSON_CLIENT_PROBE_INFO, "");
     if (m_config.m_probeHandler) {
@@ -144,8 +147,8 @@ CaModule::onProbe(const Interest& request)
       availableId = std::to_string(random::generateSecureWord64());
     }
     Name newIdentityName = m_config.m_caName;
-    _LOG_TRACE("Handle PROBE: generate an identity " << newIdentityName);
     newIdentityName.append(availableId);
+    _LOG_TRACE("Handle PROBE: generate an identity " << newIdentityName);
     contentJson = genProbeResponseJson(newIdentityName.toUri(), m_config.m_probe, parameterJson);
   }
 
@@ -161,9 +164,12 @@ void
 CaModule::onNew(const Interest& request)
 {
   // NEW Naming Convention: /<CA-prefix>/CA/NEW/[SignedInterestParameters_Digest]
-
   // get ECDH pub key and cert request
   const auto& parameterJson = jsonFromBlock(request.getApplicationParameters());
+  if (parameterJson.empty()) {
+    _LOG_ERROR("Empty JSON obtained from the Interest parameter.");
+    return;
+  }
   std::string peerKeyBase64 = parameterJson.get(JSON_CLIENT_ECDH, "");
 
   // get server's ECDH pub key

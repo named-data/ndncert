@@ -304,39 +304,34 @@ ClientModule::getJsonFromData(const Data& data)
   return json;
 }
 
-const JsonSection
-ClientModule::genProbeRequestJson(const ClientCaItem& ca, const std::string& probeInfo)
+std::vector<std::string>
+ClientModule::parseProbeComponents(const std::string& probe)
 {
+  std::vector<std::string> components;
   std::string delimiter = ":";
   size_t last = 0;
   size_t next = 0;
+  while ((next = probe.find(delimiter, last)) != std::string::npos) {
+    components.push_back(probe.substr(last, next - last));
+    last = next + 1;
+  }
+  components.push_back(probe.substr(last));
+  return components;
+}
 
+const JsonSection
+ClientModule::genProbeRequestJson(const ClientCaItem& ca, const std::string& probeInfo)
+{
   JsonSection root;
-
-  std::vector<std::string> fields;
-  while ((next = ca.m_probe.find(delimiter, last)) != std::string::npos) {
-    fields.push_back(ca.m_probe.substr(last, next - last));
-    last = next + 1;
-  }
-  fields.push_back(ca.m_probe.substr(last));
-
-  std::vector<std::string> arguments;
-  last = 0;
-  next = 0;
-  while ((next = probeInfo.find(delimiter, last)) != std::string::npos) {
-    arguments.push_back(probeInfo.substr(last, next - last));
-    last = next + 1;
-  }
-  arguments.push_back(probeInfo.substr(last));
+  std::vector<std::string> fields = parseProbeComponents(ca.m_probe);
+  std::vector<std::string> arguments  = parseProbeComponents(probeInfo);;
 
   if (arguments.size() != fields.size()) {
     BOOST_THROW_EXCEPTION(Error("Error in genProbeRequestJson: argument list does not match field list in the config file."));
   }
-
   for (size_t i = 0; i < fields.size(); ++i) {
       root.put(fields.at(i), arguments.at(i));
   }
-
   return root;
 }
 
