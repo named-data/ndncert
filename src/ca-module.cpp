@@ -31,6 +31,7 @@ namespace ndn {
 namespace ndncert {
 
 static const int IS_SUBNAME_MIN_OFFSET = 5;
+static const time::seconds DEFAULT_DATA_FRESHNESS_PERIOD = 1_s;
 
 _LOG_INIT(ndncert.ca);
 
@@ -131,7 +132,6 @@ CaModule::onProbe(const Interest& request)
       _LOG_ERROR("Empty JSON obtained from the Interest parameter.");
       return;
     }
-
     //std::string probeInfoStr = parameterJson.get(JSON_CLIENT_PROBE_INFO, "");
     if (m_config.m_probeHandler) {
       try {
@@ -155,6 +155,7 @@ CaModule::onProbe(const Interest& request)
   Data result;
   result.setName(request.getName());
   result.setContent(dataContentFromJson(contentJson));
+  result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
   m_keyChain.sign(result, signingByIdentity(m_config.m_caName));
   m_face.put(result);
   _LOG_TRACE("Handle PROBE: send out the PROBE response");
@@ -264,6 +265,7 @@ CaModule::onNew(const Interest& request)
 
   Data result;
   result.setName(request.getName());
+  result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
   result.setContent(dataContentFromJson(genNewResponseJson(myEcdhPubKeyBase64,
                                                            std::to_string(saltInt),
                                                            certRequest,
@@ -294,10 +296,20 @@ CaModule::onChallenge(const Interest& request)
   auto paramJsonPayload = parseEncBlock(m_ecdh.context->sharedSecret,
                                         m_ecdh.context->sharedSecretLen,
                                         request.getApplicationParameters());
+  if (paramJsonPayload.size() == 0) {
+    _LOG_ERROR("Got an empty buffer from content decryption.");
+    return;
+  }
   std::string paramJsonStr((const char*)paramJsonPayload.data(), paramJsonPayload.size());
   std::istringstream ss(paramJsonStr);
   JsonSection paramJson;
-  boost::property_tree::json_parser::read_json(ss, paramJson);
+  try {
+    boost::property_tree::json_parser::read_json(ss, paramJson);
+  }
+  catch (const std::exception& e) {
+    _LOG_ERROR("Cannot read JSON from decrypted content " << e.what());
+    return;
+  }
 
   // load the corresponding challenge module
   std::string challengeType = paramJson.get<std::string>(JSON_CLIENT_SELECTED_CHALLENGE);
@@ -355,6 +367,7 @@ CaModule::onChallenge(const Interest& request)
 
   Data result;
   result.setName(request.getName());
+  result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
 
   // encrypt the content
   std::stringstream ss2;
@@ -386,6 +399,7 @@ CaModule::onDownload(const Interest& request)
   }
   Data result;
   result.setName(request.getName());
+  result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
   result.setContent(signedCert.wireEncode());
   m_keyChain.sign(result, signingByIdentity(m_config.m_caName));
   m_face.put(result);
@@ -435,9 +449,15 @@ CaModule::issueCertificate(const CertificateRequest& certRequest)
 CertificateRequest
 CaModule::getCertificateRequest(const Interest& request)
 {
-  std::string requestId = readString(request.getName().at(m_config.m_caName.size() + 2));
-  _LOG_TRACE("Request Id to query the database " << requestId);
+  std::string requestId = "";
   CertificateRequest certRequest;
+  try {
+    requestId = readString(request.getName().at(m_config.m_caName.size() + 2));
+    _LOG_TRACE("Request Id to query the database " << requestId);
+  }
+  catch (const std::exception& e) {
+    _LOG_ERROR(e.what());
+  }
   try {
     certRequest = m_storage->getRequest(requestId);
   }
@@ -508,8 +528,8 @@ CaModule::genProbeResponseJson()
 
   // ca-info
   const auto& pib = m_keyChain.getPib();
-  auto identity = pib.getIdentity(m_config.m_caName);
-  auto cert = identity.getDefaultKey().getDefaultCertificate();
+  const auto& identity = pib.getIdentity(m_config.m_caName);
+  const auto& cert = identity.getDefaultKey().getDefaultCertificate();
   std::string caInfo = "";
   if (m_config.m_caInfo == "") {
     caInfo = "Issued by " + cert.getSignature().getKeyLocator().getName().toUri();
@@ -526,7 +546,6 @@ CaModule::genProbeResponseJson()
   std::stringstream ss;
   io::save(cert, ss);
   root.put("certificate", ss.str());
-
   return root;
 }
 
@@ -583,15 +602,15 @@ CaModule::jsonFromBlock(const Block& block)
   std::string jsonString;
   try {
     jsonString = encoding::readString(block);
+    std::istringstream ss(jsonString);
+    JsonSection json;
+    boost::property_tree::json_parser::read_json(ss, json);
+    return json;
   }
   catch (const std::exception& e) {
-    _LOG_ERROR("Cannot read JSON string from TLV Value" << e.what());
+    _LOG_ERROR("Cannot read JSON string from TLV Value " << e.what());
     return JsonSection();
   }
-  std::istringstream ss(jsonString);
-  JsonSection json;
-  boost::property_tree::json_parser::read_json(ss, json);
-  return json;
 }
 
 } // namespace ndncert

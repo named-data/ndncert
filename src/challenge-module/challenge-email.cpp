@@ -65,6 +65,10 @@ ChallengeEmail::handleChallengeRequest(const JsonSection& params, CertificateReq
       const auto& expectedEmail = json.get("email", "");
       Name expectedPrefix(json.get(JSON_CA_NAME, ""));
       if (expectedEmail != emailAddress || !expectedPrefix.isPrefixOf(request.m_cert.getName())) {
+        _LOG_ERROR("Cannot match with the PROBE token. Input email: " << emailAddress
+                   << " Email in Token: " << expectedEmail
+                   << " Requested Cert Name: " << request.m_cert.getName()
+                   << " Identity Name got from Token: " << expectedPrefix);
         return;
       }
     }
