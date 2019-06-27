@@ -478,20 +478,19 @@ CaModule::getCertificateRequest(const Interest& request)
 const JsonSection
 CaModule::genProbeResponseJson(const Name& identifier, const std::string& m_probe, const JsonSection& parameterJson)
 {
-    std::vector<std::string> fields;
-    std::string delimiter = ":";
-    size_t last = 0;
-    size_t next = 0;
-    while ((next = m_probe.find(delimiter, last)) != std::string::npos) {
-      fields.push_back(m_probe.substr(last, next - last));
-      last = next + 1;
-    }
-    fields.push_back(m_probe.substr(last));
-
+  std::vector<std::string> fields;
+  std::string delimiter = ":";
+  size_t last = 0;
+  size_t next = 0;
+  while ((next = m_probe.find(delimiter, last)) != std::string::npos) {
+    fields.push_back(m_probe.substr(last, next - last));
+    last = next + 1;
+  }
+  fields.push_back(m_probe.substr(last));
   JsonSection root;
 
   for (size_t i = 0; i < fields.size(); ++i) {
-      root.put(fields.at(i), parameterJson.get(fields.at(i), ""));
+    root.put(fields.at(i), parameterJson.get(fields.at(i), ""));
   }
 
   root.put(JSON_CA_NAME, identifier.toUri());

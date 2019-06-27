@@ -111,6 +111,9 @@ ClientModule::onProbeResponse(const Data& reply)
   if (nameUri != "") {
     m_identityName = Name(nameUri);
   }
+  else {
+    NDN_LOG_TRACE("The JSON_CA_NAME is empty.");
+  }
 }
 
 shared_ptr<Interest>
@@ -137,6 +140,7 @@ ClientModule::generateNewInterest(const time::system_clock::TimePoint& notBefore
       // do nothing
     }
     else {
+      NDN_LOG_TRACE("Randomly create a new name because m_identityName is empty and the param is empty.");
       auto id = std::to_string(random::generateSecureWord64());
       m_identityName = m_ca.m_caName;
       m_identityName.append(id);

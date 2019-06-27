@@ -213,6 +213,7 @@ probeInfoCb(const Data& reply)
 static void
 probeCb(const Data& reply)
 {
+  client.onProbeResponse(reply);
   std::cerr << "Step " << nStep++
             << ": Please type in your expected validity period of your certificate."
             << " Type in a number in unit of hour. The CA may change the validity"
@@ -220,8 +221,10 @@ probeCb(const Data& reply)
   std::string periodStr;
   getline(std::cin, periodStr);
   int hours = std::stoi(periodStr);
+  auto probeToken = make_shared<Data>(reply);
   face.expressInterest(*client.generateNewInterest(time::system_clock::now(),
-                                                   time::system_clock::now() + time::hours(hours)),
+                                                   time::system_clock::now() + time::hours(hours),
+                                                   Name(), probeToken),
                        bind(&newCb, _2),
                        bind(&onNackCb),
                        bind(&timeoutCb));
