@@ -332,7 +332,13 @@ main(int argc, char* argv[])
     std::cerr << description << std::endl;
     return 0;
   }
-  client.getClientConf().load(configFilePath);
+  try {
+    client.getClientConf().load(configFilePath);
+  }
+  catch (const std::exception& e) {
+    std::cerr << "Cannot load the configuration file: " << e.what() << std::endl;
+    return 1;
+  }
   startApplication();
   face.processEvents();
   return 0;
