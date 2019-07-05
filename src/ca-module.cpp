@@ -32,6 +32,7 @@ namespace ndncert {
 
 static const int IS_SUBNAME_MIN_OFFSET = 5;
 static const time::seconds DEFAULT_DATA_FRESHNESS_PERIOD = 1_s;
+static const time::seconds REQUEST_VALIDITY_PERIOD_NOT_BEFORE_GRACE_PERIOD = 120_s;
 
 _LOG_INIT(ndncert.ca);
 
@@ -193,6 +194,18 @@ CaModule::onNew(const Interest& request)
   }
   catch (const std::exception& e) {
     _LOG_ERROR("Unrecognized certificate request " << e.what());
+    return;
+  }
+  // check the validity period
+  auto expectedPeriod = clientCert->getValidityPeriod().getPeriod();
+  auto currentTime = time::system_clock::now();
+  if (expectedPeriod.first < currentTime - REQUEST_VALIDITY_PERIOD_NOT_BEFORE_GRACE_PERIOD) {
+    _LOG_ERROR("Client requests a too old notBefore timepoint.");
+    return;
+  }
+  if (expectedPeriod.second > currentTime + m_config.m_validityPeriod ||
+      expectedPeriod.second <= expectedPeriod.first) {
+    _LOG_ERROR("Client requests an invalid validity period or a notAfter timepoint beyond the allowed time period.");
     return;
   }
 
@@ -410,24 +423,7 @@ CaModule::issueCertificate(const CertificateRequest& certRequest)
 {
   auto expectedPeriod =
     certRequest.m_cert.getValidityPeriod().getPeriod();
-
-  time::system_clock::TimePoint startingTime, endingTime;
-  if (expectedPeriod.first > time::system_clock::now()
-      && expectedPeriod.first <  time::system_clock::now()
-      + m_config.m_validityPeriod)
-    {
-      startingTime = expectedPeriod.first;
-    }
-  else {
-    startingTime = time::system_clock::now();
-  }
-  if (expectedPeriod.second < time::system_clock::now() + m_config.m_validityPeriod) {
-    endingTime = expectedPeriod.second;
-  }
-  else {
-    endingTime = time::system_clock::now() + m_config.m_validityPeriod;
-  }
-  security::ValidityPeriod period(startingTime, endingTime);
+  security::ValidityPeriod period(expectedPeriod.first, expectedPeriod.second);
   security::v2::Certificate newCert;
 
   Name certName = certRequest.m_cert.getKeyName();

@@ -187,6 +187,39 @@ BOOST_AUTO_TEST_CASE(HandleNew)
   BOOST_CHECK_EQUAL(count, 1);
 }
 
+BOOST_AUTO_TEST_CASE(HandleNewWithInvalidValidityPeriod1)
+{
+  auto identity = addIdentity(Name("/ndn"));
+  auto key = identity.getDefaultKey();
+  auto cert = key.getDefaultCertificate();
+
+  util::DummyClientFace face(io, {true, true});
+  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test");
+  advanceClocks(time::milliseconds(20), 60);
+
+  ClientModule client(m_keyChain);
+  ClientCaItem item;
+  item.m_caName = Name("/ndn");
+  item.m_anchor = cert;
+  client.getClientConf().m_caItems.push_back(item);
+  auto current_tp = time::system_clock::now();
+  auto interest1 = client.generateNewInterest(current_tp, current_tp - time::hours(1),
+                                              Name("/ndn/zhiyi"));
+  auto interest2 = client.generateNewInterest(current_tp, current_tp + time::days(361),
+                                              Name("/ndn/zhiyi"));
+  auto interest3 = client.generateNewInterest(current_tp - time::hours(1),
+                                              current_tp + time::hours(2),
+                                              Name("/ndn/zhiyi"));
+  face.onSendData.connect([&] (const Data& response) {
+      BOOST_CHECK(false);
+    });
+  face.receive(*interest1);
+  face.receive(*interest2);
+  face.receive(*interest3);
+
+  advanceClocks(time::milliseconds(20), 60);
+}
+
 BOOST_AUTO_TEST_CASE(HandleNewWithProbeToken)
 {
   auto identity = addIdentity(Name("/ndn"));

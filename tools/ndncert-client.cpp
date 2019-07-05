@@ -219,11 +219,22 @@ probeCb(const Data& reply)
             << " Type in a number in unit of hour. The CA may change the validity"
             << " period if your expected period is too long." << std::endl;
   std::string periodStr;
+  int hours = 0;
   getline(std::cin, periodStr);
-  int hours = std::stoi(periodStr);
+  hours = std::stoi(periodStr);
+  while (hours <= 0) {
+    std::cerr << "Invalid period time: " << "Please input the period again." << std::endl;
+    getline(std::cin, periodStr);
+    try {
+      hours = std::stoi(periodStr);
+    }
+    catch (const std::exception& e) {
+      hours = -1;
+    }
+  }
   auto probeToken = make_shared<Data>(reply);
-  face.expressInterest(*client.generateNewInterest(time::system_clock::now(),
-                                                   time::system_clock::now() + time::hours(hours),
+  auto now = time::system_clock::now();
+  face.expressInterest(*client.generateNewInterest(now, now + time::hours(hours),
                                                    Name(), probeToken),
                        bind(&newCb, _2),
                        bind(&onNackCb),
@@ -297,8 +308,8 @@ startApplication()
       std::string periodStr;
       getline(std::cin, periodStr);
       int hours = std::stoi(periodStr);
-      face.expressInterest(*client.generateNewInterest(time::system_clock::now(),
-                                                       time::system_clock::now() + time::hours(hours),
+      auto now = time::system_clock::now();
+      face.expressInterest(*client.generateNewInterest(now, now + time::hours(hours),
                                                        Name(identityNameStr)),
                            bind(&newCb, _2),
                            bind(&onNackCb),
