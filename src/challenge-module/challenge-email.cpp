@@ -28,7 +28,7 @@ namespace ndncert {
 
 _LOG_INIT(ndncert.ChallengeEmail);
 
-NDNCERT_REGISTER_CHALLENGE(ChallengeEmail, "Email");
+NDNCERT_REGISTER_CHALLENGE(ChallengeEmail, "email");
 
 const std::string ChallengeEmail::NEED_CODE = "need-code";
 const std::string ChallengeEmail::WRONG_CODE = "wrong-code";
@@ -39,7 +39,7 @@ const std::string ChallengeEmail::JSON_CODE = "code";
 ChallengeEmail::ChallengeEmail(const std::string& scriptPath,
                                const size_t& maxAttemptTimes,
                                const time::seconds secretLifetime)
-  : ChallengeModule("Email")
+  : ChallengeModule("email")
   , m_sendEmailScript(scriptPath)
   , m_maxAttemptTimes(maxAttemptTimes)
   , m_secretLifetime(secretLifetime)

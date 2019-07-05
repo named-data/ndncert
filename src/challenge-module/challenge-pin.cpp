@@ -27,14 +27,14 @@ namespace ndncert {
 
 _LOG_INIT(ndncert.challenge-pin);
 
-NDNCERT_REGISTER_CHALLENGE(ChallengePin, "PIN");
+NDNCERT_REGISTER_CHALLENGE(ChallengePin, "pin");
 
 const std::string ChallengePin::NEED_CODE = "need-code";
 const std::string ChallengePin::WRONG_CODE = "wrong-code";
 const std::string ChallengePin::JSON_PIN_CODE = "pin-code";
 
 ChallengePin::ChallengePin(const size_t& maxAttemptTimes, const time::seconds& secretLifetime)
-  : ChallengeModule("PIN")
+  : ChallengeModule("pin")
   , m_secretLifetime(secretLifetime)
   , m_maxAttemptTimes(maxAttemptTimes)
 {

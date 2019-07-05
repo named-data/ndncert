@@ -66,7 +66,7 @@ CaConfig::parseChallengeList(const JsonSection& section)
   std::list<std::string> result;
   auto it = section.begin();
   for (; it != section.end(); it++) {
-    result.push_back(it->second.get<std::string>("type"));
+    result.push_back(boost::algorithm::to_lower_copy(it->second.get<std::string>("type")));
   }
   return result;
 }

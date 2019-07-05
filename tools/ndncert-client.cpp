@@ -22,7 +22,6 @@
 #include "challenge-module.hpp"
 #include <iostream>
 #include <string>
-#include <algorithm>
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -37,6 +36,7 @@ int nStep;
 Face face;
 security::v2::KeyChain keyChain;
 std::string challengeType;
+int validityPeriod = -1;
 ClientModule client(keyChain);
 
 static std::list<std::string>
@@ -79,6 +79,31 @@ captureParams(const std::vector<std::string>& requirement)
 }
 
 static void
+captureValidityPeriod()
+{
+  if (validityPeriod <= 0) {
+    std::cerr << "Step " << nStep++
+              << ": Please type in your expected validity period of your certificate."
+              << " Type the number of hours (168 for week, 730 for month, 8760 for year). The CA may change the validity"
+              << " period if your expected period is too long." << std::endl;
+    std::string periodStr = "";
+    do {
+      getline(std::cin, periodStr);
+      try {
+        validityPeriod = std::stoi(periodStr);
+      }
+      catch (const std::exception& e) {
+        validityPeriod = -1;
+      }
+      if (validityPeriod > 0) {
+        break;
+      }
+      std::cerr << "Invalid period time. Please input the period again." << std::endl;
+    } while (true);
+  }
+}
+
+static void
 onNackCb()
 {
   std::cerr << "Got NACK\n";
@@ -111,50 +136,70 @@ challengeCb(const Data& reply)
   }
 
   auto challenge = ChallengeModule::createChallengeModule(challengeType);
-  auto requirement = challenge->getRequirementForChallenge(client.getApplicationStatus(), client.getChallengeStatus());
+  auto requirement = challenge->getRequirementForChallenge(client.getApplicationStatus(),
+                                                           client.getChallengeStatus());
   if (requirement.size() > 0) {
     std::cerr << "Step " << nStep++ << ": Please satisfy following instruction(s)\n";
     std::string redo = "";
     std::list<std::string> capturedParams;
     do {
       capturedParams = captureParams(requirement);
-      std::cerr << "If everything is right, please type in OK; otherwise, type in REDO" << std::endl;
+      std::cerr << "If everything is correct, please type in OK; otherwise, type in REDO" << std::endl;
       getline(std::cin, redo);
-      std::transform(redo.begin(), redo.end(), redo.begin(), ::toupper);
-    } while (redo == "REDO");
+      boost::algorithm::to_lower(redo);
+    } while (redo != "ok");
     auto it1 = capturedParams.begin();
     auto it2 = requirement.begin();
     for (; it1 != capturedParams.end() && it2 != requirement.end(); it1++, it2++) {
       it2->second.put("", *it1);
     }
   }
-  face.expressInterest(*client.generateChallengeInterest(
-                        challenge->genChallengeRequestJson(
-                                   client.getApplicationStatus(),
-                                   client.getChallengeStatus(),
-                                   requirement)),
-                       bind(&challengeCb, _2),
-                       bind(&onNackCb),
-                       bind(&timeoutCb));
+  face.expressInterest(*client.generateChallengeInterest(challenge->genChallengeRequestJson(client.getApplicationStatus(),
+                                                                                            client.getChallengeStatus(),
+                                                                                            requirement)),
+                       bind(&challengeCb, _2), bind(&onNackCb), bind(&timeoutCb));
 }
 
 static void
 newCb(const Data& reply)
 {
+  int challengeIndex = 0;
   auto challengeList = client.onNewResponse(reply);
-  std::cerr << "Step " << nStep++ << ": Please type in the challenge ID from the following challenges\n";
-  for (auto item : challengeList) {
-    std::cerr << "\t" << item << std::endl;
+  if (challengeList.size() < 1) {
+    std::cerr << "There is no available challenge provided by the CA. Exit" << std::endl;
+    return;
   }
-  std::string choice;
-  getline(std::cin, choice);
-
-  auto challenge = ChallengeModule::createChallengeModule(choice);
+  else if (challengeList.size() > 1) {
+    int count = 0;
+    std::string choice = "";
+    std::cerr << "Step " << nStep++ << ": Please type in the challenge index that you want to perform\n";
+    do {
+      count = 0;
+      for (auto item : challengeList) {
+        std::cerr << "\t" << count++ << " : "<< item << std::endl;
+      }
+      getline(std::cin, choice);
+      try {
+        challengeIndex = std::stoi(choice);
+      }
+      catch (const std::exception& e) {
+        challengeIndex = -1;
+      }
+      if (challengeIndex >= 0 && challengeIndex < count) {
+        break;
+      }
+      std::cerr << "Your input index is out of range. Please type in again." << std::endl;
+    } while (true);
+  }
+  auto it = challengeList.begin();
+  std::advance(it, challengeIndex);
+  unique_ptr<ChallengeModule> challenge = ChallengeModule::createChallengeModule(*it);
   if (challenge != nullptr) {
-    challengeType = choice;
+    challengeType = *it;
+    std::cerr << "The challenge has been selected: " << challengeType << std::endl;
   }
   else {
-    std::cerr << "Cannot recognize the specified challenge. Exit";
+    std::cerr << "Error. Cannot load selected Challenge Module. Exit." << std::endl;
     return;
   }
   auto requirement = challenge->getRequirementForChallenge(client.getApplicationStatus(),
@@ -165,24 +210,20 @@ newCb(const Data& reply)
     std::list<std::string> capturedParams;
     do {
       capturedParams = captureParams(requirement);
-      std::cerr << "If everything is right, please type in OK; otherwise, type in REDO" << std::endl;
+      std::cerr << "If everything is correct, please type in OK; otherwise, type in REDO" << std::endl;
       getline(std::cin, redo);
-      std::transform(redo.begin(), redo.end(), redo.begin(), ::toupper);
-    } while (redo == "REDO");
+      boost::algorithm::to_lower(redo);
+    } while (redo != "ok");
     auto it1 = capturedParams.begin();
     auto it2 = requirement.begin();
     for (; it1 != capturedParams.end() && it2 != requirement.end(); it1++, it2++) {
       it2->second.put("", *it1);
     }
   }
-  face.expressInterest(*client.generateChallengeInterest(
-                               challenge->genChallengeRequestJson(
-                                          client.getApplicationStatus(),
-                                          client.getChallengeStatus(),
-                                          requirement)),
-                       bind(&challengeCb, _2),
-                       bind(&onNackCb),
-                       bind(&timeoutCb));
+  face.expressInterest(*client.generateChallengeInterest(challenge->genChallengeRequestJson(client.getApplicationStatus(),
+                                                                                            client.getChallengeStatus(),
+                                                                                            requirement)),
+                       bind(&challengeCb, _2), bind(&onNackCb), bind(&timeoutCb));
 }
 
 static void
@@ -198,14 +239,14 @@ probeInfoCb(const Data& reply)
 
   std::string answer;
   getline(std::cin, answer);
-  std::transform(answer.begin(), answer.end(), answer.begin(), ::toupper);
-  if (answer == "YES") {
+  boost::algorithm::to_lower(answer);
+  if (answer == "yes") {
     client.onProbeInfoResponse(reply);
-    std::cerr << "You answered YES: new CA installed" << std::endl;
+    std::cerr << "You answered YES: new CA has been installed" << std::endl;
     startApplication();
   }
   else {
-    std::cerr << "New CA not installed" << std::endl;
+    std::cerr << "New CA will not be installed" << std::endl;
     return;
   }
 }
@@ -214,31 +255,13 @@ static void
 probeCb(const Data& reply)
 {
   client.onProbeResponse(reply);
-  std::cerr << "Step " << nStep++
-            << ": Please type in your expected validity period of your certificate."
-            << " Type in a number in unit of hour. The CA may change the validity"
-            << " period if your expected period is too long." << std::endl;
-  std::string periodStr;
-  int hours = 0;
-  getline(std::cin, periodStr);
-  hours = std::stoi(periodStr);
-  while (hours <= 0) {
-    std::cerr << "Invalid period time: " << "Please input the period again." << std::endl;
-    getline(std::cin, periodStr);
-    try {
-      hours = std::stoi(periodStr);
-    }
-    catch (const std::exception& e) {
-      hours = -1;
-    }
-  }
+  captureValidityPeriod();
   auto probeToken = make_shared<Data>(reply);
   auto now = time::system_clock::now();
-  face.expressInterest(*client.generateNewInterest(now, now + time::hours(hours),
+  std::cerr << "The validity period of your certificate will be: " << validityPeriod << " hours" << std::endl;
+  face.expressInterest(*client.generateNewInterest(now, now + time::hours(validityPeriod),
                                                    Name(), probeToken),
-                       bind(&newCb, _2),
-                       bind(&onNackCb),
-                       bind(&timeoutCb));
+                       bind(&newCb, _2), bind(&onNackCb), bind(&timeoutCb));
 }
 
 static void
@@ -259,20 +282,28 @@ startApplication()
             << nStep++ << ": Please type in the CA INDEX that you want to apply"
             << " or type in NONE if your expected CA is not in the list\n";
 
-  std::string caIndexS, caIndexSUpper;
+  std::string caIndexS, caIndexSLower;
   getline(std::cin, caIndexS);
-  caIndexSUpper = caIndexS;
-  std::transform(caIndexSUpper.begin(), caIndexSUpper.end(), caIndexSUpper.begin(), ::toupper);
-  if (caIndexSUpper == "NONE") {
+  caIndexSLower = caIndexS;
+  boost::algorithm::to_lower(caIndexSLower);
+  if (caIndexSLower == "none") {
     std::cerr << "Step " << nStep << ": Please type in the CA Name\n";
     face.expressInterest(*client.generateProbeInfoInterest(Name(caIndexS)),
-                         bind(&probeInfoCb, _2),
-                         bind(&onNackCb),
-                         bind(&timeoutCb));
+                         bind(&probeInfoCb, _2), bind(&onNackCb), bind(&timeoutCb));
   }
   else {
-    int caIndex = std::stoi(caIndexS);
-    BOOST_ASSERT(caIndex <= count);
+    int caIndex;
+    try {
+      caIndex = std::stoi(caIndexS);
+    }
+    catch (const std::exception& e) {
+      std::cerr << "Your input is neither NONE nor a valid index. Exit" << std::endl;
+      return;
+    }
+    if (caIndex < 0 || caIndex >= count) {
+      std::cerr << "Your input is not an existing index. Exit" << std::endl;
+      return;
+    }
     auto targetCaItem = caVector[caIndex];
 
     if (targetCaItem.m_probe != "") {
@@ -282,10 +313,10 @@ startApplication()
       std::list<std::string> capturedParams;
       do {
         capturedParams = captureParams(probeFields);
-        std::cerr << "If everything is right, please type in OK; otherwise, type in REDO" << std::endl;
+        std::cerr << "If everything is correct, please type in OK; otherwise, type in REDO" << std::endl;
         getline(std::cin, redo);
-        std::transform(redo.begin(), redo.end(), redo.begin(), ::toupper);
-      } while (redo == "REDO");
+        boost::algorithm::to_lower(redo);
+      } while (redo != "ok");
       std::string probeInfo;
       for (const auto& item : capturedParams) {
         probeInfo += item;
@@ -293,27 +324,18 @@ startApplication()
       }
       probeInfo = probeInfo.substr(0, probeInfo.size() - 1);
       face.expressInterest(*client.generateProbeInterest(targetCaItem, probeInfo),
-                           bind(&probeCb, _2),
-                           bind(&onNackCb),
-                           bind(&timeoutCb));
+                           bind(&probeCb, _2), bind(&onNackCb), bind(&timeoutCb));
     }
     else {
       std::cerr << "Step " << nStep++ << ": Please type in the identity name you want to get (with CA prefix)\n";
       std::string identityNameStr;
       getline(std::cin, identityNameStr);
-      std::cerr << "Step "
-                << nStep++ << ": Please type in your expected validity period of your certificate."
-                << "Type in a number in unit of hour."
-                << " The CA may change the validity period if your expected period is too long.\n";
-      std::string periodStr;
-      getline(std::cin, periodStr);
-      int hours = std::stoi(periodStr);
+      captureValidityPeriod();
+      std::cerr << "The validity period of your certificate will be: " << validityPeriod << " hours" << std::endl;
       auto now = time::system_clock::now();
-      face.expressInterest(*client.generateNewInterest(now, now + time::hours(hours),
+      face.expressInterest(*client.generateNewInterest(now, now + time::hours(validityPeriod),
                                                        Name(identityNameStr)),
-                           bind(&newCb, _2),
-                           bind(&onNackCb),
-                           bind(&timeoutCb));
+                           bind(&newCb, _2), bind(&onNackCb), bind(&timeoutCb));
     }
   }
 }
@@ -324,10 +346,11 @@ main(int argc, char* argv[])
 {
   namespace po = boost::program_options;
   std::string configFilePath = std::string(SYSCONFDIR) + "/ndncert/client.conf";
-  po::options_description description("General Usage\n ndncert-client [-h] [-f]\n");
+  po::options_description description("General Usage\n ndncert-client [-h] [-c] [-v]\n");
   description.add_options()
     ("help,h", "produce help message")
-    ("config-file,f", po::value<std::string>(&configFilePath), "config file name");
+    ("config-file,c", po::value<std::string>(&configFilePath), "config file name")
+    ("validity-period,v", po::value<int>(&validityPeriod)->default_value(-1), "the validity period of your certificate being requested");
   po::positional_options_description p;
 
   po::variables_map vm;

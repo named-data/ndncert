@@ -31,7 +31,7 @@ BOOST_FIXTURE_TEST_SUITE(TestChallengePin, IdentityManagementFixture)
 BOOST_AUTO_TEST_CASE(ChallengeType)
 {
   ChallengePin challenge;
-  BOOST_CHECK_EQUAL(challenge.CHALLENGE_TYPE, "PIN");
+  BOOST_CHECK_EQUAL(challenge.CHALLENGE_TYPE, "pin");
 }
 
 BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmptyInfo)
@@ -46,7 +46,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmptyInfo)
 
   BOOST_CHECK_EQUAL(request.m_status, STATUS_CHALLENGE);
   BOOST_CHECK_EQUAL(request.m_challengeStatus, ChallengePin::NEED_CODE);
-  BOOST_CHECK_EQUAL(request.m_challengeType, "PIN");
+  BOOST_CHECK_EQUAL(request.m_challengeType, "pin");
 }
 
 BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
   auto cert = key.getDefaultCertificate();
   JsonSection secret;
   secret.add(ChallengePin::JSON_PIN_CODE, "12345");
-  CertificateRequest request(Name("/ndn/site1"), "123", STATUS_CHALLENGE, ChallengePin::NEED_CODE, "PIN",
+  CertificateRequest request(Name("/ndn/site1"), "123", STATUS_CHALLENGE, ChallengePin::NEED_CODE, "pin",
                              time::toIsoString(time::system_clock::now()), 3600, 3, secret, cert);
 
   JsonSection paramJson;
@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithWrongCode)
   auto cert = key.getDefaultCertificate();
   JsonSection secret;
   secret.add(ChallengePin::JSON_PIN_CODE, "12345");
-  CertificateRequest request(Name("/ndn/site1"), "123", STATUS_CHALLENGE, ChallengePin::NEED_CODE, "PIN",
+  CertificateRequest request(Name("/ndn/site1"), "123", STATUS_CHALLENGE, ChallengePin::NEED_CODE, "pin",
                              time::toIsoString(time::system_clock::now()), 3600, 3, secret, cert);
 
   JsonSection paramJson;

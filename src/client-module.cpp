@@ -194,12 +194,11 @@ ClientModule::onNewResponse(const Data& reply)
   const auto& peerKeyBase64Str = contentJson.get<std::string>(JSON_CA_ECDH, "");
   const auto& saltStr = contentJson.get<std::string>(JSON_CA_SALT, "");
   uint64_t saltInt = std::stoull(saltStr);
-  uint8_t salt[sizeof(saltInt)];
-  std::memcpy(salt, &saltInt, sizeof(saltInt));
   m_ecdh.deriveSecret(peerKeyBase64Str);
 
   // HKDF
-  hkdf(m_ecdh.context->sharedSecret, m_ecdh.context->sharedSecretLen, salt, sizeof(saltInt), m_aesKey, 32);
+  hkdf(m_ecdh.context->sharedSecret, m_ecdh.context->sharedSecretLen,
+       (uint8_t*)&saltInt, sizeof(saltInt), m_aesKey, sizeof(m_aesKey));
 
   // update state
   m_status = contentJson.get<int>(JSON_CA_STATUS);
@@ -228,7 +227,7 @@ ClientModule::generateChallengeInterest(const JsonSection& paramJson)
   std::stringstream ss;
   boost::property_tree::write_json(ss, paramJson);
   auto payload = ss.str();
-  auto paramBlock = genEncBlock(tlv::ApplicationParameters, m_aesKey, 32,
+  auto paramBlock = genEncBlock(tlv::ApplicationParameters, m_aesKey, sizeof(m_aesKey),
                                 (const uint8_t*)payload.c_str(), payload.size());
   interest->setApplicationParameters(paramBlock);
 
@@ -243,7 +242,7 @@ ClientModule::onChallengeResponse(const Data& reply)
     _LOG_ERROR("Cannot verify data signature from " << m_ca.m_caName.toUri());
     return;
   }
-  auto result = parseEncBlock(m_aesKey, 32, reply.getContent());
+  auto result = parseEncBlock(m_aesKey, sizeof(m_aesKey), reply.getContent());
   std::string payload((const char*)result.data(), result.size());
   std::istringstream ss(payload);
   JsonSection contentJson;

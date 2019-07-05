@@ -31,7 +31,7 @@ BOOST_FIXTURE_TEST_SUITE(TestChallengeEmail, IdentityManagementFixture)
 BOOST_AUTO_TEST_CASE(ChallengeType)
 {
   ChallengeEmail challenge;
-  BOOST_CHECK_EQUAL(challenge.CHALLENGE_TYPE, "Email");
+  BOOST_CHECK_EQUAL(challenge.CHALLENGE_TYPE, "email");
 }
 
 BOOST_AUTO_TEST_CASE(EmailAddressChecker)
@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmail)
   BOOST_CHECK(request.m_remainingTime != 0);
   BOOST_CHECK(request.m_remainingTries != 0);
   BOOST_CHECK(request.m_challengeTp != "");
-  BOOST_CHECK_EQUAL(request.m_challengeType, "Email");
+  BOOST_CHECK_EQUAL(request.m_challengeType, "email");
 
   std::string line = "";
   std::string delimiter = " ";
@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithWrongCode)
   JsonSection json;
   json.put(ChallengeEmail::JSON_CODE, "4567");
   CertificateRequest request(Name("/ndn/site1"), "123", STATUS_CHALLENGE, ChallengeEmail::NEED_CODE,
-                             "Email", time::toIsoString(time::system_clock::now()), 3600, 3, json, cert);
+                             "email", time::toIsoString(time::system_clock::now()), 3600, 3, json, cert);
 
   JsonSection requestJson;
   requestJson.put(ChallengeEmail::JSON_CODE, "7890");

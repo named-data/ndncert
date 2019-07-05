@@ -189,11 +189,9 @@ CaModule::onNew(const Interest& request)
   }
   // generate salt for HKDF
   auto saltInt = random::generateSecureWord64();
-  uint8_t salt[sizeof(saltInt)];
-  std::memcpy(salt, &saltInt, sizeof(saltInt));
   // hkdf
   hkdf(m_ecdh.context->sharedSecret, m_ecdh.context->sharedSecretLen,
-       salt, sizeof(saltInt), m_aesKey, 32);
+       (uint8_t*)&saltInt, sizeof(saltInt), m_aesKey, sizeof(m_aesKey));
 
   // parse certificate request
   std::string certRequestStr = parameterJson.get(JSON_CLIENT_CERT_REQ, "");
@@ -319,7 +317,7 @@ CaModule::onChallenge(const Interest& request)
   // decrypt the parameters
   Buffer paramJsonPayload;
   try {
-    paramJsonPayload = parseEncBlock(m_aesKey, 32,
+    paramJsonPayload = parseEncBlock(m_aesKey, sizeof(m_aesKey),
                                      request.getApplicationParameters());
   }
   catch (const std::exception& e) {
@@ -403,7 +401,7 @@ CaModule::onChallenge(const Interest& request)
   std::stringstream ss2;
   boost::property_tree::write_json(ss2, contentJson);
   auto payload = ss2.str();
-  auto contentBlock = genEncBlock(tlv::Content, m_aesKey, 32,
+  auto contentBlock = genEncBlock(tlv::Content, m_aesKey, sizeof(m_aesKey),
                                   (const uint8_t*)payload.c_str(), payload.size());
   result.setContent(contentBlock);
   m_keyChain.sign(result, signingByIdentity(m_config.m_caName));
