@@ -22,12 +22,10 @@
 #ifndef NDN_TESTS_TEST_HOME_FIXTURE_HPP
 #define NDN_TESTS_TEST_HOME_FIXTURE_HPP
 
-#include "ndn-cxx/security/v2/key-chain.hpp"
-
+#include <ndn-cxx/security/v2/key-chain.hpp>
 #include <cstdlib>
 #include <fstream>
 #include <initializer_list>
-
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 
@@ -36,69 +34,16 @@ namespace ndncert {
 namespace tests {
 
 /**
- * @brief Fixture to adjust/restore NDN_CLIENT_PIB and NDN_CLIENT_TPM paths
- *
- * Note that the specified PATH will be removed after fixture is destroyed.
- * **Do not specify non-temporary paths.**
+ * @brief TestHomeFixture to set TEST_HOME variable and allow config file creation
  */
 template<class Path>
-class PibDirFixture
-{
-public:
-  PibDirFixture()
-    : m_pibDir(Path().PATH)
-  {
-    if (std::getenv("NDN_CLIENT_PIB") != nullptr) {
-      m_oldPib = std::getenv("NDN_CLIENT_PIB");
-    }
-    if (std::getenv("NDN_CLIENT_TPM") != nullptr) {
-      m_oldTpm = std::getenv("NDN_CLIENT_TPM");
-    }
-
-    /// @todo Consider change to an in-memory PIB/TPM
-    setenv("NDN_CLIENT_PIB", ("pib-sqlite3:" + m_pibDir).c_str(), true);
-    setenv("NDN_CLIENT_TPM", ("tpm-file:" + m_pibDir).c_str(), true);
-  }
-
-  ~PibDirFixture()
-  {
-    if (!m_oldPib.empty()) {
-      setenv("NDN_CLIENT_PIB", m_oldPib.data(), true);
-    }
-    else {
-      unsetenv("NDN_CLIENT_PIB");
-    }
-
-    if (!m_oldTpm.empty()) {
-      setenv("NDN_CLIENT_TPM", m_oldTpm.data(), true);
-    }
-    else {
-      unsetenv("NDN_CLIENT_TPM");
-    }
-
-    boost::filesystem::remove_all(m_pibDir);
-    // const_cast<std::string&>(security::v2::KeyChain::getDefaultPibLocator()).clear();
-    // const_cast<std::string&>(security::v2::KeyChain::getDefaultTpmLocator()).clear();
-  }
-
-protected:
-  const std::string m_pibDir;
-
-private:
-  std::string m_oldPib;
-  std::string m_oldTpm;
-};
-
-/**
- * @brief Extension of PibDirFixture to set TEST_HOME variable and allow config file creation
- */
-template<class Path>
-class TestHomeFixture : public PibDirFixture<Path>
+class TestHomeFixture
 {
 public:
   TestHomeFixture()
+    : m_testHomeDir(Path().PATH)
   {
-    setenv("TEST_HOME", this->m_pibDir.c_str(), true);
+    setenv("TEST_HOME", m_testHomeDir.c_str(), true);
   }
 
   ~TestHomeFixture()
@@ -109,13 +54,16 @@ public:
   void
   createClientConf(std::initializer_list<std::string> lines) const
   {
-    boost::filesystem::create_directories(boost::filesystem::path(this->m_pibDir) / ".ndn");
-    std::ofstream of((boost::filesystem::path(this->m_pibDir) / ".ndn" / "client.conf").c_str());
+    boost::filesystem::create_directories(boost::filesystem::path(m_testHomeDir) / ".ndn");
+    std::ofstream of((boost::filesystem::path(m_testHomeDir) / ".ndn" / "client.conf").c_str());
     for (auto line : lines) {
-      boost::replace_all(line, "%PATH%", this->m_pibDir);
+      boost::replace_all(line, "%PATH%", m_testHomeDir);
       of << line << std::endl;
     }
   }
+
+protected:
+  std::string m_testHomeDir;
 };
 
 struct DefaultPibDir

@@ -18,7 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "test-common.hpp"
+#include "identity-management-fixture.hpp"
+#include "boost-test.hpp"
 
 namespace ndn {
 namespace ndncert {
