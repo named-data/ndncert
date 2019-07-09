@@ -20,6 +20,7 @@
 
 #include "ca-detail/ca-sqlite.hpp"
 #include "database-fixture.hpp"
+#include <iostream>
 
 namespace ndn {
 namespace ndncert {

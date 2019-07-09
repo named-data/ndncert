@@ -20,7 +20,7 @@
 
 #include "crypto-support/enc-tlv.hpp"
 #include "crypto-support/crypto-helper.hpp"
-#include "test-common.hpp"
+#include "boost-test.hpp"
 
 namespace ndn {
 namespace ndncert {
