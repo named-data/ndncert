@@ -1,5 +1,5 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
+/*
  * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
@@ -24,11 +24,11 @@
 #include "challenge-module.hpp"
 #include "challenge-module/challenge-pin.hpp"
 #include "challenge-module/challenge-email.hpp"
+
 #include <ndn-cxx/util/dummy-client-face.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/transform/public-key.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
-#include <iostream>
 
 namespace ndn {
 namespace ndncert {
@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE(Initialization)
 {
   util::DummyClientFace face(io, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
-  BOOST_CHECK_EQUAL(ca.getCaConf().m_caName.toUri(), "/ndn");
+  BOOST_CHECK_EQUAL(ca.getCaConf().m_caName, "/ndn");
 
   auto identity = addIdentity(Name("/ndn/site2"));
   auto key = identity.getDefaultKey();
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(HandleProbeInfo)
       BOOST_CHECK(security::verifySignature(response, cert));
       auto contentJson = ClientModule::getJsonFromData(response);
       auto caItem = ClientConfig::extractCaItem(contentJson);
-      BOOST_CHECK_EQUAL(caItem.m_caName.toUri(), "/ndn");
+      BOOST_CHECK_EQUAL(caItem.m_caName, "/ndn");
       BOOST_CHECK_EQUAL(caItem.m_probe, "");
       BOOST_CHECK_EQUAL(caItem.m_anchor.wireEncode(), cert.wireEncode());
       BOOST_CHECK_EQUAL(caItem.m_caInfo, "ndn testbed ca");
@@ -241,7 +241,6 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
   auto newInterest = client.generateNewInterest(time::system_clock::now(),
                                                 time::system_clock::now() + time::days(10), Name("/ndn/zhiyi"));
 
-  std::cout << "hi there" << std::endl;
   // generate CHALLENGE Interest
   ChallengePin pinChallenge;
   shared_ptr<Interest> challengeInterest = nullptr;
@@ -252,14 +251,8 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
   face.onSendData.connect([&] (const Data& response) {
     if (Name("/ndn/CA/_NEW").isPrefixOf(response.getName())) {
       auto contentJson = ClientModule::getJsonFromData(response);
-      std::cout << "Request ID " << contentJson.get<std::string>(JSON_CA_EQUEST_ID) << std::endl;
       client.onNewResponse(response);
-
       auto paramJson = pinChallenge.getRequirementForChallenge(client.m_status, client.m_challengeStatus);
-      for (auto& item : paramJson) {
-        std::cout << "JSON attribute" << item.first;
-        std::cout << " : " << item.second.get<std::string>("") << std::endl;
-      }
       challengeInterest = client.generateChallengeInterest(pinChallenge.genChallengeRequestJson(client.m_status,
                                                                                                 client.m_challengeStatus,
                                                                                                 paramJson));
@@ -271,11 +264,8 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
       client.onChallengeResponse(response);
       BOOST_CHECK_EQUAL(client.m_status, STATUS_CHALLENGE);
       BOOST_CHECK_EQUAL(client.m_challengeStatus, ChallengePin::NEED_CODE);
+
       auto paramJson = pinChallenge.getRequirementForChallenge(client.m_status, client.m_challengeStatus);
-      for (auto& item : paramJson) {
-        std::cout << "JSON attribute" << item.first;
-        std::cout << " : " << item.second.get<std::string>("") << std::endl;
-      }
       challengeInterest2 = client.generateChallengeInterest(pinChallenge.genChallengeRequestJson(client.m_status,
                                                                                                  client.m_challengeStatus,
                                                                                                  paramJson));
@@ -287,14 +277,13 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
       client.onChallengeResponse(response);
       BOOST_CHECK_EQUAL(client.m_status, STATUS_CHALLENGE);
       BOOST_CHECK_EQUAL(client.m_challengeStatus, ChallengePin::WRONG_CODE);
+
       auto paramJson = pinChallenge.getRequirementForChallenge(client.m_status, client.m_challengeStatus);
       auto request = ca.getCertificateRequest(*challengeInterest2);
       auto secret = request.m_challengeSecrets.get(ChallengePin::JSON_PIN_CODE, "");
-      for (auto& item : paramJson) {
-        std::cout << "JSON attribute" << item.first;
-        std::cout << " : " << item.second.get<std::string>("") << std::endl;
-        if (item.first == ChallengePin::JSON_PIN_CODE)
-          item.second.put("", secret);
+      for (auto& i : paramJson) {
+        if (i.first == ChallengePin::JSON_PIN_CODE)
+          i.second.put("", secret);
       }
       challengeInterest3 = client.generateChallengeInterest(pinChallenge.genChallengeRequestJson(client.m_status,
                                                                                                  client.m_challengeStatus,
@@ -308,7 +297,8 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
       BOOST_CHECK_EQUAL(client.m_status, STATUS_SUCCESS);
       BOOST_CHECK_EQUAL(client.m_challengeStatus, CHALLENGE_STATUS_SUCCESS);
     }
-    });
+  });
+
   face.receive(*newInterest);
   advanceClocks(time::milliseconds(20), 60);
   face.receive(*challengeInterest);

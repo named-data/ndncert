@@ -1,5 +1,5 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
+/*
  * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
@@ -21,6 +21,7 @@
 #include "ca-config.hpp"
 
 #include "identity-management-fixture.hpp"
+
 #include <ndn-cxx/security/transform/base64-encode.hpp>
 #include <ndn-cxx/security/transform/buffer-source.hpp>
 #include <ndn-cxx/security/transform/stream-sink.hpp>
@@ -35,7 +36,7 @@ BOOST_AUTO_TEST_CASE(ReadConfigFileWithFileAnchor)
 {
   CaConfig config;
   config.load("tests/unit-tests/ca.conf.test");
-  BOOST_CHECK_EQUAL(config.m_caName.toUri(), "/ndn");
+  BOOST_CHECK_EQUAL(config.m_caName, "/ndn");
   BOOST_CHECK_EQUAL(config.m_freshnessPeriod, time::seconds(720));
   BOOST_CHECK_EQUAL(config.m_validityPeriod, time::days(360));
   BOOST_CHECK_EQUAL(config.m_probe, "");

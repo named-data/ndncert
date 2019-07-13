@@ -1,5 +1,5 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
+/*
  * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
@@ -19,9 +19,11 @@
  */
 
 #include "client-module.hpp"
-#include "identity-management-fixture.hpp"
 #include "challenge-module.hpp"
 #include "ca-module.hpp"
+
+#include "identity-management-fixture.hpp"
+
 #include <ndn-cxx/util/dummy-client-face.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/transform/public-key.hpp>
@@ -56,12 +58,14 @@ BOOST_AUTO_TEST_CASE(Probe)
   client.getClientConf().m_caItems.push_back(item);
 
   auto firstInterest = client.generateProbeInterest(item, "zhiyi@cs.ucla.edu:987654321:Zhiyi Zhang");
-  BOOST_CHECK_EQUAL(firstInterest->getName().toUri(), "/site/CA/_PROBE");
+  BOOST_CHECK(firstInterest->getName().at(-1).isParametersSha256Digest());
+  // ignore the last name component (ParametersSha256Digest)
+  BOOST_CHECK_EQUAL(firstInterest->getName().getPrefix(-1), "/site/CA/_PROBE");
   BOOST_CHECK_EQUAL(CaModule::jsonFromBlock(firstInterest->getApplicationParameters()).get<std::string>("email"),
                     "zhiyi@cs.ucla.edu");
 }
 
-BOOST_AUTO_TEST_CASE(genProbeRequestJson)
+BOOST_AUTO_TEST_CASE(GenProbeRequestJson)
 {
   ClientModule client(m_keyChain);
   client.getClientConf().load("tests/unit-tests/client.conf.test");

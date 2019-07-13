@@ -1,5 +1,5 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
+/*
  * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
@@ -19,8 +19,8 @@
  */
 
 #include "crypto-support/crypto-helper.hpp"
+
 #include "identity-management-fixture.hpp"
-#include <iostream>
 
 namespace ndn {
 namespace ndncert {
@@ -72,11 +72,10 @@ BOOST_AUTO_TEST_CASE(Test1)
                                 bobResult, bobResult + 32);
 }
 
-
-BOOST_AUTO_TEST_CASE(NDN_COMPUTE_HMAC_SHA256_TEST1)
+BOOST_AUTO_TEST_CASE(HmacSha256)
 {
   uint8_t secret[] = {0x00,0x01,0x02,0x03,0x04,0x05,
-                 0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c};
+                      0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c};
 
   uint8_t salt[] = {0x0b,0x0b,0x0b,0x0b,0x0b,0x0b,0x0b,
                     0x0b,0x0b,0x0b,0x0b,0x0b,0x0b,0x0b,
@@ -95,7 +94,7 @@ BOOST_AUTO_TEST_CASE(NDN_COMPUTE_HMAC_SHA256_TEST1)
   BOOST_CHECK(memcmp(expected, result, sizeof(result)) == 0);
 }
 
-BOOST_AUTO_TEST_CASE(IETF_TEST_1)
+BOOST_AUTO_TEST_CASE(HkdfIetf1)
 {
   uint8_t secret[] = {0x00,0x01,0x02,0x03,0x04,0x05,
                       0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c};
@@ -124,7 +123,7 @@ BOOST_AUTO_TEST_CASE(IETF_TEST_1)
   BOOST_CHECK(memcmp(expected, result, sizeof(result)) == 0);
 }
 
-BOOST_AUTO_TEST_CASE(IETF_TEST_2)
+BOOST_AUTO_TEST_CASE(HkdfIetf2)
 {
   uint8_t secret[] = {0x60,0x61,0x62,0x63,0x64,0x65,0x66,0x67,
                       0x68,0x69,0x6a,0x6b,0x6c,0x6d,0x6e,0x6f,
@@ -182,7 +181,7 @@ BOOST_AUTO_TEST_CASE(IETF_TEST_2)
   BOOST_CHECK(memcmp(expected, result, 42) == 0);
 }
 
-BOOST_AUTO_TEST_CASE(IETF_TEST_3)
+BOOST_AUTO_TEST_CASE(HkdfIetf3)
 {
   //uint8_t secret[] = {}; secret is empty in this test
 
@@ -208,7 +207,6 @@ BOOST_AUTO_TEST_CASE(IETF_TEST_3)
   BOOST_CHECK(resultLen != 0);
   BOOST_CHECK(memcmp(expected, result, sizeof(result)) == 0);
 }
-
 
 BOOST_AUTO_TEST_SUITE_END()
 

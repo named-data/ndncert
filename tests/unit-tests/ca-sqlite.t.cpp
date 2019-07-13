@@ -1,5 +1,5 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
+/*
  * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
@@ -19,8 +19,8 @@
  */
 
 #include "ca-detail/ca-sqlite.hpp"
+
 #include "database-fixture.hpp"
-#include <iostream>
 
 namespace ndn {
 namespace ndncert {

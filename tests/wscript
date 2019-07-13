@@ -13,7 +13,6 @@ def build(bld):
         features='cxx',
         source="main.cpp",
         use='ndn-cert BOOST',
-        defines=['BOOST_TEST_MODULE=\"NDNCERT Tests\"']
         )
 
     unit_test = bld.program(

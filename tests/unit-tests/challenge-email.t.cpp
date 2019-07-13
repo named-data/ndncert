@@ -1,5 +1,5 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
+/*
  * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
@@ -19,6 +19,7 @@
  */
 
 #include "challenge-module/challenge-email.hpp"
+
 #include "identity-management-fixture.hpp"
 
 namespace ndn {
@@ -27,7 +28,7 @@ namespace tests {
 
 BOOST_FIXTURE_TEST_SUITE(TestChallengeEmail, IdentityManagementFixture)
 
-BOOST_AUTO_TEST_CASE(TestChallengeType)
+BOOST_AUTO_TEST_CASE(ChallengeType)
 {
   ChallengeEmail challenge;
   BOOST_CHECK_EQUAL(challenge.CHALLENGE_TYPE, "Email");
@@ -85,7 +86,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmail)
   line = line.substr(end + 1);
 
   std::string certName = line;
-  BOOST_CHECK_EQUAL(certName, cert.getName().toUri());
+  BOOST_CHECK_EQUAL(certName, cert.getName());
   std::remove("tmp.txt");
 }
 
