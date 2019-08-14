@@ -1,5 +1,5 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
+/*
  * Copyright (c) 2017-2019, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
@@ -20,18 +20,18 @@
 
 #include "crypto-helper.hpp"
 #include "../logging.hpp"
-#include <openssl/pem.h>
-#include <openssl/rand.h>
+
 #include <openssl/err.h>
-#include <ndn-cxx/security/transform/block-cipher.hpp>
+#include <openssl/pem.h>
+
+#include <ndn-cxx/encoding/buffer-stream.hpp>
 #include <ndn-cxx/security/transform/base64-decode.hpp>
 #include <ndn-cxx/security/transform/base64-encode.hpp>
 #include <ndn-cxx/security/transform/buffer-source.hpp>
+#include <ndn-cxx/security/transform/private-key.hpp>
+#include <ndn-cxx/security/transform/signer-filter.hpp>
 #include <ndn-cxx/security/transform/step-source.hpp>
 #include <ndn-cxx/security/transform/stream-sink.hpp>
-#include <ndn-cxx/util/random.hpp>
-#include <ndn-cxx/encoding/buffer-stream.hpp>
-#include <ndn-cxx/security/transform/hmac-filter.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -139,12 +139,16 @@ ECDHState::getRawSelfPubKey()
 std::string
 ECDHState::getBase64PubKey()
 {
+  namespace t = ndn::security::transform;
+
   if (context->publicKeyLen == 0) {
     this->getRawSelfPubKey();
   }
-  std::stringstream os;
-  security::transform::bufferSource(context->publicKey, context->publicKeyLen)
-    >> security::transform::base64Encode() >> security::transform::streamSink(os);
+
+  std::ostringstream os;
+  t::bufferSource(context->publicKey, context->publicKeyLen)
+    >> t::base64Encode()
+    >> t::streamSink(os);
   return os.str();
 }
 
@@ -177,35 +181,41 @@ uint8_t*
 ECDHState::deriveSecret(const std::string& peerKeyStr)
 {
   namespace t = ndn::security::transform;
+
   OBufferStream os;
-  security::transform::bufferSource(peerKeyStr)
-    >> security::transform::base64Decode()
-    >> security::transform::streamSink(os);
-  ConstBufferPtr result = os.buf();
+  t::bufferSource(peerKeyStr) >> t::base64Decode() >> t::streamSink(os);
+  auto result = os.buf();
+
   return this->deriveSecret(result->data(), result->size());
 }
 
-int ndn_compute_hmac_sha256 (const uint8_t *data, const unsigned  data_length,
-                             const uint8_t *key, const unsigned key_length,
-                             uint8_t *prk) {
+int
+ndn_compute_hmac_sha256(const uint8_t *data, const unsigned data_length,
+                        const uint8_t *key, const unsigned key_length,
+                        uint8_t *prk)
+{
+  namespace t = ndn::security::transform;
+
+  t::PrivateKey privKey;
+  privKey.loadRaw(KeyType::HMAC, key, key_length);
   OBufferStream os;
 
-  security::transform::bufferSource(data, data_length) >>
-    security::transform::hmacFilter(
-                                    DigestAlgorithm::SHA256, key, key_length) >>
-    security::transform::streamSink(os);
+  t::bufferSource(data, data_length)
+    >> t::signerFilter(DigestAlgorithm::SHA256, privKey)
+    >> t::streamSink(os);
 
-  auto result = os.buf();
-  memcpy(prk, result->data(), HASH_SIZE);
+  memcpy(prk, os.buf()->data(), HASH_SIZE);
   return 0;
 }
 
-//removed dependency of OpenSSL@1.1
+// avoid dependency on OpenSSL >= 1.1
 int
 hkdf(const uint8_t* secret, int secretLen, const uint8_t* salt,
      int saltLen, uint8_t* okm, int okm_len,
      const uint8_t* info, int info_len)
 {
+  namespace t = ndn::security::transform;
+
   // hkdf generate prk
   uint8_t prk[HASH_SIZE];
   ndn_compute_hmac_sha256(salt, saltLen, secret, secretLen, prk);
@@ -213,32 +223,32 @@ hkdf(const uint8_t* secret, int secretLen, const uint8_t* salt,
   // hkdf expand
   uint8_t prev[HASH_SIZE] = {0};
   int done_len = 0, dig_len = HASH_SIZE, n = okm_len / dig_len;
-  if (okm_len % dig_len) n++;
-  if (n > 255 || okm == nullptr) return 0;
+  if (okm_len % dig_len)
+    n++;
+  if (n > 255 || okm == nullptr)
+    return 0;
+
   for (int i = 1; i <= n; i++) {
     size_t copy_len;
     const uint8_t ctr = i;
-    OBufferStream os;
-    security::transform::StepSource source;
 
-    source >> security::transform::hmacFilter(DigestAlgorithm::SHA256, prk, dig_len)
-           >> security::transform::streamSink(os);
+    t::StepSource source;
+    t::PrivateKey privKey;
+    privKey.loadRaw(KeyType::HMAC, prk, dig_len);
+    OBufferStream os;
+    source >> t::signerFilter(DigestAlgorithm::SHA256, privKey)
+           >> t::streamSink(os);
 
     if (i > 1) {
       source.write(prev, dig_len);
     }
-
     source.write(info, info_len);
     source.write(&ctr, 1);
     source.end();
 
     auto result = os.buf();
     memcpy(prev, result->data(), dig_len);
-
-    copy_len = (done_len + dig_len > okm_len) ?
-      okm_len - done_len :
-      dig_len;
-
+    copy_len = (done_len + dig_len > okm_len) ? okm_len - done_len : dig_len;
     memcpy(okm + done_len, prev, copy_len);
     done_len += copy_len;
   }
