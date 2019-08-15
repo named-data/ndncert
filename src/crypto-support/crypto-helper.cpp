@@ -23,6 +23,7 @@
 
 #include <openssl/err.h>
 #include <openssl/pem.h>
+#include <openssl/hmac.h>
 
 #include <ndn-cxx/encoding/buffer-stream.hpp>
 #include <ndn-cxx/security/transform/base64-decode.hpp>
@@ -194,17 +195,9 @@ ndn_compute_hmac_sha256(const uint8_t *data, const unsigned data_length,
                         const uint8_t *key, const unsigned key_length,
                         uint8_t *prk)
 {
-  namespace t = ndn::security::transform;
-
-  t::PrivateKey privKey;
-  privKey.loadRaw(KeyType::HMAC, key, key_length);
-  OBufferStream os;
-
-  t::bufferSource(data, data_length)
-    >> t::signerFilter(DigestAlgorithm::SHA256, privKey)
-    >> t::streamSink(os);
-
-  memcpy(prk, os.buf()->data(), HASH_SIZE);
+  HMAC(EVP_sha256(), key, key_length,
+       (unsigned char*)data, data_length,
+       (unsigned char*)prk, nullptr);
   return 0;
 }
 
@@ -218,7 +211,13 @@ hkdf(const uint8_t* secret, int secretLen, const uint8_t* salt,
 
   // hkdf generate prk
   uint8_t prk[HASH_SIZE];
-  ndn_compute_hmac_sha256(salt, saltLen, secret, secretLen, prk);
+  if (saltLen == 0) {
+    uint8_t realSalt[HASH_SIZE] = {0};
+    ndn_compute_hmac_sha256(secret, secretLen, realSalt, HASH_SIZE, prk);
+  }
+  else {
+    ndn_compute_hmac_sha256(secret, secretLen, salt, saltLen, prk);
+  }
 
   // hkdf expand
   uint8_t prev[HASH_SIZE] = {0};
