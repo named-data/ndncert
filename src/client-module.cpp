@@ -228,7 +228,7 @@ ClientModule::generateChallengeInterest(const JsonSection& paramJson)
   std::stringstream ss;
   boost::property_tree::write_json(ss, paramJson);
   auto payload = ss.str();
-  auto paramBlock = genEncBlock(tlv::ApplicationParameters, m_ecdh.context->sharedSecret, m_ecdh.context->sharedSecretLen,
+  auto paramBlock = genEncBlock(tlv::ApplicationParameters, m_aesKey, 32,
                                 (const uint8_t*)payload.c_str(), payload.size());
   interest->setApplicationParameters(paramBlock);
 
@@ -243,7 +243,7 @@ ClientModule::onChallengeResponse(const Data& reply)
     _LOG_ERROR("Cannot verify data signature from " << m_ca.m_caName.toUri());
     return;
   }
-  auto result = parseEncBlock(m_ecdh.context->sharedSecret, m_ecdh.context->sharedSecretLen, reply.getContent());
+  auto result = parseEncBlock(m_aesKey, 32, reply.getContent());
   std::string payload((const char*)result.data(), result.size());
   std::istringstream ss(payload);
   JsonSection contentJson;

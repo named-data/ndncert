@@ -306,8 +306,7 @@ CaModule::onChallenge(const Interest& request)
     return;
   }
   // decrypt the parameters
-  auto paramJsonPayload = parseEncBlock(m_ecdh.context->sharedSecret,
-                                        m_ecdh.context->sharedSecretLen,
+  auto paramJsonPayload = parseEncBlock(m_aesKey, 32,
                                         request.getApplicationParameters());
   if (paramJsonPayload.size() == 0) {
     _LOG_ERROR("Got an empty buffer from content decryption.");
@@ -386,8 +385,7 @@ CaModule::onChallenge(const Interest& request)
   std::stringstream ss2;
   boost::property_tree::write_json(ss2, contentJson);
   auto payload = ss2.str();
-  auto contentBlock = genEncBlock(tlv::Content, m_ecdh.context->sharedSecret,
-                                  m_ecdh.context->sharedSecretLen,
+  auto contentBlock = genEncBlock(tlv::Content, m_aesKey, 32,
                                   (const uint8_t*)payload.c_str(), payload.size());
   result.setContent(contentBlock);
   m_keyChain.sign(result, signingByIdentity(m_config.m_caName));
