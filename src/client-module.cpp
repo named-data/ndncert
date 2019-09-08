@@ -203,7 +203,7 @@ ClientModule::onNewResponse(const Data& reply)
 
   // update state
   m_status = contentJson.get<int>(JSON_CA_STATUS);
-  m_requestId = contentJson.get<std::string>(JSON_CA_EQUEST_ID, "");
+  m_requestId = contentJson.get<std::string>(JSON_CA_REQUEST_ID, "");
 
   auto challengesJson = contentJson.get_child(JSON_CA_CHALLENGES);
   m_challengeList.clear();

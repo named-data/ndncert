@@ -174,7 +174,7 @@ BOOST_AUTO_TEST_CASE(HandleNew)
       auto contentJson = ClientModule::getJsonFromData(response);
       BOOST_CHECK(contentJson.get<std::string>(JSON_CA_ECDH) != "");
       BOOST_CHECK(contentJson.get<std::string>(JSON_CA_SALT) != "");
-      BOOST_CHECK(contentJson.get<std::string>(JSON_CA_EQUEST_ID) != "");
+      BOOST_CHECK(contentJson.get<std::string>(JSON_CA_REQUEST_ID) != "");
       auto challengesJson = contentJson.get_child(JSON_CA_CHALLENGES);
       BOOST_CHECK(challengesJson.size() != 0);
 

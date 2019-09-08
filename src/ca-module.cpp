@@ -551,7 +551,7 @@ CaModule::genNewResponseJson(const std::string& ecdhKey, const std::string& salt
   JsonSection challengesSection;
   root.put(JSON_CA_ECDH, ecdhKey);
   root.put(JSON_CA_SALT, salt);
-  root.put(JSON_CA_EQUEST_ID, request.m_requestId);
+  root.put(JSON_CA_REQUEST_ID, request.m_requestId);
   root.put(JSON_CA_STATUS, std::to_string(request.m_status));
 
   for (const auto& entry : challenges) {
