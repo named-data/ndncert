@@ -139,7 +139,7 @@ CaModule::onProbe(const Interest& request)
         availableId = m_config.m_probeHandler(parameterJson);
       }
       catch (const std::exception& e) {
-        _LOG_TRACE("Cannot find PROBE input from PROBE parameters " << e.what());
+        _LOG_TRACE("Cannot find PROBE input from PROBE parameters: " << e.what());
         return;
       }
     }
@@ -173,10 +173,20 @@ CaModule::onNew(const Interest& request)
     return;
   }
   std::string peerKeyBase64 = parameterJson.get(JSON_CLIENT_ECDH, "");
+  if (peerKeyBase64 == "") {
+    _LOG_ERROR("Empty JSON_CLIENT_ECDH obtained from the Interest parameter.");
+    return;
+  }
 
   // get server's ECDH pub key
   auto myEcdhPubKeyBase64 = m_ecdh.getBase64PubKey();
-  m_ecdh.deriveSecret(peerKeyBase64);
+  try {
+    m_ecdh.deriveSecret(peerKeyBase64);
+  }
+  catch (const std::exception& e) {
+    _LOG_ERROR("Cannot derive a shared secret using the provided ECDH key: " << e.what());
+    return;
+  }
   // generate salt for HKDF
   auto saltInt = random::generateSecureWord64();
   uint8_t salt[sizeof(saltInt)];
@@ -193,7 +203,7 @@ CaModule::onNew(const Interest& request)
     clientCert = io::load<security::v2::Certificate>(ss);
   }
   catch (const std::exception& e) {
-    _LOG_ERROR("Unrecognized certificate request " << e.what());
+    _LOG_ERROR("Unrecognized certificate request: " << e.what());
     return;
   }
   // check the validity period
@@ -218,7 +228,7 @@ CaModule::onNew(const Interest& request)
       probeToken = io::load<Data>(ss);
     }
     catch (const std::exception& e) {
-      _LOG_ERROR("Unrecognized probe token " << e.what());
+      _LOG_ERROR("Unrecognized probe token: " << e.what());
       return;
     }
   }
@@ -245,11 +255,11 @@ CaModule::onNew(const Interest& request)
     return;
   }
   if (!security::verifySignature(*clientCert, *clientCert)) {
-    _LOG_TRACE("Cert request with bad signature.");
+    _LOG_ERROR("Cert request with bad signature.");
     return;
   }
   if (!security::verifySignature(request, *clientCert)) {
-    _LOG_TRACE("Interest with bad signature.");
+    _LOG_ERROR("Interest with bad signature.");
     return;
   }
   if (probeToken != nullptr) {
@@ -257,7 +267,7 @@ CaModule::onNew(const Interest& request)
     const auto& key = pib.getIdentity(m_config.m_caName).getDefaultKey();
     const auto& caCert = key.getDefaultCertificate();
     if (!security::verifySignature(*probeToken, caCert)) {
-      _LOG_TRACE("PROBE Token with bad signature.");
+      _LOG_ERROR("PROBE Token with bad signature.");
       return;
     }
   }
@@ -272,7 +282,7 @@ CaModule::onNew(const Interest& request)
     m_storage->addRequest(certRequest);
   }
   catch (const std::exception& e) {
-    _LOG_TRACE("Cannot add new request instance into the storage " << e.what());
+    _LOG_ERROR("Cannot add new request instance into the storage: " << e.what());
     return;
   }
 
@@ -298,16 +308,24 @@ CaModule::onChallenge(const Interest& request)
   CertificateRequest certRequest = getCertificateRequest(request);
   if (certRequest.m_requestId == "") {
     // cannot get the request state
+    _LOG_ERROR("Cannot find certificate request state from CA's storage.");
     return;
   }
   // verify signature
   if (!security::verifySignature(request, certRequest.m_cert)) {
-    _LOG_TRACE("Interest with bad signature.");
+    _LOG_ERROR("Challenge Interest with bad signature.");
     return;
   }
   // decrypt the parameters
-  auto paramJsonPayload = parseEncBlock(m_aesKey, 32,
-                                        request.getApplicationParameters());
+  Buffer paramJsonPayload;
+  try {
+    paramJsonPayload = parseEncBlock(m_aesKey, 32,
+                                     request.getApplicationParameters());
+  }
+  catch (const std::exception& e) {
+    _LOG_ERROR("Cannot successfully decrypt the Interest parameters: " << e.what());
+    return;
+  }
   if (paramJsonPayload.size() == 0) {
     _LOG_ERROR("Got an empty buffer from content decryption.");
     return;
@@ -319,7 +337,7 @@ CaModule::onChallenge(const Interest& request)
     boost::property_tree::json_parser::read_json(ss, paramJson);
   }
   catch (const std::exception& e) {
-    _LOG_ERROR("Cannot read JSON from decrypted content " << e.what());
+    _LOG_ERROR("Cannot read JSON from decrypted content: " << e.what());
     return;
   }
 
@@ -354,7 +372,7 @@ CaModule::onChallenge(const Interest& request)
         _LOG_TRACE("New Certificate Issued " << issuedCert.getName());
       }
       catch (const std::exception& e) {
-        _LOG_ERROR("Cannot add issued cert and remove the request " << e.what());
+        _LOG_ERROR("Cannot add issued cert and remove the request: " << e.what());
         return;
       }
       if (m_config.m_statusUpdateCallback) {
@@ -369,7 +387,7 @@ CaModule::onChallenge(const Interest& request)
         m_storage->updateRequest(certRequest);
       }
       catch (const std::exception& e) {
-        _LOG_TRACE("Cannot update request instance " << e.what());
+        _LOG_TRACE("Cannot update request instance: " << e.what());
         return;
       }
       contentJson = genChallengeResponseJson(certRequest);
@@ -405,7 +423,7 @@ CaModule::onDownload(const Interest& request)
     signedCert = m_storage->getCertificate(requestId);
   }
   catch (const std::exception& e) {
-    _LOG_ERROR("Cannot read signed cert " << requestId << " from ca database " << e.what());
+    _LOG_ERROR("Cannot read signed cert " << requestId << " from CA's storage: " << e.what());
     return;
   }
   Data result;
@@ -447,16 +465,16 @@ CaModule::getCertificateRequest(const Interest& request)
   CertificateRequest certRequest;
   try {
     requestId = readString(request.getName().at(m_config.m_caName.size() + 2));
-    _LOG_TRACE("Request Id to query the database " << requestId);
   }
   catch (const std::exception& e) {
-    _LOG_ERROR(e.what());
+    _LOG_ERROR("Cannot read the request ID out from the request: " << e.what());
   }
   try {
+    _LOG_TRACE("Request Id to query the database " << requestId);
     certRequest = m_storage->getRequest(requestId);
   }
   catch (const std::exception& e) {
-    _LOG_ERROR(e.what());
+    _LOG_ERROR("Cannot get certificate request record from the storage: " << e.what());
   }
   return certRequest;
 }
@@ -601,7 +619,7 @@ CaModule::jsonFromBlock(const Block& block)
     return json;
   }
   catch (const std::exception& e) {
-    _LOG_ERROR("Cannot read JSON string from TLV Value " << e.what());
+    _LOG_ERROR("Cannot read JSON string from TLV Value: " << e.what());
     return JsonSection();
   }
 }
