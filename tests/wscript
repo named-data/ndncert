@@ -1,27 +1,16 @@
 # -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
-from waflib import Utils
-
 top = '..'
 
 def build(bld):
-    if not bld.env["WITH_TESTS"]:
+    if not bld.env.WITH_TESTS:
         return
 
-    tests_main = bld(
-        target='tests-main',
-        name='tests-main',
-        features='cxx',
-        source="main.cpp",
+    tmp_path = 'TMP_TESTS_PATH="%s"' % bld.bldnode.make_node('tmp-tests')
+    bld.program(
+        target='../unit-tests',
+        name='unit-tests',
+        source=bld.path.ant_glob(['*.cpp', 'unit-tests/**/*.cpp']),
         use='ndn-cert BOOST',
-        )
-
-    unit_test = bld.program(
-        target="../unit-tests",
-        source=bld.path.ant_glob(['*.cpp', 'unit-tests/**/*.cpp'],
-                                 excl=['main.cpp']),
-        features=['cxx', 'cxxprogram'],
-        use='ndn-cert tests-main',
-        includes=['.'],
-        install_path=None,
-        defines='TMP_TESTS_PATH=\"%s/tmp-tests\"' % bld.bldnode,
-        )
+        includes='.',
+        defines=[tmp_path],
+        install_path=None)
