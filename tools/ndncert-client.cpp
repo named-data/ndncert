@@ -229,24 +229,29 @@ newCb(const Data& reply)
 static void
 probeInfoCb(const Data& reply)
 {
+  if (!client.verifyProbeInfoResponse(reply)) {
+    std::cerr << "The fetched CA information cannot be trusted because its integrity is broken" << std::endl;
+    return;
+  }
   auto contentJson = ClientModule::getJsonFromData(reply);
   auto caItem = ClientConfig::extractCaItem(contentJson);
 
-  std::cerr << "Will install new trust anchor, please double check the identity info: \n"
-            << "This trust anchor packet is signed by " << reply.getSignature().getKeyLocator() << std::endl
-            << "The signing certificate is " << caItem.m_anchor << std::endl;
+  std::cerr << "Will use a new trust anchor, please double check the identity info: \n"
+            << "This trust anchor information is signed by " << reply.getSignature().getKeyLocator() << std::endl
+            << "The certificate is " << caItem.m_anchor << std::endl;
   std::cerr << "Do you trust the information? Type in YES or NO" << std::endl;
 
   std::string answer;
   getline(std::cin, answer);
   boost::algorithm::to_lower(answer);
   if (answer == "yes") {
-    client.onProbeInfoResponse(reply);
-    std::cerr << "You answered YES: new CA has been installed" << std::endl;
+    std::cerr << "You answered YES: new CA will be used" << std::endl;
+    client.addCaFromProbeInfoResponse(reply);
+    // client.getClientConf().save(std::string(SYSCONFDIR) + "/ndncert/client.conf");
     startApplication();
   }
   else {
-    std::cerr << "New CA will not be installed" << std::endl;
+    std::cerr << "You answered NO: new CA will not be used" << std::endl;
     return;
   }
 }
@@ -288,7 +293,9 @@ startApplication()
   boost::algorithm::to_lower(caIndexSLower);
   if (caIndexSLower == "none") {
     std::cerr << "Step " << nStep << ": Please type in the CA Name\n";
-    face.expressInterest(*client.generateProbeInfoInterest(Name(caIndexS)),
+    std::string expectedCAName;
+    getline(std::cin, expectedCAName);
+    face.expressInterest(*client.generateProbeInfoInterest(Name(expectedCAName)),
                          bind(&probeInfoCb, _2), bind(&onNackCb), bind(&timeoutCb));
   }
   else {

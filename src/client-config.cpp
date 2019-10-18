@@ -20,6 +20,7 @@
 
 #include "client-config.hpp"
 #include <ndn-cxx/util/io.hpp>
+#include <fstream>
 
 namespace ndn {
 namespace ndncert {
@@ -53,6 +54,32 @@ ClientConfig::load(const JsonSection& configSection)
     m_caItems.push_back(extractCaItem(it->second));
   }
   m_localNdncertAnchor = configSection.get("local-ndncert-anchor", "");
+}
+
+void
+ClientConfig::save(const std::string& fileName)
+{
+  JsonSection configJson;
+  JsonSection caList;
+  std::stringstream ss;
+  for (const auto& item : m_caItems) {
+    JsonSection caItem;
+    caItem.put("ca-prefix", item.m_caName.toUri());
+    caItem.put("ca-info", item.m_caInfo);
+    caItem.put("probe", item.m_probe);
+    ss.str(std::string());
+    io::save(item.m_anchor, ss);
+    caItem.put("certificate", ss.str());
+    caList.push_back(std::make_pair("", caItem));
+  }
+  configJson.add_child("ca-list", caList);
+  ss.str(std::string());
+  boost::property_tree::write_json(ss, configJson);
+
+  std::ofstream configFile;
+  configFile.open(fileName, std::ios::trunc);
+  configFile << ss.str();
+  configFile.close();
 }
 
 ClientCaItem

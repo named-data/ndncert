@@ -68,6 +68,9 @@ public:
   load(const JsonSection& configSection);
 
   void
+  save(const std::string& fileName);
+
+  void
   addNewCaItem(const ClientCaItem& item);
 
   void

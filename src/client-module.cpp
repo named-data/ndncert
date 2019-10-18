@@ -55,8 +55,23 @@ ClientModule::generateProbeInfoInterest(const Name& caName)
   return interest;
 }
 
+bool
+ClientModule::verifyProbeInfoResponse(const Data& reply)
+{
+  // parse the ca item
+  auto contentJson = getJsonFromData(reply);
+  auto caItem = ClientConfig::extractCaItem(contentJson);
+
+  // verify the probe Data's sig
+  if (!security::verifySignature(reply, caItem.m_anchor)) {
+    _LOG_ERROR("Cannot verify data signature from " << m_ca.m_caName.toUri());
+    return false;
+  }
+  return true;
+}
+
 void
-ClientModule::onProbeInfoResponse(const Data& reply)
+ClientModule::addCaFromProbeInfoResponse(const Data& reply)
 {
   // parse the ca item
   auto contentJson = getJsonFromData(reply);
@@ -72,12 +87,6 @@ ClientModule::onProbeInfoResponse(const Data& reply)
   }
   if (!findItem) {
     m_config.m_caItems.push_back(caItem);
-  }
-
-  // verify the probe Data's sig
-  if (!security::verifySignature(reply, caItem.m_anchor)) {
-    _LOG_ERROR("Cannot verify data signature from " << m_ca.m_caName.toUri());
-    return;
   }
 }
 

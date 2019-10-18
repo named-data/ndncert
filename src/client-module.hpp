@@ -71,6 +71,9 @@ public:
   shared_ptr<Interest>
   generateProbeInfoInterest(const Name& caName);
 
+  bool
+  verifyProbeInfoResponse(const Data& reply);
+
   /**
    * @brief Process the replied PROBE INFO Data packet
    * Warning: this function will add a new trust anchor into the application.
@@ -78,7 +81,7 @@ public:
    * can be verified in later challenge phase.
    */
   void
-  onProbeInfoResponse(const Data& reply);
+  addCaFromProbeInfoResponse(const Data& reply);
 
   shared_ptr<Interest>
   generateProbeInterest(const ClientCaItem& ca, const std::string& probeInfo);
