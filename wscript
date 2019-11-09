@@ -1,6 +1,6 @@
 # -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
 
-from waflib import Context, Utils
+from waflib import Utils
 import os
 
 VERSION = '0.1.0'
@@ -10,25 +10,21 @@ GIT_TAG_PREFIX = 'ndncert-'
 def options(opt):
     opt.load(['compiler_cxx', 'gnu_dirs'])
     opt.load(['default-compiler-flags', 'coverage', 'sanitizers',
-              'boost', 'openssl', 'sqlite3',
-              'doxygen', 'sphinx_build'],
+              'boost', 'openssl', 'sqlite3'],
              tooldir=['.waf-tools'])
 
-    opt_group = opt.add_option_group('ndncert Options')
-    opt_group.add_option('--with-tests', action='store_true', default=False,
-                         help='Build unit tests')
+    optgrp = opt.add_option_group('ndncert Options')
+    optgrp.add_option('--with-tests', action='store_true', default=False,
+                      help='Build unit tests')
 
 def configure(conf):
     conf.load(['compiler_cxx', 'gnu_dirs',
-               'default-compiler-flags',
-               'boost', 'openssl', 'sqlite3',
-               'doxygen', 'sphinx_build'])
+               'default-compiler-flags', 'boost', 'openssl', 'sqlite3'])
 
     conf.env.WITH_TESTS = conf.options.with_tests
 
-    if 'PKG_CONFIG_PATH' not in os.environ:
-        os.environ['PKG_CONFIG_PATH'] = Utils.subst_vars('${LIBDIR}/pkgconfig', conf.env)
-    conf.check_cfg(package='libndn-cxx', args=['--cflags', '--libs'], uselib_store='NDN_CXX')
+    conf.check_cfg(package='libndn-cxx', args=['--cflags', '--libs'], uselib_store='NDN_CXX',
+                   pkg_config_path=os.environ.get('PKG_CONFIG_PATH', '%s/pkgconfig' % conf.env.LIBDIR))
 
     conf.check_sqlite3()
     conf.check_openssl(lib='crypto', atleast_version=0x1000200f) # 1.0.2
@@ -64,21 +60,18 @@ def configure(conf):
 
 def build(bld):
     bld.shlib(target='ndn-cert',
-              source=bld.path.ant_glob('src/**/*.cpp'),
               vnum=VERSION,
               cnum=VERSION,
+              source=bld.path.ant_glob('src/**/*.cpp'),
               use='NDN_CXX BOOST OPENSSL SQLITE3',
               includes='src',
-              export_includes='src',
-              install_path='${LIBDIR}')
+              export_includes='src')
 
     bld(features='subst',
         source='libndn-cert.pc.in',
         target='libndn-cert.pc',
-        install_path = '${LIBDIR}/pkgconfig',
-        PREFIX       = bld.env['PREFIX'],
-        INCLUDEDIR   = '${INCLUDEDIR}/ndncert',
-        VERSION      = VERSION)
+        install_path='${LIBDIR}/pkgconfig',
+        VERSION=VERSION)
 
     bld.recurse('tools')
     bld.recurse('tests')

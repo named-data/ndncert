@@ -197,6 +197,8 @@ class ClangFlags(GccBasicFlags):
         version = self.getCompilerVersion(conf)
         if version < (3, 9, 0) or (Utils.unversioned_sys_platform() == 'darwin' and version < (8, 1, 0)):
             flags['CXXFLAGS'] += ['-Wno-unknown-pragmas']
+        if version < (6, 0, 0):
+            flags['CXXFLAGS'] += ['-Wno-missing-braces'] # Bug #4721
         return flags
 
     def getOptimizedFlags(self, conf):
@@ -209,4 +211,6 @@ class ClangFlags(GccBasicFlags):
         version = self.getCompilerVersion(conf)
         if version < (3, 9, 0) or (Utils.unversioned_sys_platform() == 'darwin' and version < (8, 1, 0)):
             flags['CXXFLAGS'] += ['-Wno-unknown-pragmas']
+        if version < (6, 0, 0):
+            flags['CXXFLAGS'] += ['-Wno-missing-braces'] # Bug #4721
         return flags
