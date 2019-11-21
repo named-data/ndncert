@@ -58,8 +58,11 @@ public:
     factory[typeName] = [] { return make_unique<ChallengeType>(); };
   }
 
+  static bool
+  supportChallenge(const std::string& challengeType);
+
   static unique_ptr<ChallengeModule>
-  createChallengeModule(const std::string& ChallengeType);
+  createChallengeModule(const std::string& challengeType);
 
   // For CA
   virtual void

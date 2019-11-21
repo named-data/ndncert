@@ -49,6 +49,16 @@ BOOST_AUTO_TEST_CASE(EcdhWithRawKey)
                                 bobResult, bobResult + 32);
 }
 
+BOOST_AUTO_TEST_CASE(EcdhWithRawKeyWrongInput)
+{
+  ECDHState aliceState;
+  auto alicePub = aliceState.getRawSelfPubKey();
+  BOOST_CHECK(alicePub != nullptr);
+  BOOST_CHECK(aliceState.context->publicKeyLen != 0);
+  uint8_t fakePub[] = {0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b};
+  BOOST_CHECK_THROW(aliceState.deriveSecret(fakePub, sizeof(fakePub)), CryptoError);
+}
+
 BOOST_AUTO_TEST_CASE(EcdhWithBase64Key)
 {
   ECDHState aliceState;

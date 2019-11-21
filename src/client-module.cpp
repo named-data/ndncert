@@ -116,7 +116,7 @@ ClientModule::onProbeResponse(const Data& reply)
   auto contentJson = getJsonFromData(reply);
 
   // read the available name and put it into the state
-  auto nameUri = contentJson.get<std::string>(JSON_CA_NAME, "");
+  auto nameUri = contentJson.get(JSON_CA_NAME, "");
   if (nameUri != "") {
     m_identityName = Name(nameUri);
   }
@@ -200,8 +200,8 @@ ClientModule::onNewResponse(const Data& reply)
   auto contentJson = getJsonFromData(reply);
 
   // ECDH
-  const auto& peerKeyBase64Str = contentJson.get<std::string>(JSON_CA_ECDH, "");
-  const auto& saltStr = contentJson.get<std::string>(JSON_CA_SALT, "");
+  const auto& peerKeyBase64Str = contentJson.get(JSON_CA_ECDH, "");
+  const auto& saltStr = contentJson.get(JSON_CA_SALT, "");
   uint64_t saltInt = std::stoull(saltStr);
   m_ecdh.deriveSecret(peerKeyBase64Str);
 
@@ -210,13 +210,13 @@ ClientModule::onNewResponse(const Data& reply)
        (uint8_t*)&saltInt, sizeof(saltInt), m_aesKey, sizeof(m_aesKey));
 
   // update state
-  m_status = contentJson.get<int>(JSON_CA_STATUS);
-  m_requestId = contentJson.get<std::string>(JSON_CA_REQUEST_ID, "");
+  m_status = contentJson.get(JSON_CA_STATUS, 0);
+  m_requestId = contentJson.get(JSON_CA_REQUEST_ID, "");
 
   auto challengesJson = contentJson.get_child(JSON_CA_CHALLENGES);
   m_challengeList.clear();
   for (const auto& challengeJson : challengesJson) {
-    m_challengeList.push_back(challengeJson.second.get<std::string>(JSON_CA_CHALLENGE_ID, ""));
+    m_challengeList.push_back(challengeJson.second.get(JSON_CA_CHALLENGE_ID, ""));
   }
   return m_challengeList;
 }
@@ -224,7 +224,7 @@ ClientModule::onNewResponse(const Data& reply)
 shared_ptr<Interest>
 ClientModule::generateChallengeInterest(const JsonSection& paramJson)
 {
-  m_challengeType = paramJson.get<std::string>(JSON_CLIENT_SELECTED_CHALLENGE);
+  m_challengeType = paramJson.get(JSON_CLIENT_SELECTED_CHALLENGE, "");
 
   Name interestName = m_ca.m_caName;
   interestName.append("CA").append("_CHALLENGE").append(m_requestId);
@@ -258,10 +258,10 @@ ClientModule::onChallengeResponse(const Data& reply)
   boost::property_tree::json_parser::read_json(ss, contentJson);
 
   // update state
-  m_status = contentJson.get<int>(JSON_CA_STATUS);
-  m_challengeStatus = contentJson.get<std::string>(JSON_CHALLENGE_STATUS);
-  m_remainingTries = contentJson.get<int>(JSON_CHALLENGE_REMAINING_TRIES);
-  m_freshBefore = time::system_clock::now() + time::seconds(contentJson.get<int>(JSON_CHALLENGE_REMAINING_TIME));
+  m_status = contentJson.get(JSON_CA_STATUS, 0);
+  m_challengeStatus = contentJson.get(JSON_CHALLENGE_STATUS, "");
+  m_remainingTries = contentJson.get(JSON_CHALLENGE_REMAINING_TRIES, 0);
+  m_freshBefore = time::system_clock::now() + time::seconds(contentJson.get(JSON_CHALLENGE_REMAINING_TIME, 0));
 }
 
 shared_ptr<Interest>
@@ -355,7 +355,7 @@ ClientModule::genNewRequestJson(const std::string& ecdhPub, const security::v2::
   std::stringstream ss;
   try {
     security::transform::bufferSource(certRequest.wireEncode().wire(), certRequest.wireEncode().size())
-    >> security::transform::base64Encode(true)
+    >> security::transform::base64Encode(false)
     >> security::transform::streamSink(ss);
   }
   catch (const security::transform::Error& e) {
@@ -371,7 +371,7 @@ ClientModule::genNewRequestJson(const std::string& ecdhPub, const security::v2::
     // transform the probe data into a base64 string
     try {
       security::transform::bufferSource(probeToken->wireEncode().wire(), probeToken->wireEncode().size())
-      >> security::transform::base64Encode(true)
+      >> security::transform::base64Encode(false)
       >> security::transform::streamSink(ss);
     }
     catch (const security::transform::Error& e) {

@@ -61,6 +61,12 @@ public:
   };
 
 public:
+  /**
+   * @throw ClientConfig::Error when config file does not exist
+   * @throw ClientConfig::Error when the JSON text in the file cannot be parsed correctly
+   * @throw ClientConfig::Error when the ca-prefix attribute in JSON text is empty
+   * @throw ClientConfig::Error when the certificate in JSON text cannot be parsed correctly
+   */
   void
   load(const std::string& fileName);
 

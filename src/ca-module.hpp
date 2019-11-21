@@ -121,7 +121,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::list<InterestFilterHandle> m_interestFilterHandles;
 
   ECDHState m_ecdh;
-  uint8_t m_aesKey[32] = {0};
+  uint8_t m_aesKey[16] = {0};
 };
 
 } // namespace ndncert

@@ -148,7 +148,7 @@ ECDHState::getBase64PubKey()
 
   std::ostringstream os;
   t::bufferSource(context->publicKey, context->publicKeyLen)
-    >> t::base64Encode()
+    >> t::base64Encode(false)
     >> t::streamSink(os);
   return os.str();
 }
@@ -159,19 +159,24 @@ ECDHState::deriveSecret(const uint8_t* peerkey, int peerKeySize)
   auto privECKey = EVP_PKEY_get1_EC_KEY(context->privkey);
 
   if (privECKey == nullptr) {
-    handleErrors("Could not get referenced key when calling EVP_PKEY_get1_EC_KEY().");
+    handleErrors("Could not get referenced key when calling EVP_PKEY_get1_EC_KEY()");
     return nullptr;
   }
 
   auto group = EC_KEY_get0_group(privECKey);
   auto peerPoint = EC_POINT_new(group);
-  EC_POINT_oct2point(group, peerPoint, peerkey, peerKeySize, nullptr);
-
-  if (0 == (context->sharedSecretLen = ECDH_compute_key(context->sharedSecret, 256,
-                                                        peerPoint, privECKey, nullptr))) {
+  int result = EC_POINT_oct2point(group, peerPoint, peerkey, peerKeySize, nullptr);
+  if (result == 0) {
     EC_POINT_free(peerPoint);
     EC_KEY_free(privECKey);
-    handleErrors("Cannot generate ECDH secret with ECDH_compute_key");
+    handleErrors("Cannot convert peer's key into a EC point when calling EC_POINT_oct2point()");
+  }
+
+  if (-1 == (context->sharedSecretLen = ECDH_compute_key(context->sharedSecret, 256,
+                                                         peerPoint, privECKey, nullptr))) {
+    EC_POINT_free(peerPoint);
+    EC_KEY_free(privECKey);
+    handleErrors("Cannot generate ECDH secret when calling ECDH_compute_key()");
   }
   EC_POINT_free(peerPoint);
   EC_KEY_free(privECKey);
@@ -184,7 +189,7 @@ ECDHState::deriveSecret(const std::string& peerKeyStr)
   namespace t = ndn::security::transform;
 
   OBufferStream os;
-  t::bufferSource(peerKeyStr) >> t::base64Decode() >> t::streamSink(os);
+  t::bufferSource(peerKeyStr) >> t::base64Decode(false) >> t::streamSink(os);
   auto result = os.buf();
 
   return this->deriveSecret(result->data(), result->size());

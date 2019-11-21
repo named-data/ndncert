@@ -50,9 +50,10 @@ ChallengeEmail::ChallengeEmail(const std::string& scriptPath,
 void
 ChallengeEmail::handleChallengeRequest(const JsonSection& params, CertificateRequest& request)
 {
+  auto currentTime = time::system_clock::now();
   if (request.m_challengeStatus == "") {
     // for the first time, init the challenge
-    std::string emailAddress = params.get<std::string>(JSON_EMAIL);
+    std::string emailAddress = params.get(JSON_EMAIL, "");
     if (!isValidEmailAddress(emailAddress)) {
       request.m_status = STATUS_FAILURE;
       request.m_challengeStatus = FAILURE_INVALID_EMAIL;
@@ -79,7 +80,7 @@ ChallengeEmail::handleChallengeRequest(const JsonSection& params, CertificateReq
     JsonSection secretJson;
     secretJson.add(JSON_CODE, emailCode);
     request.m_challengeSecrets = secretJson;
-    request.m_challengeTp = time::toIsoString(time::system_clock::now());
+    request.m_challengeTp = time::toIsoString(currentTime);
     request.m_remainingTime = m_secretLifetime.count();
     request.m_remainingTries = m_maxAttemptTimes;
     // send out the email
@@ -90,9 +91,9 @@ ChallengeEmail::handleChallengeRequest(const JsonSection& params, CertificateReq
   else if (request.m_challengeStatus == NEED_CODE || request.m_challengeStatus == WRONG_CODE) {
     _LOG_TRACE("Challenge Interest arrives. Challenge Status: " << request.m_challengeStatus);
     // the incoming interest should bring the pin code
-    std::string givenCode = params.get<std::string>(JSON_CODE);
+    std::string givenCode = params.get(JSON_CODE, "");
     const auto realCode = request.m_challengeSecrets.get<std::string>(JSON_CODE);
-    if (time::system_clock::now() - time::fromIsoString(request.m_challengeTp) >= m_secretLifetime) {
+    if (currentTime - time::fromIsoString(request.m_challengeTp) >= m_secretLifetime) {
       // secret expires
       request.m_status = STATUS_FAILURE;
       request.m_challengeStatus = CHALLENGE_STATUS_FAILURE_TIMEOUT;
@@ -113,7 +114,7 @@ ChallengeEmail::handleChallengeRequest(const JsonSection& params, CertificateReq
       if (request.m_remainingTries > 1) {
         request.m_challengeStatus = WRONG_CODE;
         request.m_remainingTries = request.m_remainingTries - 1;
-        auto remainTime = m_secretLifetime - (time::system_clock::now() - time::fromIsoString(request.m_challengeTp));
+        auto remainTime = m_secretLifetime - (currentTime - time::fromIsoString(request.m_challengeTp));
         request.m_remainingTime = remainTime.count();
         _LOG_TRACE("Secret code didn't match. Remaining Tries - 1.");
         return;
@@ -161,15 +162,15 @@ ChallengeEmail::genChallengeRequestJson(int status, const std::string& challenge
   JsonSection result;
   if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
     result.put(JSON_CLIENT_SELECTED_CHALLENGE, CHALLENGE_TYPE);
-    result.put(JSON_EMAIL, params.get<std::string>(JSON_EMAIL, ""));
+    result.put(JSON_EMAIL, params.get(JSON_EMAIL, ""));
   }
   else if (status == STATUS_CHALLENGE && challengeStatus == NEED_CODE) {
     result.put(JSON_CLIENT_SELECTED_CHALLENGE, CHALLENGE_TYPE);
-    result.put(JSON_CODE, params.get<std::string>(JSON_CODE, ""));
+    result.put(JSON_CODE, params.get(JSON_CODE, ""));
   }
   else if (status == STATUS_CHALLENGE && challengeStatus == WRONG_CODE) {
     result.put(JSON_CLIENT_SELECTED_CHALLENGE, CHALLENGE_TYPE);
-    result.put(JSON_CODE, params.get<std::string>(JSON_CODE, ""));
+    result.put(JSON_CODE, params.get(JSON_CODE, ""));
   }
   else {
     _LOG_ERROR("Client's status and challenge status are wrong");

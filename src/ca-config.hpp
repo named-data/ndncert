@@ -65,6 +65,12 @@ public:
   };
 
 public:
+  /**
+   * @throw CaConfig::Error when config file does not exist
+   * @throw CaConfig::Error when the JSON text in the file cannot be parsed correctly
+   * @throw CaConfig::Error when the ca-prefix attribute in JSON text is empty
+   * @throw CaConfig::Error when the challenge is not specified or is not supported
+   */
   void
   load(const std::string& fileName);
 

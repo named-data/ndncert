@@ -41,8 +41,9 @@ ChallengeCredential::ChallengeCredential(const std::string& configPath)
   if (configPath == "") {
     m_configFile = std::string(SYSCONFDIR) + "/ndncert/challenge-credential.conf";
   }
-  else
+  else {
     m_configFile = configPath;
+  }
 }
 
 void
@@ -65,9 +66,13 @@ ChallengeCredential::parseConfigFile()
   auto anchorList = config.get_child("anchor-list");
   auto it = anchorList.begin();
   for (; it != anchorList.end(); it++) {
-    std::istringstream ss(it->second.get<std::string>("certificate"));
-    security::v2::Certificate cert = *(io::load<security::v2::Certificate>(ss));
-    m_trustAnchors.push_back(cert);
+    std::istringstream ss(it->second.get("certificate", ""));
+    auto cert = io::load<security::v2::Certificate>(ss);
+    if (cert == nullptr) {
+      _LOG_ERROR("Cannot load the certificate from config file");
+      continue;
+    }
+    m_trustAnchors.push_back(*cert);
   }
 }
 
@@ -79,13 +84,10 @@ ChallengeCredential::handleChallengeRequest(const JsonSection& params, Certifica
     parseConfigFile();
   }
   // load credential parameter
-  std::istringstream ss1(params.get<std::string>(JSON_CREDENTIAL_CERT));
-  security::v2::Certificate cert;
-  try {
-    cert = *(io::load<security::v2::Certificate>(ss1));
-  }
-  catch (const std::exception& e) {
-    _LOG_ERROR("Cannot load credential parameter: cert" << e.what());
+  std::istringstream ss1(params.get(JSON_CREDENTIAL_CERT, ""));
+  auto cert = io::load<security::v2::Certificate>(ss1);
+  if (cert == nullptr) {
+    _LOG_ERROR("Cannot load credential parameter: cert");
     request.m_status = STATUS_FAILURE;
     request.m_challengeStatus = FAILURE_INVALID_FORMAT_CREDENTIAL;
     updateRequestOnChallengeEnd(request);
@@ -94,13 +96,10 @@ ChallengeCredential::handleChallengeRequest(const JsonSection& params, Certifica
   ss1.str("");
   ss1.clear();
   // load self-signed data
-  std::istringstream ss2(params.get<std::string>(JSON_CREDENTIAL_SELF));
-  Data self;
-  try {
-    self = *(io::load<Data>(ss2));
-  }
-  catch (const std::exception& e) {
-    _LOG_TRACE("Cannot load credential parameter: self-signed cert" << e.what());
+  std::istringstream ss2(params.get(JSON_CREDENTIAL_SELF, ""));
+  auto self = io::load<Data>(ss2);
+  if (self == nullptr) {
+    _LOG_TRACE("Cannot load credential parameter: self-signed cert");
     request.m_status = STATUS_FAILURE;
     request.m_challengeStatus = FAILURE_INVALID_FORMAT_SELF_SIGNED;
     updateRequestOnChallengeEnd(request);
@@ -110,11 +109,11 @@ ChallengeCredential::handleChallengeRequest(const JsonSection& params, Certifica
   ss2.clear();
 
   // verify the credential and the self-signed cert
-  Name signingKeyName = cert.getSignature().getKeyLocator().getName();
+  Name signingKeyName = cert->getSignature().getKeyLocator().getName();
   for (auto anchor : m_trustAnchors) {
     if (anchor.getKeyName() == signingKeyName) {
-      if (security::verifySignature(cert, anchor) && security::verifySignature(self, cert)
-          && readString(self.getContent()) == request.m_requestId) {
+      if (security::verifySignature(*cert, anchor) && security::verifySignature(*self, *cert)
+          && readString(self->getContent()) == request.m_requestId) {
         request.m_status = STATUS_PENDING;
         request.m_challengeStatus = CHALLENGE_STATUS_SUCCESS;
         updateRequestOnChallengeEnd(request);
@@ -150,8 +149,8 @@ ChallengeCredential::genChallengeRequestJson(int status, const std::string& chal
 {
   JsonSection result;
   if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
-    result.put(JSON_CREDENTIAL_CERT, params.get<std::string>(JSON_CREDENTIAL_CERT, ""));
-    result.put(JSON_CREDENTIAL_SELF, params.get<std::string>(JSON_CREDENTIAL_SELF, ""));
+    result.put(JSON_CREDENTIAL_CERT, params.get(JSON_CREDENTIAL_CERT, ""));
+    result.put(JSON_CREDENTIAL_SELF, params.get(JSON_CREDENTIAL_SELF, ""));
   }
   else {
     _LOG_ERROR("Client's status and challenge status are wrong");

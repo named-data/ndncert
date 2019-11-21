@@ -44,6 +44,24 @@ BOOST_AUTO_TEST_CASE(ReadConfigFile)
   BOOST_CHECK_EQUAL(config.m_localNdncertAnchor, "/usr/local/etc/ndncert/anchor.key");
 }
 
+BOOST_AUTO_TEST_CASE(ReadNonexistConfigFile)
+{
+  ClientConfig config;
+  BOOST_CHECK_THROW(config.load("tests/unit-tests/nonexist"), ClientConfig::Error);
+}
+
+BOOST_AUTO_TEST_CASE(ReadConfigFileWithInvalidCert)
+{
+  ClientConfig config;
+  BOOST_CHECK_THROW(config.load("tests/unit-tests/client.conf.test2"), ClientConfig::Error);
+}
+
+BOOST_AUTO_TEST_CASE(ReadConfigFileWithoutCaPrefix)
+{
+  ClientConfig config;
+  BOOST_CHECK_THROW(config.load("tests/unit-tests/client.conf.test3"), ClientConfig::Error);
+}
+
 BOOST_AUTO_TEST_CASE(AddAndRemoveCaItem)
 {
   ClientConfig config;

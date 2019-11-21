@@ -31,11 +31,19 @@ ChallengeModule::ChallengeModule(const std::string& uniqueType)
 
 ChallengeModule::~ChallengeModule() = default;
 
-unique_ptr<ChallengeModule>
-ChallengeModule::createChallengeModule(const std::string& canonicalName)
+bool
+ChallengeModule::supportChallenge(const std::string& challengeType)
 {
   ChallengeFactory& factory = getFactory();
-  auto i = factory.find(canonicalName);
+  auto i = factory.find(challengeType);
+  return i == factory.end() ? false : true;
+}
+
+unique_ptr<ChallengeModule>
+ChallengeModule::createChallengeModule(const std::string& challengeType)
+{
+  ChallengeFactory& factory = getFactory();
+  auto i = factory.find(challengeType);
   return i == factory.end() ? nullptr : i->second();
 }
 

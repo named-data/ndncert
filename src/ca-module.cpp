@@ -340,7 +340,7 @@ CaModule::onChallenge(const Interest& request)
   }
 
   // load the corresponding challenge module
-  std::string challengeType = paramJson.get<std::string>(JSON_CLIENT_SELECTED_CHALLENGE);
+  std::string challengeType = paramJson.get(JSON_CLIENT_SELECTED_CHALLENGE, "");
   auto challenge = ChallengeModule::createChallengeModule(challengeType);
   JsonSection contentJson;
   if (challenge == nullptr) {

@@ -179,7 +179,8 @@ BOOST_AUTO_TEST_CASE(HandleNew)
       BOOST_CHECK(challengesJson.size() != 0);
 
       client.onNewResponse(response);
-      BOOST_CHECK_EQUAL_COLLECTIONS(client.m_aesKey, client.m_aesKey + 32, ca.m_aesKey, ca.m_aesKey + 32);
+      BOOST_CHECK_EQUAL_COLLECTIONS(client.m_aesKey, client.m_aesKey + sizeof(client.m_aesKey),
+                                    ca.m_aesKey, ca.m_aesKey + sizeof(ca.m_aesKey));
     });
   face.receive(*interest);
 

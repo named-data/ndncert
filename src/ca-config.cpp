@@ -19,6 +19,7 @@
  */
 
 #include "ca-config.hpp"
+#include "challenge-module.hpp"
 #include <ndn-cxx/util/io.hpp>
 #include <boost/filesystem.hpp>
 
@@ -32,9 +33,8 @@ CaConfig::load(const std::string& fileName)
   try {
     boost::property_tree::read_json(fileName, configJson);
   }
-  catch (const boost::property_tree::info_parser_error& error) {
-    BOOST_THROW_EXCEPTION(Error("Failed to parse configuration file " + fileName +
-                                " " + error.message() + " line " + std::to_string(error.line())));
+  catch (const std::exception& error) {
+    BOOST_THROW_EXCEPTION(Error("Failed to parse configuration file " + fileName + ", " + error.what()));
   }
 
   if (configJson.begin() == configJson.end()) {
@@ -46,18 +46,21 @@ CaConfig::load(const std::string& fileName)
 void
 CaConfig::parse(const JsonSection& configJson)
 {
-    // essential info
-    m_caName = Name(configJson.get<std::string>("ca-prefix"));
-    m_freshnessPeriod = time::seconds(configJson.get("issuing-freshness", 720));
-    m_validityPeriod = time::days(configJson.get("max-validity-period", 360));
+  // essential info
+  m_caName = Name(configJson.get("ca-prefix", ""));
+  if (m_caName.empty()) {
+    BOOST_THROW_EXCEPTION(Error("Cannot read ca-prefix from the config file"));
+  }
+  m_freshnessPeriod = time::seconds(configJson.get("issuing-freshness", 720));
+  m_validityPeriod = time::days(configJson.get("max-validity-period", 360));
 
-    // optional info
-    m_probe = configJson.get("probe", "");
-    m_caInfo = configJson.get("ca-info", "");
+  // optional info
+  m_probe = configJson.get("probe", "");
+  m_caInfo = configJson.get("ca-info", "");
 
-    // optional supported challenges
-    auto challengeList = configJson.get_child("supported-challenges");
-    m_supportedChallenges = parseChallengeList(challengeList);
+  // optional supported challenges
+  auto challengeList = configJson.get_child("supported-challenges");
+  m_supportedChallenges = parseChallengeList(challengeList);
 }
 
 std::list<std::string>
@@ -66,7 +69,15 @@ CaConfig::parseChallengeList(const JsonSection& section)
   std::list<std::string> result;
   auto it = section.begin();
   for (; it != section.end(); it++) {
-    result.push_back(boost::algorithm::to_lower_copy(it->second.get<std::string>("type")));
+    auto challengeType = it->second.get("type", "");
+    if (challengeType == "") {
+      BOOST_THROW_EXCEPTION(Error("Cannot read type in supported-challenges from the config file"));
+    }
+    challengeType = boost::algorithm::to_lower_copy(challengeType);
+    if (!ChallengeModule::supportChallenge(challengeType)) {
+      BOOST_THROW_EXCEPTION(Error("Does not support challenge read from the config file"));
+    }
+    result.push_back(challengeType);
   }
   return result;
 }

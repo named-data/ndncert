@@ -32,13 +32,12 @@ ClientConfig::load(const std::string& fileName)
   try {
     boost::property_tree::read_json(fileName, config);
   }
-  catch (const boost::property_tree::info_parser_error& error) {
-    BOOST_THROW_EXCEPTION(Error("Failed to parse configuration file " + fileName +
-                                " " + error.message() + " line " + std::to_string(error.line())));
+  catch (const std::exception& error) {
+    BOOST_THROW_EXCEPTION(Error("Failed to parse configuration file " + fileName + ", " + error.what()));
   }
 
   if (config.begin() == config.end()) {
-    BOOST_THROW_EXCEPTION(Error("Error processing configuration file: " + fileName + " no data"));
+    BOOST_THROW_EXCEPTION(Error("Error processing configuration file: " + fileName + ", no data"));
   }
 
   load(config);
@@ -86,11 +85,18 @@ ClientCaItem
 ClientConfig::extractCaItem(const JsonSection& configSection)
 {
   ClientCaItem item;
-  item.m_caName = Name(configSection.get<std::string>("ca-prefix"));
-  item.m_caInfo = configSection.get<std::string>("ca-info");
-  item.m_probe = configSection.get<std::string>("probe");
-  std::istringstream ss(configSection.get<std::string>("certificate"));
-  item.m_anchor = *(io::load<security::v2::Certificate>(ss));
+  item.m_caName = Name(configSection.get("ca-prefix", ""));
+  if (item.m_caName.empty()) {
+    BOOST_THROW_EXCEPTION(Error("Cannot read ca-prefix from the config file"));
+  }
+  item.m_caInfo = configSection.get("ca-info", "");
+  item.m_probe = configSection.get("probe", "");
+  std::istringstream ss(configSection.get("certificate", ""));
+  auto anchor = io::load<security::v2::Certificate>(ss);
+  if (anchor == nullptr) {
+    BOOST_THROW_EXCEPTION(Error("Cannot load the certificate from config file"));
+  }
+  item.m_anchor = *anchor;
   return item;
 }
 

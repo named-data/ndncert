@@ -32,7 +32,7 @@ namespace tests {
 
 BOOST_FIXTURE_TEST_SUITE(TestCaConfig, IdentityManagementFixture)
 
-BOOST_AUTO_TEST_CASE(ReadConfigFileWithFileAnchor)
+BOOST_AUTO_TEST_CASE(ReadConfigFile)
 {
   CaConfig config;
   config.load("tests/unit-tests/ca.conf.test");
@@ -41,6 +41,24 @@ BOOST_AUTO_TEST_CASE(ReadConfigFileWithFileAnchor)
   BOOST_CHECK_EQUAL(config.m_validityPeriod, time::days(360));
   BOOST_CHECK_EQUAL(config.m_probe, "");
   BOOST_CHECK_EQUAL(config.m_caInfo, "ndn testbed ca");
+}
+
+BOOST_AUTO_TEST_CASE(ReadNonexistConfigFile)
+{
+  CaConfig config;
+  BOOST_CHECK_THROW(config.load("tests/unit-tests/Nonexist"), CaConfig::Error);
+}
+
+BOOST_AUTO_TEST_CASE(ReadConfigFileWithoutCaPrefix)
+{
+  CaConfig config;
+  BOOST_CHECK_THROW(config.load("tests/unit-tests/ca.conf.test2"), CaConfig::Error);
+}
+
+BOOST_AUTO_TEST_CASE(ReadConfigFileWithChallengeNotSupported)
+{
+  CaConfig config;
+  BOOST_CHECK_THROW(config.load("tests/unit-tests/ca.conf.test3"), CaConfig::Error);
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TestCaConfig
