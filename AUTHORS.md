@@ -1,17 +1,18 @@
-ndncert authors
-===============
+# ndncert Authors
 
-## The primary authors are (and/or have been):
+The following lists maintainers, primary developers, and all much-appreciated contributors to ndncert in alphabetic order.
+The specific contributions of individual authors can be obtained from the git history of the [official ndncert repository](https://github.com/named-data/ndncert).
+If you would like to become a contributor to the official repository, please follow the recommendations in https://github.com/named-data/.github/blob/master/CONTRIBUTING.md.
 
-* Zhiyi Zhang            <https://zhiyi-zhang.com>
-* Yufeng Zhang            <yufeng@ucla.edu>
-* Alexander Afanasyev    <http://lasr.cs.ucla.edu/afanasyev/index.html>
-* Lixia Zhang            <http://web.cs.ucla.edu/~lixia/>
+* Alexander Afanasyev <https://users.cs.fiu.edu/~afanasyev/>
+* Ashlesh Gawande <https://www.linkedin.com/in/agawande>
+* Eric Newberry <https://ericnewberry.com>
+* Davide Pesavento <https://github.com/Pesa>
+* Md Ashiqur Rahman <https://ashiqrahman.com>
+* Junxiao Shi <https://cs.arizona.edu/~shijunxiao>
+* Yufeng Zhang <https://yufengzh.io>
+* ***(Maintainer)*** Zhiyi Zhang <https://zhiyi-zhang.com>
 
-## All project authors and contributors
+# Technical Advisors
 
-The following is an inevitably incomplete list of MUCH-APPRECIATED CONTRIBUTORS,
-people who have reported bugs, submitted patches, and implemented new features
-in the library:
-
-* Davide Pesavento       <https://www.linkedin.com/in/davidepesavento>
+* Lixia Zhang <https://web.cs.ucla.edu/~lixia>
