@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2019, Regents of the University of California.
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(Probe)
   auto firstInterest = client.generateProbeInterest(item, "zhiyi@cs.ucla.edu:987654321:Zhiyi Zhang");
   BOOST_CHECK(firstInterest->getName().at(-1).isParametersSha256Digest());
   // ignore the last name component (ParametersSha256Digest)
-  BOOST_CHECK_EQUAL(firstInterest->getName().getPrefix(-1), "/site/CA/_PROBE");
+  BOOST_CHECK_EQUAL(firstInterest->getName().getPrefix(-1), "/site/CA/PROBE");
   BOOST_CHECK_EQUAL(CaModule::jsonFromBlock(firstInterest->getApplicationParameters()).get<std::string>("email"),
                     "zhiyi@cs.ucla.edu");
 }

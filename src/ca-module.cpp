@@ -1,5 +1,5 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/*
+/**
  * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
@@ -76,22 +76,22 @@ CaModule::registerPrefix()
   prefixId = m_face.registerPrefix(prefix,
     [&] (const Name& name) {
       // register PROBE prefix
-      auto filterId = m_face.setInterestFilter(Name(name).append("_PROBE"),
+      auto filterId = m_face.setInterestFilter(Name(name).append("PROBE"),
                                                bind(&CaModule::onProbe, this, _2));
       m_interestFilterHandles.push_back(filterId);
 
       // register NEW prefix
-      filterId = m_face.setInterestFilter(Name(name).append("_NEW"),
+      filterId = m_face.setInterestFilter(Name(name).append("NEW"),
                                           bind(&CaModule::onNew, this, _2));
       m_interestFilterHandles.push_back(filterId);
 
       // register SELECT prefix
-      filterId = m_face.setInterestFilter(Name(name).append("_CHALLENGE"),
+      filterId = m_face.setInterestFilter(Name(name).append("CHALLENGE"),
                                           bind(&CaModule::onChallenge, this, _2));
       m_interestFilterHandles.push_back(filterId);
 
       // register DOWNLOAD prefix
-      filterId = m_face.setInterestFilter(Name(name).append("_DOWNLOAD"),
+      filterId = m_face.setInterestFilter(Name(name).append("DOWNLOAD"),
                                           bind(&CaModule::onDownload, this, _2));
       m_interestFilterHandles.push_back(filterId);
       _LOG_TRACE("Prefix " << name << " got registered");
@@ -238,7 +238,7 @@ CaModule::onNew(const Interest& request)
   else if (probeToken != nullptr) {
     // check whether the carried probe token is a PROBE Data packet
     Name prefix = m_config.m_caName;
-    prefix.append("CA").append("_PROBE");
+    prefix.append("CA").append("PROBE");
     if (!prefix.isPrefixOf(probeToken->getName())) {
       _LOG_ERROR("Carried PROBE token is not a valid PROBE Data packet.");
       return;

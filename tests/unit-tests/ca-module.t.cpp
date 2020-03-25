@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2019, Regents of the University of California.
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(HandleProbe)
     });
   advanceClocks(time::milliseconds(20), 60);
 
-  Interest interest("/ndn/CA/_PROBE");
+  Interest interest("/ndn/CA/PROBE");
   interest.setCanBePrefix(false);
   JsonSection paramJson;
   paramJson.add(JSON_CLIENT_PROBE_INFO, "zhiyi");
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE(HandleProbeInfo)
     });
   advanceClocks(time::milliseconds(20), 60);
 
-  Interest interest("/ndn/CA/_PROBE/INFO");
+  Interest interest("/ndn/CA/PROBE/INFO");
   interest.setCanBePrefix(false);
 
   int count = 0;
@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE(HandleProbeUsingDefaultHandler)
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
-  Interest interest("/ndn/CA/_PROBE");
+  Interest interest("/ndn/CA/PROBE");
   interest.setCanBePrefix(false);
   JsonSection paramJson;
   paramJson.add(JSON_CLIENT_PROBE_INFO, "zhiyi");
@@ -238,7 +238,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithProbeToken)
   item.m_anchor = cert;
   client.getClientConf().m_caItems.push_back(item);
 
-  auto data = make_shared<Data>(Name("/ndn/CA/_PROBE/123"));
+  auto data = make_shared<Data>(Name("/ndn/CA/PROBE/123"));
   m_keyChain.sign(*data, signingByIdentity(ca.m_config.m_caName));
 
   auto interest = client.generateNewInterest(time::system_clock::now(),
@@ -283,7 +283,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
 
   int count = 0;
   face.onSendData.connect([&] (const Data& response) {
-    if (Name("/ndn/CA/_NEW").isPrefixOf(response.getName())) {
+    if (Name("/ndn/CA/NEW").isPrefixOf(response.getName())) {
       auto contentJson = ClientModule::getJsonFromData(response);
       client.onNewResponse(response);
       auto paramJson = pinChallenge.getRequirementForChallenge(client.m_status, client.m_challengeStatus);
@@ -291,7 +291,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
                                                                                                 client.m_challengeStatus,
                                                                                                 paramJson));
     }
-    else if (Name("/ndn/CA/_CHALLENGE").isPrefixOf(response.getName()) && count == 0) {
+    else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 0) {
       count++;
       BOOST_CHECK(security::verifySignature(response, cert));
 
@@ -304,7 +304,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
                                                                                                  client.m_challengeStatus,
                                                                                                  paramJson));
     }
-    else if (Name("/ndn/CA/_CHALLENGE").isPrefixOf(response.getName()) && count == 1) {
+    else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 1) {
       count++;
       BOOST_CHECK(security::verifySignature(response, cert));
 
@@ -323,7 +323,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
                                                                                                  client.m_challengeStatus,
                                                                                                  paramJson));
     }
-    else if (Name("/ndn/CA/_CHALLENGE").isPrefixOf(response.getName()) && count == 2) {
+    else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 2) {
       count++;
       BOOST_CHECK(security::verifySignature(response, cert));
 
