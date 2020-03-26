@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2019, Regents of the University of California.
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -72,6 +72,9 @@ public:
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
+  onInfo(const Interest& request);
+
+  void
   onProbe(const Interest& request);
 
   void
@@ -96,19 +99,19 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   registerPrefix();
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  const JsonSection
+  JsonSection
   genProbeResponseJson(const Name& identifier,
                        const std::string& m_probe,
                        const JsonSection& parameterJson);
 
-  const JsonSection
-  genProbeResponseJson();
+  JsonSection
+  genInfoResponseJson();
 
-  const JsonSection
+  JsonSection
   genNewResponseJson(const std::string& ecdhKey, const std::string& salt,
                      const CertificateRequest& request, const std::list<std::string>& challenges);
 
-  const JsonSection
+  JsonSection
   genChallengeResponseJson(const CertificateRequest& request);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:

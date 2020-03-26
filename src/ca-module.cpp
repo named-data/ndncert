@@ -62,12 +62,12 @@ void
 CaModule::registerPrefix()
 {
   // register localhop discovery prefix
-  Name localhopProbePrefix("/localhop/CA/PROBE/INFO");
-  auto prefixId = m_face.setInterestFilter(InterestFilter(localhopProbePrefix),
-                                           bind(&CaModule::onProbe, this, _2),
+  Name localhopInfoPrefix("/localhop/CA/INFO");
+  auto prefixId = m_face.setInterestFilter(InterestFilter(localhopInfoPrefix),
+                                           bind(&CaModule::onInfo, this, _2),
                                            bind(&CaModule::onRegisterFailed, this, _2));
   m_registeredPrefixHandles.push_back(prefixId);
-  _LOG_TRACE("Prefix " << localhopProbePrefix << " got registered");
+  _LOG_TRACE("Prefix " << localhopInfoPrefix << " got registered");
 
   // register prefixes
   Name prefix = m_config.m_caName;
@@ -75,9 +75,14 @@ CaModule::registerPrefix()
 
   prefixId = m_face.registerPrefix(prefix,
     [&] (const Name& name) {
+      // register INFO prefix
+      auto filterId = m_face.setInterestFilter(Name(name).append("INFO"),
+                                          bind(&CaModule::onInfo, this, _2));
+      m_interestFilterHandles.push_back(filterId);
+
       // register PROBE prefix
-      auto filterId = m_face.setInterestFilter(Name(name).append("PROBE"),
-                                               bind(&CaModule::onProbe, this, _2));
+      filterId = m_face.setInterestFilter(Name(name).append("PROBE"),
+                                          bind(&CaModule::onProbe, this, _2));
       m_interestFilterHandles.push_back(filterId);
 
       // register NEW prefix
@@ -115,43 +120,54 @@ CaModule::setStatusUpdateCallback(const StatusUpdateCallback& onUpdateCallback)
 }
 
 void
+CaModule::onInfo(const Interest& request)
+{
+  _LOG_TRACE("Received INFO request");
+  JsonSection contentJson = genInfoResponseJson();
+  Data result;
+
+  result.setName(request.getName());
+  result.setContent(dataContentFromJson(contentJson));
+  result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
+
+  m_keyChain.sign(result, signingByIdentity(m_config.m_caName));
+  m_face.put(result);
+
+  _LOG_TRACE("Handle INFO: send out the INFO response");
+}
+
+void
 CaModule::onProbe(const Interest& request)
 {
-  // PROBE Naming Convention: /<CA-Prefix>/CA/PROBE/[ParametersSha256DigestComponent|INFO]
-  _LOG_TRACE("Receive PROBE request");
+  // PROBE Naming Convention: /<CA-Prefix>/CA/PROBE/[ParametersSha256DigestComponent]
+  _LOG_TRACE("Received PROBE request");
   JsonSection contentJson;
 
-  // process PROBE INFO requests
-  if (readString(request.getName().at(-1)) == "INFO") {
-    contentJson = genProbeResponseJson();
+  // process PROBE requests: find an available name
+  std::string availableId;
+  const auto& parameterJson = jsonFromBlock(request.getApplicationParameters());
+  if (parameterJson.empty()) {
+    _LOG_ERROR("Empty JSON obtained from the Interest parameter.");
+    return;
   }
-  else {
-    // if not a PROBE INFO, find an available name
-    std::string availableId;
-    const auto& parameterJson = jsonFromBlock(request.getApplicationParameters());
-    if (parameterJson.empty()) {
-      _LOG_ERROR("Empty JSON obtained from the Interest parameter.");
+  //std::string probeInfoStr = parameterJson.get(JSON_CLIENT_PROBE_INFO, "");
+  if (m_config.m_probeHandler) {
+    try {
+      availableId = m_config.m_probeHandler(parameterJson);
+    }
+    catch (const std::exception& e) {
+      _LOG_TRACE("Cannot find PROBE input from PROBE parameters: " << e.what());
       return;
     }
-    //std::string probeInfoStr = parameterJson.get(JSON_CLIENT_PROBE_INFO, "");
-    if (m_config.m_probeHandler) {
-      try {
-        availableId = m_config.m_probeHandler(parameterJson);
-      }
-      catch (const std::exception& e) {
-        _LOG_TRACE("Cannot find PROBE input from PROBE parameters: " << e.what());
-        return;
-      }
-    }
-    else {
-      // if there is no app-specified name lookup, use a random name id
-      availableId = std::to_string(random::generateSecureWord64());
-    }
-    Name newIdentityName = m_config.m_caName;
-    newIdentityName.append(availableId);
-    _LOG_TRACE("Handle PROBE: generate an identity " << newIdentityName);
-    contentJson = genProbeResponseJson(newIdentityName.toUri(), m_config.m_probe, parameterJson);
   }
+  else {
+    // if there is no app-specified name lookup, use a random name id
+    availableId = std::to_string(random::generateSecureWord64());
+  }
+  Name newIdentityName = m_config.m_caName;
+  newIdentityName.append(availableId);
+  _LOG_TRACE("Handle PROBE: generate an identity " << newIdentityName);
+  contentJson = genProbeResponseJson(newIdentityName.toUri(), m_config.m_probe, parameterJson);
 
   Data result;
   result.setName(request.getName());
@@ -485,7 +501,7 @@ CaModule::getCertificateRequest(const Interest& request)
  *   "name": "@p identifier"
  * }
  */
-const JsonSection
+JsonSection
 CaModule::genProbeResponseJson(const Name& identifier, const std::string& m_probe, const JsonSection& parameterJson)
 {
   std::vector<std::string> fields;
@@ -527,8 +543,8 @@ CaModule::genProbeResponseJson(const Name& identifier, const std::string& m_prob
  *   ]
  * }
  */
-const JsonSection
-CaModule::genProbeResponseJson()
+JsonSection
+CaModule::genInfoResponseJson()
 {
   JsonSection root;
   // ca-prefix
@@ -558,7 +574,7 @@ CaModule::genProbeResponseJson()
   return root;
 }
 
-const JsonSection
+JsonSection
 CaModule::genNewResponseJson(const std::string& ecdhKey, const std::string& salt,
                              const CertificateRequest& request,
                              const std::list<std::string>& challenges)
@@ -579,7 +595,7 @@ CaModule::genNewResponseJson(const std::string& ecdhKey, const std::string& salt
   return root;
 }
 
-const JsonSection
+JsonSection
 CaModule::genChallengeResponseJson(const CertificateRequest& request)
 {
   JsonSection root;

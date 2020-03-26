@@ -68,7 +68,7 @@ public:
   }
 
   shared_ptr<Interest>
-  generateProbeInfoInterest(const Name& caName);
+  generateInfoInterest(const Name& caName);
 
   bool
   verifyProbeInfoResponse(const Data& reply);
@@ -128,10 +128,10 @@ public:
   endSession();
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  const JsonSection
+  JsonSection
   genProbeRequestJson(const ClientCaItem& ca, const std::string& probeInfo);
 
-  const JsonSection
+  JsonSection
   genNewRequestJson(const std::string& ecdhPub, const security::v2::Certificate& certRequest,
                     const shared_ptr<Data>& probeToken = nullptr);
 

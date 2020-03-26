@@ -1,5 +1,5 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/*
+/**
  * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
@@ -296,7 +296,7 @@ startApplication()
     std::cerr << "Step " << nStep << ": Please type in the CA Name\n";
     std::string expectedCAName;
     getline(std::cin, expectedCAName);
-    face.expressInterest(*client.generateProbeInfoInterest(Name(expectedCAName)),
+    face.expressInterest(*client.generateInfoInterest(Name(expectedCAName)),
                          bind(&probeInfoCb, _2), bind(&onNackCb), bind(&timeoutCb));
   }
   else {
