@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2019, Regents of the University of California.
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -40,7 +40,10 @@ ClientModule::ClientModule(security::v2::KeyChain& keyChain)
 {
 }
 
-ClientModule::~ClientModule() = default;
+ClientModule::~ClientModule()
+{
+  endSession();
+}
 
 shared_ptr<Interest>
 ClientModule::generateProbeInfoInterest(const Name& caName)
@@ -158,13 +161,21 @@ ClientModule::generateNewInterest(const time::system_clock::TimePoint& notBefore
 
   // generate a newly key pair or use an existing key
   const auto& pib = m_keyChain.getPib();
+  security::pib::Identity identity;
   try {
-    auto identity = pib.getIdentity(m_identityName);
-    m_key = m_keyChain.createKey(identity);
+    identity = pib.getIdentity(m_identityName);
   }
   catch (const security::Pib::Error& e) {
-    auto identity = m_keyChain.createIdentity(m_identityName);
+    identity = m_keyChain.createIdentity(m_identityName);
+    m_isNewlyCreatedIdentity = true;
+    m_isNewlyCreatedKey = true;
+  }
+  try {
     m_key = identity.getDefaultKey();
+  }
+  catch (const security::Pib::Error& e) {
+    m_key = m_keyChain.createKey(identity);
+    m_isNewlyCreatedKey = true;
   }
 
   // generate certificate request
@@ -286,25 +297,45 @@ ClientModule::generateCertFetchInterest()
   return interest;
 }
 
-void
+shared_ptr<security::v2::Certificate>
 ClientModule::onDownloadResponse(const Data& reply)
 {
   try {
     security::v2::Certificate cert(reply.getContent().blockFromValue());
     m_keyChain.addCertificate(m_key, cert);
     _LOG_TRACE("Got DOWNLOAD response and installed the cert " << cert.getName());
+    m_isCertInstalled = true;
+    return make_shared<security::v2::Certificate>(cert);
   }
   catch (const std::exception& e) {
     _LOG_ERROR("Cannot add replied certificate into the keychain " << e.what());
-    return;
+    return nullptr;
   }
-  m_isCertInstalled = true;
 }
 
 void
 ClientModule::onCertFetchResponse(const Data& reply)
 {
   onDownloadResponse(reply);
+}
+
+void
+ClientModule::endSession()
+{
+  if (getApplicationStatus() == STATUS_SUCCESS || getApplicationStatus() == STATUS_ENDED) {
+    return;
+  }
+  if (m_isNewlyCreatedIdentity) {
+    // put the identity into the if scope is because it may cause an error
+    // outside since when endSession is called, identity may not have been created yet.
+    auto identity = m_keyChain.getPib().getIdentity(m_identityName);
+    m_keyChain.deleteIdentity(identity);
+  }
+  else if (m_isNewlyCreatedKey) {
+    auto identity = m_keyChain.getPib().getIdentity(m_identityName);
+    m_keyChain.deleteKey(identity, m_key);
+  }
+  m_status = STATUS_ENDED;
 }
 
 JsonSection

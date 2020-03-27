@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2019, Regents of the University of California.
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -116,7 +116,8 @@ enum {
   STATUS_PENDING = 2,
   STATUS_SUCCESS = 3,
   STATUS_FAILURE = 4,
-  STATUS_NOT_STARTED = 5
+  STATUS_NOT_STARTED = 5,
+  STATUS_ENDED = 6
 };
 
 // Pre-defined challenge status

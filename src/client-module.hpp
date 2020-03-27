@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2019, Regents of the University of California.
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -22,8 +22,8 @@
 #define NDNCERT_CLIENT_MODULE_HPP
 
 #include "client-config.hpp"
-#include "crypto-support/crypto-helper.hpp"
 #include "certificate-request.hpp"
+#include "crypto-support/crypto-helper.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -47,7 +47,6 @@ public:
 public:
   ClientModule(security::v2::KeyChain& keyChain);
 
-  virtual
   ~ClientModule();
 
   ClientConfig&
@@ -109,7 +108,7 @@ public:
   shared_ptr<Interest>
   generateCertFetchInterest();
 
-  void
+  shared_ptr<security::v2::Certificate>
   onDownloadResponse(const Data& reply);
 
   void
@@ -124,6 +123,9 @@ public:
 
   static std::vector<std::string>
   parseProbeComponents(const std::string& probe);
+
+  void
+  endSession();
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   const JsonSection
@@ -148,6 +150,8 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::string m_certId = "";
   std::list<std::string> m_challengeList;
   bool m_isCertInstalled = false;
+  bool m_isNewlyCreatedIdentity = false;
+  bool m_isNewlyCreatedKey = false;
 
   int m_remainingTries = 0;
   time::system_clock::TimePoint m_freshBefore;
