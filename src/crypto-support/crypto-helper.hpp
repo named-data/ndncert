@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2019, Regents of the University of California.
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -55,7 +55,6 @@ public:
 
   uint8_t*
   deriveSecret(const std::string& peerKeyStr);
-  //unique_ptr<ECDH_CTX_T> context;
   unique_ptr<ECDH_CTX> context;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
@@ -71,9 +70,44 @@ hkdf(const uint8_t* secret, int secretLen, const uint8_t* salt,
      int saltLen, uint8_t* okm, int okm_len,
      const uint8_t* info=INFO, int info_len=INFO_LEN);
 
-int ndn_compute_hmac_sha256 (const uint8_t *data, const unsigned  data_length,
-                                    const uint8_t *key, const unsigned key_length,
-                                    uint8_t *prk);
+int
+ndn_compute_hmac_sha256(const uint8_t *data, const unsigned data_length,
+                        const uint8_t *key, const unsigned key_length,
+                        uint8_t *prk);
+
+/**
+ * Authentication GCM 128 Encryption
+ * @p plaintext, input, plaintext
+ * @p plaintext_len, input, size of plaintext
+ * @p associated, input, associated authentication data
+ * @p associated_len, input, size of associated authentication data
+ * @p key, input, 16 bytes AES key
+ * @p iv, input, 12 bytes IV
+ * @p ciphertext, output
+ * @p tag, output, 16 bytes tag
+ * @return the size of ciphertext
+ * @throw CryptoError when there is an error in the process of encryption
+ */
+int
+aes_gcm_128_encrypt(const uint8_t* plaintext, size_t plaintext_len, const uint8_t* associated, size_t associated_len,
+                    const uint8_t* key, const uint8_t* iv, uint8_t* ciphertext, uint8_t* tag);
+
+/**
+ * Authentication GCM 128 Decryption
+ * @p ciphertext, input, ciphertext
+ * @p ciphertext_len, input, size of ciphertext
+ * @p associated, input, associated authentication data
+ * @p associated_len, input, size of associated authentication data
+ * @p tag, input, 16 bytes tag
+ * @p key, input, 16 bytes AES key
+ * @p iv, input, 12 bytes IV
+ * @p plaintext, output
+ * @return the size of plaintext or -1 if the verification fails
+ * @throw CryptoError when there is an error in the process of encryption
+ */
+int
+aes_gcm_128_decrypt(const uint8_t* ciphertext, size_t ciphertext_len, const uint8_t* associated, size_t associated_len,
+                    const uint8_t* tag, const uint8_t* key, const uint8_t* iv, uint8_t* plaintext);
 
 void
 handleErrors(const std::string& errorInfo);

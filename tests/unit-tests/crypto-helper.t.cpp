@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2019, Regents of the University of California.
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -185,6 +185,113 @@ BOOST_AUTO_TEST_CASE(Hkdf3)
   BOOST_CHECK_EQUAL(resultLen, sizeof(result));
   BOOST_CHECK_EQUAL_COLLECTIONS(result, result + sizeof(result), expected,
                                 expected + sizeof(expected));
+}
+
+BOOST_AUTO_TEST_CASE(AesGcm1)
+{
+  // Test case from NIST Cryptographic Algorithm Validation Program
+  // https://csrc.nist.gov/Projects/cryptographic-algorithm-validation-program/CAVP-TESTING-BLOCK-CIPHER-MODES
+  // Count = 0
+  // Key = cf063a34d4a9a76c2c86787d3f96db71
+  // IV = 113b9785971864c83b01c787
+  // CT =
+  // AAD =
+  // Tag = 72ac8493e3a5228b5d130a69d2510e42
+  // PT =
+  const uint8_t key[] = {0xcf, 0x06, 0x3a, 0x34, 0xd4, 0xa9, 0xa7, 0x6c,
+                         0x2c, 0x86, 0x78, 0x7d, 0x3f, 0x96, 0xdb, 0x71};
+  const uint8_t iv[] = {0x11, 0x3b, 0x97, 0x85, 0x97, 0x18,
+                        0x64, 0xc8, 0x3b, 0x01, 0xc7, 0x87};
+  const uint8_t expected_tag[] = {0x72, 0xac, 0x84, 0x93, 0xe3, 0xa5,
+                                  0x22, 0x8b, 0x5d, 0x13, 0x0a, 0x69,
+                                  0xd2, 0x51, 0x0e, 0x42};
+
+  uint8_t ciphertext[256] = {0};
+  uint8_t tag[16] = {0};
+  int size = aes_gcm_128_encrypt(nullptr, 0, nullptr, 0, key, iv, ciphertext, tag);
+  BOOST_CHECK(size == 0);
+  BOOST_CHECK_EQUAL_COLLECTIONS(tag, tag + 16, expected_tag, expected_tag + sizeof(expected_tag));
+
+  uint8_t decrypted[256] = {0};
+  size = aes_gcm_128_decrypt(ciphertext, size, nullptr, 0, tag, key, iv, decrypted);
+  BOOST_CHECK(size == 0);
+}
+
+BOOST_AUTO_TEST_CASE(AesGcm2)
+{
+  // Test case from NIST Cryptographic Algorithm Validation Program
+  // https://csrc.nist.gov/Projects/cryptographic-algorithm-validation-program/CAVP-TESTING-BLOCK-CIPHER-MODES
+  // Count = 1
+  // Key = 2370e320d4344208e0ff5683f243b213
+  // IV = 04dbb82f044d30831c441228
+  // CT =
+  // AAD = d43a8e5089eea0d026c03a85178b27da
+  // Tag = 2a049c049d25aa95969b451d93c31c6e
+  // PT =
+  const uint8_t key[] = {0x23, 0x70, 0xe3, 0x20, 0xd4, 0x34, 0x42, 0x08,
+                         0xe0, 0xff, 0x56, 0x83, 0xf2, 0x43, 0xb2, 0x13};
+  const uint8_t iv[] = {0x04, 0xdb, 0xb8, 0x2f, 0x04, 0x4d,
+                        0x30, 0x83, 0x1c, 0x44, 0x12, 0x28};
+  const uint8_t aad[] = {0xd4, 0x3a, 0x8e, 0x50, 0x89, 0xee, 0xa0, 0xd0,
+                         0x26, 0xc0, 0x3a, 0x85, 0x17, 0x8b, 0x27, 0xda};
+  const uint8_t expected_tag[] = {0x2a, 0x04, 0x9c, 0x04, 0x9d, 0x25,
+                                  0xaa, 0x95, 0x96, 0x9b, 0x45, 0x1d,
+                                  0x93, 0xc3, 0x1c, 0x6e};
+
+  uint8_t ciphertext[256] = {0};
+  uint8_t tag[16] = {0};
+  int size = aes_gcm_128_encrypt(nullptr, 0, aad, sizeof(aad), key, iv, ciphertext, tag);
+  BOOST_CHECK(size == 0);
+  BOOST_CHECK_EQUAL_COLLECTIONS(tag, tag + 16, expected_tag, expected_tag + sizeof(expected_tag));
+
+  uint8_t decrypted[256] = {0};
+  size = aes_gcm_128_decrypt(ciphertext, size, aad, sizeof(aad), tag, key, iv, decrypted);
+  BOOST_CHECK(size == 0);
+}
+
+BOOST_AUTO_TEST_CASE(AesGcm3)
+{
+  // Test case from NIST Cryptographic Algorithm Validation Program
+  // https://csrc.nist.gov/Projects/cryptographic-algorithm-validation-program/CAVP-TESTING-BLOCK-CIPHER-MODES
+  // Count = 0
+  // Key = bc22f3f05cc40db9311e4192966fee92
+  // IV = 134988e662343c06d3ab83db
+  // CT = 4c0168ab95d3a10ef25e5924108389365c67d97778995892d9fd46897384af61fc559212b3267e90fe4df7bfd1fbed46f4b9ee
+  // AAD = 10087e6ed81049b509c31d12fee88c64
+  // Tag = 771357958a316f166bd0dacc98ea801a
+  // PT = 337c1bc992386cf0f957617fe4d5ec1218ae1cc40369305518eb177e9b15c1646b142ff71237efaa58790080cd82e8848b295c
+  const uint8_t key[] = {0xbc, 0x22, 0xf3, 0xf0, 0x5c, 0xc4, 0x0d, 0xb9,
+                         0x31, 0x1e, 0x41, 0x92, 0x96, 0x6f, 0xee, 0x92};
+  const uint8_t iv[] = {0x13, 0x49, 0x88, 0xe6, 0x62, 0x34,
+                        0x3c, 0x06, 0xd3, 0xab, 0x83, 0xdb};
+  const uint8_t aad[] = {0x10, 0x08, 0x7e, 0x6e, 0xd8, 0x10, 0x49, 0xb5,
+                         0x09, 0xc3, 0x1d, 0x12, 0xfe, 0xe8, 0x8c, 0x64};
+  const uint8_t expected_ciphertext[] = {
+      0x4c, 0x01, 0x68, 0xab, 0x95, 0xd3, 0xa1, 0x0e, 0xf2, 0x5e, 0x59,
+      0x24, 0x10, 0x83, 0x89, 0x36, 0x5c, 0x67, 0xd9, 0x77, 0x78, 0x99,
+      0x58, 0x92, 0xd9, 0xfd, 0x46, 0x89, 0x73, 0x84, 0xaf, 0x61, 0xfc,
+      0x55, 0x92, 0x12, 0xb3, 0x26, 0x7e, 0x90, 0xfe, 0x4d, 0xf7, 0xbf,
+      0xd1, 0xfb, 0xed, 0x46, 0xf4, 0xb9, 0xee};
+  const uint8_t expected_tag[] = {0x77, 0x13, 0x57, 0x95, 0x8a, 0x31,
+                                  0x6f, 0x16, 0x6b, 0xd0, 0xda, 0xcc,
+                                  0x98, 0xea, 0x80, 0x1a};
+  const uint8_t plaintext[] = {
+      0x33, 0x7c, 0x1b, 0xc9, 0x92, 0x38, 0x6c, 0xf0, 0xf9, 0x57, 0x61,
+      0x7f, 0xe4, 0xd5, 0xec, 0x12, 0x18, 0xae, 0x1c, 0xc4, 0x03, 0x69,
+      0x30, 0x55, 0x18, 0xeb, 0x17, 0x7e, 0x9b, 0x15, 0xc1, 0x64, 0x6b,
+      0x14, 0x2f, 0xf7, 0x12, 0x37, 0xef, 0xaa, 0x58, 0x79, 0x00, 0x80,
+      0xcd, 0x82, 0xe8, 0x84, 0x8b, 0x29, 0x5c};
+
+  uint8_t ciphertext[256] = {0};
+  uint8_t tag[16] = {0};
+  int size = aes_gcm_128_encrypt(plaintext, sizeof(plaintext), aad, sizeof(aad), key, iv, ciphertext, tag);
+  BOOST_CHECK_EQUAL_COLLECTIONS(ciphertext, ciphertext + size,
+                                expected_ciphertext, expected_ciphertext + sizeof(expected_ciphertext));
+  BOOST_CHECK_EQUAL_COLLECTIONS(tag, tag + 16, expected_tag, expected_tag + sizeof(expected_tag));
+
+  uint8_t decrypted[256] = {0};
+  size = aes_gcm_128_decrypt(ciphertext, size, aad, sizeof(aad), tag, key, iv, decrypted);
+  BOOST_CHECK(memcmp(decrypted, plaintext, sizeof(plaintext)) == 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
