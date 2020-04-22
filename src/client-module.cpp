@@ -273,6 +273,7 @@ ClientModule::onChallengeResponse(const Data& reply)
   m_challengeStatus = contentJson.get(JSON_CHALLENGE_STATUS, "");
   m_remainingTries = contentJson.get(JSON_CHALLENGE_REMAINING_TRIES, 0);
   m_freshBefore = time::system_clock::now() + time::seconds(contentJson.get(JSON_CHALLENGE_REMAINING_TIME, 0));
+  m_issuedCertName = contentJson.get(JSON_CHALLENGE_ISSUED_CERT_NAME, "");
 }
 
 shared_ptr<Interest>
@@ -289,53 +290,25 @@ ClientModule::generateDownloadInterest()
 shared_ptr<Interest>
 ClientModule::generateCertFetchInterest()
 {
-  Name interestName = m_identityName;
-  interestName.append("KEY").append(m_certId);
+  Name interestName = m_issuedCertName;
   auto interest = make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
   return interest;
 }
 
-shared_ptr<security::v2::Certificate>
-ClientModule::onDownloadResponse(const Data& reply)
+void
+ClientModule::onCertFetchResponse(const Data& reply)
 {
   try {
     security::v2::Certificate cert(reply.getContent().blockFromValue());
     m_keyChain.addCertificate(m_key, cert);
-    _LOG_TRACE("Got DOWNLOAD response and installed the cert " << cert.getName());
-    m_isCertInstalled = true;
-    return make_shared<security::v2::Certificate>(cert);
+    _LOG_TRACE("Fetched and installed the cert " << cert.getName());
   }
   catch (const std::exception& e) {
     _LOG_ERROR("Cannot add replied certificate into the keychain " << e.what());
     return nullptr;
   }
-}
-
-void
-ClientModule::onCertFetchResponse(const Data& reply)
-{
-  onDownloadResponse(reply);
-}
-
-void
-ClientModule::endSession()
-{
-  if (getApplicationStatus() == STATUS_SUCCESS || getApplicationStatus() == STATUS_ENDED) {
-    return;
-  }
-  if (m_isNewlyCreatedIdentity) {
-    // put the identity into the if scope is because it may cause an error
-    // outside since when endSession is called, identity may not have been created yet.
-    auto identity = m_keyChain.getPib().getIdentity(m_identityName);
-    m_keyChain.deleteIdentity(identity);
-  }
-  else if (m_isNewlyCreatedKey) {
-    auto identity = m_keyChain.getPib().getIdentity(m_identityName);
-    m_keyChain.deleteKey(identity, m_key);
-  }
-  m_status = STATUS_ENDED;
 }
 
 JsonSection

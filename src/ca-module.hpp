@@ -84,9 +84,6 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   onChallenge(const Interest& request);
 
   void
-  onDownload(const Interest& request);
-
-  void
   onRegisterFailed(const std::string& reason);
 
   CertificateRequest

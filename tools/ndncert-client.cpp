@@ -116,13 +116,9 @@ timeoutCb()
 }
 
 static void
-downloadCb(const Data& reply)
+certFetchCb(const Data& reply)
 {
-  auto cert = client.onDownloadResponse(reply);
-  if (cert == nullptr) {
-    std::cerr << "Certificate cannot be installed to your local keychain" << std::endl;
-    return;
-  }
+  client.onCertFetchResponse(reply);
   std::cerr << "Step " << nStep++
             << ": DONE! Certificate has already been installed to local keychain\n"
             << "Certificate Name: " << cert->getName().toUri() << std::endl;
@@ -134,7 +130,7 @@ challengeCb(const Data& reply)
   client.onChallengeResponse(reply);
   if (client.getApplicationStatus() == STATUS_SUCCESS) {
     std::cerr << "DONE! Certificate has already been issued \n";
-    face.expressInterest(*client.generateDownloadInterest(), bind(&downloadCb, _2),
+    face.expressInterest(*client.generateCertFetchInterest(), bind(&certFetchCb, _2),
                          bind(&onNackCb), bind(&timeoutCb));
     return;
   }

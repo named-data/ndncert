@@ -108,9 +108,6 @@ public:
   shared_ptr<Interest>
   generateCertFetchInterest();
 
-  shared_ptr<security::v2::Certificate>
-  onDownloadResponse(const Data& reply);
-
   void
   onCertFetchResponse(const Data& reply);
 
@@ -148,6 +145,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::string m_challengeStatus = "";
   std::string m_challengeType = "";
   std::string m_certId = "";
+  std::string m_issuedCertName = "";
   std::list<std::string> m_challengeList;
   bool m_isCertInstalled = false;
   bool m_isNewlyCreatedIdentity = false;

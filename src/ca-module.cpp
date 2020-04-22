@@ -95,10 +95,6 @@ CaModule::registerPrefix()
                                           bind(&CaModule::onChallenge, this, _2));
       m_interestFilterHandles.push_back(filterId);
 
-      // register DOWNLOAD prefix
-      filterId = m_face.setInterestFilter(Name(name).append("DOWNLOAD"),
-                                          bind(&CaModule::onDownload, this, _2));
-      m_interestFilterHandles.push_back(filterId);
       _LOG_TRACE("Prefix " << name << " got registered");
     },
     bind(&CaModule::onRegisterFailed, this, _2));
@@ -394,6 +390,7 @@ CaModule::onChallenge(const Interest& request)
       }
       contentJson = genChallengeResponseJson(certRequest);
       contentJson.add(JSON_CA_CERT_ID, readString(issuedCert.getName().at(-1)));
+      contentJson.add(JSON_CHALLENGE_ISSUED_CERT_NAME, issuedCert.getName().toUri());
       _LOG_TRACE("Challenge succeeded. Certificate has been issued");
     }
     else {
@@ -426,26 +423,6 @@ CaModule::onChallenge(const Interest& request)
   if (m_config.m_statusUpdateCallback) {
     m_config.m_statusUpdateCallback(certRequest);
   }
-}
-
-void
-CaModule::onDownload(const Interest& request)
-{
-  auto requestId = readString(request.getName().at(-1));
-  security::v2::Certificate signedCert;
-  try {
-    signedCert = m_storage->getCertificate(requestId);
-  }
-  catch (const std::exception& e) {
-    _LOG_ERROR("Cannot read signed cert " << requestId << " from CA's storage: " << e.what());
-    return;
-  }
-  Data result;
-  result.setName(request.getName());
-  result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  result.setContent(signedCert.wireEncode());
-  m_keyChain.sign(result, signingByIdentity(m_config.m_caName));
-  m_face.put(result);
 }
 
 security::v2::Certificate

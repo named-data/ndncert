@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE(Initialization)
 
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK_EQUAL(ca.m_registeredPrefixHandles.size(), 2);
-  BOOST_CHECK_EQUAL(ca.m_interestFilterHandles.size(), 5); // onInfo, onProbe, onNew, onChallenge, onDownload
+  BOOST_CHECK_EQUAL(ca.m_interestFilterHandles.size(), 4); // onInfo, onProbe, onNew, onChallenge
 }
 
 BOOST_AUTO_TEST_CASE(HandleProbe)

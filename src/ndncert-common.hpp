@@ -102,6 +102,7 @@ const std::string JSON_CA_CERT_ID = "certificate-id";
 const std::string JSON_CHALLENGE_STATUS = "challenge-status";
 const std::string JSON_CHALLENGE_REMAINING_TRIES = "remaining-tries";
 const std::string JSON_CHALLENGE_REMAINING_TIME = "remaining-time";
+const std::string JSON_CHALLENGE_ISSUED_CERT_NAME = "issued-cert-name";
 
 // JSON format for Certificate Requester
 const std::string JSON_CLIENT_PROBE_INFO = "probe-info";
