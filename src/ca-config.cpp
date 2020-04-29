@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2019, Regents of the University of California.
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -20,8 +20,12 @@
 
 #include "ca-config.hpp"
 #include "challenge-module.hpp"
-#include <ndn-cxx/util/io.hpp>
+
 #include <boost/filesystem.hpp>
+#include <ndn-cxx/util/io.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/info_parser.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -36,7 +40,6 @@ CaConfig::load(const std::string& fileName)
   catch (const std::exception& error) {
     BOOST_THROW_EXCEPTION(Error("Failed to parse configuration file " + fileName + ", " + error.what()));
   }
-
   if (configJson.begin() == configJson.end()) {
     BOOST_THROW_EXCEPTION(Error("Error processing configuration file: " + fileName + " no data"));
   }
@@ -46,30 +49,50 @@ CaConfig::load(const std::string& fileName)
 void
 CaConfig::parse(const JsonSection& configJson)
 {
-  // essential info
-  m_caName = Name(configJson.get("ca-prefix", ""));
-  if (m_caName.empty()) {
-    BOOST_THROW_EXCEPTION(Error("Cannot read ca-prefix from the config file"));
+  // CA prefix
+  m_caPrefix = Name(configJson.get(CONFIG_CA_PREFIX, ""));
+  if (m_caPrefix.empty()) {
+    BOOST_THROW_EXCEPTION(Error("Cannot parse ca-prefix from the config file"));
   }
-  m_freshnessPeriod = time::seconds(configJson.get("issuing-freshness", 720));
-  m_validityPeriod = time::days(configJson.get("max-validity-period", 360));
-
-  // optional info
-  m_probe = configJson.get("probe", "");
-  m_caInfo = configJson.get("ca-info", "");
-
+  // CA info
+  m_caInfo = configJson.get(CONFIG_CA_INFO, "");
+  // CA max validity period
+  m_maxValidityPeriod = time::seconds(configJson.get(CONFIG_MAX_VALIDITY_PERIOD, 3600));
+  // probe
+  m_probeParameterKeys.clear();
+  auto probeParameters = configJson.get_child_optional(CONFIG_PROBE_PARAMETERS);
+  if (probeParameters) {
+    parseProbeParameters(*probeParameters);
+  }
   // optional supported challenges
-  auto challengeList = configJson.get_child("supported-challenges");
-  m_supportedChallenges = parseChallengeList(challengeList);
+  m_supportedChallenges.clear();
+  auto challengeList = configJson.get_child_optional(CONFIG_SUPPORTED_CHALLENGES);
+  if (!challengeList) {
+    BOOST_THROW_EXCEPTION(Error("Cannot parse challenge list"));
+  }
+  parseChallengeList(*challengeList);
 }
 
-std::list<std::string>
-CaConfig::parseChallengeList(const JsonSection& section)
+void
+CaConfig::parseProbeParameters(const JsonSection& section)
 {
-  std::list<std::string> result;
   auto it = section.begin();
   for (; it != section.end(); it++) {
-    auto challengeType = it->second.get("type", "");
+    auto probeParameter = it->second.get(CONFIG_PROBE_PARAMETER, "");
+    if (probeParameter == "") {
+      BOOST_THROW_EXCEPTION(Error("Cannot read probe-parameter-key in probe-parameters from the config file"));
+    }
+    probeParameter = boost::algorithm::to_lower_copy(probeParameter);
+    m_probeParameterKeys.push_back(probeParameter);
+  }
+}
+
+void
+CaConfig::parseChallengeList(const JsonSection& section)
+{
+  auto it = section.begin();
+  for (; it != section.end(); it++) {
+    auto challengeType = it->second.get(CONFIG_CHALLENGE, "");
     if (challengeType == "") {
       BOOST_THROW_EXCEPTION(Error("Cannot read type in supported-challenges from the config file"));
     }
@@ -77,10 +100,12 @@ CaConfig::parseChallengeList(const JsonSection& section)
     if (!ChallengeModule::supportChallenge(challengeType)) {
       BOOST_THROW_EXCEPTION(Error("Does not support challenge read from the config file"));
     }
-    result.push_back(challengeType);
+    m_supportedChallenges.push_back(challengeType);
   }
-  return result;
+  if (m_supportedChallenges.size() == 0) {
+    BOOST_THROW_EXCEPTION(Error("At least one challenge should be identified under supported-challenges"));
+  }
 }
 
-} // namespace ndncert
-} // namespace ndn
+}  // namespace ndncert
+}  // namespace ndn

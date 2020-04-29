@@ -1,10 +1,13 @@
 {
   "ca-prefix": "/ndn",
-  "issuing-freshness": "720",
-  "validity-period": "360",
+  "max-validity-period": "86400",
   "ca-info": "ndn testbed ca",
+  "probe-parameters":
+  [
+      { "probe-parameter-key": "full name" }
+  ],
   "supported-challenges":
   [
-      { "type": "PIN" }
+      { "challenge": "PIN" }
   ]
 }

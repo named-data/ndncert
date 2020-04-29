@@ -37,14 +37,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <functional>
-#include <list>
-#include <map>
-#include <memory>
-#include <set>
-#include <string>
-#include <unordered_map>
-#include <utility>
 
 #include <ndn-cxx/interest.hpp>
 #include <ndn-cxx/data.hpp>
@@ -53,17 +45,12 @@
 #include <ndn-cxx/link.hpp>
 #include <ndn-cxx/encoding/block.hpp>
 #include <ndn-cxx/lp/nack.hpp>
-#include <ndn-cxx/util/backports.hpp>
-#include <ndn-cxx/util/signal.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/security/certificate.hpp>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/assert.hpp>
 #include <boost/noncopyable.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/info_parser.hpp>
 #include <boost/throw_exception.hpp>
 
 namespace ndn {
@@ -86,6 +73,41 @@ using ndn::PartialName;
 using ndn::Block;
 using ndn::time::system_clock;
 using ndn::time::toUnixTimestamp;
+
+enum : uint32_t {
+  tlv_ca_prefix = 129,
+  tlv_ca_info = 131,
+  tlv_parameter_key = 133,
+  tlv_parameter_value = 135,
+  tlv_ca_certificate = 137,
+  tlv_max_validity_period = 139,
+  tlv_probe_response = 141,
+  tlv_allow_longer_name = 143,
+  tlv_ecdh_pub = 145,
+  tlv_cert_request = 147,
+  tlv_salt = 149,
+  tlv_request_id = 151,
+  tlv_challenge = 153,
+  tlv_status = 155,
+  tlv_initialization_vector = 157,
+  tlv_encrypted_payload = 159,
+  tlv_selected_challenge = 161,
+  tlv_challenge_status = 163,
+  tlv_remaining_tries = 165,
+  tlv_remaining_time = 167,
+  tlv_issued_cert_name = 169,
+  tlv_error_code = 171,
+  tlv_error_info = 173
+};
+
+// Parse CA Configuration file
+const std::string CONFIG_CA_PREFIX = "ca-prefix";
+const std::string CONFIG_CA_INFO = "ca-info";
+const std::string CONFIG_MAX_VALIDITY_PERIOD = "max-validity-period";
+const std::string CONFIG_PROBE_PARAMETERS = "probe-parameters";
+const std::string CONFIG_PROBE_PARAMETER = "probe-parameter-key";
+const std::string CONFIG_SUPPORTED_CHALLENGES = "supported-challenges";
+const std::string CONFIG_CHALLENGE = "challenge";
 
 // JSON format for Certificate Issuer (CA)
 const std::string JSON_CA_NAME = "name";

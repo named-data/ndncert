@@ -19,7 +19,7 @@
  */
 
 #include "ca-config.hpp"
-
+#include "protocol-detail/info.hpp"
 #include "identity-management-fixture.hpp"
 
 #include <ndn-cxx/security/transform/base64-encode.hpp>
@@ -36,11 +36,13 @@ BOOST_AUTO_TEST_CASE(ReadConfigFile)
 {
   CaConfig config;
   config.load("tests/unit-tests/ca.conf.test");
-  BOOST_CHECK_EQUAL(config.m_caName, "/ndn");
-  BOOST_CHECK_EQUAL(config.m_freshnessPeriod, time::seconds(720));
-  BOOST_CHECK_EQUAL(config.m_validityPeriod, time::days(360));
-  BOOST_CHECK_EQUAL(config.m_probe, "");
+  BOOST_CHECK_EQUAL(config.m_caPrefix, "/ndn");
   BOOST_CHECK_EQUAL(config.m_caInfo, "ndn testbed ca");
+  BOOST_CHECK_EQUAL(config.m_maxValidityPeriod, time::seconds(86400));
+  BOOST_CHECK_EQUAL(config.m_probeParameterKeys.size(), 1);
+  BOOST_CHECK_EQUAL(config.m_probeParameterKeys.front(), "full name");
+  BOOST_CHECK_EQUAL(config.m_supportedChallenges.size(), 1);
+  BOOST_CHECK_EQUAL(config.m_supportedChallenges.front(), "pin");
 }
 
 BOOST_AUTO_TEST_CASE(ReadNonexistConfigFile)
@@ -59,6 +61,23 @@ BOOST_AUTO_TEST_CASE(ReadConfigFileWithChallengeNotSupported)
 {
   CaConfig config;
   BOOST_CHECK_THROW(config.load("tests/unit-tests/ca.conf.test3"), CaConfig::Error);
+}
+
+BOOST_AUTO_TEST_CASE(InfoContentEncodingDecoding)
+{
+  CaConfig config;
+  config.load("tests/unit-tests/ca.conf.test");
+
+  const auto& identity = addIdentity("/test");
+  const auto& cert = identity.getDefaultKey().getDefaultCertificate();
+  auto encoded = INFO::encodeContentFromCAConfig(config, cert);
+  auto decoded = INFO::decodeClientConfigFromContent(encoded);
+  BOOST_CHECK_EQUAL(config.m_caPrefix, decoded.m_caPrefix);
+  BOOST_CHECK_EQUAL(config.m_caInfo, decoded.m_caInfo);
+  BOOST_CHECK_EQUAL(config.m_maxValidityPeriod, decoded.m_maxValidityPeriod);
+  BOOST_CHECK_EQUAL(config.m_probeParameterKeys.size(), decoded.m_probeParameterKeys.size());
+  BOOST_CHECK_EQUAL(config.m_probeParameterKeys.front(), decoded.m_probeParameterKeys.front());
+  BOOST_CHECK_EQUAL(cert.wireEncode(), decoded.m_anchor.wireEncode());
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TestCaConfig

@@ -22,7 +22,14 @@
 #define NDNCERT_CERTIFICATE_REQUEST_HPP
 
 #include "ndncert-common.hpp"
+<<<<<<< HEAD
 #include <ndn-cxx/security/certificate.hpp>
+=======
+#include <ndn-cxx/security/v2/certificate.hpp>
+#include <boost/property_tree/info_parser.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
+>>>>>>> Update CaConfig and ClientCaItem. Add INFO packet encoding and decoding.
 
 namespace ndn {
 namespace ndncert {

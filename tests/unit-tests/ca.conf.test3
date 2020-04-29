@@ -1,10 +1,9 @@
 {
   "ca-prefix": "/ndn",
-  "issuing-freshness": "720",
-  "validity-period": "360",
   "ca-info": "ndn testbed ca",
+  "max-validity-period": "86400",
   "supported-challenges":
   [
-      { "type": "PINN" }
+      { "challenge": "ABC" }
   ]
 }

@@ -19,6 +19,7 @@
  */
 
 #include "client-config.hpp"
+
 #include <ndn-cxx/util/io.hpp>
 #include <fstream>
 
@@ -103,8 +104,8 @@ ClientConfig::extractCaItem(const JsonSection& configSection)
 void
 ClientConfig::removeCaItem(const Name& caName)
 {
-  m_caItems.remove_if([&] (const ClientCaItem& item) {return item.m_caName == caName;});
+  m_caItems.remove_if([&](const ClientCaItem& item) { return item.m_caName == caName; });
 }
 
-} // namespace ndncert
-} // namespace ndn
+}  // namespace ndncert
+}  // namespace ndn

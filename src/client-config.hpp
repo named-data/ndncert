@@ -22,7 +22,12 @@
 #define NDNCERT_CLIENT_CONFIG_HPP
 
 #include "certificate-request.hpp"
+<<<<<<< HEAD
 #include <ndn-cxx/security/certificate.hpp>
+=======
+
+#include <ndn-cxx/security/v2/certificate.hpp>
+>>>>>>> Update CaConfig and ClientCaItem. Add INFO packet encoding and decoding.
 
 namespace ndn {
 namespace ndncert {
@@ -30,19 +35,37 @@ namespace ndncert {
 /**
  * @brief The configuration for a trusted CA from a requester's perspective
  */
-class ClientCaItem
-{
+class ClientCaItem {
 public:
+  /**
+   * CA Name prefix (without /CA suffix).
+   */
+  Name m_caPrefix;
+  /**
+   * CA Information.
+   */
+  std::string m_caInfo;
+  /**
+   * A list of parameter-keys for PROBE.
+   */
+  std::list<std::string> m_probeParameterKeys;
+  /**
+   * Maximum allowed validity period of the certificate being requested.
+   * The value is in the unit of second.
+   */
+  time::seconds m_maxValidityPeriod;
+  /**
+   * CA's certificate.
+   */
+  security::v2::Certificate m_anchor;
+
+  //=======old
+
   // The identity name of the CA. Extracted from config field "ca-prefix"
   Name m_caName;
 
-  // A brief introduction to the CA. Extracted from config field "ca-info"
-  std::string m_caInfo;
   // An instruction for requesters to use _PROBE. Extracted from config field "probe"
-  std::string m_probe; // "email::uid::name"
-
-  // CA's certificate
-  security::v2::Certificate m_anchor;
+  std::string m_probe;  // "email::uid::name"
 };
 
 /**
@@ -51,11 +74,9 @@ public:
  * For Client configuration format, please refer to:
  *   https://github.com/named-data/ndncert/wiki/Client-Configuration-Sample
  */
-class ClientConfig
-{
+class ClientConfig {
 public:
-  class Error : public std::runtime_error
-  {
+  class Error : public std::runtime_error {
   public:
     using std::runtime_error::runtime_error;
   };
@@ -90,7 +111,7 @@ public:
   std::string m_localNdncertAnchor;
 };
 
-} // namespace ndncert
-} // namespace ndn
+}  // namespace ndncert
+}  // namespace ndn
 
-#endif // NDNCERT_CLIENT_CONFIG_HPP
+#endif  // NDNCERT_CLIENT_CONFIG_HPP
