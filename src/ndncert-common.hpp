@@ -97,7 +97,8 @@ enum : uint32_t {
   tlv_remaining_time = 167,
   tlv_issued_cert_name = 169,
   tlv_error_code = 171,
-  tlv_error_info = 173
+  tlv_error_info = 173,
+  tlv_authentication_tag = 175
 };
 
 // Parse CA Configuration file

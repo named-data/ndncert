@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2019, Regents of the University of California.
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -21,22 +21,17 @@
 #ifndef NDNCERT_CRYPTO_SUPPORT_ENC_TLV_HPP
 #define NDNCERT_CRYPTO_SUPPORT_ENC_TLV_HPP
 
-#include <ndn-cxx/encoding/block-helpers.hpp>
+#include "../ndncert-common.hpp"
 
 namespace ndn {
 namespace ndncert {
 
-enum {
-  ENCRYPTED_PAYLOAD = 630,
-  INITIAL_VECTOR = 632,
-};
-
 Block
-genEncBlock(uint32_t tlv_type, const uint8_t* key, size_t keyLen, const uint8_t* payload, size_t payloadSize);
+encodeBlockWithAesGcm128(uint32_t tlv_type, const uint8_t* key, const uint8_t* payload, size_t payloadSize,
+                         const uint8_t* associatedData, size_t associatedDataSize);
 
 Buffer
-parseEncBlock(const uint8_t* key, size_t keyLen, const Block& block);
-
+decodeBlockWithAesGcm128(const Block& block, const uint8_t* key, const uint8_t* associatedData, size_t associatedDataSize);
 
 } // namespace ndncert
 } // namespace ndn

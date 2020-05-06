@@ -21,31 +21,31 @@
 #ifndef NDNCERT_CRYPTO_SUPPORT_CRYPTO_HELPER_HPP
 #define NDNCERT_CRYPTO_SUPPORT_CRYPTO_HELPER_HPP
 
-#include "certificate-request.hpp"
-#include <openssl/evp.h>
 #include <openssl/ec.h>
+#include <openssl/evp.h>
+
+#include "certificate-request.hpp"
 
 static const int INFO_LEN = 10;
-static const uint8_t INFO[] = {0xf0,0xf1,0xf2,0xf3,0xf4,0xf5,0xf6,0xf7,0xf8,0xf9};
+static const uint8_t INFO[] = {0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8, 0xf9};
 
 namespace ndn {
 namespace ndncert {
 
-struct ECDH_CTX{
+struct ECDH_CTX {
   int EC_NID;
-  EVP_PKEY_CTX *ctx_params;
-  EVP_PKEY_CTX *ctx_keygen;
-  EVP_PKEY *privkey;
-  EVP_PKEY *peerkey;
-  EVP_PKEY *params;
+  EVP_PKEY_CTX* ctx_params;
+  EVP_PKEY_CTX* ctx_keygen;
+  EVP_PKEY* privkey;
+  EVP_PKEY* peerkey;
+  EVP_PKEY* params;
   uint8_t publicKey[256];
   int publicKeyLen;
   uint8_t sharedSecret[256];
   int sharedSecretLen;
 };
 
-class ECDHState
-{
+class ECDHState {
 public:
   ECDHState();
   ~ECDHState();
@@ -57,9 +57,8 @@ public:
   deriveSecret(const std::string& peerKeyStr);
   unique_ptr<ECDH_CTX> context;
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  uint8_t*
-  deriveSecret(const uint8_t* peerkey, int peerKeySize);
+  PUBLIC_WITH_TESTS_ELSE_PRIVATE : uint8_t*
+                                   deriveSecret(const uint8_t* peerkey, int peerKeySize);
 
   uint8_t*
   getRawSelfPubKey();
@@ -68,12 +67,12 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 int
 hkdf(const uint8_t* secret, int secretLen, const uint8_t* salt,
      int saltLen, uint8_t* okm, int okm_len,
-     const uint8_t* info=INFO, int info_len=INFO_LEN);
+     const uint8_t* info = INFO, int info_len = INFO_LEN);
 
 int
-ndn_compute_hmac_sha256(const uint8_t *data, const unsigned data_length,
-                        const uint8_t *key, const unsigned key_length,
-                        uint8_t *prk);
+ndn_compute_hmac_sha256(const uint8_t* data, const unsigned data_length,
+                        const uint8_t* key, const unsigned key_length,
+                        uint8_t* prk);
 
 /**
  * Authentication GCM 128 Encryption
@@ -112,13 +111,12 @@ aes_gcm_128_decrypt(const uint8_t* ciphertext, size_t ciphertext_len, const uint
 void
 handleErrors(const std::string& errorInfo);
 
-class CryptoError : public std::runtime_error
-{
+class CryptoError : public std::runtime_error {
 public:
   using std::runtime_error::runtime_error;
 };
 
-} // namespace ndncert
-} // namespace ndn
+}  // namespace ndncert
+}  // namespace ndn
 
-#endif // NDNCERT_CRYPTO_SUPPORT_CRYPTO_HELPER_HPP
+#endif  // NDNCERT_CRYPTO_SUPPORT_CRYPTO_HELPER_HPP

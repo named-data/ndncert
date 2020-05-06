@@ -22,8 +22,8 @@
 #include "../logging.hpp"
 
 #include <openssl/err.h>
-#include <openssl/pem.h>
 #include <openssl/hmac.h>
+#include <openssl/pem.h>
 
 #include <ndn-cxx/encoding/buffer-stream.hpp>
 #include <ndn-cxx/security/transform/base64-decode.hpp>
@@ -81,7 +81,7 @@ ECDHState::ECDHState()
   }
 
   // initializes a public key algorithm context
-  if (1 != EVP_PKEY_keygen_init(context->ctx_keygen)){
+  if (1 != EVP_PKEY_keygen_init(context->ctx_keygen)) {
     handleErrors("Could not init context for key generation.");
     return;
   }
@@ -95,21 +95,21 @@ ECDHState::ECDHState()
 ECDHState::~ECDHState()
 {
   // Contexts
-  if(context->ctx_params != nullptr){
+  if (context->ctx_params != nullptr) {
     EVP_PKEY_CTX_free(context->ctx_params);
   }
-  if(context->ctx_keygen != nullptr){
+  if (context->ctx_keygen != nullptr) {
     EVP_PKEY_CTX_free(context->ctx_keygen);
   }
 
   // Keys
-  if(context->privkey != nullptr){
+  if (context->privkey != nullptr) {
     EVP_PKEY_free(context->privkey);
   }
-  if(context->peerkey != nullptr){
+  if (context->peerkey != nullptr) {
     EVP_PKEY_free(context->peerkey);
   }
-  if(context->params != nullptr){
+  if (context->params != nullptr) {
     EVP_PKEY_free(context->params);
   }
 }
@@ -147,9 +147,7 @@ ECDHState::getBase64PubKey()
   }
 
   std::ostringstream os;
-  t::bufferSource(context->publicKey, context->publicKeyLen)
-    >> t::base64Encode(false)
-    >> t::streamSink(os);
+  t::bufferSource(context->publicKey, context->publicKeyLen) >> t::base64Encode(false) >> t::streamSink(os);
   return os.str();
 }
 
@@ -196,9 +194,9 @@ ECDHState::deriveSecret(const std::string& peerKeyStr)
 }
 
 int
-ndn_compute_hmac_sha256(const uint8_t *data, const unsigned data_length,
-                        const uint8_t *key, const unsigned key_length,
-                        uint8_t *prk)
+ndn_compute_hmac_sha256(const uint8_t* data, const unsigned data_length,
+                        const uint8_t* key, const unsigned key_length,
+                        uint8_t* prk)
 {
   HMAC(EVP_sha256(), key, key_length,
        (unsigned char*)data, data_length,
@@ -240,8 +238,7 @@ hkdf(const uint8_t* secret, int secretLen, const uint8_t* salt,
     t::PrivateKey privKey;
     privKey.loadRaw(KeyType::HMAC, prk, dig_len);
     OBufferStream os;
-    source >> t::signerFilter(DigestAlgorithm::SHA256, privKey)
-           >> t::streamSink(os);
+    source >> t::signerFilter(DigestAlgorithm::SHA256, privKey) >> t::streamSink(os);
 
     if (i > 1) {
       source.write(prev, dig_len);
@@ -263,7 +260,7 @@ int
 aes_gcm_128_encrypt(const uint8_t* plaintext, size_t plaintext_len, const uint8_t* associated, size_t associated_len,
                     const uint8_t* key, const uint8_t* iv, uint8_t* ciphertext, uint8_t* tag)
 {
-  EVP_CIPHER_CTX *ctx;
+  EVP_CIPHER_CTX* ctx;
   int len;
   int ciphertext_len;
 
@@ -274,7 +271,7 @@ aes_gcm_128_encrypt(const uint8_t* plaintext, size_t plaintext_len, const uint8_
 
   // Initialise the encryption operation.
   if (1 != EVP_EncryptInit_ex(ctx, EVP_aes_128_gcm(), nullptr, nullptr, nullptr)) {
-      handleErrors("Cannot initialise the encryption operation when calling EVP_EncryptInit_ex()");
+    handleErrors("Cannot initialise the encryption operation when calling EVP_EncryptInit_ex()");
   }
 
   // Set IV length if default 12 bytes (96 bits) is not appropriate
@@ -387,5 +384,5 @@ handleErrors(const std::string& errorInfo)
   BOOST_THROW_EXCEPTION(CryptoError("Error in CRYPTO SUPPORT: " + errorInfo));
 }
 
-} // namespace ndncert
-} // namespace ndn
+}  // namespace ndncert
+}  // namespace ndn

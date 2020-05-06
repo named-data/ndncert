@@ -329,8 +329,8 @@ CaModule::onChallenge(const Interest& request)
   // decrypt the parameters
   Buffer paramJsonPayload;
   try {
-    paramJsonPayload = parseEncBlock(m_aesKey, sizeof(m_aesKey),
-                                     request.getApplicationParameters());
+    paramJsonPayload = decodeBlockWithAesGcm128(request.getApplicationParameters(), m_aesKey,
+                                                (uint8_t*)"test", strlen("test"));
   }
   catch (const std::exception& e) {
     _LOG_ERROR("Cannot successfully decrypt the Interest parameters: " << e.what());
@@ -414,8 +414,8 @@ CaModule::onChallenge(const Interest& request)
   std::stringstream ss2;
   boost::property_tree::write_json(ss2, contentJson);
   auto payload = ss2.str();
-  auto contentBlock = genEncBlock(tlv::Content, m_aesKey, sizeof(m_aesKey),
-                                  (const uint8_t*)payload.c_str(), payload.size());
+  auto contentBlock = encodeBlockWithAesGcm128(tlv::Content, m_aesKey, (const uint8_t*)payload.c_str(),
+                                               payload.size(), (uint8_t*)"test", strlen("test"));
   result.setContent(contentBlock);
   m_keyChain.sign(result, signingByIdentity(m_config.m_caName));
   m_face.put(result);

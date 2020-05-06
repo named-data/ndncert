@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2019, Regents of the University of California.
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -20,59 +20,52 @@
 
 #include "enc-tlv.hpp"
 #include "crypto-helper.hpp"
-#include <ndn-cxx/util/random.hpp>
-#include <ndn-cxx/security/transform/stream-sink.hpp>
+
+#include <ndn-cxx/encoding/block-helpers.hpp>
 #include <ndn-cxx/encoding/buffer-stream.hpp>
-#include <ndn-cxx/security/transform/buffer-source.hpp>
 #include <ndn-cxx/security/transform/block-cipher.hpp>
+#include <ndn-cxx/security/transform/buffer-source.hpp>
+#include <ndn-cxx/security/transform/stream-sink.hpp>
+#include <ndn-cxx/util/random.hpp>
 
 namespace ndn {
 namespace ndncert {
 
-const size_t DEFAULT_IV_SIZE = 16;
-
 Block
-genEncBlock(uint32_t tlv_type, const uint8_t* key, size_t keyLen, const uint8_t* payload, size_t payloadSize)
+encodeBlockWithAesGcm128(uint32_t tlv_type, const uint8_t* key, const uint8_t* payload, size_t payloadSize,
+                         const uint8_t* associatedData, size_t associatedDataSize)
 {
   Buffer iv;
-  iv.resize(DEFAULT_IV_SIZE);
+  iv.resize(12);
   random::generateSecureBytes(iv.data(), iv.size());
 
-  OBufferStream os;
-  security::transform::bufferSource(payload, payloadSize)
-    >> security::transform::blockCipher(BlockCipherAlgorithm::AES_CBC,
-                                        CipherOperator::ENCRYPT,
-                                        key, keyLen, iv.data(), iv.size())
-    >> security::transform::streamSink(os);
-    auto encryptedPayload = *os.buf();
-
-  // create the content block
+  uint8_t* encryptedPayload = new uint8_t[payloadSize];
+  uint8_t* tag = new uint8_t[16];
+  size_t encryptedPayloadLen = aes_gcm_128_encrypt(payload, payloadSize, associatedData, associatedDataSize,
+                                                   key, iv.data(), encryptedPayload, tag);
   auto content = makeEmptyBlock(tlv_type);
-  content.push_back(makeBinaryBlock(ENCRYPTED_PAYLOAD, encryptedPayload.data(), encryptedPayload.size()));
-  content.push_back(makeBinaryBlock(INITIAL_VECTOR, iv.data(), iv.size()));
+  content.push_back(makeBinaryBlock(tlv_initialization_vector, iv.data(), iv.size()));
+  content.push_back(makeBinaryBlock(tlv_authentication_tag, tag, 16));
+  content.push_back(makeBinaryBlock(tlv_encrypted_payload, encryptedPayload, encryptedPayloadLen));
   content.encode();
   return content;
 }
 
 Buffer
-parseEncBlock(const uint8_t* key, size_t keyLen, const Block& block)
+decodeBlockWithAesGcm128(const Block& block, const uint8_t* key, const uint8_t* associatedData, size_t associatedDataSize)
 {
   block.parse();
-  Buffer iv(block.get(INITIAL_VECTOR).value(),
-            block.get(INITIAL_VECTOR).value_size());
-  Buffer encryptedPayload(block.get(ENCRYPTED_PAYLOAD).value(),
-                          block.get(ENCRYPTED_PAYLOAD).value_size());
-
-  OBufferStream os;
-  security::transform::bufferSource(encryptedPayload.data(), encryptedPayload.size())
-    >> security::transform::blockCipher(BlockCipherAlgorithm::AES_CBC,
-                                        CipherOperator::DECRYPT,
-                                        key, keyLen, iv.data(), iv.size())
-    >> security::transform::streamSink(os);
-
-  auto payload = *os.buf();
-  return payload;
+  Buffer result;
+  result.resize(block.get(tlv_encrypted_payload).value_size());
+  int resultLen = aes_gcm_128_decrypt(block.get(tlv_encrypted_payload).value(),
+                                      block.get(tlv_encrypted_payload).value_size(),
+                                      associatedData, associatedDataSize, block.get(tlv_authentication_tag).value(),
+                                      key, block.get(tlv_initialization_vector).value(), result.data());
+  if (resultLen == -1 || resultLen != (int)block.get(tlv_encrypted_payload).value_size()) {
+    return Buffer();
+  }
+  return result;
 }
 
-} // namespace ndncert
-} // namespace ndn
+}  // namespace ndncert
+}  // namespace ndn
