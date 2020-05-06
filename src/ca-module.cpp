@@ -22,6 +22,7 @@
 #include "challenge-module.hpp"
 #include "logging.hpp"
 #include "crypto-support/enc-tlv.hpp"
+#include "tlv.hpp"
 #include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
@@ -119,11 +120,11 @@ void
 CaModule::onInfo(const Interest& request)
 {
   _LOG_TRACE("Received INFO request");
-  JsonSection contentJson = genInfoResponseJson();
+  Block contentTLV = genInfoResponseTLV();
   Data result;
 
   result.setName(request.getName());
-  result.setContent(dataContentFromJson(contentJson));
+  result.setContent(contentTLV);
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
 
   m_keyChain.sign(result, signingByIdentity(m_config.m_caName));
@@ -550,6 +551,46 @@ CaModule::genInfoResponseJson()
   root.put("certificate", ss.str());
   return root;
 }
+
+Block
+CaModule::genInfoResponseTLV()
+{
+  Block response;
+  // ca-prefix
+  Name caName = m_config.m_caName;
+  // response = makeStringBlock(CAPrefix, caName.toUri());
+  response = makeNestedBlock(CAPrefix, caName);
+
+  // ca-info
+  const auto& pib = m_keyChain.getPib();
+  const auto& identity = pib.getIdentity(m_config.m_caName);
+  const auto& cert = identity.getDefaultKey().getDefaultCertificate();
+  std::string caInfo = "";
+  if (m_config.m_caInfo == "") {
+    caInfo = "Issued by " + cert.getSignature().getKeyLocator().getName().toUri();
+  }
+  else {
+    caInfo = m_config.m_caInfo;
+  }
+
+  response.push_back(makeStringBlock(CAInfo, caInfo));
+
+
+  // parameter-key (Not implemented yet)
+  for() {
+    response.push_back(makeStringBlock(ParameterKey, ""));
+  }
+
+  // TODO: need to convert from days to seconds
+  response.push_back(makeNonNegativeIntegerBlock(MaxValidityPeriod, m_validityPeriod));
+
+  // certificate
+  response.push_back(makeNestedBlock(CACertificate, cert));
+  response.parse();
+
+  return response;
+}
+
 
 JsonSection
 CaModule::genNewResponseJson(const std::string& ecdhKey, const std::string& salt,

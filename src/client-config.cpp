@@ -19,6 +19,7 @@
  */
 
 #include "client-config.hpp"
+#include "tlv.hpp"
 
 #include <ndn-cxx/util/io.hpp>
 #include <fstream>
@@ -83,17 +84,21 @@ ClientConfig::save(const std::string& fileName)
 }
 
 ClientCaItem
-ClientConfig::extractCaItem(const JsonSection& configSection)
+ClientConfig::extractCaItem(const Block& contentBlock)
 {
   ClientCaItem item;
-  item.m_caName = Name(configSection.get("ca-prefix", ""));
+  item.m_caName = Name(readString(contentBlock.get(CAPrefix)));
   if (item.m_caName.empty()) {
     BOOST_THROW_EXCEPTION(Error("Cannot read ca-prefix from the config file"));
   }
-  item.m_caInfo = configSection.get("ca-info", "");
-  item.m_probe = configSection.get("probe", "");
-  std::istringstream ss(configSection.get("certificate", ""));
-  auto anchor = io::load<security::v2::Certificate>(ss);
+  item.m_caInfo = readString(contentBlock.get(CAInfo));
+  // item.m_probe = configSection.get("probe", "");
+
+  security::v2::Certificate anchor = contentBlock.get(CACertificate);
+
+  //std::istringstream ss(configSection.get("certificate", ""));
+  //auto anchor = io::load<security::v2::Certificate>(ss);
+
   if (anchor == nullptr) {
     BOOST_THROW_EXCEPTION(Error("Cannot load the certificate from config file"));
   }
