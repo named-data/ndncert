@@ -48,12 +48,12 @@ ChallengeEmail::ChallengeEmail(const std::string& scriptPath,
 
 // For CA
 void
-ChallengeEmail::handleChallengeRequest(const JsonSection& params, CertificateRequest& request)
+ChallengeEmail::handleChallengeRequest(const Block& params, CertificateRequest& request)
 {
   auto currentTime = time::system_clock::now();
   if (request.m_challengeStatus == "") {
     // for the first time, init the challenge
-    std::string emailAddress = params.get(JSON_EMAIL, "");
+    std::string emailAddress = readString(params.get(tlv_parameter_value));
     if (!isValidEmailAddress(emailAddress)) {
       request.m_status = STATUS_FAILURE;
       request.m_challengeStatus = FAILURE_INVALID_EMAIL;
@@ -91,7 +91,7 @@ ChallengeEmail::handleChallengeRequest(const JsonSection& params, CertificateReq
   else if (request.m_challengeStatus == NEED_CODE || request.m_challengeStatus == WRONG_CODE) {
     _LOG_TRACE("Challenge Interest arrives. Challenge Status: " << request.m_challengeStatus);
     // the incoming interest should bring the pin code
-    std::string givenCode = params.get(JSON_CODE, "");
+    std::string givenCode = readString(params.get(tlv_parameter_value));
     const auto realCode = request.m_challengeSecrets.get<std::string>(JSON_CODE);
     if (currentTime - time::fromIsoString(request.m_challengeTp) >= m_secretLifetime) {
       // secret expires
@@ -176,6 +176,32 @@ ChallengeEmail::genChallengeRequestJson(int status, const std::string& challenge
     _LOG_ERROR("Client's status and challenge status are wrong");
   }
   return result;
+}
+
+Block
+ChallengeEmail::genChallengeRequestTLV(int status, const std::string& challengeStatus, const JsonSection& params)
+{
+  Block request = makeEmptyBlock(tlv_encrypted_payload);
+  if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
+    request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
+    request.push_back(makeStringBlock(tlv_parameter_key, JSON_EMAIL));
+    request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_EMAIL,"")));
+  }
+  else if (status == STATUS_CHALLENGE && challengeStatus == NEED_CODE) {
+    request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
+    request.push_back(makeStringBlock(tlv_parameter_key, JSON_CODE));
+    request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_CODE,"")));
+  }
+  else if (status == STATUS_CHALLENGE && challengeStatus == WRONG_CODE) {
+    request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
+    request.push_back(makeStringBlock(tlv_parameter_key, JSON_CODE));
+    request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_CODE,"")));
+  }
+  else {
+    _LOG_ERROR("Client's status and challenge status are wrong");
+  }
+  request.parse();
+  return request;
 }
 
 bool

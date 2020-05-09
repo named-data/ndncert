@@ -22,6 +22,10 @@
 #include "logging.hpp"
 #include "challenge-module.hpp"
 #include "crypto-support/enc-tlv.hpp"
+#include "protocol-detail/info.hpp"
+#include "protocol-detail/probe.hpp"
+#include "protocol-detail/new.hpp"
+#include "protocol-detail/challenge.hpp"
 #include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
@@ -59,10 +63,10 @@ ClientModule::generateInfoInterest(const Name& caName)
 }
 
 bool
-ClientModule::verifyProbeInfoResponse(const Block& contentBlock)
+ClientModule::verifyInfoResponse(const Data& reply)
 {
   // parse the ca item
-  auto caItem = ClientConfig::extractCaItem(contentBlock);
+  auto caItem = INFO::decodeClientConfigFromContent(reply.getContent());
 
   // verify the probe Data's sig
   if (!security::verifySignature(reply, caItem.m_anchor)) {
@@ -73,12 +77,12 @@ ClientModule::verifyProbeInfoResponse(const Block& contentBlock)
 }
 
 void
-ClientModule::addCaFromProbeInfoResponse(const Data& reply)
+ClientModule::addCaFromInfoResponse(const Data& reply)
 {
   const Block& contentBlock = reply.getContent();
 
   // parse the ca item
-  auto caItem = ClientConfig::extractCaItem(contentBlock);
+  auto caItem = INFO::decodeClientConfigFromContent(contentBlock);
 
   // update the local config
   bool findItem = false;
@@ -101,8 +105,9 @@ ClientModule::generateProbeInterest(const ClientCaItem& ca, const std::string& p
   auto interest = make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
-  auto paramJson = genProbeRequestJson(ca, probeInfo);
-  interest->setApplicationParameters(paramFromJson(paramJson));
+  interest->setApplicationParameters(
+    PROBE::encodeApplicationParametersFromProbeInfo(ca, probeInfo)
+  );
 
   // update local state
   m_ca = ca;
@@ -116,12 +121,12 @@ ClientModule::onProbeResponse(const Data& reply)
     _LOG_ERROR("Cannot verify data signature from " << m_ca.m_caName.toUri());
     return;
   }
-  auto contentJson = getJsonFromData(reply);
+
+  auto contentTLV = reply.getContent();
 
   // read the available name and put it into the state
-  auto nameUri = contentJson.get(JSON_CA_NAME, "");
-  if (nameUri != "") {
-    m_identityName = Name(nameUri);
+  if (contentTLV.get(tlv_probe_response).hasValue()) {
+    m_identityName.wireDecode(contentTLV.get(tlv_probe_response));
   }
   else {
     NDN_LOG_TRACE("The JSON_CA_NAME is empty.");
@@ -194,7 +199,9 @@ ClientModule::generateNewInterest(const time::system_clock::TimePoint& notBefore
   auto interest = make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
-  interest->setApplicationParameters(paramFromJson(genNewRequestJson(m_ecdh.getBase64PubKey(), certRequest, probeToken)));
+  interest->setApplicationParameters(
+    NEW::encodeApplicationParameters(m_ecdh.getBase64PubKey(), certRequest, probeToken)
+  );
 
   // sign the Interest packet
   m_keyChain.sign(*interest, signingByKey(m_key.getName()));
@@ -208,11 +215,11 @@ ClientModule::onNewResponse(const Data& reply)
     _LOG_ERROR("Cannot verify data signature from " << m_ca.m_caName.toUri());
     return std::list<std::string>();
   }
-  auto contentJson = getJsonFromData(reply);
+  auto contentTLV = reply.getContent();
 
   // ECDH
-  const auto& peerKeyBase64Str = contentJson.get(JSON_CA_ECDH, "");
-  const auto& saltStr = contentJson.get(JSON_CA_SALT, "");
+  const auto& peerKeyBase64Str = readString(contentTLV.get(tlv_ecdh_pub));  
+  const auto& saltStr = readString(contentTLV.get(tlv_salt));
   uint64_t saltInt = std::stoull(saltStr);
   m_ecdh.deriveSecret(peerKeyBase64Str);
 
@@ -221,22 +228,22 @@ ClientModule::onNewResponse(const Data& reply)
        (uint8_t*)&saltInt, sizeof(saltInt), m_aesKey, sizeof(m_aesKey));
 
   // update state
-  m_status = contentJson.get(JSON_CA_STATUS, 0);
-  m_requestId = contentJson.get(JSON_CA_REQUEST_ID, "");
-
-  auto challengesJson = contentJson.get_child(JSON_CA_CHALLENGES);
+  m_status = readNonNegativeInteger(contentTLV.get(tlv_status));
+  m_requestId = readString(contentTLV.get(tlv_request_id));
   m_challengeList.clear();
-  for (const auto& challengeJson : challengesJson) {
-    m_challengeList.push_back(challengeJson.second.get(JSON_CA_CHALLENGE_ID, ""));
+  for (auto const& element : contentTLV.elements()) {
+    if (element.type() == tlv_challenge) {
+      m_challengeList.push_back(readString(element));
+    }
   }
   return m_challengeList;
 }
 
 shared_ptr<Interest>
-ClientModule::generateChallengeInterest(const JsonSection& paramJson)
+ClientModule::generateChallengeInterest(const Block& challengeRequest)
 {
-  m_challengeType = paramJson.get(JSON_CLIENT_SELECTED_CHALLENGE, "");
-
+  m_challengeType = readString(challengeRequest.get(tlv_selected_challenge));
+  
   Name interestName = m_ca.m_caName;
   interestName.append("CA").append("CHALLENGE").append(m_requestId);
   auto interest = make_shared<Interest>(interestName);
@@ -244,11 +251,9 @@ ClientModule::generateChallengeInterest(const JsonSection& paramJson)
   interest->setCanBePrefix(false);
 
   // encrypt the Interest parameters
-  std::stringstream ss;
-  boost::property_tree::write_json(ss, paramJson);
-  auto payload = ss.str();
+  auto payload = challengeRequest.getBuffer();
   auto paramBlock = encodeBlockWithAesGcm128(tlv::ApplicationParameters, m_aesKey,
-                                             (const uint8_t*)payload.c_str(), payload.size(), (const uint8_t*)"test", strlen("test"));
+                                             payload->data(), payload->size(), (const uint8_t*)"test", strlen("test"));
   interest->setApplicationParameters(paramBlock);
 
   m_keyChain.sign(*interest, signingByKey(m_key.getName()));
@@ -263,17 +268,19 @@ ClientModule::onChallengeResponse(const Data& reply)
     return;
   }
   auto result = decodeBlockWithAesGcm128(reply.getContent(), m_aesKey, (const uint8_t*)"test", strlen("test"));
-  std::string payload((const char*)result.data(), result.size());
-  std::istringstream ss(payload);
-  JsonSection contentJson;
-  boost::property_tree::json_parser::read_json(ss, contentJson);
+  bool isSuccess;
+  Block contentTLV;
+
+  std::tie<bool, Block>(isSuccess, contentTLV) = Block::fromBuffer(result.data(), result.size());
 
   // update state
-  m_status = contentJson.get(JSON_CA_STATUS, 0);
-  m_challengeStatus = contentJson.get(JSON_CHALLENGE_STATUS, "");
-  m_remainingTries = contentJson.get(JSON_CHALLENGE_REMAINING_TRIES, 0);
-  m_freshBefore = time::system_clock::now() + time::seconds(contentJson.get(JSON_CHALLENGE_REMAINING_TIME, 0));
-  m_issuedCertName = contentJson.get(JSON_CHALLENGE_ISSUED_CERT_NAME, "");
+  m_status = readNonNegativeInteger(contentTLV.get(tlv_status));
+  m_challengeStatus = readString(contentTLV.get(tlv_challenge_status));
+  m_remainingTries = readNonNegativeInteger(contentTLV.get(tlv_remaining_tries));
+  m_freshBefore = time::system_clock::now() +
+                  time::seconds(readNonNegativeInteger(contentTLV.get(tlv_remaining_time)));
+
+  m_issuedCertName.wireDecode(contentTLV.get(tlv_issued_cert_name));
 }
 
 shared_ptr<Interest>

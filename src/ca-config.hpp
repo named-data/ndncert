@@ -42,7 +42,7 @@ namespace ndncert {
  * @p vector, input, a list of parameter key-value pair used for name assignment.
  * @return a vector containing the possible namespaces derived from the parameters.
  */
-using ProbeHandler = function<std::string /*identity name*/ (const JsonSection& json /*requester input*/)>;
+using ProbeHandler = function<std::string /*identity name*/ (const Block& tlv /*requester input*/)>;
 using NameAssignmentFunc = function<std::vector<std::string>(const std::vector<std::tuple<std::string, std::string>>)>;
 
 /**

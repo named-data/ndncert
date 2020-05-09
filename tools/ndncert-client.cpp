@@ -19,9 +19,7 @@
  */
 
 #include "challenge-module.hpp"
-#include "client-module.hpp"
-
-#include <csignal>
+#include "protocol-detail/info.hpp"
 #include <iostream>
 #include <string>
 
@@ -149,7 +147,7 @@ challengeCb(const Data& reply)
       it2->second.put("", *it1);
     }
   }
-  face.expressInterest(*client.generateChallengeInterest(challenge->genChallengeRequestJson(client.getApplicationStatus(),
+  face.expressInterest(*client.generateChallengeInterest(challenge->genChallengeRequestTLV(client.getApplicationStatus(),
                                                                                             client.getChallengeStatus(),
                                                                                             requirement)),
                        bind(&challengeCb, _2), bind(&onNackCb), bind(&timeoutCb));
@@ -208,21 +206,22 @@ newCb(const Data& reply)
       it2->second.put("", *it1);
     }
   }
-  face.expressInterest(*client.generateChallengeInterest(challenge->genChallengeRequestJson(client.getApplicationStatus(),
+  face.expressInterest(*client.generateChallengeInterest(challenge->genChallengeRequestTLV(client.getApplicationStatus(),
                                                                                             client.getChallengeStatus(),
                                                                                             requirement)),
                        bind(&challengeCb, _2), bind(&onNackCb), bind(&timeoutCb));
 }
 
 static void
-probeInfoCb(const Data& reply)
+InfoCb(const Data& reply)
 {
-  if (!client.verifyProbeInfoResponse(reply)) {
+  const Block& contentBlock = reply.getContent();
+
+  if (!client.verifyInfoResponse(reply)) {
     std::cerr << "The fetched CA information cannot be trusted because its integrity is broken" << std::endl;
     return;
   }
-  auto contentJson = ClientModule::getJsonFromData(reply);
-  auto caItem = ClientConfig::extractCaItem(contentJson);
+  auto caItem = INFO::decodeClientConfigFromContent(contentBlock);
 
   std::cerr << "Will use a new trust anchor, please double check the identity info: \n"
             << "This trust anchor information is signed by " << reply.getSignatureInfo().getKeyLocator()
@@ -235,7 +234,7 @@ probeInfoCb(const Data& reply)
   boost::algorithm::to_lower(answer);
   if (answer == "yes") {
     std::cerr << "You answered YES: new CA will be used" << std::endl;
-    client.addCaFromProbeInfoResponse(reply);
+    client.addCaFromInfoResponse(reply);
     // client.getClientConf().save(std::string(SYSCONFDIR) + "/ndncert/client.conf");
     startApplication();
   }
@@ -293,7 +292,7 @@ startApplication()
     std::string expectedCAName;
     getline(std::cin, expectedCAName);
     face.expressInterest(*client.generateInfoInterest(Name(expectedCAName)),
-                         bind(&probeInfoCb, _2), bind(&onNackCb), bind(&timeoutCb));
+                         bind(&InfoCb, _2), bind(&onNackCb), bind(&timeoutCb));
   }
   else {
     int caIndex;

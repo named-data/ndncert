@@ -53,7 +53,7 @@ public:
 
   // For CA
   void
-  handleChallengeRequest(const JsonSection& params, CertificateRequest& request) override;
+  handleChallengeRequest(const Block& params, CertificateRequest& request) override;
 
   // For Client
   JsonSection
@@ -61,6 +61,10 @@ public:
 
   JsonSection
   genChallengeRequestJson(int status, const std::string& challengeStatus, const JsonSection& params) override;
+
+  Block
+  genChallengeRequestTLV(int status, const std::string& challengeStatus, const JsonSection& params) override;
+
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   // challenge status

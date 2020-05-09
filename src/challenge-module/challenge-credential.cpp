@@ -78,13 +78,14 @@ ChallengeCredential::parseConfigFile()
 
 // For CA
 void
-ChallengeCredential::handleChallengeRequest(const JsonSection& params, CertificateRequest& request)
+ChallengeCredential::handleChallengeRequest(const Block& params, CertificateRequest& request)
 {
   if (m_trustAnchors.empty()) {
     parseConfigFile();
   }
   // load credential parameter
-  std::istringstream ss1(params.get(JSON_CREDENTIAL_CERT, ""));
+  // TODO: instead of string, should pass certificate byte value directly
+  std::istringstream ss1(readString(params.elements().at(1)));
   auto cert = io::load<security::v2::Certificate>(ss1);
   if (cert == nullptr) {
     _LOG_ERROR("Cannot load credential parameter: cert");
@@ -95,8 +96,9 @@ ChallengeCredential::handleChallengeRequest(const JsonSection& params, Certifica
   }
   ss1.str("");
   ss1.clear();
+
   // load self-signed data
-  std::istringstream ss2(params.get(JSON_CREDENTIAL_SELF, ""));
+  std::istringstream ss2(readString(params.elements().at(3)));
   auto self = io::load<Data>(ss2);
   if (self == nullptr) {
     _LOG_TRACE("Cannot load credential parameter: self-signed cert");
@@ -157,6 +159,25 @@ ChallengeCredential::genChallengeRequestJson(int status, const std::string& chal
   }
   return result;
 }
+
+Block
+ChallengeCredential::genChallengeRequestTLV(int status, const std::string& challengeStatus, const JsonSection& params)
+{
+  Block request = makeEmptyBlock(tlv_encrypted_payload);
+  if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
+    request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
+    request.push_back(makeStringBlock(tlv_parameter_key, JSON_CREDENTIAL_CERT));
+    request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_CREDENTIAL_CERT,"")));
+    request.push_back(makeStringBlock(tlv_parameter_key, JSON_CREDENTIAL_SELF));
+    request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_CREDENTIAL_SELF,"")));
+  }
+  else {
+    _LOG_ERROR("Client's status and challenge status are wrong");
+  }
+  request.parse();
+  return request;
+}
+
 
 } // namespace ndncert
 } // namespace ndn

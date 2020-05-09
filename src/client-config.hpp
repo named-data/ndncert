@@ -106,6 +106,9 @@ public:
   static ClientCaItem
   extractCaItem(const JsonSection& configSection);
 
+  static ClientCaItem
+  extractCaItem(const Block& configSection);
+
 public:
   std::list<ClientCaItem> m_caItems;
   std::string m_localNdncertAnchor;

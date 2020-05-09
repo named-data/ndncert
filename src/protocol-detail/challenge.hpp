@@ -18,22 +18,19 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_PROTOCOL_DETAIL_INFO_HPP
-#define NDNCERT_PROTOCOL_DETAIL_INFO_HPP
+#ifndef NDNCERT_PROTOCOL_DETAIL_CHALLENGE_HPP
+#define NDNCERT_PROTOCOL_DETAIL_CHALLENGE_HPP
 
-#include "../ca-config.hpp"
-#include "../client-config.hpp"
+#include "../certificate-request.hpp"
+#include <ndn-cxx/encoding/block.hpp>
 
 namespace ndn {
 namespace ndncert {
 
-class INFO {
+class CHALLENGE {
 public:
   static Block
-  encodeContentFromCAConfig(const CaConfig& caConfig, const security::v2::Certificate& certificate);
-
-  static ClientCaItem
-  decodeClientConfigFromContent(const Block& block);
+  encodeDataPayload(const CertificateRequest& request);
 };
 
 }  // namespace ndncert

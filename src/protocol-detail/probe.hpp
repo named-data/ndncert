@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_PROTOCOL_DETAIL_INFO_HPP
-#define NDNCERT_PROTOCOL_DETAIL_INFO_HPP
+#ifndef NDNCERT_PROTOCOL_DETAIL_PROBE_HPP
+#define NDNCERT_PROTOCOL_DETAIL_PROBE_HPP
 
 #include "../ca-config.hpp"
 #include "../client-config.hpp"
@@ -27,13 +27,27 @@
 namespace ndn {
 namespace ndncert {
 
-class INFO {
-public:
-  static Block
-  encodeContentFromCAConfig(const CaConfig& caConfig, const security::v2::Certificate& certificate);
+class PROBE {
 
-  static ClientCaItem
-  decodeClientConfigFromContent(const Block& block);
+public:
+  /**
+   * @brief Error that can be thrown from PROBE
+   */
+  class Error : public std::runtime_error
+  {
+    public:
+    using std::runtime_error::runtime_error;
+  };
+
+public:
+  static std::vector<std::string>
+  parseProbeComponents(const std::string& probe);
+
+  static Block
+  encodeApplicationParametersFromProbeInfo(const ClientCaItem& ca, const std::string& probeInfo);
+
+  static Block
+  encodeDataContent(const Name& identifier, const std::string& m_probe, const Block& parameterTLV);
 };
 
 }  // namespace ndncert

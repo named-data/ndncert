@@ -66,7 +66,7 @@ public:
 
   // For CA
   virtual void
-  handleChallengeRequest(const JsonSection& params, CertificateRequest& request) = 0;
+  handleChallengeRequest(const Block& params, CertificateRequest& request) = 0;
 
   // For Client
   virtual JsonSection
@@ -74,6 +74,9 @@ public:
 
   virtual JsonSection
   genChallengeRequestJson(int status, const std::string& challengeStatus, const JsonSection& params) = 0;
+
+  virtual Block
+  genChallengeRequestTLV(int status, const std::string& challengeStatus, const JsonSection& params) = 0;
 
   // helpers
   static std::string

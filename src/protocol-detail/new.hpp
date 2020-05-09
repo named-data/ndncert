@@ -18,22 +18,26 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_PROTOCOL_DETAIL_INFO_HPP
-#define NDNCERT_PROTOCOL_DETAIL_INFO_HPP
+#ifndef NDNCERT_PROTOCOL_DETAIL_NEW_HPP
+#define NDNCERT_PROTOCOL_DETAIL_NEW_HPP
 
-#include "../ca-config.hpp"
-#include "../client-config.hpp"
+#include "../certificate-request.hpp"
+#include "ndn-cxx/encoding/block.hpp"
+#include <ndn-cxx/security/v2/certificate.hpp>
 
 namespace ndn {
 namespace ndncert {
 
-class INFO {
+class NEW {
 public:
   static Block
-  encodeContentFromCAConfig(const CaConfig& caConfig, const security::v2::Certificate& certificate);
+  encodeApplicationParameters(const std::string& ecdhPub, const security::v2::Certificate& certRequest,
+                                const shared_ptr<Data>& probeToken);
 
-  static ClientCaItem
-  decodeClientConfigFromContent(const Block& block);
+  static Block
+  encodeDataContent(const std::string& ecdhKey, const std::string& salt,
+                             const CertificateRequest& request,
+                             const std::list<std::string>& challenges);
 };
 
 }  // namespace ndncert

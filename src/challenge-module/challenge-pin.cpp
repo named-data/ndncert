@@ -42,7 +42,7 @@ ChallengePin::ChallengePin(const size_t& maxAttemptTimes, const time::seconds& s
 
 // For CA
 void
-ChallengePin::handleChallengeRequest(const JsonSection& params, CertificateRequest& request)
+ChallengePin::handleChallengeRequest(const Block& params, CertificateRequest& request)
 {
   auto currentTime = time::system_clock::now();
   if (request.m_challengeStatus == "") {
@@ -64,7 +64,7 @@ ChallengePin::handleChallengeRequest(const JsonSection& params, CertificateReque
   else if (request.m_challengeStatus == NEED_CODE || request.m_challengeStatus == WRONG_CODE) {
     _LOG_TRACE("Challenge Interest arrives. Challenge Status: " << request.m_challengeStatus);
     // the incoming interest should bring the pin code
-    std::string givenCode = params.get(JSON_PIN_CODE, "");
+    std::string givenCode = readString(params.get(tlv_parameter_value));
     const auto realCode = request.m_challengeSecrets.get<std::string>(JSON_PIN_CODE);
     if (currentTime - time::fromIsoString(request.m_challengeTp) >= m_secretLifetime) {
       // secret expires
@@ -151,5 +151,29 @@ ChallengePin::genChallengeRequestJson(int status, const std::string& challengeSt
   return result;
 }
 
+Block
+ChallengePin::genChallengeRequestTLV(int status, const std::string& challengeStatus, const JsonSection& params)
+{
+  Block request = makeEmptyBlock(tlv_encrypted_payload);
+  if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
+    // do nothing
+    request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
+  }
+  else if (status == STATUS_CHALLENGE && challengeStatus == NEED_CODE) {
+    request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
+    request.push_back(makeStringBlock(tlv_parameter_key, JSON_PIN_CODE));
+    request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_PIN_CODE,"")));
+  }
+  else if (status == STATUS_CHALLENGE && challengeStatus == WRONG_CODE) {
+    request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
+    request.push_back(makeStringBlock(tlv_parameter_key, JSON_PIN_CODE));
+    request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_PIN_CODE,"")));
+  }
+  else {
+    _LOG_ERROR("Client's status and challenge status are wrong");
+  }
+  request.parse();
+  return request;
+}
 } // namespace ndncert
 } // namespace ndn

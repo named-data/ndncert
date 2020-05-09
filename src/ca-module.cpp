@@ -22,7 +22,10 @@
 #include "challenge-module.hpp"
 #include "logging.hpp"
 #include "crypto-support/enc-tlv.hpp"
-#include "tlv.hpp"
+#include "protocol-detail/info.hpp"
+#include "protocol-detail/probe.hpp"
+#include "protocol-detail/new.hpp"
+#include "protocol-detail/challenge.hpp"
 #include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
@@ -120,7 +123,11 @@ void
 CaModule::onInfo(const Interest& request)
 {
   _LOG_TRACE("Received INFO request");
-  Block contentTLV = genInfoResponseTLV();
+
+  const auto& pib = m_keyChain.getPib();
+  const auto& identity = pib.getIdentity(m_config.m_caName);
+  const auto& cert = identity.getDefaultKey().getDefaultCertificate();
+  Block contentTLV = INFO::encodeContentFromCAConfig(m_config, cert);
   Data result;
 
   result.setName(request.getName());
@@ -138,19 +145,19 @@ CaModule::onProbe(const Interest& request)
 {
   // PROBE Naming Convention: /<CA-Prefix>/CA/PROBE/[ParametersSha256DigestComponent]
   _LOG_TRACE("Received PROBE request");
-  JsonSection contentJson;
 
   // process PROBE requests: find an available name
   std::string availableId;
-  const auto& parameterJson = jsonFromBlock(request.getApplicationParameters());
-  if (parameterJson.empty()) {
-    _LOG_ERROR("Empty JSON obtained from the Interest parameter.");
+  const auto& parameterTLV = request.getApplicationParameters();
+  if (!parameterTLV.hasValue()) {
+    _LOG_ERROR("Empty TLV obtained from the Interest parameter.");
     return;
   }
   //std::string probeInfoStr = parameterJson.get(JSON_CLIENT_PROBE_INFO, "");
+  // TODO: m_probeHandler is never set
   if (m_config.m_probeHandler) {
     try {
-      availableId = m_config.m_probeHandler(parameterJson);
+      availableId = m_config.m_probeHandler(parameterTLV);
     }
     catch (const std::exception& e) {
       _LOG_TRACE("Cannot find PROBE input from PROBE parameters: " << e.what());
@@ -164,11 +171,11 @@ CaModule::onProbe(const Interest& request)
   Name newIdentityName = m_config.m_caName;
   newIdentityName.append(availableId);
   _LOG_TRACE("Handle PROBE: generate an identity " << newIdentityName);
-  contentJson = genProbeResponseJson(newIdentityName.toUri(), m_config.m_probe, parameterJson);
+  Block contentTLV = PROBE::encodeDataContent(newIdentityName.toUri(), m_config.m_probe, parameterTLV);
 
   Data result;
   result.setName(request.getName());
-  result.setContent(dataContentFromJson(contentJson));
+  result.setContent(contentTLV);
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
   m_keyChain.sign(result, signingByIdentity(m_config.m_caName));
   m_face.put(result);
@@ -180,14 +187,16 @@ CaModule::onNew(const Interest& request)
 {
   // NEW Naming Convention: /<CA-prefix>/CA/NEW/[SignedInterestParameters_Digest]
   // get ECDH pub key and cert request
-  const auto& parameterJson = jsonFromBlock(request.getApplicationParameters());
-  if (parameterJson.empty()) {
-    _LOG_ERROR("Empty JSON obtained from the Interest parameter.");
+  const auto& parameterTLV = request.getApplicationParameters();
+  if (!parameterTLV.hasValue()) {
+    _LOG_ERROR("Empty TLV obtained from the Interest parameter.");
     return;
   }
-  std::string peerKeyBase64 = parameterJson.get(JSON_CLIENT_ECDH, "");
+
+  std::string peerKeyBase64 = readString(parameterTLV.get(tlv_ecdh_pub));
+
   if (peerKeyBase64 == "") {
-    _LOG_ERROR("Empty JSON_CLIENT_ECDH obtained from the Interest parameter.");
+    _LOG_ERROR("Empty ECDH PUB obtained from the Interest parameter.");
     return;
   }
 
@@ -207,11 +216,10 @@ CaModule::onNew(const Interest& request)
        (uint8_t*)&saltInt, sizeof(saltInt), m_aesKey, sizeof(m_aesKey));
 
   // parse certificate request
-  std::string certRequestStr = parameterJson.get(JSON_CLIENT_CERT_REQ, "");
+  Block cert_req = parameterTLV.get(tlv_cert_request);
   shared_ptr<security::v2::Certificate> clientCert = nullptr;
   try {
-    std::stringstream ss(certRequestStr);
-    clientCert = io::load<security::v2::Certificate>(ss);
+    clientCert->wireDecode(cert_req);
   }
   catch (const std::exception& e) {
     _LOG_ERROR("Unrecognized certificate request: " << e.what());
@@ -230,34 +238,6 @@ CaModule::onNew(const Interest& request)
     return;
   }
 
-  // parse probe token if any
-  std::string probeTokenStr = parameterJson.get("probe-token", "");
-  shared_ptr<Data> probeToken = nullptr;
-  if (probeTokenStr != "") {
-    try {
-      std::stringstream ss(probeTokenStr);
-      probeToken = io::load<Data>(ss);
-    }
-    catch (const std::exception& e) {
-      _LOG_ERROR("Unrecognized probe token: " << e.what());
-      return;
-    }
-  }
-  if (probeToken == nullptr && m_config.m_probe != "") {
-    // the CA requires PROBE before NEW
-    _LOG_ERROR("CA requires PROBE but no PROBE token is found in NEW Interest.");
-    return;
-  }
-  else if (probeToken != nullptr) {
-    // check whether the carried probe token is a PROBE Data packet
-    Name prefix = m_config.m_caName;
-    prefix.append("CA").append("PROBE");
-    if (!prefix.isPrefixOf(probeToken->getName())) {
-      _LOG_ERROR("Carried PROBE token is not a valid PROBE Data packet.");
-      return;
-    }
-  }
-
   // verify the self-signed certificate, the request, and the token
   if (!m_config.m_caName.isPrefixOf(clientCert->getName()) // under ca prefix
       || !security::v2::Certificate::isValidName(clientCert->getName()) // is valid cert name
@@ -273,22 +253,11 @@ CaModule::onNew(const Interest& request)
     _LOG_ERROR("Interest with bad signature.");
     return;
   }
-  if (probeToken != nullptr) {
-    const auto& pib = m_keyChain.getPib();
-    const auto& key = pib.getIdentity(m_config.m_caName).getDefaultKey();
-    const auto& caCert = key.getDefaultCertificate();
-    if (!security::verifySignature(*probeToken, caCert)) {
-      _LOG_ERROR("PROBE Token with bad signature.");
-      return;
-    }
-  }
 
   // create new request instance
   std::string requestId = std::to_string(random::generateWord64());
   CertificateRequest certRequest(m_config.m_caName, requestId, STATUS_BEFORE_CHALLENGE, *clientCert);
-  if (probeToken != nullptr) {
-    certRequest.setProbeToken(probeToken);
-  }
+
   try {
     m_storage->addRequest(certRequest);
   }
@@ -300,10 +269,10 @@ CaModule::onNew(const Interest& request)
   Data result;
   result.setName(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  result.setContent(dataContentFromJson(genNewResponseJson(myEcdhPubKeyBase64,
-                                                           std::to_string(saltInt),
-                                                           certRequest,
-                                                           m_config.m_supportedChallenges)));
+  result.setContent(NEW::encodeDataContent(myEcdhPubKeyBase64,
+                                      std::to_string(saltInt),
+                                      certRequest,
+                                      m_config.m_supportedChallenges));
   m_keyChain.sign(result, signingByIdentity(m_config.m_caName));
   m_face.put(result);
 
@@ -328,48 +297,45 @@ CaModule::onChallenge(const Interest& request)
     return;
   }
   // decrypt the parameters
-  Buffer paramJsonPayload;
+  Buffer paramTLVPayload;
   try {
-    paramJsonPayload = decodeBlockWithAesGcm128(request.getApplicationParameters(), m_aesKey,
+    paramTLVPayload = decodeBlockWithAesGcm128(request.getApplicationParameters(), m_aesKey,
                                                 (uint8_t*)"test", strlen("test"));
   }
   catch (const std::exception& e) {
     _LOG_ERROR("Cannot successfully decrypt the Interest parameters: " << e.what());
     return;
   }
-  if (paramJsonPayload.size() == 0) {
+  if (paramTLVPayload.size() == 0) {
     _LOG_ERROR("Got an empty buffer from content decryption.");
     return;
   }
-  std::string paramJsonStr((const char*)paramJsonPayload.data(), paramJsonPayload.size());
-  std::istringstream ss(paramJsonStr);
-  JsonSection paramJson;
-  try {
-    boost::property_tree::json_parser::read_json(ss, paramJson);
-  }
-  catch (const std::exception& e) {
-    _LOG_ERROR("Cannot read JSON from decrypted content: " << e.what());
-    return;
-  }
+
+  // TODO: any simpler method?
+  bool isSucess;
+  Block paramTLV;
+  std::tie<bool, Block>(isSucess, paramTLV) =  Block::fromBuffer(paramTLVPayload.data(), paramTLVPayload.size());
 
   // load the corresponding challenge module
-  std::string challengeType = paramJson.get(JSON_CLIENT_SELECTED_CHALLENGE, "");
+  std::string challengeType = readString(paramTLV.get(tlv_selected_challenge));
   auto challenge = ChallengeModule::createChallengeModule(challengeType);
-  JsonSection contentJson;
+
+  Block contentTLV;
+
   if (challenge == nullptr) {
     _LOG_TRACE("Unrecognized challenge type " << challengeType);
     certRequest.m_status = STATUS_FAILURE;
     certRequest.m_challengeStatus = CHALLENGE_STATUS_UNKNOWN_CHALLENGE;
-    contentJson = genChallengeResponseJson(certRequest);
+    contentTLV = CHALLENGE::encodeDataPayload(certRequest);
   }
   else {
     _LOG_TRACE("CHALLENGE module to be load: " << challengeType);
     // let challenge module handle the request
-    challenge->handleChallengeRequest(paramJson, certRequest);
+    challenge->handleChallengeRequest(paramTLV, certRequest);
     if (certRequest.m_status == STATUS_FAILURE) {
       // if challenge failed
       m_storage->deleteRequest(certRequest.m_requestId);
-      contentJson = genChallengeResponseJson(certRequest);
+      contentTLV = CHALLENGE::encodeDataPayload(certRequest);
       _LOG_TRACE("Challenge failed");
     }
     else if (certRequest.m_status == STATUS_PENDING) {
@@ -389,9 +355,12 @@ CaModule::onChallenge(const Interest& request)
       if (m_config.m_statusUpdateCallback) {
         m_config.m_statusUpdateCallback(certRequest);
       }
-      contentJson = genChallengeResponseJson(certRequest);
-      contentJson.add(JSON_CA_CERT_ID, readString(issuedCert.getName().at(-1)));
-      contentJson.add(JSON_CHALLENGE_ISSUED_CERT_NAME, issuedCert.getName().toUri());
+
+      contentTLV = CHALLENGE::encodeDataPayload(certRequest);
+      contentTLV.push_back(makeNestedBlock(tlv_issued_cert_name, issuedCert.getName()));
+      contentTLV.parse();
+
+      //contentJson.add(JSON_CA_CERT_ID, readString(issuedCert.getName().at(-1)));
       _LOG_TRACE("Challenge succeeded. Certificate has been issued");
     }
     else {
@@ -402,7 +371,7 @@ CaModule::onChallenge(const Interest& request)
         _LOG_TRACE("Cannot update request instance: " << e.what());
         return;
       }
-      contentJson = genChallengeResponseJson(certRequest);
+      contentTLV = CHALLENGE::encodeDataPayload(certRequest);
       _LOG_TRACE("No failure no success. Challenge moves on");
     }
   }
@@ -412,11 +381,9 @@ CaModule::onChallenge(const Interest& request)
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
 
   // encrypt the content
-  std::stringstream ss2;
-  boost::property_tree::write_json(ss2, contentJson);
-  auto payload = ss2.str();
-  auto contentBlock = encodeBlockWithAesGcm128(tlv::Content, m_aesKey, (const uint8_t*)payload.c_str(),
-                                               payload.size(), (uint8_t*)"test", strlen("test"));
+  auto payload = contentTLV.getBuffer();
+  auto contentBlock = encodeBlockWithAesGcm128(tlv::Content, m_aesKey, payload->data(),
+                                               payload->size(), (uint8_t*)"test", strlen("test"));
   result.setContent(contentBlock);
   m_keyChain.sign(result, signingByIdentity(m_config.m_caName));
   m_face.put(result);
@@ -551,46 +518,6 @@ CaModule::genInfoResponseJson()
   root.put("certificate", ss.str());
   return root;
 }
-
-Block
-CaModule::genInfoResponseTLV()
-{
-  Block response;
-  // ca-prefix
-  Name caName = m_config.m_caName;
-  // response = makeStringBlock(CAPrefix, caName.toUri());
-  response = makeNestedBlock(CAPrefix, caName);
-
-  // ca-info
-  const auto& pib = m_keyChain.getPib();
-  const auto& identity = pib.getIdentity(m_config.m_caName);
-  const auto& cert = identity.getDefaultKey().getDefaultCertificate();
-  std::string caInfo = "";
-  if (m_config.m_caInfo == "") {
-    caInfo = "Issued by " + cert.getSignature().getKeyLocator().getName().toUri();
-  }
-  else {
-    caInfo = m_config.m_caInfo;
-  }
-
-  response.push_back(makeStringBlock(CAInfo, caInfo));
-
-
-  // parameter-key (Not implemented yet)
-  for() {
-    response.push_back(makeStringBlock(ParameterKey, ""));
-  }
-
-  // TODO: need to convert from days to seconds
-  response.push_back(makeNonNegativeIntegerBlock(MaxValidityPeriod, m_validityPeriod));
-
-  // certificate
-  response.push_back(makeNestedBlock(CACertificate, cert));
-  response.parse();
-
-  return response;
-}
-
 
 JsonSection
 CaModule::genNewResponseJson(const std::string& ecdhKey, const std::string& salt,

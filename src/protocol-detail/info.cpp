@@ -28,7 +28,14 @@ INFO::encodeContentFromCAConfig(const CaConfig& caConfig, const security::v2::Ce
 {
   auto content = makeEmptyBlock(tlv::Content);
   content.push_back(makeNestedBlock(tlv_ca_prefix, caConfig.m_caPrefix));
-  content.push_back(makeStringBlock(tlv_ca_info, caConfig.m_caInfo));
+  std::string caInfo = "";
+  if (caConfig.m_caInfo == "") {
+    caInfo = "Issued by " + certificate.getSignature().getKeyLocator().getName().toUri();
+  } else {
+    caInfo = caConfig.m_caInfo;
+  }
+  content.push_back(makeStringBlock(tlv_ca_info, caInfo));
+
   for (const auto& key : caConfig.m_probeParameterKeys) {
     content.push_back(makeStringBlock(tlv_parameter_key, key));
   }
