@@ -41,7 +41,7 @@ INFO::encodeContentFromCAConfig(const CaConfig& caConfig, const security::v2::Ce
   }
   content.push_back(makeNonNegativeIntegerBlock(tlv_max_validity_period, caConfig.m_maxValidityPeriod.count()));
   content.push_back(makeNestedBlock(tlv_ca_certificate, certificate));
-  content.parse();
+  content.encode();
   return content;
 }
 

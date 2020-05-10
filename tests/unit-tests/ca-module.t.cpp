@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE(Initialization)
 {
   util::DummyClientFace face(io, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
-  BOOST_CHECK_EQUAL(ca.getCaConf().m_caName, "/ndn");
+  BOOST_CHECK_EQUAL(ca.getCaConf().m_caPrefix, "/ndn");
 
   auto identity = addIdentity(Name("/ndn/site2"));
   auto key = identity.getDefaultKey();
@@ -61,23 +61,27 @@ BOOST_AUTO_TEST_CASE(HandleProbe)
 
   util::DummyClientFace face(io, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
-  ca.setProbeHandler([&] (const JsonSection& probeInfo) {
+  ca.setProbeHandler([&] (const Block& probeInfo) {
       return "example";
     });
   advanceClocks(time::milliseconds(20), 60);
 
   Interest interest("/ndn/CA/PROBE");
   interest.setCanBePrefix(false);
-  JsonSection paramJson;
-  paramJson.add(JSON_CLIENT_PROBE_INFO, "zhiyi");
-  interest.setApplicationParameters(ClientModule::paramFromJson(paramJson));
+
+  Block paramTLV = makeEmptyBlock(tlv::ApplicationParameters);
+  paramTLV.push_back(makeStringBlock(tlv_parameter_key, JSON_CLIENT_PROBE_INFO));
+  paramTLV.push_back(makeStringBlock(tlv_parameter_value, "zhiyi"));
+  paramTLV.encode();
+  interest.setApplicationParameters(paramTLV);
 
   int count = 0;
   face.onSendData.connect([&] (const Data& response) {
       count++;
       BOOST_CHECK(security::verifySignature(response, cert));
-      auto contentJson = ClientModule::getJsonFromData(response);
-      BOOST_CHECK_EQUAL(contentJson.get<std::string>(JSON_CA_NAME), "/ndn/example");
+      Block contentBlock = response.getContent();
+      contentBlock.parse();
+      BOOST_CHECK_EQUAL(readString(contentBlock.get(tlv_ca_prefix)), "/ndn/example");
     });
   face.receive(interest);
 
@@ -93,7 +97,7 @@ BOOST_AUTO_TEST_CASE(HandleInfo)
 
   util::DummyClientFace face(io, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
-  ca.setProbeHandler([&] (const JsonSection& probeInfo) {
+  ca.setProbeHandler([&] (const Block& probeInfo) {
       return "example";
     });
   advanceClocks(time::milliseconds(20), 60);
@@ -287,7 +291,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
       auto contentJson = ClientModule::getJsonFromData(response);
       client.onNewResponse(response);
       auto paramJson = pinChallenge.getRequirementForChallenge(client.m_status, client.m_challengeStatus);
-      challengeInterest = client.generateChallengeInterest(pinChallenge.genChallengeRequestJson(client.m_status,
+      challengeInterest = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
                                                                                                 client.m_challengeStatus,
                                                                                                 paramJson));
     }
@@ -300,7 +304,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
       BOOST_CHECK_EQUAL(client.m_challengeStatus, ChallengePin::NEED_CODE);
 
       auto paramJson = pinChallenge.getRequirementForChallenge(client.m_status, client.m_challengeStatus);
-      challengeInterest2 = client.generateChallengeInterest(pinChallenge.genChallengeRequestJson(client.m_status,
+      challengeInterest2 = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
                                                                                                  client.m_challengeStatus,
                                                                                                  paramJson));
     }
@@ -319,7 +323,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
         if (i.first == ChallengePin::JSON_PIN_CODE)
           i.second.put("", secret);
       }
-      challengeInterest3 = client.generateChallengeInterest(pinChallenge.genChallengeRequestJson(client.m_status,
+      challengeInterest3 = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
                                                                                                  client.m_challengeStatus,
                                                                                                  paramJson));
     }

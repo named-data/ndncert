@@ -50,7 +50,7 @@ NEW::encodeApplicationParameters(const std::string& ecdhPub, const security::v2:
 
   request.push_back(makeStringBlock(tlv_ecdh_pub, ecdhPub));
   request.push_back(makeNestedBlock(tlv_cert_request, certRequest));
-  request.parse();
+  request.encode();
   return request;
 }
 
@@ -67,7 +67,7 @@ NEW::encodeDataContent(const std::string& ecdhKey, const std::string& salt,
   for (const auto& entry: challenges) {
     response.push_back(makeStringBlock(tlv_challenge, entry));
   }
-  response.parse();
+  response.encode();
   return response;
 }
 

@@ -48,11 +48,12 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmail)
   auto cert = key.getDefaultCertificate();
   CertificateRequest request(Name("/ndn/site1"), "123", STATUS_BEFORE_CHALLENGE, cert);
 
-  JsonSection emailJson;
-  emailJson.put(ChallengeEmail::JSON_EMAIL, "zhiyi@cs.ucla.edu");
+  Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
+  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengeEmail::JSON_EMAIL));
+  paramTLV.push_back(makeStringBlock(tlv_parameter_value, "zhiyi@cs.ucla.edu"));
 
   ChallengeEmail challenge("./tests/unit-tests/test-send-email.sh");
-  challenge.handleChallengeRequest(emailJson, request);
+  challenge.handleChallengeRequest(paramTLV, request);
 
   BOOST_CHECK_EQUAL(request.m_status, STATUS_CHALLENGE);
   BOOST_CHECK_EQUAL(request.m_challengeStatus, ChallengeEmail::NEED_CODE);
@@ -97,11 +98,12 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithInvalidEmail)
   auto cert = key.getDefaultCertificate();
   CertificateRequest request(Name("/ndn/site1"), "123", STATUS_BEFORE_CHALLENGE, cert);
 
-  JsonSection emailJson;
-  emailJson.put(ChallengeEmail::JSON_EMAIL, "zhiyi@cs");
+  Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
+  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengeEmail::JSON_EMAIL));
+  paramTLV.push_back(makeStringBlock(tlv_parameter_value, "zhiyi@cs"));
 
   ChallengeEmail challenge;
-  challenge.handleChallengeRequest(emailJson, request);
+  challenge.handleChallengeRequest(paramTLV, request);
 
   BOOST_CHECK_EQUAL(request.m_challengeStatus, ChallengeEmail::FAILURE_INVALID_EMAIL);
   BOOST_CHECK_EQUAL(request.m_status, STATUS_FAILURE);
@@ -117,11 +119,12 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
   CertificateRequest request(Name("/ndn/site1"), "123", STATUS_CHALLENGE, ChallengeEmail::NEED_CODE,
                              "Email", time::toIsoString(time::system_clock::now()), 3600, 3, json, cert);
 
-  JsonSection requestJson;
-  requestJson.put(ChallengeEmail::JSON_CODE, "4567");
+  Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
+  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengeEmail::JSON_CODE));
+  paramTLV.push_back(makeStringBlock(tlv_parameter_value, "4567"));
 
   ChallengeEmail challenge;
-  challenge.handleChallengeRequest(requestJson, request);
+  challenge.handleChallengeRequest(paramTLV, request);
 
   BOOST_CHECK_EQUAL(request.m_challengeStatus, CHALLENGE_STATUS_SUCCESS);
   BOOST_CHECK_EQUAL(request.m_status, STATUS_PENDING);
@@ -138,11 +141,12 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithWrongCode)
   CertificateRequest request(Name("/ndn/site1"), "123", STATUS_CHALLENGE, ChallengeEmail::NEED_CODE,
                              "email", time::toIsoString(time::system_clock::now()), 3600, 3, json, cert);
 
-  JsonSection requestJson;
-  requestJson.put(ChallengeEmail::JSON_CODE, "7890");
+  Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
+  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengeEmail::JSON_CODE));
+  paramTLV.push_back(makeStringBlock(tlv_parameter_value, "7890"));
 
   ChallengeEmail challenge;
-  challenge.handleChallengeRequest(requestJson, request);
+  challenge.handleChallengeRequest(paramTLV, request);
 
   BOOST_CHECK_EQUAL(request.m_challengeStatus, ChallengeEmail::WRONG_CODE);
   BOOST_CHECK_EQUAL(request.m_status, STATUS_CHALLENGE);

@@ -42,7 +42,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmptyInfo)
   CertificateRequest request(Name("/ndn/site1"), "123", STATUS_BEFORE_CHALLENGE, cert);
 
   ChallengePin challenge;
-  challenge.handleChallengeRequest(JsonSection(), request);
+  challenge.handleChallengeRequest(makeEmptyBlock(tlv_encrypted_payload), request);
 
   BOOST_CHECK_EQUAL(request.m_status, STATUS_CHALLENGE);
   BOOST_CHECK_EQUAL(request.m_challengeStatus, ChallengePin::NEED_CODE);
@@ -59,11 +59,12 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
   CertificateRequest request(Name("/ndn/site1"), "123", STATUS_CHALLENGE, ChallengePin::NEED_CODE, "pin",
                              time::toIsoString(time::system_clock::now()), 3600, 3, secret, cert);
 
-  JsonSection paramJson;
-  paramJson.put(ChallengePin::JSON_PIN_CODE, "12345");
+  Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
+  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengePin::JSON_PIN_CODE));
+  paramTLV.push_back(makeStringBlock(tlv_parameter_value, "12345"));
 
   ChallengePin challenge;
-  challenge.handleChallengeRequest(paramJson, request);
+  challenge.handleChallengeRequest(paramTLV, request);
 
   BOOST_CHECK_EQUAL(request.m_status, STATUS_PENDING);
   BOOST_CHECK_EQUAL(request.m_challengeStatus, CHALLENGE_STATUS_SUCCESS);
@@ -80,11 +81,12 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithWrongCode)
   CertificateRequest request(Name("/ndn/site1"), "123", STATUS_CHALLENGE, ChallengePin::NEED_CODE, "pin",
                              time::toIsoString(time::system_clock::now()), 3600, 3, secret, cert);
 
-  JsonSection paramJson;
-  paramJson.put(ChallengePin::JSON_PIN_CODE, "45678");
+  Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
+  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengePin::JSON_PIN_CODE));
+  paramTLV.push_back(makeStringBlock(tlv_parameter_value, "45678"));
 
   ChallengePin challenge;
-  challenge.handleChallengeRequest(paramJson, request);
+  challenge.handleChallengeRequest(paramTLV, request);
 
   BOOST_CHECK_EQUAL(request.m_status, STATUS_CHALLENGE);
   BOOST_CHECK_EQUAL(request.m_challengeStatus, ChallengePin::WRONG_CODE);

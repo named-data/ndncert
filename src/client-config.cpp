@@ -102,28 +102,6 @@ ClientConfig::extractCaItem(const JsonSection& configSection)
   return item;
 }
 
-ClientCaItem
-ClientConfig::extractCaItem(const Block& contentBlock)
-{
-  ClientCaItem item;
-  item.m_caName = Name(readString(contentBlock.get(tlv_ca_prefix)));
-  if (item.m_caName.empty()) {
-    BOOST_THROW_EXCEPTION(Error("Cannot read ca-prefix from the config file"));
-  }
-  item.m_caInfo = readString(contentBlock.get(tlv_ca_info));
-  // item.m_probe = configSection.get("probe", "");
-
-  if (!contentBlock.get(tlv_ca_certificate).hasValue()) {
-    BOOST_THROW_EXCEPTION(Error("Cannot load the certificate from config file"));
-  }
-
-  security::v2::Certificate anchor;
-  anchor.wireDecode(contentBlock.get(tlv_ca_certificate));
-  item.m_anchor = anchor;
-
-  return item;
-}
-
 void
 ClientConfig::removeCaItem(const Name& caName)
 {

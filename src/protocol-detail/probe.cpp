@@ -62,7 +62,7 @@ PROBE::encodeApplicationParametersFromProbeInfo(const ClientCaItem& ca, const st
         makeStringBlock(tlv_parameter_value, arguments.at(i))
       );
   }
-  content.parse();
+  content.encode();
   return content;
 }
 
@@ -91,7 +91,7 @@ PROBE::encodeDataContent(const Name& identifier, const std::string& m_probe, con
 
   // TODO: Must be determined based on CA config
   content.push_back(makeEmptyBlock(tlv_allow_longer_name));
-  content.parse();
+  content.encode();
   return content;
 }
 

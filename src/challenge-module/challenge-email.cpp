@@ -50,6 +50,7 @@ ChallengeEmail::ChallengeEmail(const std::string& scriptPath,
 void
 ChallengeEmail::handleChallengeRequest(const Block& params, CertificateRequest& request)
 {
+  params.parse();
   auto currentTime = time::system_clock::now();
   if (request.m_challengeStatus == "") {
     // for the first time, init the challenge
@@ -200,7 +201,7 @@ ChallengeEmail::genChallengeRequestTLV(int status, const std::string& challengeS
   else {
     _LOG_ERROR("Client's status and challenge status are wrong");
   }
-  request.parse();
+  request.encode();
   return request;
 }
 

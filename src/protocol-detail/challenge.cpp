@@ -33,7 +33,7 @@ CHALLENGE::encodeDataPayload(const CertificateRequest& request)
   makeStringBlock(tlv_challenge_status, request.m_challengeStatus);
   makeNonNegativeIntegerBlock(tlv_remaining_tries, request.m_remainingTries);
   makeNonNegativeIntegerBlock(tlv_remaining_time, request.m_remainingTime);
-  response.parse();
+  response.encode();
   return response;
 }
 

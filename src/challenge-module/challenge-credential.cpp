@@ -80,6 +80,7 @@ ChallengeCredential::parseConfigFile()
 void
 ChallengeCredential::handleChallengeRequest(const Block& params, CertificateRequest& request)
 {
+  params.parse();
   if (m_trustAnchors.empty()) {
     parseConfigFile();
   }
@@ -174,10 +175,8 @@ ChallengeCredential::genChallengeRequestTLV(int status, const std::string& chall
   else {
     _LOG_ERROR("Client's status and challenge status are wrong");
   }
-  request.parse();
+  request.encode();
   return request;
 }
-
-
 } // namespace ndncert
 } // namespace ndn

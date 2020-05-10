@@ -149,12 +149,12 @@ CaModule::onProbe(const Interest& request)
   // process PROBE requests: find an available name
   std::string availableId;
   const auto& parameterTLV = request.getApplicationParameters();
+  parameterTLV.parse();
   if (!parameterTLV.hasValue()) {
     _LOG_ERROR("Empty TLV obtained from the Interest parameter.");
     return;
   }
   //std::string probeInfoStr = parameterJson.get(JSON_CLIENT_PROBE_INFO, "");
-  // TODO: m_probeHandler is never set
   if (m_config.m_probeHandler) {
     try {
       availableId = m_config.m_probeHandler(parameterTLV);
@@ -171,6 +171,7 @@ CaModule::onProbe(const Interest& request)
   Name newIdentityName = m_config.m_caName;
   newIdentityName.append(availableId);
   _LOG_TRACE("Handle PROBE: generate an identity " << newIdentityName);
+
   Block contentTLV = PROBE::encodeDataContent(newIdentityName.toUri(), m_config.m_probe, parameterTLV);
 
   Data result;
@@ -311,22 +312,20 @@ CaModule::onChallenge(const Interest& request)
     return;
   }
 
-  // TODO: any simpler method?
-  bool isSucess;
-  Block paramTLV;
-  std::tie<bool, Block>(isSucess, paramTLV) =  Block::fromBuffer(paramTLVPayload.data(), paramTLVPayload.size());
+  Block paramTLV = makeBinaryBlock(tlv_encrypted_payload, paramTLVPayload.data(), paramTLVPayload.size());
+  paramTLV.parse();
 
   // load the corresponding challenge module
   std::string challengeType = readString(paramTLV.get(tlv_selected_challenge));
   auto challenge = ChallengeModule::createChallengeModule(challengeType);
 
-  Block contentTLV;
+  Block payload;
 
   if (challenge == nullptr) {
     _LOG_TRACE("Unrecognized challenge type " << challengeType);
     certRequest.m_status = STATUS_FAILURE;
     certRequest.m_challengeStatus = CHALLENGE_STATUS_UNKNOWN_CHALLENGE;
-    contentTLV = CHALLENGE::encodeDataPayload(certRequest);
+    payload = CHALLENGE::encodeDataPayload(certRequest);
   }
   else {
     _LOG_TRACE("CHALLENGE module to be load: " << challengeType);
@@ -335,7 +334,7 @@ CaModule::onChallenge(const Interest& request)
     if (certRequest.m_status == STATUS_FAILURE) {
       // if challenge failed
       m_storage->deleteRequest(certRequest.m_requestId);
-      contentTLV = CHALLENGE::encodeDataPayload(certRequest);
+      payload = CHALLENGE::encodeDataPayload(certRequest);
       _LOG_TRACE("Challenge failed");
     }
     else if (certRequest.m_status == STATUS_PENDING) {
@@ -356,9 +355,10 @@ CaModule::onChallenge(const Interest& request)
         m_config.m_statusUpdateCallback(certRequest);
       }
 
-      contentTLV = CHALLENGE::encodeDataPayload(certRequest);
-      contentTLV.push_back(makeNestedBlock(tlv_issued_cert_name, issuedCert.getName()));
-      contentTLV.parse();
+      payload = CHALLENGE::encodeDataPayload(certRequest);
+      payload.parse();
+      payload.push_back(makeNestedBlock(tlv_issued_cert_name, issuedCert.getName()));
+      payload.encode();
 
       //contentJson.add(JSON_CA_CERT_ID, readString(issuedCert.getName().at(-1)));
       _LOG_TRACE("Challenge succeeded. Certificate has been issued");
@@ -371,7 +371,7 @@ CaModule::onChallenge(const Interest& request)
         _LOG_TRACE("Cannot update request instance: " << e.what());
         return;
       }
-      contentTLV = CHALLENGE::encodeDataPayload(certRequest);
+      payload = CHALLENGE::encodeDataPayload(certRequest);
       _LOG_TRACE("No failure no success. Challenge moves on");
     }
   }
@@ -381,9 +381,9 @@ CaModule::onChallenge(const Interest& request)
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
 
   // encrypt the content
-  auto payload = contentTLV.getBuffer();
-  auto contentBlock = encodeBlockWithAesGcm128(tlv::Content, m_aesKey, payload->data(),
-                                               payload->size(), (uint8_t*)"test", strlen("test"));
+  auto payloadBuffer = payload.getBuffer();
+  auto contentBlock = encodeBlockWithAesGcm128(tlv::Content, m_aesKey, payloadBuffer->data(),
+                                               payloadBuffer->size(), (uint8_t*)"test", strlen("test"));
   result.setContent(contentBlock);
   m_keyChain.sign(result, signingByIdentity(m_config.m_caName));
   m_face.put(result);

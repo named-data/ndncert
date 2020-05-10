@@ -123,6 +123,7 @@ ClientModule::onProbeResponse(const Data& reply)
   }
 
   auto contentTLV = reply.getContent();
+  contentTLV.parse();
 
   // read the available name and put it into the state
   if (contentTLV.get(tlv_probe_response).hasValue()) {
@@ -216,6 +217,7 @@ ClientModule::onNewResponse(const Data& reply)
     return std::list<std::string>();
   }
   auto contentTLV = reply.getContent();
+  contentTLV.parse();
 
   // ECDH
   const auto& peerKeyBase64Str = readString(contentTLV.get(tlv_ecdh_pub));  
@@ -242,8 +244,9 @@ ClientModule::onNewResponse(const Data& reply)
 shared_ptr<Interest>
 ClientModule::generateChallengeInterest(const Block& challengeRequest)
 {
+  challengeRequest.parse();
   m_challengeType = readString(challengeRequest.get(tlv_selected_challenge));
-  
+
   Name interestName = m_ca.m_caName;
   interestName.append("CA").append("CHALLENGE").append(m_requestId);
   auto interest = make_shared<Interest>(interestName);
@@ -251,8 +254,8 @@ ClientModule::generateChallengeInterest(const Block& challengeRequest)
   interest->setCanBePrefix(false);
 
   // encrypt the Interest parameters
-  auto payload = challengeRequest.getBuffer();
-  auto paramBlock = encodeBlockWithAesGcm128(tlv::ApplicationParameters, m_aesKey,
+  auto payload = challengeRequest.get(tlv_encrypted_payload).getBuffer();
+  auto paramBlock = encodeBlockWithAesGcm128(tlv_encrypted_payload, m_aesKey,
                                              payload->data(), payload->size(), (const uint8_t*)"test", strlen("test"));
   interest->setApplicationParameters(paramBlock);
 
@@ -268,10 +271,9 @@ ClientModule::onChallengeResponse(const Data& reply)
     return;
   }
   auto result = decodeBlockWithAesGcm128(reply.getContent(), m_aesKey, (const uint8_t*)"test", strlen("test"));
-  bool isSuccess;
-  Block contentTLV;
 
-  std::tie<bool, Block>(isSuccess, contentTLV) = Block::fromBuffer(result.data(), result.size());
+  Block contentTLV = makeBinaryBlock(tlv_encrypted_payload, result.data(), result.size());
+  contentTLV.parse();
 
   // update state
   m_status = readNonNegativeInteger(contentTLV.get(tlv_status));
