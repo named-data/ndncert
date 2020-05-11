@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE(ReadConfigFile)
   BOOST_CHECK_EQUAL(config.m_caItems.size(), 2);
 
   const auto& item = config.m_caItems.front();
-  BOOST_CHECK_EQUAL(item.m_caName, "/ndn/edu/ucla");
+  BOOST_CHECK_EQUAL(item.m_caPrefix, "/ndn/edu/ucla");
   BOOST_CHECK_EQUAL(item.m_caInfo, "UCLA's ceritificate authority, located in BH4805.");
   BOOST_CHECK_EQUAL(item.m_probe, "email");
   BOOST_CHECK_EQUAL(item.m_anchor.getName(),
@@ -68,19 +68,19 @@ BOOST_AUTO_TEST_CASE(AddAndRemoveCaItem)
   config.load("tests/unit-tests/client.conf.test");
 
   ClientCaItem item;
-  item.m_caName = Name("/test");
+  item.m_caPrefix = Name("/test");
   item.m_caInfo = "test";
   item.m_probe = "test";
 
   config.m_caItems.push_back(item);
   BOOST_CHECK_EQUAL(config.m_caItems.size(), 3);
   auto lastItem = config.m_caItems.back();
-  BOOST_CHECK_EQUAL(lastItem.m_caName, "/test");
+  BOOST_CHECK_EQUAL(lastItem.m_caPrefix, "/test");
 
   config.removeCaItem(Name("/test"));
   BOOST_CHECK_EQUAL(config.m_caItems.size(), 2);
   lastItem = config.m_caItems.back();
-  BOOST_CHECK_EQUAL(lastItem.m_caName, "/ndn/edu/ucla/zhiyi");
+  BOOST_CHECK_EQUAL(lastItem.m_caPrefix, "/ndn/edu/ucla/zhiyi");
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TestClientConfig

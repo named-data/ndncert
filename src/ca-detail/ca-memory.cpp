@@ -97,7 +97,7 @@ CaMemory::listAllRequests(const Name& caName)
 {
   std::list<CertificateRequest> result;
   for (const auto& entry : m_requests) {
-    if (entry.second.m_caName == caName) {
+    if (entry.second.m_caPrefix == caName) {
       result.push_back(entry.second);
     }
   }

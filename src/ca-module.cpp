@@ -74,7 +74,7 @@ CaModule::registerPrefix()
   _LOG_TRACE("Prefix " << localhopInfoPrefix << " got registered");
 
   // register prefixes
-  Name prefix = m_config.m_caName;
+  Name prefix = m_config.m_caPrefix;
   prefix.append("CA");
 
   prefixId = m_face.registerPrefix(prefix,
@@ -125,7 +125,7 @@ CaModule::onInfo(const Interest& request)
   _LOG_TRACE("Received INFO request");
 
   const auto& pib = m_keyChain.getPib();
-  const auto& identity = pib.getIdentity(m_config.m_caName);
+  const auto& identity = pib.getIdentity(m_config.m_caPrefix);
   const auto& cert = identity.getDefaultKey().getDefaultCertificate();
   Block contentTLV = INFO::encodeContentFromCAConfig(m_config, cert);
   Data result;
@@ -134,7 +134,7 @@ CaModule::onInfo(const Interest& request)
   result.setContent(contentTLV);
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
 
-  m_keyChain.sign(result, signingByIdentity(m_config.m_caName));
+  m_keyChain.sign(result, signingByIdentity(m_config.m_caPrefix));
   m_face.put(result);
 
   _LOG_TRACE("Handle INFO: send out the INFO response");
@@ -168,7 +168,7 @@ CaModule::onProbe(const Interest& request)
     // if there is no app-specified name lookup, use a random name id
     availableId = std::to_string(random::generateSecureWord64());
   }
-  Name newIdentityName = m_config.m_caName;
+  Name newIdentityName = m_config.m_caPrefix;
   newIdentityName.append(availableId);
   _LOG_TRACE("Handle PROBE: generate an identity " << newIdentityName);
 
@@ -178,7 +178,7 @@ CaModule::onProbe(const Interest& request)
   result.setName(request.getName());
   result.setContent(contentTLV);
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  m_keyChain.sign(result, signingByIdentity(m_config.m_caName));
+  m_keyChain.sign(result, signingByIdentity(m_config.m_caPrefix));
   m_face.put(result);
   _LOG_TRACE("Handle PROBE: send out the PROBE response");
 }
@@ -240,9 +240,9 @@ CaModule::onNew(const Interest& request)
   }
 
   // verify the self-signed certificate, the request, and the token
-  if (!m_config.m_caName.isPrefixOf(clientCert->getName()) // under ca prefix
+  if (!m_config.m_caPrefix.isPrefixOf(clientCert->getName()) // under ca prefix
       || !security::v2::Certificate::isValidName(clientCert->getName()) // is valid cert name
-      || clientCert->getName().size() != m_config.m_caName.size() + IS_SUBNAME_MIN_OFFSET) {
+      || clientCert->getName().size() != m_config.m_caPrefix.size() + IS_SUBNAME_MIN_OFFSET) {
     _LOG_ERROR("Invalid self-signed certificate name " << clientCert->getName());
     return;
   }
@@ -257,7 +257,7 @@ CaModule::onNew(const Interest& request)
 
   // create new request instance
   std::string requestId = std::to_string(random::generateWord64());
-  CertificateRequest certRequest(m_config.m_caName, requestId, STATUS_BEFORE_CHALLENGE, *clientCert);
+  CertificateRequest certRequest(m_config.m_caPrefix, requestId, STATUS_BEFORE_CHALLENGE, *clientCert);
 
   try {
     m_storage->addRequest(certRequest);
@@ -274,7 +274,7 @@ CaModule::onNew(const Interest& request)
                                       std::to_string(saltInt),
                                       certRequest,
                                       m_config.m_supportedChallenges));
-  m_keyChain.sign(result, signingByIdentity(m_config.m_caName));
+  m_keyChain.sign(result, signingByIdentity(m_config.m_caPrefix));
   m_face.put(result);
 
   if (m_config.m_statusUpdateCallback) {
@@ -385,7 +385,7 @@ CaModule::onChallenge(const Interest& request)
   auto contentBlock = encodeBlockWithAesGcm128(tlv::Content, m_aesKey, payloadBuffer->data(),
                                                payloadBuffer->size(), (uint8_t*)"test", strlen("test"));
   result.setContent(contentBlock);
-  m_keyChain.sign(result, signingByIdentity(m_config.m_caName));
+  m_keyChain.sign(result, signingByIdentity(m_config.m_caPrefix));
   m_face.put(result);
 
   if (m_config.m_statusUpdateCallback) {
@@ -409,7 +409,7 @@ CaModule::issueCertificate(const CertificateRequest& certRequest)
   SignatureInfo signatureInfo;
   signatureInfo.setValidityPeriod(period);
   security::SigningInfo signingInfo(security::SigningInfo::SIGNER_TYPE_ID,
-                                    m_config.m_caName, signatureInfo);
+                                    m_config.m_caPrefix, signatureInfo);
   newCert.setFreshnessPeriod(m_config.m_freshnessPeriod);
 
   m_keyChain.sign(newCert, signingInfo);
@@ -423,7 +423,7 @@ CaModule::getCertificateRequest(const Interest& request)
   std::string requestId;
   CertificateRequest certRequest;
   try {
-    requestId = readString(request.getName().at(m_config.m_caName.size() + 2));
+    requestId = readString(request.getName().at(m_config.m_caPrefix.size() + 2));
   }
   catch (const std::exception& e) {
     _LOG_ERROR("Cannot read the request ID out from the request: " << e.what());
@@ -493,12 +493,12 @@ CaModule::genInfoResponseJson()
 {
   JsonSection root;
   // ca-prefix
-  Name caName = m_config.m_caName;
+  Name caName = m_config.m_caPrefix;
   root.put("ca-prefix", caName.toUri());
 
   // ca-info
   const auto& pib = m_keyChain.getPib();
-  const auto& identity = pib.getIdentity(m_config.m_caName);
+  const auto& identity = pib.getIdentity(m_config.m_caPrefix);
   const auto& cert = identity.getDefaultKey().getDefaultCertificate();
   std::string caInfo;
   if (m_config.m_caInfo.empty()) {

@@ -53,7 +53,7 @@ BOOST_AUTO_TEST_CASE(Probe)
 
   ClientCaItem item;
   item.m_probe = "email:uid:name";
-  item.m_caName = Name("/site");
+  item.m_caPrefix = Name("/site");
   item.m_anchor = cert;
   client.getClientConf().m_caItems.push_back(item);
 
@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_CASE(GenProbeRequestJson)
 
   ClientCaItem item;
   item.m_probe = "email:uid:name";
-  item.m_caName = Name("/site");
+  item.m_caPrefix = Name("/site");
   item.m_anchor = cert;
   client.getClientConf().m_caItems.push_back(item);
 

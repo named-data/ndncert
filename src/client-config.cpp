@@ -65,7 +65,7 @@ ClientConfig::save(const std::string& fileName)
   std::stringstream ss;
   for (const auto& item : m_caItems) {
     JsonSection caItem;
-    caItem.put("ca-prefix", item.m_caName.toUri());
+    caItem.put("ca-prefix", item.m_caPrefix.toUri());
     caItem.put("ca-info", item.m_caInfo);
     caItem.put("probe", item.m_probe);
     ss.str(std::string());
@@ -87,8 +87,8 @@ ClientCaItem
 ClientConfig::extractCaItem(const JsonSection& configSection)
 {
   ClientCaItem item;
-  item.m_caName = Name(configSection.get("ca-prefix", ""));
-  if (item.m_caName.empty()) {
+  item.m_caPrefix = Name(configSection.get("ca-prefix", ""));
+  if (item.m_caPrefix.empty()) {
     BOOST_THROW_EXCEPTION(Error("Cannot read ca-prefix from the config file"));
   }
   item.m_caInfo = configSection.get("ca-info", "");
@@ -105,7 +105,7 @@ ClientConfig::extractCaItem(const JsonSection& configSection)
 void
 ClientConfig::removeCaItem(const Name& caName)
 {
-  m_caItems.remove_if([&](const ClientCaItem& item) { return item.m_caName == caName; });
+  m_caItems.remove_if([&](const ClientCaItem& item) { return item.m_caPrefix == caName; });
 }
 
 }  // namespace ndncert

@@ -57,7 +57,7 @@ public:
   setProbeToken(const std::shared_ptr<Data>& probeToken);
 
 public:
-  Name m_caName;
+  Name m_caPrefix;
   std::string m_requestId = "";
   int m_status = -1;
   security::v2::Certificate m_cert;

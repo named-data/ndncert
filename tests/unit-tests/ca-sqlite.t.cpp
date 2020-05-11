@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   auto result = storage.getRequest("123");
   BOOST_CHECK_EQUAL(request1.m_cert, result.m_cert);
   BOOST_CHECK_EQUAL(request1.m_status, result.m_status);
-  BOOST_CHECK_EQUAL(request1.m_caName, result.m_caName);
+  BOOST_CHECK_EQUAL(request1.m_caPrefix, result.m_caPrefix);
 
   // update operation
   JsonSection json;
@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   result = storage.getRequest("123");
   BOOST_CHECK_EQUAL(request2.m_cert, result.m_cert);
   BOOST_CHECK_EQUAL(request2.m_status, result.m_status);
-  BOOST_CHECK_EQUAL(request2.m_caName, result.m_caName);
+  BOOST_CHECK_EQUAL(request2.m_caPrefix, result.m_caPrefix);
 
   auto identity2 = addIdentity(Name("/ndn/site2"));
   auto key2 = identity2.getDefaultKey();

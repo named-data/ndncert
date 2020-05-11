@@ -77,7 +77,7 @@ main(int argc, char* argv[])
   for (const auto& entry : requestList) {
     std::cerr << "Request ID: " << entry.m_requestId << "\t"
               << "Current Status: " << entry.m_status << std::endl
-              << "Applying CA: " << entry.m_caName << std::endl
+              << "Applying CA: " << entry.m_caPrefix << std::endl
               << "Applying for key: " << entry.m_cert.getName() << std::endl
               << "Challenge remaining tries: " << entry.m_remainingTries << std::endl
               << "Challenge Secret: " << convertJson2String(entry.m_challengeSecrets) << std::endl;

@@ -28,7 +28,7 @@ CertificateRequest::CertificateRequest() = default;
 
 CertificateRequest::CertificateRequest(const Name& caName, const std::string& requestId, int status,
                                        const security::v2::Certificate& cert)
-  : m_caName(caName)
+  : m_caPrefix(caName)
   , m_requestId(requestId)
   , m_status(status)
   , m_cert(cert)
@@ -39,7 +39,7 @@ CertificateRequest::CertificateRequest(const Name& caName, const std::string& re
                                        const std::string& challengeStatus, const std::string& challengeType,
                                        const std::string& challengeTp, int remainingTime, int remainingTries,
                                        const JsonSection& challengeSecrets, const security::v2::Certificate& cert)
-  : m_caName(caName)
+  : m_caPrefix(caName)
   , m_requestId(requestId)
   , m_status(status)
   , m_cert(cert)
@@ -62,7 +62,7 @@ std::ostream&
 operator<<(std::ostream& os, const CertificateRequest& request)
 {
   os << "Request CA name:\n";
-  os << "  " << request.m_caName << "\n";
+  os << "  " << request.m_caPrefix << "\n";
   os << "Request ID:\n";
   os << "  " << request.m_requestId << "\n";
   if (request.m_status != -1) {

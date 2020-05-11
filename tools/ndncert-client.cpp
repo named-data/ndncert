@@ -274,7 +274,7 @@ startApplication()
   for (auto item : caList) {
     std::cerr << "***************************************\n"
               << "Index: " << count++ << "\n"
-              << "CA prefix:" << item.m_caName << "\n"
+              << "CA prefix:" << item.m_caPrefix << "\n"
               << "Introduction: " << item.m_caInfo << "\n"
               << "***************************************\n";
   }

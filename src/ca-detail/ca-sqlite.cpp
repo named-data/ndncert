@@ -174,7 +174,7 @@ CaSqlite::addRequest(const CertificateRequest& request)
                              challenge_tp, remaining_tries, remaining_time, probe_token)
                              values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
     statement.bind(1, request.m_requestId, SQLITE_TRANSIENT);
-    statement.bind(2, request.m_caName.wireEncode(), SQLITE_TRANSIENT);
+    statement.bind(2, request.m_caPrefix.wireEncode(), SQLITE_TRANSIENT);
     statement.bind(3, request.m_status);
     statement.bind(4, request.m_challengeStatus, SQLITE_TRANSIENT);
     statement.bind(5, request.m_cert.getKeyName().wireEncode(),
@@ -199,7 +199,7 @@ CaSqlite::addRequest(const CertificateRequest& request)
                              challenge_tp, remaining_tries, remaining_time)
                              values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
     statement.bind(1, request.m_requestId, SQLITE_TRANSIENT);
-    statement.bind(2, request.m_caName.wireEncode(), SQLITE_TRANSIENT);
+    statement.bind(2, request.m_caPrefix.wireEncode(), SQLITE_TRANSIENT);
     statement.bind(3, request.m_status);
     statement.bind(4, request.m_challengeStatus, SQLITE_TRANSIENT);
     statement.bind(5, request.m_cert.getKeyName().wireEncode(),

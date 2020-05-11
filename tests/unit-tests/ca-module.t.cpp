@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE(HandleInfo)
       BOOST_CHECK(security::verifySignature(response, cert));
       auto contentJson = ClientModule::getJsonFromData(response);
       auto caItem = ClientConfig::extractCaItem(contentJson);
-      BOOST_CHECK_EQUAL(caItem.m_caName, "/ndn");
+      BOOST_CHECK_EQUAL(caItem.m_caPrefix, "/ndn");
       BOOST_CHECK_EQUAL(caItem.m_probe, "");
       BOOST_CHECK_EQUAL(caItem.m_anchor.wireEncode(), cert.wireEncode());
       BOOST_CHECK_EQUAL(caItem.m_caInfo, "ndn testbed ca");
@@ -163,7 +163,7 @@ BOOST_AUTO_TEST_CASE(HandleNew)
 
   ClientModule client(m_keyChain);
   ClientCaItem item;
-  item.m_caName = Name("/ndn");
+  item.m_caPrefix = Name("/ndn");
   item.m_anchor = cert;
   client.getClientConf().m_caItems.push_back(item);
 
@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidValidityPeriod1)
 
   ClientModule client(m_keyChain);
   ClientCaItem item;
-  item.m_caName = Name("/ndn");
+  item.m_caPrefix = Name("/ndn");
   item.m_anchor = cert;
   client.getClientConf().m_caItems.push_back(item);
   auto current_tp = time::system_clock::now();
@@ -238,12 +238,12 @@ BOOST_AUTO_TEST_CASE(HandleNewWithProbeToken)
 
   ClientModule client(m_keyChain);
   ClientCaItem item;
-  item.m_caName = Name("/ndn");
+  item.m_caPrefix = Name("/ndn");
   item.m_anchor = cert;
   client.getClientConf().m_caItems.push_back(item);
 
   auto data = make_shared<Data>(Name("/ndn/CA/PROBE/123"));
-  m_keyChain.sign(*data, signingByIdentity(ca.m_config.m_caName));
+  m_keyChain.sign(*data, signingByIdentity(ca.m_config.m_caPrefix));
 
   auto interest = client.generateNewInterest(time::system_clock::now(),
                                              time::system_clock::now() + time::days(10),
@@ -273,7 +273,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
   // generate NEW Interest
   ClientModule client(m_keyChain);
   ClientCaItem item;
-  item.m_caName = Name("/ndn");
+  item.m_caPrefix = Name("/ndn");
   item.m_anchor = cert;
   client.getClientConf().m_caItems.push_back(item);
   auto newInterest = client.generateNewInterest(time::system_clock::now(),
