@@ -19,17 +19,17 @@
  */
 
 #include "ca-module.hpp"
-#include "database-fixture.hpp"
-#include "client-module.hpp"
 #include "challenge-module.hpp"
-#include "challenge-module/challenge-pin.hpp"
 #include "challenge-module/challenge-email.hpp"
+#include "challenge-module/challenge-pin.hpp"
+#include "client-module.hpp"
+#include "database-fixture.hpp"
 #include "protocol-detail/info.hpp"
 
-#include <ndn-cxx/util/dummy-client-face.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/transform/public-key.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
+#include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE(Initialization)
 
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK_EQUAL(ca.m_registeredPrefixHandles.size(), 2);
-  BOOST_CHECK_EQUAL(ca.m_interestFilterHandles.size(), 4); // onInfo, onProbe, onNew, onChallenge
+  BOOST_CHECK_EQUAL(ca.m_interestFilterHandles.size(), 4);  // onInfo, onProbe, onNew, onChallenge
 }
 
 BOOST_AUTO_TEST_CASE(HandleProbe)
@@ -62,9 +62,9 @@ BOOST_AUTO_TEST_CASE(HandleProbe)
 
   util::DummyClientFace face(io, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
-  ca.setProbeHandler([&] (const Block& probeInfo) {
-      return "example";
-    });
+  ca.setProbeHandler([&](const Block& probeInfo) {
+    return "example";
+  });
   advanceClocks(time::milliseconds(20), 60);
 
   Interest interest("/ndn/CA/PROBE");
@@ -78,17 +78,17 @@ BOOST_AUTO_TEST_CASE(HandleProbe)
   interest.setApplicationParameters(paramTLV);
 
   int count = 0;
-  face.onSendData.connect([&] (const Data& response) {
-      count++;
-      BOOST_CHECK(security::verifySignature(response, cert));
-      Block contentBlock = response.getContent();
-      contentBlock.parse();
-      Block probeResponse = contentBlock.get(tlv_probe_response);
-      probeResponse.parse();
-      Name caName;
-      caName.wireDecode(probeResponse.get(tlv::Name));
-      BOOST_CHECK_EQUAL(caName, "/ndn/example");
-    });
+  face.onSendData.connect([&](const Data& response) {
+    count++;
+    BOOST_CHECK(security::verifySignature(response, cert));
+    Block contentBlock = response.getContent();
+    contentBlock.parse();
+    Block probeResponse = contentBlock.get(tlv_probe_response);
+    probeResponse.parse();
+    Name caName;
+    caName.wireDecode(probeResponse.get(tlv::Name));
+    BOOST_CHECK_EQUAL(caName, "/ndn/example");
+  });
   face.receive(interest);
 
   advanceClocks(time::milliseconds(20), 60);
@@ -103,26 +103,26 @@ BOOST_AUTO_TEST_CASE(HandleInfo)
 
   util::DummyClientFace face(io, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
-  ca.setProbeHandler([&] (const Block& probeInfo) {
-      return "example";
-    });
+  ca.setProbeHandler([&](const Block& probeInfo) {
+    return "example";
+  });
   advanceClocks(time::milliseconds(20), 60);
 
   Interest interest("/ndn/CA/INFO");
   interest.setCanBePrefix(false);
 
   int count = 0;
-  face.onSendData.connect([&] (const Data& response) {
-      count++;
-      BOOST_CHECK(security::verifySignature(response, cert));
-      auto contentBlock = response.getContent();
-      contentBlock.parse();
-      auto caItem = INFO::decodeClientConfigFromContent(contentBlock);
-      BOOST_CHECK_EQUAL(caItem.m_caPrefix, "/ndn");
-      BOOST_CHECK_EQUAL(caItem.m_probe, "");
-      BOOST_CHECK_EQUAL(caItem.m_anchor.wireEncode(), cert.wireEncode());
-      BOOST_CHECK_EQUAL(caItem.m_caInfo, "ndn testbed ca");
-    });
+  face.onSendData.connect([&](const Data& response) {
+    count++;
+    BOOST_CHECK(security::verifySignature(response, cert));
+    auto contentBlock = response.getContent();
+    contentBlock.parse();
+    auto caItem = INFO::decodeClientConfigFromContent(contentBlock);
+    BOOST_CHECK_EQUAL(caItem.m_caPrefix, "/ndn");
+    BOOST_CHECK_EQUAL(caItem.m_probe, "");
+    BOOST_CHECK_EQUAL(caItem.m_anchor.wireEncode(), cert.wireEncode());
+    BOOST_CHECK_EQUAL(caItem.m_caInfo, "ndn testbed ca");
+  });
   face.receive(interest);
 
   advanceClocks(time::milliseconds(20), 60);
@@ -150,17 +150,17 @@ BOOST_AUTO_TEST_CASE(HandleProbeUsingDefaultHandler)
   interest.setApplicationParameters(paramTLV);
 
   int count = 0;
-  face.onSendData.connect([&] (const Data& response) {
-      count++;
-      BOOST_CHECK(security::verifySignature(response, cert));
-      auto contentBlock = response.getContent();
-      contentBlock.parse();
-      auto probeResponseBlock = contentBlock.get(tlv_probe_response);
-      probeResponseBlock.parse();
-      Name caPrefix;
-      caPrefix.wireDecode(probeResponseBlock.get(tlv::Name));
-      BOOST_CHECK(caPrefix != "");
-    });
+  face.onSendData.connect([&](const Data& response) {
+    count++;
+    BOOST_CHECK(security::verifySignature(response, cert));
+    auto contentBlock = response.getContent();
+    contentBlock.parse();
+    auto probeResponseBlock = contentBlock.get(tlv_probe_response);
+    probeResponseBlock.parse();
+    Name caPrefix;
+    caPrefix.wireDecode(probeResponseBlock.get(tlv::Name));
+    BOOST_CHECK(caPrefix != "");
+  });
   face.receive(interest);
 
   advanceClocks(time::milliseconds(20), 60);
@@ -188,29 +188,29 @@ BOOST_AUTO_TEST_CASE(HandleNew)
                                              Name("/ndn/zhiyi"));
 
   int count = 0;
-  face.onSendData.connect([&] (const Data& response) {
-      count++;
-      BOOST_CHECK(security::verifySignature(response, cert));
-      auto contentBlock = response.getContent();
-      contentBlock.parse();
+  face.onSendData.connect([&](const Data& response) {
+    count++;
+    BOOST_CHECK(security::verifySignature(response, cert));
+    auto contentBlock = response.getContent();
+    contentBlock.parse();
 
-      BOOST_CHECK(readString(contentBlock.get(tlv_ecdh_pub)) != "");
-      BOOST_CHECK(readString(contentBlock.get(tlv_salt)) != "");
-      BOOST_CHECK(readString(contentBlock.get(tlv_request_id)) != "");
+    BOOST_CHECK(readString(contentBlock.get(tlv_ecdh_pub)) != "");
+    BOOST_CHECK(readString(contentBlock.get(tlv_salt)) != "");
+    BOOST_CHECK(readString(contentBlock.get(tlv_request_id)) != "");
 
-      auto challengeBlockCount = 0;
-      for (auto const& element: contentBlock.elements()) {
-        if (element.type() == tlv_challenge) {
-          challengeBlockCount++;
-        }
+    auto challengeBlockCount = 0;
+    for (auto const& element : contentBlock.elements()) {
+      if (element.type() == tlv_challenge) {
+        challengeBlockCount++;
       }
+    }
 
-      BOOST_CHECK(challengeBlockCount != 0);
+    BOOST_CHECK(challengeBlockCount != 0);
 
-      client.onNewResponse(response);
-      BOOST_CHECK_EQUAL_COLLECTIONS(client.m_aesKey, client.m_aesKey + sizeof(client.m_aesKey),
-                                    ca.m_aesKey, ca.m_aesKey + sizeof(ca.m_aesKey));
-    });
+    client.onNewResponse(response);
+    BOOST_CHECK_EQUAL_COLLECTIONS(client.m_aesKey, client.m_aesKey + sizeof(client.m_aesKey),
+                                  ca.m_aesKey, ca.m_aesKey + sizeof(ca.m_aesKey));
+  });
   face.receive(*interest);
 
   advanceClocks(time::milliseconds(20), 60);
@@ -240,9 +240,9 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidValidityPeriod1)
   auto interest3 = client.generateNewInterest(current_tp - time::hours(1),
                                               current_tp + time::hours(2),
                                               Name("/ndn/zhiyi"));
-  face.onSendData.connect([&] (const Data& response) {
-      BOOST_CHECK(false);
-    });
+  face.onSendData.connect([&](const Data& response) {
+    BOOST_CHECK(false);
+  });
   face.receive(*interest1);
   face.receive(*interest2);
   face.receive(*interest3);
@@ -275,10 +275,10 @@ BOOST_AUTO_TEST_CASE(HandleNewWithProbeToken)
                                              Name("/ndn/zhiyi"), data);
 
   int count = 0;
-  face.onSendData.connect([&] (const Data& response) {
-      count++;
-      BOOST_CHECK(security::verifySignature(response, cert));
-    });
+  face.onSendData.connect([&](const Data& response) {
+    count++;
+    BOOST_CHECK(security::verifySignature(response, cert));
+  });
   face.receive(*interest);
 
   advanceClocks(time::milliseconds(20), 60);
@@ -311,13 +311,13 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
   shared_ptr<Interest> challengeInterest3 = nullptr;
 
   int count = 0;
-  face.onSendData.connect([&] (const Data& response) {
+  face.onSendData.connect([&](const Data& response) {
     if (Name("/ndn/CA/NEW").isPrefixOf(response.getName())) {
       client.onNewResponse(response);
       auto paramJson = pinChallenge.getRequirementForChallenge(client.m_status, client.m_challengeStatus);
       challengeInterest = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
-                                                                                                client.m_challengeStatus,
-                                                                                                paramJson));
+                                                                                               client.m_challengeStatus,
+                                                                                               paramJson));
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 0) {
       count++;
@@ -329,8 +329,8 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
 
       auto paramJson = pinChallenge.getRequirementForChallenge(client.m_status, client.m_challengeStatus);
       challengeInterest2 = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
-                                                                                                 client.m_challengeStatus,
-                                                                                                 paramJson));
+                                                                                                client.m_challengeStatus,
+                                                                                                paramJson));
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 1) {
       count++;
@@ -348,8 +348,8 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
           i.second.put("", secret);
       }
       challengeInterest3 = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
-                                                                                                 client.m_challengeStatus,
-                                                                                                 paramJson));
+                                                                                                client.m_challengeStatus,
+                                                                                                paramJson));
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 2) {
       count++;
@@ -372,8 +372,8 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
   BOOST_CHECK_EQUAL(count, 3);
 }
 
-BOOST_AUTO_TEST_SUITE_END() // TestCaModule
+BOOST_AUTO_TEST_SUITE_END()  // TestCaModule
 
-} // namespace tests
-} // namespace ndncert
-} // namespace ndn
+}  // namespace tests
+}  // namespace ndncert
+}  // namespace ndn

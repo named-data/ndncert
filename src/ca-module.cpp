@@ -30,6 +30,7 @@
 #include <ndn-cxx/security/verification-helpers.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/util/random.hpp>
+#include <ndn-cxx/metadata-object.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -119,23 +120,57 @@ CaModule::setStatusUpdateCallback(const StatusUpdateCallback& onUpdateCallback)
   return false;
 }
 
-void
-CaModule::onInfo(const Interest& request)
+shared_ptr<Data>
+CaModule::generateCaConfigMetaData()
 {
-  _LOG_TRACE("Received INFO request");
+  // @TODO
+  // make metadata a class member variable m_infoMetadata
+  // check whether the m_infoMetadata has the latest versioned name, if not, then generate a new one
+  // otherwise, directly reply m_infoMetadata.makeData
+
+  auto infoPacket = generateCaConfigData();
+  MetadataObject metadata;
+  metadata.setVersionedName(infoPacket->getName().getPrefix(-1));
+  Name discoveryInterestName(infoPacket->getName().getPrefix(-2));
+  name::Component metadataComponent(32, reinterpret_cast<const uint8_t*>("metadata"), std::strlen("metadata"));
+  discoveryInterestName.append(metadataComponent);
+  auto metadataData = metadata.makeData(discoveryInterestName, m_keyChain, signingByIdentity(m_config.m_caPrefix));
+  return make_shared<Data>(metadataData);
+}
+
+shared_ptr<Data>
+CaModule::generateCaConfigData()
+{
+  // @TODO
+  // make CaInfo Data packet a class member variable m_infoData
+  // check whether the m_infoData is still valid, if not, then generate a new one
+  // otherwise, directly reply m_infoData
 
   const auto& pib = m_keyChain.getPib();
   const auto& identity = pib.getIdentity(m_config.m_caPrefix);
   const auto& cert = identity.getDefaultKey().getDefaultCertificate();
   Block contentTLV = INFO::encodeContentFromCAConfig(m_config, cert);
-  Data result;
 
-  result.setName(request.getName());
-  result.setContent(contentTLV);
-  result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
+  Name infoPacketName(m_config.m_caPrefix);
+  infoPacketName.append("CA").append("INFO").appendVersion().appendSegment(0);
+  Data infoData(infoPacketName);
+  infoData.setContent(contentTLV);
+  infoData.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
+  m_keyChain.sign(infoData, signingByIdentity(m_config.m_caPrefix));
+  return make_shared<Data>(infoData);
+}
 
-  m_keyChain.sign(result, signingByIdentity(m_config.m_caPrefix));
-  m_face.put(result);
+void
+CaModule::onInfo(const Interest& request)
+{
+  _LOG_TRACE("Received INFO request");
+
+  if (request.getName().get(-1).type() == 32) {
+    m_face.put(*generateCaConfigMetaData());
+  }
+  else {
+    m_face.put(*generateCaConfigData());
+  }
 
   _LOG_TRACE("Handle INFO: send out the INFO response");
 }
@@ -442,6 +477,7 @@ CaModule::getCertificateRequest(const Interest& request)
   return certRequest;
 }
 
+<<<<<<< HEAD
 /**
  * @brief Generate JSON file to response PROBE insterest
  *
@@ -556,6 +592,8 @@ CaModule::genChallengeResponseJson(const CertificateRequest& request)
   return root;
 }
 
+=======
+>>>>>>> add two functions for CA Info Packet and Metadata Packet
 void
 CaModule::onRegisterFailed(const std::string& reason)
 {

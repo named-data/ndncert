@@ -20,24 +20,168 @@
 
 #include "ca-module.hpp"
 #include "identity-management-fixture.hpp"
+#include "client-module.hpp"
+#include "challenge-module/challenge-pin.hpp"
+#include "protocol-detail/info.hpp"
 
-#include <ndn-cxx/security/transform/base64-encode.hpp>
-#include <ndn-cxx/security/transform/buffer-source.hpp>
-#include <ndn-cxx/security/transform/stream-sink.hpp>
+#include <ndn-cxx/util/dummy-client-face.hpp>
+#include <ndn-cxx/security/signing-helpers.hpp>
+#include <ndn-cxx/security/transform/public-key.hpp>
+#include <ndn-cxx/security/verification-helpers.hpp>
+#include <ndn-cxx/metadata-object.hpp>
+#include <iostream>
 
 namespace ndn {
 namespace ndncert {
 namespace tests {
 
-BOOST_FIXTURE_TEST_SUITE(TestForBenchmark, IdentityManagementFixture)
+BOOST_FIXTURE_TEST_SUITE(TestForBenchmark, IdentityManagementTimeFixture)
 
-BOOST_AUTO_TEST_CASE(ReadConfigFile)
+BOOST_AUTO_TEST_CASE(PacketSize0)
 {
-  BOOST_CHECK(true);
+  auto identity = addIdentity(Name("/ndn"));
+  auto key = identity.getDefaultKey();
+  auto cert = key.getDefaultCertificate();
+
+  util::DummyClientFace face(io, {true, true});
+  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
+  ca.setProbeHandler([&](const Block& probeInfo) {
+    return "example";
+  });
+  advanceClocks(time::milliseconds(20), 60);
+
+  Interest interest = MetadataObject::makeDiscoveryInterest(Name("/ndn/CA/INFO"));
+  std::cout << "CA Config discovery Interest Size: " << interest.wireEncode().size() << std::endl;
+  shared_ptr<Interest> infoInterest = nullptr;
+
+  int count = 0;
+  face.onSendData.connect([&](const Data& response) {
+    if (count == 0) {
+      count++;
+      std::cout << "CA Config MetaData Size: " << response.wireEncode().size() << std::endl;
+      auto block = response.getContent();
+      block.parse();
+      Interest interest(Name(block.get(tlv::Name)));
+      interest.setCanBePrefix(true);
+      infoInterest = make_shared<Interest>(interest);
+      std::cout << "CA Config fetch Interest Size: " << infoInterest->wireEncode().size() << std::endl;
+
+    }
+    else {
+      count++;
+      std::cout << "CA Config Data Size: " << response.wireEncode().size() << std::endl;
+      BOOST_CHECK(security::verifySignature(response, cert));
+      auto contentBlock = response.getContent();
+      contentBlock.parse();
+      auto caItem = INFO::decodeClientConfigFromContent(contentBlock);
+      BOOST_CHECK_EQUAL(caItem.m_caPrefix, "/ndn");
+      BOOST_CHECK_EQUAL(caItem.m_probe, "");
+      BOOST_CHECK_EQUAL(caItem.m_anchor.wireEncode(), cert.wireEncode());
+      BOOST_CHECK_EQUAL(caItem.m_caInfo, "ndn testbed ca");
+    }
+  });
+  face.receive(interest);
+  advanceClocks(time::milliseconds(20), 60);
+  face.receive(*infoInterest);
+  advanceClocks(time::milliseconds(20), 60);
+
+  BOOST_CHECK_EQUAL(count, 2);
 }
 
-BOOST_AUTO_TEST_SUITE_END() // TestCaConfig
+BOOST_AUTO_TEST_CASE(PacketSize1)
+{
+  auto identity = addIdentity(Name("/ndn"));
+  auto key = identity.getDefaultKey();
+  auto cert = key.getDefaultCertificate();
 
-} // namespace tests
-} // namespace ndncert
-} // namespace ndn
+  util::DummyClientFace face(io, {true, true});
+  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
+  advanceClocks(time::milliseconds(20), 60);
+
+  // generate NEW Interest
+  ClientModule client(m_keyChain);
+  ClientCaItem item;
+  item.m_caPrefix = Name("/ndn");
+  item.m_anchor = cert;
+  client.getClientConf().m_caItems.push_back(item);
+  auto newInterest = client.generateNewInterest(time::system_clock::now(),
+                                                time::system_clock::now() + time::days(1), Name("/ndn/alice"));
+
+  std::cout << "New Interest Size: " << newInterest->wireEncode().size() << std::endl;
+
+  // generate CHALLENGE Interest
+  ChallengePin pinChallenge;
+  shared_ptr<Interest> challengeInterest = nullptr;
+  shared_ptr<Interest> challengeInterest2 = nullptr;
+  shared_ptr<Interest> challengeInterest3 = nullptr;
+
+  int count = 0;
+  face.onSendData.connect([&](const Data& response) {
+    if (Name("/ndn/CA/NEW").isPrefixOf(response.getName())) {
+      std::cout << "NEW Data Size: " << response.wireEncode().size() << std::endl;
+      client.onNewResponse(response);
+      auto paramJson = pinChallenge.getRequirementForChallenge(client.m_status, client.m_challengeStatus);
+      challengeInterest = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
+                                                                                               client.m_challengeStatus,
+                                                                                               paramJson));
+    }
+    else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 0) {
+      count++;
+      BOOST_CHECK(security::verifySignature(response, cert));
+
+      client.onChallengeResponse(response);
+      BOOST_CHECK_EQUAL(client.m_status, STATUS_CHALLENGE);
+      BOOST_CHECK_EQUAL(client.m_challengeStatus, ChallengePin::NEED_CODE);
+
+      auto paramJson = pinChallenge.getRequirementForChallenge(client.m_status, client.m_challengeStatus);
+      challengeInterest2 = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
+                                                                                                client.m_challengeStatus,
+                                                                                                paramJson));
+    }
+    else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 1) {
+      count++;
+      BOOST_CHECK(security::verifySignature(response, cert));
+
+      client.onChallengeResponse(response);
+      BOOST_CHECK_EQUAL(client.m_status, STATUS_CHALLENGE);
+      BOOST_CHECK_EQUAL(client.m_challengeStatus, ChallengePin::WRONG_CODE);
+
+      auto paramJson = pinChallenge.getRequirementForChallenge(client.m_status, client.m_challengeStatus);
+      auto request = ca.getCertificateRequest(*challengeInterest2);
+      auto secret = request.m_challengeSecrets.get(ChallengePin::JSON_PIN_CODE, "");
+      for (auto& i : paramJson) {
+        if (i.first == ChallengePin::JSON_PIN_CODE)
+          i.second.put("", secret);
+      }
+      challengeInterest3 = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
+                                                                                                client.m_challengeStatus,
+                                                                                                paramJson));
+      std::cout << "CHALLENGE Interest Size: " << challengeInterest3->wireEncode().size() << std::endl;
+    }
+    else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 2) {
+      std::cout << "CHALLENGE Data Size: " << response.wireEncode().size() << std::endl;
+      count++;
+      BOOST_CHECK(security::verifySignature(response, cert));
+
+      client.onChallengeResponse(response);
+      BOOST_CHECK_EQUAL(client.m_status, STATUS_SUCCESS);
+      BOOST_CHECK_EQUAL(client.m_challengeStatus, CHALLENGE_STATUS_SUCCESS);
+    }
+  });
+
+  face.receive(*newInterest);
+  advanceClocks(time::milliseconds(20), 60);
+  face.receive(*challengeInterest);
+  advanceClocks(time::milliseconds(20), 60);
+  face.receive(*challengeInterest2);
+  advanceClocks(time::milliseconds(20), 60);
+  face.receive(*challengeInterest3);
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK_EQUAL(count, 3);
+}
+
+BOOST_AUTO_TEST_SUITE_END()  // TestCaConfig
+
+}  // namespace tests
+}  // namespace ndncert
+}  // namespace ndn

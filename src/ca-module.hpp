@@ -71,6 +71,12 @@ public:
   dataContentFromJson(const JsonSection& jsonSection);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+  shared_ptr<Data>
+  generateCaConfigMetaData();
+
+  shared_ptr<Data>
+  generateCaConfigData();
+
   void
   onInfo(const Interest& request);
 
@@ -94,22 +100,6 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 
   void
   registerPrefix();
-
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  JsonSection
-  genProbeResponseJson(const Name& identifier,
-                       const std::string& m_probe,
-                       const JsonSection& parameterJson);
-
-  JsonSection
-  genInfoResponseJson();
-
-  JsonSection
-  genNewResponseJson(const std::string& ecdhKey, const std::string& salt,
-                     const CertificateRequest& request, const std::list<std::string>& challenges);
-
-  JsonSection
-  genChallengeResponseJson(const CertificateRequest& request);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   Face& m_face;
