@@ -127,7 +127,9 @@ ClientModule::onProbeResponse(const Data& reply)
 
   // read the available name and put it into the state
   if (contentTLV.get(tlv_probe_response).hasValue()) {
-    m_identityName.wireDecode(contentTLV.get(tlv_probe_response));
+    Block probeResponseBlock = contentTLV.get(tlv_probe_response);
+    probeResponseBlock.parse();
+    m_identityName.wireDecode(probeResponseBlock.get(tlv::Name));
   }
   else {
     NDN_LOG_TRACE("The JSON_CA_NAME is empty.");
