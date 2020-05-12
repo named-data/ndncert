@@ -24,6 +24,7 @@
 #include "challenge-module.hpp"
 #include "challenge-module/challenge-pin.hpp"
 #include "challenge-module/challenge-email.hpp"
+#include "protocol-detail/info.hpp"
 
 #include <ndn-cxx/util/dummy-client-face.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
@@ -73,6 +74,7 @@ BOOST_AUTO_TEST_CASE(HandleProbe)
   paramTLV.push_back(makeStringBlock(tlv_parameter_key, JSON_CLIENT_PROBE_INFO));
   paramTLV.push_back(makeStringBlock(tlv_parameter_value, "zhiyi"));
   paramTLV.encode();
+
   interest.setApplicationParameters(paramTLV);
 
   int count = 0;
@@ -81,7 +83,11 @@ BOOST_AUTO_TEST_CASE(HandleProbe)
       BOOST_CHECK(security::verifySignature(response, cert));
       Block contentBlock = response.getContent();
       contentBlock.parse();
-      BOOST_CHECK_EQUAL(readString(contentBlock.get(tlv_ca_prefix)), "/ndn/example");
+      Block probeResponse = contentBlock.get(tlv_probe_response);
+      probeResponse.parse();
+      Name caName;
+      caName.wireDecode(probeResponse.get(tlv::Name));
+      BOOST_CHECK_EQUAL(caName, "/ndn/example");
     });
   face.receive(interest);
 
@@ -109,8 +115,9 @@ BOOST_AUTO_TEST_CASE(HandleInfo)
   face.onSendData.connect([&] (const Data& response) {
       count++;
       BOOST_CHECK(security::verifySignature(response, cert));
-      auto contentJson = ClientModule::getJsonFromData(response);
-      auto caItem = ClientConfig::extractCaItem(contentJson);
+      auto contentBlock = response.getContent();
+      contentBlock.parse();
+      auto caItem = INFO::decodeClientConfigFromContent(contentBlock);
       BOOST_CHECK_EQUAL(caItem.m_caPrefix, "/ndn");
       BOOST_CHECK_EQUAL(caItem.m_probe, "");
       BOOST_CHECK_EQUAL(caItem.m_anchor.wireEncode(), cert.wireEncode());
@@ -134,16 +141,25 @@ BOOST_AUTO_TEST_CASE(HandleProbeUsingDefaultHandler)
 
   Interest interest("/ndn/CA/PROBE");
   interest.setCanBePrefix(false);
-  JsonSection paramJson;
-  paramJson.add(JSON_CLIENT_PROBE_INFO, "zhiyi");
-  interest.setApplicationParameters(ClientModule::paramFromJson(paramJson));
+
+  Block paramTLV = makeEmptyBlock(tlv::ApplicationParameters);
+  paramTLV.push_back(makeStringBlock(tlv_parameter_key, JSON_CLIENT_PROBE_INFO));
+  paramTLV.push_back(makeStringBlock(tlv_parameter_value, "zhiyi"));
+  paramTLV.encode();
+
+  interest.setApplicationParameters(paramTLV);
 
   int count = 0;
   face.onSendData.connect([&] (const Data& response) {
       count++;
       BOOST_CHECK(security::verifySignature(response, cert));
-      auto contentJson = ClientModule::getJsonFromData(response);
-      BOOST_CHECK(contentJson.get<std::string>(JSON_CA_NAME) != "");
+      auto contentBlock = response.getContent();
+      contentBlock.parse();
+      auto probeResponseBlock = contentBlock.get(tlv_probe_response);
+      probeResponseBlock.parse();
+      Name caPrefix;
+      caPrefix.wireDecode(probeResponseBlock.get(tlv::Name));
+      BOOST_CHECK(caPrefix != "");
     });
   face.receive(interest);
 
@@ -168,19 +184,28 @@ BOOST_AUTO_TEST_CASE(HandleNew)
   client.getClientConf().m_caItems.push_back(item);
 
   auto interest = client.generateNewInterest(time::system_clock::now(),
-                                             time::system_clock::now() + time::days(10),
+                                             time::system_clock::now() + time::days(1),
                                              Name("/ndn/zhiyi"));
 
   int count = 0;
   face.onSendData.connect([&] (const Data& response) {
       count++;
       BOOST_CHECK(security::verifySignature(response, cert));
-      auto contentJson = ClientModule::getJsonFromData(response);
-      BOOST_CHECK(contentJson.get<std::string>(JSON_CA_ECDH) != "");
-      BOOST_CHECK(contentJson.get<std::string>(JSON_CA_SALT) != "");
-      BOOST_CHECK(contentJson.get<std::string>(JSON_CA_REQUEST_ID) != "");
-      auto challengesJson = contentJson.get_child(JSON_CA_CHALLENGES);
-      BOOST_CHECK(challengesJson.size() != 0);
+      auto contentBlock = response.getContent();
+      contentBlock.parse();
+
+      BOOST_CHECK(readString(contentBlock.get(tlv_ecdh_pub)) != "");
+      BOOST_CHECK(readString(contentBlock.get(tlv_salt)) != "");
+      BOOST_CHECK(readString(contentBlock.get(tlv_request_id)) != "");
+
+      auto challengeBlockCount = 0;
+      for (auto const& element: contentBlock.elements()) {
+        if (element.type() == tlv_challenge) {
+          challengeBlockCount++;
+        }
+      }
+
+      BOOST_CHECK(challengeBlockCount != 0);
 
       client.onNewResponse(response);
       BOOST_CHECK_EQUAL_COLLECTIONS(client.m_aesKey, client.m_aesKey + sizeof(client.m_aesKey),
@@ -246,7 +271,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithProbeToken)
   m_keyChain.sign(*data, signingByIdentity(ca.m_config.m_caPrefix));
 
   auto interest = client.generateNewInterest(time::system_clock::now(),
-                                             time::system_clock::now() + time::days(10),
+                                             time::system_clock::now() + time::days(1),
                                              Name("/ndn/zhiyi"), data);
 
   int count = 0;
@@ -277,7 +302,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
   item.m_anchor = cert;
   client.getClientConf().m_caItems.push_back(item);
   auto newInterest = client.generateNewInterest(time::system_clock::now(),
-                                                time::system_clock::now() + time::days(10), Name("/ndn/zhiyi"));
+                                                time::system_clock::now() + time::days(1), Name("/ndn/zhiyi"));
 
   // generate CHALLENGE Interest
   ChallengePin pinChallenge;
@@ -288,7 +313,6 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
   int count = 0;
   face.onSendData.connect([&] (const Data& response) {
     if (Name("/ndn/CA/NEW").isPrefixOf(response.getName())) {
-      auto contentJson = ClientModule::getJsonFromData(response);
       client.onNewResponse(response);
       auto paramJson = pinChallenge.getRequirementForChallenge(client.m_status, client.m_challengeStatus);
       challengeInterest = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,

@@ -188,7 +188,6 @@ ClientModule::generateNewInterest(const time::system_clock::TimePoint& notBefore
   security::v2::Certificate certRequest;
   certRequest.setName(Name(m_key.getName()).append("cert-request").appendVersion());
   certRequest.setContentType(tlv::ContentType_Key);
-  certRequest.setFreshnessPeriod(time::hours(24));
   certRequest.setContent(m_key.getPublicKey().data(), m_key.getPublicKey().size());
   SignatureInfo signatureInfo;
   signatureInfo.setValidityPeriod(security::ValidityPeriod(notBefore, notAfter));
@@ -254,9 +253,8 @@ ClientModule::generateChallengeInterest(const Block& challengeRequest)
   interest->setCanBePrefix(false);
 
   // encrypt the Interest parameters
-  auto payload = challengeRequest.get(tlv_encrypted_payload).getBuffer();
-  auto paramBlock = encodeBlockWithAesGcm128(tlv_encrypted_payload, m_aesKey,
-                                             payload->data(), payload->size(), (const uint8_t*)"test", strlen("test"));
+  auto paramBlock = encodeBlockWithAesGcm128(tlv::ApplicationParameters, m_aesKey,
+                                             challengeRequest.value(), challengeRequest.value_size(), (const uint8_t*)"test", strlen("test"));
   interest->setApplicationParameters(paramBlock);
 
   m_keyChain.sign(*interest, signingByKey(m_key.getName()));
@@ -282,7 +280,11 @@ ClientModule::onChallengeResponse(const Data& reply)
   m_freshBefore = time::system_clock::now() +
                   time::seconds(readNonNegativeInteger(contentTLV.get(tlv_remaining_time)));
 
-  m_issuedCertName.wireDecode(contentTLV.get(tlv_issued_cert_name));
+  if (contentTLV.find(tlv_issued_cert_name) != contentTLV.elements_end()) {
+    Block issuedCertNameBlock = contentTLV.get(tlv_issued_cert_name);
+    issuedCertNameBlock.parse();
+    m_issuedCertName.wireDecode(issuedCertNameBlock.get(tlv::Name));
+  }
 }
 
 shared_ptr<Interest>

@@ -189,6 +189,8 @@ CaModule::onNew(const Interest& request)
   // NEW Naming Convention: /<CA-prefix>/CA/NEW/[SignedInterestParameters_Digest]
   // get ECDH pub key and cert request
   const auto& parameterTLV = request.getApplicationParameters();
+  parameterTLV.parse();
+
   if (!parameterTLV.hasValue()) {
     _LOG_ERROR("Empty TLV obtained from the Interest parameter.");
     return;
@@ -218,9 +220,13 @@ CaModule::onNew(const Interest& request)
 
   // parse certificate request
   Block cert_req = parameterTLV.get(tlv_cert_request);
+  cert_req.parse();
+
   shared_ptr<security::v2::Certificate> clientCert = nullptr;
+
   try {
-    clientCert->wireDecode(cert_req);
+    security::v2::Certificate cert = security::v2::Certificate(cert_req.get(tlv::Data));
+    clientCert = make_shared<security::v2::Certificate>(cert);
   }
   catch (const std::exception& e) {
     _LOG_ERROR("Unrecognized certificate request: " << e.what());
@@ -233,7 +239,7 @@ CaModule::onNew(const Interest& request)
     _LOG_ERROR("Client requests a too old notBefore timepoint.");
     return;
   }
-  if (expectedPeriod.second > currentTime + m_config.m_validityPeriod ||
+  if (expectedPeriod.second > currentTime + m_config.m_maxValidityPeriod ||
       expectedPeriod.second <= expectedPeriod.first) {
     _LOG_ERROR("Client requests an invalid validity period or a notAfter timepoint beyond the allowed time period.");
     return;
@@ -381,9 +387,8 @@ CaModule::onChallenge(const Interest& request)
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
 
   // encrypt the content
-  auto payloadBuffer = payload.getBuffer();
-  auto contentBlock = encodeBlockWithAesGcm128(tlv::Content, m_aesKey, payloadBuffer->data(),
-                                               payloadBuffer->size(), (uint8_t*)"test", strlen("test"));
+  auto contentBlock = encodeBlockWithAesGcm128(tlv::Content, m_aesKey, payload.value(),
+                                               payload.value_size(), (uint8_t*)"test", strlen("test"));
   result.setContent(contentBlock);
   m_keyChain.sign(result, signingByIdentity(m_config.m_caPrefix));
   m_face.put(result);
@@ -410,7 +415,6 @@ CaModule::issueCertificate(const CertificateRequest& certRequest)
   signatureInfo.setValidityPeriod(period);
   security::SigningInfo signingInfo(security::SigningInfo::SIGNER_TYPE_ID,
                                     m_config.m_caPrefix, signatureInfo);
-  newCert.setFreshnessPeriod(m_config.m_freshnessPeriod);
 
   m_keyChain.sign(newCert, signingInfo);
   _LOG_TRACE("new cert got signed" << newCert);
