@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2019, Regents of the University of California.
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -22,7 +22,7 @@
 #include "challenge-module.hpp"
 
 #include <ndn-cxx/face.hpp>
-#include <ndn-cxx/security/v2/key-chain.hpp>
+#include <ndn-cxx/security/key-chain.hpp>
 
 #include <boost/asio/ip/tcp.hpp>
 #if BOOST_VERSION < 106700

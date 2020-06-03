@@ -56,7 +56,7 @@
 #include <ndn-cxx/util/backports.hpp>
 #include <ndn-cxx/util/signal.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
-#include <ndn-cxx/security/v2/certificate.hpp>
+#include <ndn-cxx/security/certificate.hpp>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/assert.hpp>
