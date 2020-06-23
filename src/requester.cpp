@@ -65,6 +65,7 @@ Requester::onCaProfileResponse(const Data& reply)
   auto caItem = INFO::decodeDataContent(reply.getContent());
   if (!security::verifySignature(reply, *caItem.m_cert)) {
     _LOG_ERROR("Cannot verify replied Data packet signature.");
+    BOOST_THROW_EXCEPTION(std::runtime_error("Cannot verify replied Data packet signature."));
     return boost::none;
   }
   return caItem;
@@ -88,6 +89,7 @@ Requester::onProbeResponse(const Data& reply, const CaProfile& ca,
 {
   if (!security::verifySignature(reply, *ca.m_cert)) {
     _LOG_ERROR("Cannot verify replied Data packet signature.");
+    BOOST_THROW_EXCEPTION(std::runtime_error("Cannot verify replied Data packet signature."));
     return;
   }
   processIfError(reply);
@@ -176,6 +178,7 @@ Requester::onNewRenewRevokeResponse(RequesterState& state, const Data& reply)
 {
   if (!security::verifySignature(reply, *state.m_caItem.m_cert)) {
     _LOG_ERROR("Cannot verify replied Data packet signature.");
+    BOOST_THROW_EXCEPTION(std::runtime_error("Cannot verify replied Data packet signature."));
     return std::list<std::string>();
   }
   processIfError(reply);
@@ -242,6 +245,7 @@ Requester::onChallengeResponse(RequesterState& state, const Data& reply)
 {
   if (!security::verifySignature(reply, *state.m_caItem.m_cert)) {
     _LOG_ERROR("Cannot verify replied Data packet signature.");
+    BOOST_THROW_EXCEPTION(std::runtime_error("Cannot verify replied Data packet signature."));
     return;
   }
   processIfError(reply);
@@ -278,6 +282,7 @@ Requester::onCertFetchResponse(const Data& reply)
   }
   catch (const std::exception& e) {
     _LOG_ERROR("Cannot parse replied certificate ");
+    BOOST_THROW_EXCEPTION(std::runtime_error("Cannot parse replied certificate "));
     return nullptr;
   }
 }
@@ -308,6 +313,9 @@ Requester::processIfError(const Data& data)
   if (std::get<0>(errorInfo) == ErrorCode::NO_ERROR) {
     return;
   }
+  _LOG_ERROR("Error info replied from the CA with Error code: " +
+            errorCodeToString(std::get<0>(errorInfo)) +
+            " and Error Info: " + std::get<1>(errorInfo));
   BOOST_THROW_EXCEPTION(std::runtime_error("Error info replied from the CA with Error code: " +
                                            errorCodeToString(std::get<0>(errorInfo)) +
                                            " and Error Info: " + std::get<1>(errorInfo)));
