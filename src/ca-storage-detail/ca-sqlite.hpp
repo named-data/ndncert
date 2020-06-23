@@ -22,7 +22,7 @@
 #define NDNCERT_CA_DETAIL_CA_SQLITE_HPP
 
 #include "../ca-module.hpp"
-#include "../request-state.hpp"
+#include "../ca-state.hpp"
 
 struct sqlite3;
 
@@ -41,22 +41,22 @@ public:
 
 public:
   // certificate request related
-  RequestState
+  CaState
   getRequest(const std::string& requestId) override;
 
   void
-  addRequest(const RequestState& request) override;
+  addRequest(const CaState& request) override;
 
   void
-  updateRequest(const RequestState& request) override;
+  updateRequest(const CaState& request) override;
 
   void
   deleteRequest(const std::string& requestId) override;
 
-  std::list<RequestState>
+  std::list<CaState>
   listAllRequests() override;
 
-  std::list<RequestState>
+  std::list<CaState>
   listAllRequests(const Name& caName) override;
 
   // certificate related

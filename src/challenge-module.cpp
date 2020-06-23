@@ -73,7 +73,7 @@ ChallengeModule::generateSecretCode()
 }
 
 std::tuple<ErrorCode, std::string>
-ChallengeModule::returnWithError(RequestState& request, ErrorCode errorCode, std::string&& errorInfo)
+ChallengeModule::returnWithError(CaState& request, ErrorCode errorCode, std::string&& errorInfo)
 {
   request.m_status = Status::FAILURE;
   request.m_challengeType = "";
@@ -82,7 +82,7 @@ ChallengeModule::returnWithError(RequestState& request, ErrorCode errorCode, std
 }
 
 std::tuple<ErrorCode, std::string>
-ChallengeModule::returnWithNewChallengeStatus(RequestState& request, const std::string& challengeStatus,
+ChallengeModule::returnWithNewChallengeStatus(CaState& request, const std::string& challengeStatus,
                                               JsonSection&& challengeSecret, size_t remainingTries, time::seconds remainingTime)
 {
   request.m_status = Status::CHALLENGE;
@@ -92,7 +92,7 @@ ChallengeModule::returnWithNewChallengeStatus(RequestState& request, const std::
 }
 
 std::tuple<ErrorCode, std::string>
-ChallengeModule::returnWithSuccess(RequestState& request)
+ChallengeModule::returnWithSuccess(CaState& request)
 {
   request.m_status = Status::PENDING;
   request.m_challengeType = CHALLENGE_TYPE;

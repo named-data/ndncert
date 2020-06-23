@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_REQUEST_STATE_HPP
-#define NDNCERT_REQUEST_STATE_HPP
+#ifndef NDNCERT_CA_STATE_HPP
+#define NDNCERT_CA_STATE_HPP
 
 #include "ndncert-common.hpp"
 
@@ -44,17 +44,17 @@ struct ChallengeState {
  * m_challengeDefinedField to finish verification.
  *
  */
-class RequestState {
+class CaState {
 
 public:
-  RequestState();
-  RequestState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
-                     const security::v2::Certificate& cert, Block m_encryptionKey);
-  RequestState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
-                     const security::v2::Certificate& cert, const std::string& challengeType,
-                     const std::string& challengeStatus, const system_clock::TimePoint& challengeTp,
-                     size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
-                     Block m_encryptionKey);
+  CaState();
+  CaState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
+          const security::v2::Certificate& cert, Block m_encryptionKey);
+  CaState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
+          const security::v2::Certificate& cert, const std::string& challengeType,
+          const std::string& challengeStatus, const system_clock::TimePoint& challengeTp,
+          size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
+          Block m_encryptionKey);
 
 public:
   Name m_caPrefix;
@@ -69,9 +69,9 @@ public:
 };
 
 std::ostream&
-operator<<(std::ostream& os, const RequestState& request);
+operator<<(std::ostream& os, const CaState& request);
 
 }  // namespace ndncert
 }  // namespace ndn
 
-#endif  // NDNCERT_REQUEST_STATE_HPP
+#endif  // NDNCERT_CA_STATE_HPP

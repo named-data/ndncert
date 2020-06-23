@@ -30,7 +30,7 @@ CaMemory::STORAGE_TYPE = "ca-storage-memory";
 
 NDNCERT_REGISTER_CA_STORAGE(CaMemory);
 
-RequestState
+CaState
 CaMemory::getRequest(const std::string& requestId)
 {
   auto search = m_requests.find(requestId);
@@ -41,7 +41,7 @@ CaMemory::getRequest(const std::string& requestId)
 }
 
 void
-CaMemory::addRequest(const RequestState& request)
+CaMemory::addRequest(const CaState& request)
 {
   for (auto& entry : m_requests) {
     const auto& existingRequest = entry.second;
@@ -68,7 +68,7 @@ CaMemory::addRequest(const RequestState& request)
 }
 
 void
-CaMemory::updateRequest(const RequestState& request)
+CaMemory::updateRequest(const CaState& request)
 {
   m_requests[request.m_requestId] = request;
 }
@@ -82,20 +82,20 @@ CaMemory::deleteRequest(const std::string& requestId)
   }
 }
 
-std::list<RequestState>
+std::list<CaState>
 CaMemory::listAllRequests()
 {
-  std::list<RequestState> result;
+  std::list<CaState> result;
   for (const auto& entry : m_requests) {
     result.push_back(entry.second);
   }
   return result;
 }
 
-std::list<RequestState>
+std::list<CaState>
 CaMemory::listAllRequests(const Name& caName)
 {
-  std::list<RequestState> result;
+  std::list<CaState> result;
   for (const auto& entry : m_requests) {
     if (entry.second.m_caPrefix == caName) {
       result.push_back(entry.second);

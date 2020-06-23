@@ -18,10 +18,10 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_CA_CONFIG_HPP
-#define NDNCERT_CA_CONFIG_HPP
+#ifndef NDNCERT_CONFIGURATION_HPP
+#define NDNCERT_CONFIGURATION_HPP
 
-#include "request-state.hpp"
+#include "ca-state.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -95,9 +95,9 @@ using NameAssignmentFunc = function<std::vector<std::string>(const std::vector<s
  * fired whenever a request instance is created, challenge status is updated, and when certificate
  * is issued.
  *
- * @p RequestState, input, the state of the certificate request whose status is updated.
+ * @p CaState, input, the state of the certificate request whose status is updated.
  */
-using StatusUpdateCallback = function<void(const RequestState&)>;
+using StatusUpdateCallback = function<void(const CaState&)>;
 
 /**
  * @brief CA's configuration on NDNCERT.
@@ -185,4 +185,4 @@ public:
 }  // namespace ndncert
 }  // namespace ndn
 
-#endif  // NDNCERT_CA_CONFIG_HPP
+#endif  // NDNCERT_CONFIGURATION_HPP

@@ -33,22 +33,22 @@ public:
 
 public:
   // certificate request related
-  RequestState
+  CaState
   getRequest(const std::string& requestId) override;
 
   void
-  addRequest(const RequestState& request) override;
+  addRequest(const CaState& request) override;
 
   void
-  updateRequest(const RequestState& request) override;
+  updateRequest(const CaState& request) override;
 
   void
   deleteRequest(const std::string& requestId) override;
 
-  std::list<RequestState>
+  std::list<CaState>
   listAllRequests() override;
 
-  std::list<RequestState>
+  std::list<CaState>
   listAllRequests(const Name& caName) override;
 
   // certificate related
@@ -71,7 +71,7 @@ public:
   listAllIssuedCertificates(const Name& caName) override;
 
 private:
-  std::map<std::string, RequestState> m_requests;
+  std::map<std::string, CaState> m_requests;
   std::map<std::string, security::v2::Certificate> m_issuedCerts;
 };
 

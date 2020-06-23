@@ -18,11 +18,11 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_CLIENT_MODULE_HPP
-#define NDNCERT_CLIENT_MODULE_HPP
+#ifndef NDNCERT_REQUESTER_HPP
+#define NDNCERT_REQUESTER_HPP
 
 #include "configuration.hpp"
-#include "request-state.hpp"
+#include "ca-state.hpp"
 #include "crypto-support/crypto-helper.hpp"
 
 namespace ndn {
@@ -120,4 +120,4 @@ private:
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_CLIENT_MODULE_HPP
+#endif // NDNCERT_REQUESTER_HPP

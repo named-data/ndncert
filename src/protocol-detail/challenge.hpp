@@ -21,7 +21,7 @@
 #ifndef NDNCERT_PROTOCOL_DETAIL_CHALLENGE_HPP
 #define NDNCERT_PROTOCOL_DETAIL_CHALLENGE_HPP
 
-#include "../request-state.hpp"
+#include "../ca-state.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -29,7 +29,7 @@ namespace ndncert {
 class CHALLENGE {
 public:
   static Block
-  encodeDataPayload(const RequestState& request);
+  encodeDataPayload(const CaState& request);
 
   struct DecodedData{
       Status status;

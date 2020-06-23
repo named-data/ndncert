@@ -76,7 +76,7 @@ NEW_RENEW_REVOKE::decodeApplicationParameters(const Block& payload, RequestType 
 
 Block
 NEW_RENEW_REVOKE::encodeDataContent(const std::string& ecdhKey, const std::string& salt,
-                                    const RequestState& request,
+                                    const CaState& request,
                                     const std::list<std::string>& challenges)
 {
   Block response = makeEmptyBlock(tlv::Content);

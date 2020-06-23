@@ -457,7 +457,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
   signatureInfo.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
                                                            time::system_clock::now() + time::hours(10)));
   m_keyChain.sign(clientCert, signingByKey(clientKey.getName()).setSignatureInfo(signatureInfo));
-  RequestState certRequest(Name("/ndn"), "122", RequestType::NEW, Status::SUCCESS, clientCert, makeEmptyBlock(tlv::ContentType_Key));
+  CaState certRequest(Name("/ndn"), "122", RequestType::NEW, Status::SUCCESS, clientCert, makeEmptyBlock(tlv::ContentType_Key));
   auto issuedCert = ca.issueCertificate(certRequest);
 
   CaProfile item;

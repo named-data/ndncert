@@ -326,8 +326,8 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
 
   // create new request instance
   std::string requestId = std::to_string(random::generateWord64());
-  RequestState requestState(m_config.m_caItem.m_caPrefix, requestId, requestType, Status::BEFORE_CHALLENGE, *clientCert,
-          makeBinaryBlock(tlv::ContentType_Key, aesKey, sizeof(aesKey)));
+  CaState requestState(m_config.m_caItem.m_caPrefix, requestId, requestType, Status::BEFORE_CHALLENGE, *clientCert,
+                       makeBinaryBlock(tlv::ContentType_Key, aesKey, sizeof(aesKey)));
   m_storage->addRequest(requestState);
   Data result;
   result.setName(request.getName());
@@ -347,7 +347,7 @@ void
 CaModule::onChallenge(const Interest& request)
 {
   // get certificate request state
-  RequestState requestState = getCertificateRequest(request);
+  CaState requestState = getCertificateRequest(request);
   if (requestState.m_requestId == "") {
     _LOG_ERROR("No certificate request state can be found.");
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
@@ -446,7 +446,7 @@ CaModule::onChallenge(const Interest& request)
 }
 
 security::v2::Certificate
-CaModule::issueCertificate(const RequestState& requestState)
+CaModule::issueCertificate(const CaState& requestState)
 {
   auto expectedPeriod =
       requestState.m_cert.getValidityPeriod().getPeriod();
@@ -468,11 +468,11 @@ CaModule::issueCertificate(const RequestState& requestState)
   return newCert;
 }
 
-RequestState
+CaState
 CaModule::getCertificateRequest(const Interest& request)
 {
   std::string requestId;
-  RequestState requestState;
+  CaState requestState;
   try {
     requestId = readString(request.getName().at(m_config.m_caItem.m_caPrefix.size() + 2));
   }

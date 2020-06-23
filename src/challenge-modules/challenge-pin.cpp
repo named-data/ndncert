@@ -38,7 +38,7 @@ ChallengePin::ChallengePin(const size_t& maxAttemptTimes, const time::seconds& s
 
 // For CA
 std::tuple<ErrorCode, std::string>
-ChallengePin::handleChallengeRequest(const Block& params, RequestState& request)
+ChallengePin::handleChallengeRequest(const Block& params, CaState& request)
 {
   params.parse();
   auto currentTime = time::system_clock::now();

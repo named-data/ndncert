@@ -21,7 +21,7 @@
 #ifndef NDNCERT_PROTOCOL_DETAIL_NEW_RENEW_REVOKE_HPP
 #define NDNCERT_PROTOCOL_DETAIL_NEW_RENEW_REVOKE_HPP
 
-#include "../request-state.hpp"
+#include "../ca-state.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -36,7 +36,7 @@ public:
 
   static Block
   encodeDataContent(const std::string& ecdhKey, const std::string& salt,
-                             const RequestState& request,
+                             const CaState& request,
                              const std::list<std::string>& challenges);
   struct DecodedData {
     std::string ecdhKey;

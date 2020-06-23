@@ -37,7 +37,7 @@ using namespace ndn::util;
 
 static const std::string INITIALIZATION = R"_DBTEXT_(
 CREATE TABLE IF NOT EXISTS
-  RequestStates(
+  CaStates(
     id INTEGER PRIMARY KEY,
     request_id TEXT NOT NULL,
     ca_name BLOB NOT NULL,
@@ -54,9 +54,9 @@ CREATE TABLE IF NOT EXISTS
     encryption_key BLOB NOT NULL
   );
 CREATE UNIQUE INDEX IF NOT EXISTS
-  RequestStateIdIndex ON RequestStates(request_id);
+  CaStateIdIndex ON CaStates(request_id);
 CREATE UNIQUE INDEX IF NOT EXISTS
-  RequestStateKeyNameIndex ON RequestStates(cert_key_name);
+  CaStateKeyNameIndex ON CaStates(cert_key_name);
 
 CREATE TABLE IF NOT EXISTS
   IssuedCerts(
@@ -114,7 +114,7 @@ CaSqlite::~CaSqlite()
   sqlite3_close(m_database);
 }
 
-RequestState
+CaState
 CaSqlite::getRequest(const std::string& requestId)
 {
   Sqlite3Statement statement(m_database,
@@ -122,7 +122,7 @@ CaSqlite::getRequest(const std::string& requestId)
                              challenge_status, cert_request,
                              challenge_type, challenge_secrets,
                              challenge_tp, remaining_tries, remaining_time, request_type, encryption_key
-                             FROM RequestStates where request_id = ?)_SQLTEXT_");
+                             FROM CaStates where request_id = ?)_SQLTEXT_");
   statement.bind(1, requestId, SQLITE_TRANSIENT);
 
   if (statement.step() == SQLITE_ROW) {
@@ -138,13 +138,13 @@ CaSqlite::getRequest(const std::string& requestId)
     auto requestType = static_cast<RequestType>(statement.getInt(10));
     auto encryptionKey = statement.getBlock(11);
     if (challengeType != "") {
-      return RequestState(caName, requestId, requestType, status, cert,
-                                challengeType, challengeStatus, time::fromIsoString(challengeTp),
-                                remainingTries, time::seconds(remainingTime),
-                                convertString2Json(challengeSecrets), encryptionKey);
+      return CaState(caName, requestId, requestType, status, cert,
+                     challengeType, challengeStatus, time::fromIsoString(challengeTp),
+                     remainingTries, time::seconds(remainingTime),
+                     convertString2Json(challengeSecrets), encryptionKey);
     }
     else {
-      return RequestState(caName, requestId, requestType, status, cert, encryptionKey);
+      return CaState(caName, requestId, requestType, status, cert, encryptionKey);
     }
   }
   else {
@@ -153,13 +153,13 @@ CaSqlite::getRequest(const std::string& requestId)
 }
 
 void
-CaSqlite::addRequest(const RequestState& request)
+CaSqlite::addRequest(const CaState& request)
 {
 
   // check whether request is there already
   auto keyNameTlv = request.m_cert.getKeyName().wireEncode();
   Sqlite3Statement statement1(m_database,
-          R"_SQLTEXT_(SELECT 1 FROM RequestStates where cert_key_name = ?)_SQLTEXT_");
+          R"_SQLTEXT_(SELECT 1 FROM CaStates where cert_key_name = ?)_SQLTEXT_");
   statement1.bind(1, keyNameTlv, SQLITE_TRANSIENT);
   if (statement1.step() == SQLITE_ROW) {
     BOOST_THROW_EXCEPTION(Error("Request for " + request.m_cert.getKeyName().toUri() + " already exists"));
@@ -175,7 +175,7 @@ CaSqlite::addRequest(const RequestState& request)
 
   Sqlite3Statement statement(
       m_database,
-      R"_SQLTEXT_(INSERT OR ABORT INTO RequestStates (request_id, ca_name, status, request_type,
+      R"_SQLTEXT_(INSERT OR ABORT INTO CaStates (request_id, ca_name, status, request_type,
                   cert_key_name, cert_request, challenge_type, challenge_status, challenge_secrets,
                   challenge_tp, remaining_tries, remaining_time, encryption_key)
                   values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
@@ -201,10 +201,10 @@ CaSqlite::addRequest(const RequestState& request)
 }
 
 void
-CaSqlite::updateRequest(const RequestState& request)
+CaSqlite::updateRequest(const CaState& request)
 {
   Sqlite3Statement statement(m_database,
-                             R"_SQLTEXT_(UPDATE RequestStates
+                             R"_SQLTEXT_(UPDATE CaStates
                              SET status = ?, challenge_type = ?, challenge_status = ?, challenge_secrets = ?,
                              challenge_tp = ?, remaining_tries = ?, remaining_time = ?
                              WHERE request_id = ?)_SQLTEXT_");
@@ -232,14 +232,14 @@ CaSqlite::updateRequest(const RequestState& request)
   }
 }
 
-std::list<RequestState>
+std::list<CaState>
 CaSqlite::listAllRequests()
 {
-  std::list<RequestState> result;
+  std::list<CaState> result;
   Sqlite3Statement statement(m_database, R"_SQLTEXT_(SELECT id, request_id, ca_name, status,
                              challenge_status, cert_key_name, cert_request, challenge_type, challenge_secrets,
                              challenge_tp, remaining_tries, remaining_time, request_type, encryption_key
-                             FROM RequestStates)_SQLTEXT_");
+                             FROM CaStates)_SQLTEXT_");
   while (statement.step() == SQLITE_ROW) {
     auto requestId = statement.getString(1);
     Name caName(statement.getBlock(2));
@@ -254,27 +254,27 @@ CaSqlite::listAllRequests()
     auto requestType = static_cast<RequestType>(statement.getInt(12));
     auto encryptionKey = statement.getBlock(13);
     if (challengeType != "") {
-      result.push_back(RequestState(caName, requestId, requestType, status, cert,
-                                          challengeType, challengeStatus, time::fromIsoString(challengeTp),
-                                          remainingTries, time::seconds(remainingTime),
-                                          convertString2Json(challengeSecrets), encryptionKey));
+      result.push_back(CaState(caName, requestId, requestType, status, cert,
+                               challengeType, challengeStatus, time::fromIsoString(challengeTp),
+                               remainingTries, time::seconds(remainingTime),
+                               convertString2Json(challengeSecrets), encryptionKey));
     }
     else {
-      result.push_back(RequestState(caName, requestId, requestType, status, cert, encryptionKey));
+      result.push_back(CaState(caName, requestId, requestType, status, cert, encryptionKey));
     }
   }
   return result;
 }
 
-std::list<RequestState>
+std::list<CaState>
 CaSqlite::listAllRequests(const Name& caName)
 {
-  std::list<RequestState> result;
+  std::list<CaState> result;
   Sqlite3Statement statement(m_database,
                              R"_SQLTEXT_(SELECT id, request_id, ca_name, status,
                              challenge_status, cert_key_name, cert_request, challenge_type, challenge_secrets,
                              challenge_tp, remaining_tries, remaining_time, request_type, encryption_key
-                             FROM RequestStates WHERE ca_name = ?)_SQLTEXT_");
+                             FROM CaStates WHERE ca_name = ?)_SQLTEXT_");
   statement.bind(1, caName.wireEncode(), SQLITE_TRANSIENT);
 
   while (statement.step() == SQLITE_ROW) {
@@ -291,13 +291,13 @@ CaSqlite::listAllRequests(const Name& caName)
     auto requestType = static_cast<RequestType>(statement.getInt(12));
     auto encryptionKey = statement.getBlock(13);
     if (challengeType != "") {
-      result.push_back(RequestState(caName, requestId, requestType, status, cert,
-                                          challengeType, challengeStatus, time::fromIsoString(challengeTp),
-                                          remainingTries, time::seconds(remainingTime),
-                                          convertString2Json(challengeSecrets), encryptionKey));
+      result.push_back(CaState(caName, requestId, requestType, status, cert,
+                               challengeType, challengeStatus, time::fromIsoString(challengeTp),
+                               remainingTries, time::seconds(remainingTime),
+                               convertString2Json(challengeSecrets), encryptionKey));
     }
     else {
-      result.push_back(RequestState(caName, requestId, requestType, status, cert, encryptionKey));
+      result.push_back(CaState(caName, requestId, requestType, status, cert, encryptionKey));
     }
   }
   return result;
@@ -307,7 +307,7 @@ void
 CaSqlite::deleteRequest(const std::string& requestId)
 {
   Sqlite3Statement statement(m_database,
-                             R"_SQLTEXT_(DELETE FROM RequestStates WHERE request_id = ?)_SQLTEXT_");
+                             R"_SQLTEXT_(DELETE FROM CaStates WHERE request_id = ?)_SQLTEXT_");
   statement.bind(1, requestId, SQLITE_TRANSIENT);
   statement.step();
 }

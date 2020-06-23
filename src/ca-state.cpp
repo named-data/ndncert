@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "request-state.hpp"
+#include "ca-state.hpp"
 #include <ndn-cxx/util/indented-stream.hpp>
 
 namespace ndn {
@@ -36,14 +36,14 @@ ChallengeState::ChallengeState(const std::string& challengeStatus,
 {
 }
 
-RequestState::RequestState()
+CaState::CaState()
     : m_requestType(RequestType::NOTINITIALIZED)
     , m_status(Status::NOT_STARTED)
 {
 }
 
-RequestState::RequestState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
-                                       const security::v2::Certificate& cert, Block encryptionKey)
+CaState::CaState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
+                 const security::v2::Certificate& cert, Block encryptionKey)
     : m_caPrefix(caName)
     , m_requestId(requestId)
     , m_requestType(requestType)
@@ -53,11 +53,11 @@ RequestState::RequestState(const Name& caName, const std::string& requestId, Req
 {
 }
 
-RequestState::RequestState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
-                                       const security::v2::Certificate& cert, const std::string& challengeType,
-                                       const std::string& challengeStatus, const system_clock::TimePoint& challengeTp,
-                                       size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
-                                       Block encryptionKey)
+CaState::CaState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
+                 const security::v2::Certificate& cert, const std::string& challengeType,
+                 const std::string& challengeStatus, const system_clock::TimePoint& challengeTp,
+                 size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
+                 Block encryptionKey)
     : m_caPrefix(caName)
     , m_requestId(requestId)
     , m_requestType(requestType)
@@ -70,7 +70,7 @@ RequestState::RequestState(const Name& caName, const std::string& requestId, Req
 }
 
 std::ostream&
-operator<<(std::ostream& os, const RequestState& request)
+operator<<(std::ostream& os, const CaState& request)
 {
   os << "Request's CA name:\n";
   os << "  " << request.m_caPrefix << "\n";

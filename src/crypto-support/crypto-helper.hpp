@@ -21,7 +21,7 @@
 #ifndef NDNCERT_CRYPTO_SUPPORT_CRYPTO_HELPER_HPP
 #define NDNCERT_CRYPTO_SUPPORT_CRYPTO_HELPER_HPP
 
-#include "request-state.hpp"
+#include "ca-state.hpp"
 #include <openssl/ec.h>
 #include <openssl/evp.h>
 

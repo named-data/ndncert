@@ -57,7 +57,7 @@ public:
 
   // For CA
   std::tuple<ErrorCode, std::string>
-  handleChallengeRequest(const Block& params, RequestState& request) override;
+  handleChallengeRequest(const Block& params, CaState& request) override;
 
   // For Client
   std::vector<std::tuple<std::string, std::string>>
@@ -81,7 +81,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 
   void
   sendEmail(const std::string& emailAddress, const std::string& secret,
-            const RequestState& request) const;
+            const CaState& request) const;
 
 private:
   std::string m_sendEmailScript;
