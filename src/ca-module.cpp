@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -127,7 +127,7 @@ CaModule::onProbe(const Interest& request)
   }
   else {
     // if not a PROBE INFO, find an available name
-    std::string availableId = "";
+    std::string availableId;
     const auto& parameterJson = jsonFromBlock(request.getApplicationParameters());
     if (parameterJson.empty()) {
       _LOG_ERROR("Empty JSON obtained from the Interest parameter.");
@@ -459,7 +459,7 @@ CaModule::issueCertificate(const CertificateRequest& certRequest)
 CertificateRequest
 CaModule::getCertificateRequest(const Interest& request)
 {
-  std::string requestId = "";
+  std::string requestId;
   CertificateRequest certRequest;
   try {
     requestId = readString(request.getName().at(m_config.m_caName.size() + 2));
@@ -539,9 +539,9 @@ CaModule::genProbeResponseJson()
   const auto& pib = m_keyChain.getPib();
   const auto& identity = pib.getIdentity(m_config.m_caName);
   const auto& cert = identity.getDefaultKey().getDefaultCertificate();
-  std::string caInfo = "";
-  if (m_config.m_caInfo == "") {
-    caInfo = "Issued by " + cert.getSignature().getKeyLocator().getName().toUri();
+  std::string caInfo;
+  if (m_config.m_caInfo.empty()) {
+    caInfo = "Issued by " + cert.getSignatureInfo().getKeyLocator().getName().toUri();
   }
   else {
     caInfo = m_config.m_caInfo;

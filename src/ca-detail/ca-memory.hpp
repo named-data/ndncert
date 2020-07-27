@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -52,27 +52,27 @@ public:
   listAllRequests(const Name& caName) override;
 
   // certificate related
-  security::v2::Certificate
+  security::Certificate
   getCertificate(const std::string& certId) override;
 
   void
-  addCertificate(const std::string& certId, const security::v2::Certificate& cert) override;
+  addCertificate(const std::string& certId, const security::Certificate& cert) override;
 
   void
-  updateCertificate(const std::string& certId, const security::v2::Certificate& cert) override;
+  updateCertificate(const std::string& certId, const security::Certificate& cert) override;
 
   void
   deleteCertificate(const std::string& certId) override;
 
-  std::list<security::v2::Certificate>
+  std::list<security::Certificate>
   listAllIssuedCertificates() override;
 
-  std::list<security::v2::Certificate>
+  std::list<security::Certificate>
   listAllIssuedCertificates(const Name& caName) override;
 
 private:
   std::map<std::string, CertificateRequest> m_requests;
-  std::map<std::string, security::v2::Certificate> m_issuedCerts;
+  std::map<std::string, security::Certificate> m_issuedCerts;
 };
 
 } // namespace ndncert

@@ -1,5 +1,5 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
+/*
  * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
@@ -18,15 +18,18 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "client-module.hpp"
 #include "challenge-module.hpp"
+#include "client-module.hpp"
+
+#include <csignal>
 #include <iostream>
 #include <string>
-#include <csignal>
-#include <boost/program_options/options_description.hpp>
-#include <boost/program_options/variables_map.hpp>
-#include <boost/program_options/parsers.hpp>
+
 #include <boost/asio.hpp>
+#include <boost/program_options/options_description.hpp>
+#include <boost/program_options/parsers.hpp>
+#include <boost/program_options/variables_map.hpp>
+
 #include <ndn-cxx/security/verification-helpers.hpp>
 
 namespace ndn {
@@ -36,7 +39,7 @@ static void startApplication();
 
 int nStep;
 Face face;
-security::v2::KeyChain keyChain;
+security::KeyChain keyChain;
 std::string challengeType;
 int validityPeriod = -1;
 ClientModule client(keyChain);
@@ -226,9 +229,10 @@ probeInfoCb(const Data& reply)
   auto caItem = ClientConfig::extractCaItem(contentJson);
 
   std::cerr << "Will use a new trust anchor, please double check the identity info: \n"
-            << "This trust anchor information is signed by " << reply.getSignature().getKeyLocator() << std::endl
-            << "The certificate is " << caItem.m_anchor << std::endl;
-  std::cerr << "Do you trust the information? Type in YES or NO" << std::endl;
+            << "This trust anchor information is signed by " << reply.getSignatureInfo().getKeyLocator()
+            << std::endl
+            << "The certificate is " << caItem.m_anchor << std::endl
+            << "Do you trust the information? Type in YES or NO" << std::endl;
 
   std::string answer;
   getline(std::cin, answer);
@@ -380,8 +384,9 @@ main(int argc, char* argv[])
   po::options_description description("General Usage\n ndncert-client [-h] [-c] [-v]\n");
   description.add_options()
     ("help,h", "produce help message")
-    ("config-file,c", po::value<std::string>(&configFilePath), "config file name")
-    ("validity-period,v", po::value<int>(&validityPeriod)->default_value(-1), "the validity period of your certificate being requested");
+    ("config-file,c",     po::value<std::string>(&configFilePath), "configuration file name")
+    ("validity-period,v", po::value<int>(&validityPeriod)->default_value(-1),
+                          "desired validity period (hours) of the certificate being requested");
   po::positional_options_description p;
 
   po::variables_map vm;

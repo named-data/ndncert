@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -19,6 +19,8 @@
  */
 
 #include "ca-memory.hpp"
+
+#include <ndn-cxx/security/validation-policy.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -103,22 +105,18 @@ CaMemory::listAllRequests(const Name& caName)
 }
 
 // certificate related
-security::v2::Certificate
+security::Certificate
 CaMemory::getCertificate(const std::string& certId)
 {
-  security::v2::Certificate cert;
   auto search = m_issuedCerts.find(certId);
   if (search != m_issuedCerts.end()) {
-    cert = search->second;
-    return cert;
+    return search->second;
   }
-  else {
-    BOOST_THROW_EXCEPTION(Error("Certificate with ID " + certId + " does not exists"));
-  }
+  BOOST_THROW_EXCEPTION(Error("Certificate with ID " + certId + " does not exists"));
 }
 
 void
-CaMemory::addCertificate(const std::string& certId, const security::v2::Certificate& cert)
+CaMemory::addCertificate(const std::string& certId, const security::Certificate& cert)
 {
   auto search = m_issuedCerts.find(certId);
   if (search == m_issuedCerts.end()) {
@@ -130,7 +128,7 @@ CaMemory::addCertificate(const std::string& certId, const security::v2::Certific
 }
 
 void
-CaMemory::updateCertificate(const std::string& certId, const security::v2::Certificate& cert)
+CaMemory::updateCertificate(const std::string& certId, const security::Certificate& cert)
 {
   m_issuedCerts[certId] = cert;
 }
@@ -144,22 +142,23 @@ CaMemory::deleteCertificate(const std::string& certId)
   }
 }
 
-std::list<security::v2::Certificate>
+std::list<security::Certificate>
 CaMemory::listAllIssuedCertificates()
 {
-  std::list<security::v2::Certificate> result;
+  std::list<security::Certificate> result;
   for (const auto& entry : m_issuedCerts) {
     result.push_back(entry.second);
   }
   return result;
 }
 
-std::list<security::v2::Certificate>
+std::list<security::Certificate>
 CaMemory::listAllIssuedCertificates(const Name& caName)
 {
-  std::list<security::v2::Certificate> result;
+  std::list<security::Certificate> result;
   for (const auto& entry : m_issuedCerts) {
-    if (entry.second.getSignature().getKeyLocator().getName().getPrefix(-2) == caName) {
+    const auto& klName = entry.second.getSignatureInfo().getKeyLocator().getName();
+    if (security::extractIdentityNameFromKeyLocator(klName) == caName) {
       result.push_back(entry.second);
     }
   }

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -19,6 +19,8 @@
  */
 
 #include "ca-sqlite.hpp"
+
+#include <ndn-cxx/security/validation-policy.hpp>
 #include <ndn-cxx/util/sqlite3-statement.hpp>
 
 #include <sqlite3.h>
@@ -27,8 +29,7 @@
 namespace ndn {
 namespace ndncert {
 
-const std::string
-CaSqlite::STORAGE_TYPE = "ca-storage-sqlite3";
+const std::string CaSqlite::STORAGE_TYPE = "ca-storage-sqlite3";
 
 NDNCERT_REGISTER_CA_STORAGE(CaSqlite);
 
@@ -99,7 +100,7 @@ CaSqlite::CaSqlite(const std::string& location)
 
   // initialize database specific tables
   char* errorMessage = nullptr;
-  result = sqlite3_exec(m_database, INITIALIZATION.c_str(),
+  result = sqlite3_exec(m_database, INITIALIZATION.data(),
                         nullptr, nullptr, &errorMessage);
   if (result != SQLITE_OK && errorMessage != nullptr) {
     sqlite3_free(errorMessage);
@@ -124,7 +125,7 @@ CaSqlite::getRequest(const std::string& requestId)
     Name caName(statement.getBlock(2));
     int status = statement.getInt(3);
     std::string challengeStatus = statement.getString(4);
-    security::v2::Certificate cert(statement.getBlock(6));
+    security::Certificate cert(statement.getBlock(6));
     std::string challengeType = statement.getString(7);
     std::string challengeSecrets = statement.getString(8);
     std::string challengeTp = statement.getString(9);
@@ -244,12 +245,12 @@ CaSqlite::listAllRequests()
   std::list<CertificateRequest> result;
   Sqlite3Statement statement(m_database, R"_SQLTEXT_(SELECT * FROM CertRequests)_SQLTEXT_");
 
-  while(statement.step() == SQLITE_ROW) {
+  while (statement.step() == SQLITE_ROW) {
     std::string requestId = statement.getString(1);
     Name caName(statement.getBlock(2));
     int status = statement.getInt(3);
     std::string challengeStatus = statement.getString(4);
-    security::v2::Certificate cert(statement.getBlock(6));
+    security::Certificate cert(statement.getBlock(6));
     std::string challengeType = statement.getString(7);
     std::string challengeSecrets = statement.getString(8);
     std::string challengeTp = statement.getString(9);
@@ -271,12 +272,12 @@ CaSqlite::listAllRequests(const Name& caName)
                              R"_SQLTEXT_(SELECT * FROM CertRequests WHERE ca_name = ?)_SQLTEXT_");
   statement.bind(1, caName.wireEncode(), SQLITE_TRANSIENT);
 
-  while(statement.step() == SQLITE_ROW) {
+  while (statement.step() == SQLITE_ROW) {
     std::string requestId = statement.getString(1);
     Name caName(statement.getBlock(2));
     int status = statement.getInt(3);
     std::string challengeStatus = statement.getString(4);
-    security::v2::Certificate cert(statement.getBlock(6));
+    security::Certificate cert(statement.getBlock(6));
     std::string challengeType = statement.getString(7);
     std::string challengeSecrets = statement.getString(8);
     std::string challengeTp = statement.getString(9);
@@ -299,7 +300,7 @@ CaSqlite::deleteRequest(const std::string& requestId)
   statement.step();
 }
 
-security::v2::Certificate
+security::Certificate
 CaSqlite::getCertificate(const std::string& certId)
 {
   Sqlite3Statement statement(m_database,
@@ -307,8 +308,7 @@ CaSqlite::getCertificate(const std::string& certId)
   statement.bind(1, certId, SQLITE_TRANSIENT);
 
   if (statement.step() == SQLITE_ROW) {
-    security::v2::Certificate cert(statement.getBlock(0));
-    return cert;
+    return security::Certificate(statement.getBlock(0));
   }
   else {
     BOOST_THROW_EXCEPTION(Error("Certificate with ID " + certId + " cannot be fetched from database"));
@@ -316,7 +316,7 @@ CaSqlite::getCertificate(const std::string& certId)
 }
 
 void
-CaSqlite::addCertificate(const std::string& certId, const security::v2::Certificate& cert)
+CaSqlite::addCertificate(const std::string& certId, const security::Certificate& cert)
 {
   Sqlite3Statement statement(m_database,
                              R"_SQLTEXT_(INSERT INTO IssuedCerts (cert_id, cert_key_name, cert)
@@ -331,7 +331,7 @@ CaSqlite::addCertificate(const std::string& certId, const security::v2::Certific
 }
 
 void
-CaSqlite::updateCertificate(const std::string& certId, const security::v2::Certificate& cert)
+CaSqlite::updateCertificate(const std::string& certId, const security::Certificate& cert)
 {
   Sqlite3Statement statement(m_database,
                              R"_SQLTEXT_(UPDATE IssuedCerts SET cert = ? WHERE cert_id = ?)_SQLTEXT_");
@@ -352,26 +352,26 @@ CaSqlite::deleteCertificate(const std::string& certId)
   statement.step();
 }
 
-std::list<security::v2::Certificate>
+std::list<security::Certificate>
 CaSqlite::listAllIssuedCertificates()
 {
-  std::list<security::v2::Certificate> result;
+  std::list<security::Certificate> result;
   Sqlite3Statement statement(m_database, R"_SQLTEXT_(SELECT * FROM IssuedCerts)_SQLTEXT_");
 
   while (statement.step() == SQLITE_ROW) {
-    security::v2::Certificate cert(statement.getBlock(3));
-    result.push_back(cert);
+    result.emplace_back(statement.getBlock(3));
   }
   return result;
 }
 
-std::list<security::v2::Certificate>
+std::list<security::Certificate>
 CaSqlite::listAllIssuedCertificates(const Name& caName)
 {
   auto allCerts = listAllIssuedCertificates();
-  std::list<security::v2::Certificate> result;
+  std::list<security::Certificate> result;
   for (const auto& entry : allCerts) {
-    if (entry.getSignature().getKeyLocator().getName().getPrefix(-2) == caName) {
+    const auto& klName = entry.getSignatureInfo().getKeyLocator().getName();
+    if (security::extractIdentityNameFromKeyLocator(klName) == caName) {
       result.push_back(entry);
     }
   }

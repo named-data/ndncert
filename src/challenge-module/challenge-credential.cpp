@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -38,7 +38,7 @@ const std::string ChallengeCredential::JSON_CREDENTIAL_SELF = "self-signed";
 ChallengeCredential::ChallengeCredential(const std::string& configPath)
   : ChallengeModule("Credential")
 {
-  if (configPath == "") {
+  if (configPath.empty()) {
     m_configFile = std::string(SYSCONFDIR) + "/ndncert/challenge-credential.conf";
   }
   else {
@@ -109,7 +109,7 @@ ChallengeCredential::handleChallengeRequest(const JsonSection& params, Certifica
   ss2.clear();
 
   // verify the credential and the self-signed cert
-  Name signingKeyName = cert->getSignature().getKeyLocator().getName();
+  Name signingKeyName = cert->getSignatureInfo().getKeyLocator().getName();
   for (auto anchor : m_trustAnchors) {
     if (anchor.getKeyName() == signingKeyName) {
       if (security::verifySignature(*cert, anchor) && security::verifySignature(*self, *cert)
