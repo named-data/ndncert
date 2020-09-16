@@ -3,7 +3,10 @@ import sys
 import smtplib
 import argparse
 import socket
-from ConfigParser import SafeConfigParser
+try: # python3
+    from configparser import ConfigParser
+except ImportError: # python2
+    from ConfigParser import SafeConfigParser as ConfigParser
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -18,7 +21,7 @@ parser.add_argument("certName", help="the Ceritifcate being requested")
 args = parser.parse_args()
 
 # open config
-confParser = SafeConfigParser()
+confParser = ConfigParser()
 confParser.read('@SYSCONFDIR@/ndncert/ndncert-mail.conf')
 
 # read smtp settings
