@@ -65,26 +65,26 @@ BOOST_AUTO_TEST_CASE(Probe)
                     "zhiyi@cs.ucla.edu");
 }
 
-BOOST_AUTO_TEST_CASE(GenProbeRequestJson)
-{
-  ClientModule client(m_keyChain);
-  client.getClientConf().load("tests/unit-tests/client.conf.test");
+// BOOST_AUTO_TEST_CASE(GenProbeRequestJson)
+// {
+//   ClientModule client(m_keyChain);
+//   client.getClientConf().load("tests/unit-tests/client.conf.test");
 
-  auto identity = addIdentity(Name("/site"));
-  auto key = identity.getDefaultKey();
-  auto cert = key.getDefaultCertificate();
+//   auto identity = addIdentity(Name("/site"));
+//   auto key = identity.getDefaultKey();
+//   auto cert = key.getDefaultCertificate();
 
-  ClientCaItem item;
-  item.m_probe = "email:uid:name";
-  item.m_caPrefix = Name("/site");
-  item.m_anchor = cert;
-  client.getClientConf().m_caItems.push_back(item);
+//   ClientCaItem item;
+//   item.m_probe = "email:uid:name";
+//   item.m_caPrefix = Name("/site");
+//   item.m_anchor = cert;
+//   client.getClientConf().m_caItems.push_back(item);
 
-  auto interestPacket = client.genProbeRequestJson(item, "yufeng@ucla.edu:123456789:Yufeng Zhang");
-  BOOST_CHECK_EQUAL(interestPacket.get("email", ""), "yufeng@ucla.edu");
-  BOOST_CHECK_EQUAL(interestPacket.get("uid", ""), "123456789");
-  BOOST_CHECK_EQUAL(interestPacket.get("name", ""), "Yufeng Zhang");
-}
+//   auto interestPacket = client.genProbeRequestJson(item, "yufeng@ucla.edu:123456789:Yufeng Zhang");
+//   BOOST_CHECK_EQUAL(interestPacket.get("email", ""), "yufeng@ucla.edu");
+//   BOOST_CHECK_EQUAL(interestPacket.get("uid", ""), "123456789");
+//   BOOST_CHECK_EQUAL(interestPacket.get("name", ""), "Yufeng Zhang");
+// }
 
 BOOST_AUTO_TEST_SUITE_END() // TestClientModule
 

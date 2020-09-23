@@ -20,7 +20,7 @@
  */
 
 #include "identity-management-fixture.hpp"
-#include <ndn-cxx/security/additional-description.hpp>
+#include <ndn-cxx/security/v2/additional-description.hpp>
 #include <ndn-cxx/util/io.hpp>
 #include <boost/filesystem.hpp>
 
@@ -92,7 +92,7 @@ IdentityManagementFixture::addSubCertificate(const Name& subIdentityName,
 
   v2::AdditionalDescription description;
   description.set("type", "sub-certificate");
-  info.addCustomTlv(description.wireEncode());
+  info.appendTypeSpecificTlv(description.wireEncode());
 
   m_keyChain.sign(request, signingByIdentity(issuer).setSignatureInfo(info));
   m_keyChain.setDefaultCertificate(subIdentity.getDefaultKey(), request);

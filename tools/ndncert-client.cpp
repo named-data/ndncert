@@ -20,6 +20,7 @@
 
 #include "challenge-module.hpp"
 #include "protocol-detail/info.hpp"
+#include "client-module.hpp"
 #include <iostream>
 #include <string>
 
@@ -119,7 +120,7 @@ certFetchCb(const Data& reply)
   client.onCertFetchResponse(reply);
   std::cerr << "Step " << nStep++
             << ": DONE! Certificate has already been installed to local keychain\n"
-            << "Certificate Name: " << cert->getName().toUri() << std::endl;
+            << "Certificate Name: " << reply.getName().toUri() << std::endl;
 }
 
 static void
@@ -224,7 +225,7 @@ InfoCb(const Data& reply)
   auto caItem = INFO::decodeClientConfigFromContent(contentBlock);
 
   std::cerr << "Will use a new trust anchor, please double check the identity info: \n"
-            << "This trust anchor information is signed by " << reply.getSignatureInfo().getKeyLocator()
+            << "This trust anchor information is signed by " << reply.getSignature().getKeyLocator()
             << std::endl
             << "The certificate is " << caItem.m_anchor << std::endl
             << "Do you trust the information? Type in YES or NO" << std::endl;

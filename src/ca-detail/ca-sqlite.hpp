@@ -60,22 +60,22 @@ public:
   listAllRequests(const Name& caName) override;
 
   // certificate related
-  security::Certificate
+  security::v2::Certificate
   getCertificate(const std::string& certId) override;
 
   void
-  addCertificate(const std::string& certId, const security::Certificate& cert) override;
+  addCertificate(const std::string& certId, const security::v2::Certificate& cert) override;
 
   void
-  updateCertificate(const std::string& certId, const security::Certificate& cert) override;
+  updateCertificate(const std::string& certId, const security::v2::Certificate& cert) override;
 
   void
   deleteCertificate(const std::string& certId) override;
 
-  std::list<security::Certificate>
+  std::list<security::v2::Certificate>
   listAllIssuedCertificates() override;
 
-  std::list<security::Certificate>
+  std::list<security::v2::Certificate>
   listAllIssuedCertificates(const Name& caName) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:

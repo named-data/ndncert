@@ -112,7 +112,7 @@ ChallengeCredential::handleChallengeRequest(const Block& params, CertificateRequ
   ss2.clear();
 
   // verify the credential and the self-signed cert
-  Name signingKeyName = cert->getSignatureInfo().getKeyLocator().getName();
+  Name signingKeyName = cert->getSignature().getKeyLocator().getName();
   for (auto anchor : m_trustAnchors) {
     if (anchor.getKeyName() == signingKeyName) {
       if (security::verifySignature(*cert, anchor) && security::verifySignature(*self, *cert)

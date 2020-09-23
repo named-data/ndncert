@@ -20,7 +20,7 @@
 
 #include "ca-sqlite.hpp"
 
-#include <ndn-cxx/security/validation-policy.hpp>
+#include <ndn-cxx/security/v2/validation-policy.hpp>
 #include <ndn-cxx/util/sqlite3-statement.hpp>
 
 #include <sqlite3.h>
@@ -125,7 +125,7 @@ CaSqlite::getRequest(const std::string& requestId)
     Name caName(statement.getBlock(2));
     int status = statement.getInt(3);
     std::string challengeStatus = statement.getString(4);
-    security::Certificate cert(statement.getBlock(6));
+    security::v2::Certificate cert(statement.getBlock(6));
     std::string challengeType = statement.getString(7);
     std::string challengeSecrets = statement.getString(8);
     std::string challengeTp = statement.getString(9);
@@ -250,7 +250,7 @@ CaSqlite::listAllRequests()
     Name caName(statement.getBlock(2));
     int status = statement.getInt(3);
     std::string challengeStatus = statement.getString(4);
-    security::Certificate cert(statement.getBlock(6));
+    security::v2::Certificate cert(statement.getBlock(6));
     std::string challengeType = statement.getString(7);
     std::string challengeSecrets = statement.getString(8);
     std::string challengeTp = statement.getString(9);
@@ -277,7 +277,7 @@ CaSqlite::listAllRequests(const Name& caName)
     Name caName(statement.getBlock(2));
     int status = statement.getInt(3);
     std::string challengeStatus = statement.getString(4);
-    security::Certificate cert(statement.getBlock(6));
+    security::v2::Certificate cert(statement.getBlock(6));
     std::string challengeType = statement.getString(7);
     std::string challengeSecrets = statement.getString(8);
     std::string challengeTp = statement.getString(9);
@@ -300,7 +300,7 @@ CaSqlite::deleteRequest(const std::string& requestId)
   statement.step();
 }
 
-security::Certificate
+security::v2::Certificate
 CaSqlite::getCertificate(const std::string& certId)
 {
   Sqlite3Statement statement(m_database,
@@ -308,7 +308,7 @@ CaSqlite::getCertificate(const std::string& certId)
   statement.bind(1, certId, SQLITE_TRANSIENT);
 
   if (statement.step() == SQLITE_ROW) {
-    return security::Certificate(statement.getBlock(0));
+    return security::v2::Certificate(statement.getBlock(0));
   }
   else {
     BOOST_THROW_EXCEPTION(Error("Certificate with ID " + certId + " cannot be fetched from database"));
@@ -316,7 +316,7 @@ CaSqlite::getCertificate(const std::string& certId)
 }
 
 void
-CaSqlite::addCertificate(const std::string& certId, const security::Certificate& cert)
+CaSqlite::addCertificate(const std::string& certId, const security::v2::Certificate& cert)
 {
   Sqlite3Statement statement(m_database,
                              R"_SQLTEXT_(INSERT INTO IssuedCerts (cert_id, cert_key_name, cert)
@@ -331,7 +331,7 @@ CaSqlite::addCertificate(const std::string& certId, const security::Certificate&
 }
 
 void
-CaSqlite::updateCertificate(const std::string& certId, const security::Certificate& cert)
+CaSqlite::updateCertificate(const std::string& certId, const security::v2::Certificate& cert)
 {
   Sqlite3Statement statement(m_database,
                              R"_SQLTEXT_(UPDATE IssuedCerts SET cert = ? WHERE cert_id = ?)_SQLTEXT_");
@@ -352,10 +352,10 @@ CaSqlite::deleteCertificate(const std::string& certId)
   statement.step();
 }
 
-std::list<security::Certificate>
+std::list<security::v2::Certificate>
 CaSqlite::listAllIssuedCertificates()
 {
-  std::list<security::Certificate> result;
+  std::list<security::v2::Certificate> result;
   Sqlite3Statement statement(m_database, R"_SQLTEXT_(SELECT * FROM IssuedCerts)_SQLTEXT_");
 
   while (statement.step() == SQLITE_ROW) {
@@ -364,14 +364,14 @@ CaSqlite::listAllIssuedCertificates()
   return result;
 }
 
-std::list<security::Certificate>
+std::list<security::v2::Certificate>
 CaSqlite::listAllIssuedCertificates(const Name& caName)
 {
   auto allCerts = listAllIssuedCertificates();
-  std::list<security::Certificate> result;
+  std::list<security::v2::Certificate> result;
   for (const auto& entry : allCerts) {
-    const auto& klName = entry.getSignatureInfo().getKeyLocator().getName();
-    if (security::extractIdentityNameFromKeyLocator(klName) == caName) {
+    const auto& klName = entry.getSignature().getKeyLocator().getName();
+    if (security::v2::extractIdentityFromKeyName(klName) == caName) {
       result.push_back(entry);
     }
   }

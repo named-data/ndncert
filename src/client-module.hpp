@@ -111,26 +111,11 @@ public:
   void
   onCertFetchResponse(const Data& reply);
 
-  // helper functions
-  static JsonSection
-  getJsonFromData(const Data& data);
-
-  static Block
-  paramFromJson(const JsonSection& json);
-
   static std::vector<std::string>
   parseProbeComponents(const std::string& probe);
 
   void
   endSession();
-
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  JsonSection
-  genProbeRequestJson(const ClientCaItem& ca, const std::string& probeInfo);
-
-  JsonSection
-  genNewRequestJson(const std::string& ecdhPub, const security::v2::Certificate& certRequest,
-                    const shared_ptr<Data>& probeToken = nullptr);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   ClientConfig m_config;

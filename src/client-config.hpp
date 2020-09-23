@@ -22,12 +22,7 @@
 #define NDNCERT_CLIENT_CONFIG_HPP
 
 #include "certificate-request.hpp"
-<<<<<<< HEAD
-#include <ndn-cxx/security/certificate.hpp>
-=======
-
 #include <ndn-cxx/security/v2/certificate.hpp>
->>>>>>> Update CaConfig and ClientCaItem. Add INFO packet encoding and decoding.
 
 namespace ndn {
 namespace ndncert {

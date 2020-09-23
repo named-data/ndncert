@@ -320,18 +320,29 @@ ClientModule::onCertFetchResponse(const Data& reply)
   }
   catch (const std::exception& e) {
     _LOG_ERROR("Cannot add replied certificate into the keychain " << e.what());
-    return nullptr;
+    return;
   }
 }
 
-JsonSection
-ClientModule::getJsonFromData(const Data& data)
+void
+ClientModule::endSession()
 {
-  std::istringstream ss(encoding::readString(data.getContent()));
-  JsonSection json;
-  boost::property_tree::json_parser::read_json(ss, json);
-  return json;
+  if (getApplicationStatus() == STATUS_SUCCESS || getApplicationStatus() == STATUS_ENDED) {
+    return;
+  }
+  if (m_isNewlyCreatedIdentity) {
+    // put the identity into the if scope is because it may cause an error
+    // outside since when endSession is called, identity may not have been created yet.
+    auto identity = m_keyChain.getPib().getIdentity(m_identityName);
+    m_keyChain.deleteIdentity(identity);
+  }
+  else if (m_isNewlyCreatedKey) {
+    auto identity = m_keyChain.getPib().getIdentity(m_identityName);
+    m_keyChain.deleteKey(identity, m_key);
+  }
+  m_status = STATUS_ENDED;
 }
+
 
 std::vector<std::string>
 ClientModule::parseProbeComponents(const std::string& probe)
@@ -346,67 +357,6 @@ ClientModule::parseProbeComponents(const std::string& probe)
   }
   components.push_back(probe.substr(last));
   return components;
-}
-
-JsonSection
-ClientModule::genProbeRequestJson(const ClientCaItem& ca, const std::string& probeInfo)
-{
-  JsonSection root;
-  std::vector<std::string> fields = parseProbeComponents(ca.m_probe);
-  std::vector<std::string> arguments  = parseProbeComponents(probeInfo);;
-
-  if (arguments.size() != fields.size()) {
-    BOOST_THROW_EXCEPTION(Error("Error in genProbeRequestJson: argument list does not match field list in the config file."));
-  }
-  for (size_t i = 0; i < fields.size(); ++i) {
-      root.put(fields.at(i), arguments.at(i));
-  }
-  return root;
-}
-
-JsonSection
-ClientModule::genNewRequestJson(const std::string& ecdhPub, const security::v2::Certificate& certRequest,
-                                const shared_ptr<Data>& probeToken)
-{
-  JsonSection root;
-  std::stringstream ss;
-  try {
-    security::transform::bufferSource(certRequest.wireEncode().wire(), certRequest.wireEncode().size())
-    >> security::transform::base64Encode(false)
-    >> security::transform::streamSink(ss);
-  }
-  catch (const security::transform::Error& e) {
-    _LOG_ERROR("Cannot convert self-signed cert into BASE64 string " << e.what());
-    return root;
-  }
-  root.put(JSON_CLIENT_ECDH, ecdhPub);
-  root.put(JSON_CLIENT_CERT_REQ, ss.str());
-  if (probeToken != nullptr) {
-    // clear the stringstream
-    ss.str("");
-    ss.clear();
-    // transform the probe data into a base64 string
-    try {
-      security::transform::bufferSource(probeToken->wireEncode().wire(), probeToken->wireEncode().size())
-      >> security::transform::base64Encode(false)
-      >> security::transform::streamSink(ss);
-    }
-    catch (const security::transform::Error& e) {
-      _LOG_ERROR("Cannot convert self-signed cert into BASE64 string " << e.what());
-      return root;
-    }
-    // add the token into the JSON
-    root.put("probe-token", ss.str());
-  }
-  return root;
-}
-
-Block
-ClientModule::paramFromJson(const JsonSection& json)
-{
-  std::stringstream ss;
-  boost::property_tree::write_json(ss, json);
-  return makeStringBlock(ndn::tlv::ApplicationParameters, ss.str());
 }
 
 } // namespace ndncert

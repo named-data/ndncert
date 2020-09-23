@@ -20,7 +20,7 @@
 
 #include "ca-memory.hpp"
 
-#include <ndn-cxx/security/validation-policy.hpp>
+#include <ndn-cxx/security/v2/validation-policy.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -105,7 +105,7 @@ CaMemory::listAllRequests(const Name& caName)
 }
 
 // certificate related
-security::Certificate
+security::v2::Certificate
 CaMemory::getCertificate(const std::string& certId)
 {
   auto search = m_issuedCerts.find(certId);
@@ -116,7 +116,7 @@ CaMemory::getCertificate(const std::string& certId)
 }
 
 void
-CaMemory::addCertificate(const std::string& certId, const security::Certificate& cert)
+CaMemory::addCertificate(const std::string& certId, const security::v2::Certificate& cert)
 {
   auto search = m_issuedCerts.find(certId);
   if (search == m_issuedCerts.end()) {
@@ -128,7 +128,7 @@ CaMemory::addCertificate(const std::string& certId, const security::Certificate&
 }
 
 void
-CaMemory::updateCertificate(const std::string& certId, const security::Certificate& cert)
+CaMemory::updateCertificate(const std::string& certId, const security::v2::Certificate& cert)
 {
   m_issuedCerts[certId] = cert;
 }
@@ -142,23 +142,23 @@ CaMemory::deleteCertificate(const std::string& certId)
   }
 }
 
-std::list<security::Certificate>
+std::list<security::v2::Certificate>
 CaMemory::listAllIssuedCertificates()
 {
-  std::list<security::Certificate> result;
+  std::list<security::v2::Certificate> result;
   for (const auto& entry : m_issuedCerts) {
     result.push_back(entry.second);
   }
   return result;
 }
 
-std::list<security::Certificate>
+std::list<security::v2::Certificate>
 CaMemory::listAllIssuedCertificates(const Name& caName)
 {
-  std::list<security::Certificate> result;
+  std::list<security::v2::Certificate> result;
   for (const auto& entry : m_issuedCerts) {
-    const auto& klName = entry.second.getSignatureInfo().getKeyLocator().getName();
-    if (security::extractIdentityNameFromKeyLocator(klName) == caName) {
+    const auto& klName = entry.second.getSignature().getKeyLocator().getName();
+    if (security::v2::extractIdentityFromKeyName(klName) == caName) {
       result.push_back(entry.second);
     }
   }
