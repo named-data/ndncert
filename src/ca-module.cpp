@@ -26,6 +26,7 @@
 #include "protocol-detail/probe.hpp"
 #include "protocol-detail/new.hpp"
 #include "protocol-detail/challenge.hpp"
+#include "protocol-detail/revoke.hpp"
 #include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
@@ -100,6 +101,10 @@ CaModule::registerPrefix()
                                           bind(&CaModule::onChallenge, this, _2));
       m_interestFilterHandles.push_back(filterId);
 
+      // register REVOKE prefix
+      filterId = m_face.setInterestFilter(Name(name).append("REVOKE"),
+                                          bind(&CaModule::onRevoke, this, _2));
+      m_interestFilterHandles.push_back(filterId);
       _LOG_TRACE("Prefix " << name << " got registered");
     },
     bind(&CaModule::onRegisterFailed, this, _2));
@@ -298,7 +303,7 @@ CaModule::onNew(const Interest& request)
 
   // create new request instance
   std::string requestId = std::to_string(random::generateWord64());
-  CertificateRequest certRequest(m_config.m_caPrefix, requestId, STATUS_BEFORE_CHALLENGE, *clientCert);
+  CertificateRequest certRequest(m_config.m_caPrefix, requestId, REQUEST_TYPE_NEW, STATUS_BEFORE_CHALLENGE, *clientCert);
 
   try {
     m_storage->addRequest(certRequest);
@@ -380,29 +385,43 @@ CaModule::onChallenge(const Interest& request)
     }
     else if (certRequest.m_status == STATUS_PENDING) {
       // if challenge succeeded
-      auto issuedCert = issueCertificate(certRequest);
-      certRequest.m_cert = issuedCert;
-      certRequest.m_status = STATUS_SUCCESS;
-      try {
-        m_storage->addCertificate(certRequest.m_requestId, issuedCert);
-        m_storage->deleteRequest(certRequest.m_requestId);
-        _LOG_TRACE("New Certificate Issued " << issuedCert.getName());
-      }
-      catch (const std::exception& e) {
-        _LOG_ERROR("Cannot add issued cert and remove the request: " << e.what());
-        return;
-      }
-      if (m_config.m_statusUpdateCallback) {
-        m_config.m_statusUpdateCallback(certRequest);
-      }
+      if (certRequest.m_requestType == REQUEST_TYPE_NEW) {
+        auto issuedCert = issueCertificate(certRequest);
+        certRequest.m_cert = issuedCert;
+        certRequest.m_status = STATUS_SUCCESS;
+        try {
+          m_storage->addCertificate(certRequest.m_requestId, issuedCert);
+          m_storage->deleteRequest(certRequest.m_requestId);
+          _LOG_TRACE("New Certificate Issued " << issuedCert.getName());
+        }
+        catch (const std::exception& e) {
+          _LOG_ERROR("Cannot add issued cert and remove the request: " << e.what());
+          return;
+        }
 
-      payload = CHALLENGE::encodeDataPayload(certRequest);
-      payload.parse();
-      payload.push_back(makeNestedBlock(tlv_issued_cert_name, issuedCert.getName()));
-      payload.encode();
+        payload = CHALLENGE::encodeDataPayload(certRequest);
+        payload.parse();
+        payload.push_back(makeNestedBlock(tlv_issued_cert_name, issuedCert.getName()));
+        payload.encode();
 
-      //contentJson.add(JSON_CA_CERT_ID, readString(issuedCert.getName().at(-1)));
-      _LOG_TRACE("Challenge succeeded. Certificate has been issued");
+        //contentJson.add(JSON_CA_CERT_ID, readString(issuedCert.getName().at(-1)));
+        _LOG_TRACE("Challenge succeeded. Certificate has been issued");
+      }
+      else if (certRequest.m_requestType == REQUEST_TYPE_REVOKE) {
+        certRequest.m_status = STATUS_SUCCESS;
+        try {
+          m_storage->deleteRequest(certRequest.m_requestId);
+          _LOG_TRACE("Certificate Revoked");
+        }
+        catch (const std::exception& e) {
+          _LOG_ERROR("Cannot add issued cert and remove the request: " << e.what());
+          return;
+        }
+
+        payload = CHALLENGE::encodeDataPayload(certRequest);
+        payload.parse();
+        _LOG_TRACE("Challenge succeeded. Certificate has been revoked");
+      }
     }
     else {
       try {
@@ -432,6 +451,91 @@ CaModule::onChallenge(const Interest& request)
     m_config.m_statusUpdateCallback(certRequest);
   }
 }
+
+void
+CaModule::onRevoke(const Interest& request)
+{
+  // NEW Naming Convention: /<CA-prefix>/CA/REVOKE/[SignedInterestParameters_Digest]
+  // get ECDH pub key and cert request
+  const auto& parameterJson = jsonFromBlock(request.getApplicationParameters());
+  if (parameterJson.empty()) {
+    _LOG_ERROR("Empty JSON obtained from the Interest parameter.");
+    return;
+  }
+  std::string peerKeyBase64 = parameterJson.get(JSON_CLIENT_ECDH, "");
+  if (peerKeyBase64 == "") {
+    _LOG_ERROR("Empty JSON_CLIENT_ECDH obtained from the Interest parameter.");
+    return;
+  }
+
+  // get server's ECDH pub key
+  auto myEcdhPubKeyBase64 = m_ecdh.getBase64PubKey();
+  try {
+    m_ecdh.deriveSecret(peerKeyBase64);
+  }
+  catch (const std::exception& e) {
+    _LOG_ERROR("Cannot derive a shared secret using the provided ECDH key: " << e.what());
+    return;
+  }
+
+  // parse certificate request
+  std::string certRevokeStr = parameterJson.get(JSON_CLIENT_CERT_REVOKE, "");
+  shared_ptr<security::v2::Certificate> clientCert = nullptr;
+  try {
+    std::stringstream ss(certRevokeStr);
+    clientCert = io::load<security::v2::Certificate>(ss);
+  }
+  catch (const std::exception& e) {
+    _LOG_ERROR("Unrecognized revocation request: " << e.what());
+    return;
+  }
+
+  // verify the certificate
+  if (!m_config.m_caName.isPrefixOf(clientCert->getName()) // under ca prefix
+        || !security::v2::Certificate::isValidName(clientCert->getName()) // is valid cert name
+        || clientCert->getName().size() != m_config.m_caName.size() + IS_SUBNAME_MIN_OFFSET) {
+        _LOG_ERROR("Invalid certificate name " << clientCert->getName());
+        return;
+  }
+  const auto& cert = m_keyChain.getPib().getIdentity(m_config.m_caName).getDefaultKey().getDefaultCertificate();
+  if (!security::verifySignature(*clientCert, cert)) {
+    _LOG_ERROR("Cert request with bad signature.");
+    return;
+  }
+
+  // generate salt for HKDF
+  auto saltInt = random::generateSecureWord64();
+  // hkdf
+  hkdf(m_ecdh.context->sharedSecret, m_ecdh.context->sharedSecretLen,
+         (uint8_t*)&saltInt, sizeof(saltInt), m_aesKey, sizeof(m_aesKey));
+
+  // create new request instance
+  std::string requestId = std::to_string(random::generateWord64());
+  CertificateRequest certRequest(m_config.m_caName, requestId, REQUEST_TYPE_REVOKE, STATUS_BEFORE_CHALLENGE,
+                                   *clientCert);
+  try {
+    m_storage->addRequest(certRequest);
+  }
+  catch (const std::exception& e) {
+    _LOG_ERROR("Cannot add new request instance into the storage: " << e.what());
+    return;
+  }
+
+  Data result;
+  result.setName(request.getName());
+  result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
+  result.setContent(REVOKE::encodeDataContent(myEcdhPubKeyBase64,
+                                              std::to_string(saltInt),
+                                              certRequest,
+                                              m_config.m_supportedChallenges));
+  m_keyChain.sign(result, signingByIdentity(m_config.m_caPrefix));
+  m_face.put(result);
+
+  if (m_config.m_statusUpdateCallback) {
+    m_config.m_statusUpdateCallback(certRequest);
+  }
+}
+
 
 security::v2::Certificate
 CaModule::issueCertificate(const CertificateRequest& certRequest)

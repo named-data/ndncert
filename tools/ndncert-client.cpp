@@ -38,7 +38,7 @@ static void startApplication();
 
 int nStep;
 Face face;
-security::KeyChain keyChain;
+security::v2::KeyChain keyChain;
 std::string challengeType;
 int validityPeriod = -1;
 ClientModule client(keyChain);

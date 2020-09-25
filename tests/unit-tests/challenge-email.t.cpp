@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2019, Regents of the University of California.
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmail)
   auto identity = addIdentity(Name("/ndn/site1"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
-  CertificateRequest request(Name("/ndn/site1"), "123", STATUS_BEFORE_CHALLENGE, cert);
+  CertificateRequest request(Name("/ndn/site1"), "123", REQUEST_TYPE_NEW, STATUS_BEFORE_CHALLENGE, cert);
 
   Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
   paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengeEmail::JSON_EMAIL));
@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithInvalidEmail)
   auto identity = addIdentity(Name("/ndn/site1"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
-  CertificateRequest request(Name("/ndn/site1"), "123", STATUS_BEFORE_CHALLENGE, cert);
+  CertificateRequest request(Name("/ndn/site1"), "123", REQUEST_TYPE_NEW, STATUS_BEFORE_CHALLENGE, cert);
 
   Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
   paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengeEmail::JSON_EMAIL));
@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
   auto cert = key.getDefaultCertificate();
   JsonSection json;
   json.put(ChallengeEmail::JSON_CODE, "4567");
-  CertificateRequest request(Name("/ndn/site1"), "123", STATUS_CHALLENGE, ChallengeEmail::NEED_CODE,
+  CertificateRequest request(Name("/ndn/site1"), "123", REQUEST_TYPE_NEW, STATUS_CHALLENGE, ChallengeEmail::NEED_CODE,
                              "Email", time::toIsoString(time::system_clock::now()), 3600, 3, json, cert);
 
   Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
@@ -137,7 +137,7 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithWrongCode)
   auto cert = key.getDefaultCertificate();
   JsonSection json;
   json.put(ChallengeEmail::JSON_CODE, "4567");
-  CertificateRequest request(Name("/ndn/site1"), "123", STATUS_CHALLENGE, ChallengeEmail::NEED_CODE,
+  CertificateRequest request(Name("/ndn/site1"), "123", REQUEST_TYPE_NEW, STATUS_CHALLENGE, ChallengeEmail::NEED_CODE,
                              "email", time::toIsoString(time::system_clock::now()), 3600, 3, json, cert);
 
   Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);

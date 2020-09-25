@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2019, Regents of the University of California.
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
   auto identityA = addIdentity(Name("/example"));
   auto keyA = identityA.getDefaultKey();
   auto certA = key.getDefaultCertificate();
-  CertificateRequest request(Name("/example"), "123", STATUS_BEFORE_CHALLENGE, certA);
+  CertificateRequest request(Name("/example"), "123", REQUEST_TYPE_NEW, STATUS_BEFORE_CHALLENGE, certA);
 
   // create requester's existing cert
   auto identityB = addIdentity(Name("/trust/cert"));

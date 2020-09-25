@@ -83,7 +83,7 @@ main(int argc, char* argv[])
 
   if (wantRepoOut) {
       ca.setStatusUpdateCallback([&] (const CertificateRequest& request) {
-          if (request.m_status == STATUS_SUCCESS) {
+          if (request.m_status == STATUS_SUCCESS && request.m_requestType == REQUEST_TYPE_NEW) {
             auto issuedCert = request.m_cert;
             boost::asio::ip::tcp::iostream requestStream;
 #if BOOST_VERSION >= 106700

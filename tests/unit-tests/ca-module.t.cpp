@@ -46,7 +46,7 @@ BOOST_AUTO_TEST_CASE(Initialization)
 
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK_EQUAL(ca.m_registeredPrefixHandles.size(), 2);
-  BOOST_CHECK_EQUAL(ca.m_interestFilterHandles.size(), 4);  // onInfo, onProbe, onNew, onChallenge
+  BOOST_CHECK_EQUAL(ca.m_interestFilterHandles.size(), 5); // onInfo, onProbe, onNew, onChallenge, onRevoke
 }
 
 BOOST_AUTO_TEST_CASE(HandleProbe)
@@ -367,7 +367,112 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
   BOOST_CHECK_EQUAL(count, 3);
 }
 
-BOOST_AUTO_TEST_SUITE_END()  // TestCaModule
+BOOST_AUTO_TEST_CASE(HandleRevoke)
+{
+  auto identity = addIdentity(Name("/ndn"));
+  auto key = identity.getDefaultKey();
+  auto cert = key.getDefaultCertificate();
+
+  util::DummyClientFace face(io, { true, true });
+  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
+  advanceClocks(time::milliseconds(20), 60);
+
+  //generate a certificate
+  auto clientIdentity = m_keyChain.createIdentity("/ndn/qwerty");
+  auto clientKey = clientIdentity.getDefaultKey();
+  security::v2::Certificate clientCert;
+  clientCert.setName(Name(clientKey.getName()).append("cert-request").appendVersion());
+  clientCert.setContentType(tlv::ContentType_Key);
+  clientCert.setFreshnessPeriod(time::hours(24));
+  clientCert.setContent(clientKey.getPublicKey().data(), clientKey.getPublicKey().size());
+  SignatureInfo signatureInfo;
+  signatureInfo.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
+          time::system_clock::now() + time::hours(10)));
+  m_keyChain.sign(clientCert, signingByKey(clientKey.getName()).setSignatureInfo(signatureInfo));
+  CertificateRequest certRequest(Name("/ndn"), "122", REQUEST_TYPE_NEW, STATUS_SUCCESS, clientCert);
+  auto issuedCert = ca.issueCertificate(certRequest);
+
+  ClientModule client(m_keyChain);
+  ClientCaItem item;
+  item.m_caName = Name("/ndn");
+  item.m_anchor = cert;
+  client.getClientConf().m_caItems.push_back(item);
+
+  auto interest = client.generateRevokeInterest(issuedCert);
+
+  int count = 0;
+  face.onSendData.connect([&] (const Data& response) {
+    count++;
+    BOOST_CHECK(security::verifySignature(response, cert));
+    auto contentBlock = response.getContent();
+    contentBlock.parse();
+
+    BOOST_CHECK(readString(contentBlock.get(tlv_ecdh_pub)) != "");
+    BOOST_CHECK(readString(contentBlock.get(tlv_salt)) != "");
+    BOOST_CHECK(readString(contentBlock.get(tlv_request_id)) != "");
+
+    auto challengeBlockCount = 0;
+    for (auto const& element : contentBlock.elements()) {
+        if (element.type() == tlv_challenge) {
+            challengeBlockCount++;
+        }
+    }
+
+    BOOST_CHECK(challengeBlockCount != 0);
+
+    client.onRevokeResponse(response);
+    BOOST_CHECK_EQUAL_COLLECTIONS(client.m_aesKey, client.m_aesKey + sizeof(client.m_aesKey),
+            ca.m_aesKey, ca.m_aesKey + sizeof(ca.m_aesKey));
+  });
+  face.receive(*interest);
+
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK_EQUAL(count, 1);
+}
+
+BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
+{
+  auto identity = addIdentity(Name("/ndn"));
+  auto key = identity.getDefaultKey();
+  auto cert = key.getDefaultCertificate();
+
+  util::DummyClientFace face(io, { true, true });
+  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
+  advanceClocks(time::milliseconds(20), 60);
+
+  //generate a certificate
+  auto clientIdentity = m_keyChain.createIdentity("/ndn/qwerty");
+  auto clientKey = clientIdentity.getDefaultKey();
+  security::v2::Certificate clientCert;
+  clientCert.setName(Name(clientKey.getName()).append("NDNCERT").append(std::to_string(1473283247810732701)));
+  clientCert.setContentType(tlv::ContentType_Key);
+  clientCert.setFreshnessPeriod(time::hours(24));
+  clientCert.setContent(clientKey.getPublicKey().data(), clientKey.getPublicKey().size());
+  SignatureInfo signatureInfo;
+  signatureInfo.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
+          time::system_clock::now() + time::hours(10)));
+  m_keyChain.sign(clientCert, signingByKey(clientKey.getName()).setSignatureInfo(signatureInfo));
+
+  ClientModule client(m_keyChain);
+  ClientCaItem item;
+  item.m_caName = Name("/ndn");
+  item.m_anchor = cert;
+  client.getClientConf().m_caItems.push_back(item);
+
+  auto interest = client.generateRevokeInterest(clientCert);
+
+  int count = 0;
+  face.onSendData.connect([&] (const Data& response) {
+    count++;
+  });
+  face.receive(*interest);
+
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK_EQUAL(count, 0);
+}
+
+
+BOOST_AUTO_TEST_SUITE_END() // TestCaModule
 
 }  // namespace tests
 }  // namespace ndncert

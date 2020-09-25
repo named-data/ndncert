@@ -26,6 +26,7 @@
 #include "protocol-detail/probe.hpp"
 #include "protocol-detail/new.hpp"
 #include "protocol-detail/challenge.hpp"
+#include "protocol-detail/revoke.hpp"
 #include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
@@ -240,6 +241,68 @@ ClientModule::onNewResponse(const Data& reply)
     }
   }
   return m_challengeList;
+}
+
+shared_ptr<Interest>
+ClientModule::generateRevokeInterest(const security::v2::Certificate& certificate)
+{
+    // Name requestedName = identityName;
+    bool findCa = false;
+    for (const auto& caItem : m_config.m_caItems) {
+        if (caItem.m_caName.isPrefixOf(certificate.getName())) {
+            m_ca = caItem;
+            findCa = true;
+        }
+    }
+    if (!findCa) { // if cannot find, cannot proceed
+        _LOG_TRACE("Cannot find corresponding CA for the certificate.");
+        return nullptr;
+    }
+
+    // generate Interest packet
+    Name interestName = m_ca.m_caPrefix;
+    interestName.append("CA").append("REVOKE");
+    auto interest = make_shared<Interest>(interestName);
+    interest->setMustBeFresh(true);
+    interest->setCanBePrefix(false);
+    interest->setApplicationParameters(
+            REVOKE::encodeApplicationParameters(m_ecdh.getBase64PubKey(), certificate)
+    );
+
+    // return the Interest packet
+    return interest;
+}
+
+std::list<std::string>
+ClientModule::onRevokeResponse(const Data& reply)
+{
+    if (!security::verifySignature(reply, m_ca.m_anchor)) {
+        _LOG_ERROR("Cannot verify data signature from " << m_ca.m_caName.toUri());
+        return std::list<std::string>();
+    }
+    auto contentTLV = reply.getContent();
+    contentTLV.parse();
+
+    // ECDH
+    const auto& peerKeyBase64Str = readString(contentTLV.get(tlv_ecdh_pub));
+    const auto& saltStr = readString(contentTLV.get(tlv_salt));
+    uint64_t saltInt = std::stoull(saltStr);
+    m_ecdh.deriveSecret(peerKeyBase64Str);
+
+    // HKDF
+    hkdf(m_ecdh.context->sharedSecret, m_ecdh.context->sharedSecretLen,
+         (uint8_t*)&saltInt, sizeof(saltInt), m_aesKey, sizeof(m_aesKey));
+
+    // update state
+    m_status = readNonNegativeInteger(contentTLV.get(tlv_status));
+    m_requestId = readString(contentTLV.get(tlv_request_id));
+    m_challengeList.clear();
+    for (auto const& element : contentTLV.elements()) {
+        if (element.type() == tlv_challenge) {
+            m_challengeList.push_back(readString(element));
+        }
+    }
+    return m_challengeList;
 }
 
 shared_ptr<Interest>

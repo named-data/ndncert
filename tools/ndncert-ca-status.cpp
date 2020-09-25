@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2019, Regents of the University of California.
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -76,6 +76,7 @@ main(int argc, char* argv[])
 
   for (const auto& entry : requestList) {
     std::cerr << "Request ID: " << entry.m_requestId << "\t"
+              << "Request Type" << entry.m_requestType << "\t"
               << "Current Status: " << entry.m_status << std::endl
               << "Applying CA: " << entry.m_caPrefix << std::endl
               << "Applying for key: " << entry.m_cert.getName() << std::endl

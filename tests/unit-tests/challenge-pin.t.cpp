@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2019, Regents of the University of California.
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmptyInfo)
   auto identity = addIdentity(Name("/ndn/site1"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
-  CertificateRequest request(Name("/ndn/site1"), "123", STATUS_BEFORE_CHALLENGE, cert);
+  CertificateRequest request(Name("/ndn/site1"), "123", REQUEST_TYPE_NEW, STATUS_BEFORE_CHALLENGE, cert);
 
   ChallengePin challenge;
   challenge.handleChallengeRequest(makeEmptyBlock(tlv_encrypted_payload), request);
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
   auto cert = key.getDefaultCertificate();
   JsonSection secret;
   secret.add(ChallengePin::JSON_PIN_CODE, "12345");
-  CertificateRequest request(Name("/ndn/site1"), "123", STATUS_CHALLENGE, ChallengePin::NEED_CODE, "pin",
+  CertificateRequest request(Name("/ndn/site1"), "123", REQUEST_TYPE_NEW, STATUS_CHALLENGE, ChallengePin::NEED_CODE, "pin",
                              time::toIsoString(time::system_clock::now()), 3600, 3, secret, cert);
 
   Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithWrongCode)
   auto cert = key.getDefaultCertificate();
   JsonSection secret;
   secret.add(ChallengePin::JSON_PIN_CODE, "12345");
-  CertificateRequest request(Name("/ndn/site1"), "123", STATUS_CHALLENGE, ChallengePin::NEED_CODE, "pin",
+  CertificateRequest request(Name("/ndn/site1"), "123", REQUEST_TYPE_NEW, STATUS_CHALLENGE, ChallengePin::NEED_CODE, "pin",
                              time::toIsoString(time::system_clock::now()), 3600, 3, secret, cert);
 
   Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);

@@ -108,6 +108,12 @@ public:
   shared_ptr<Interest>
   generateCertFetchInterest();
 
+  shared_ptr<Interest>
+  generateRevokeInterest(const security::v2::Certificate& certificate);
+
+  std::list<std::string>
+  onRevokeResponse(const Data& reply);
+
   void
   onCertFetchResponse(const Data& reply);
 
