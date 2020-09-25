@@ -19,8 +19,7 @@
  */
 
 #include "ca-detail/ca-sqlite.hpp"
-
-#include "database-fixture.hpp"
+#include "test-common.hpp"
 
 namespace ndn {
 namespace ndncert {

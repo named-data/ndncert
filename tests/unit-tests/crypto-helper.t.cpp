@@ -19,7 +19,7 @@
  */
 
 #include "crypto-support/crypto-helper.hpp"
-#include "identity-management-fixture.hpp"
+#include "test-common.hpp"
 
 namespace ndn {
 namespace ndncert {

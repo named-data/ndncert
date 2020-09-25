@@ -19,48 +19,22 @@
  * See AUTHORS.md for complete list of ndn-cxx authors and contributors.
  */
 
-#ifndef NDNCERT_TESTS_DATABASE_FIXTURE_HPP
-#define NDNCERT_TESTS_DATABASE_FIXTURE_HPP
+#ifndef NDNCERT_TESTS_COMMON_HPP
+#define NDNCERT_TESTS_COMMON_HPP
 
+#include <iostream>
+#include <ndn-cxx/metadata-object.hpp>
+#include <ndn-cxx/security/signing-helpers.hpp>
+#include <ndn-cxx/security/transform/base64-encode.hpp>
+#include <ndn-cxx/security/transform/buffer-source.hpp>
+#include <ndn-cxx/security/transform/public-key.hpp>
+#include <ndn-cxx/security/transform/stream-sink.hpp>
+#include <ndn-cxx/security/verification-helpers.hpp>
+#include <ndn-cxx/util/dummy-client-face.hpp>
+
+#include "boost-test.hpp"
+#include "database-fixture.hpp"
 #include "identity-management-fixture.hpp"
 #include "unit-test-time-fixture.hpp"
-#include <boost/filesystem.hpp>
 
-namespace ndn {
-namespace ndncert {
-namespace tests {
-
-class IdentityManagementTimeFixture : public UnitTestTimeFixture
-                                    , public IdentityManagementFixture
-{
-};
-
-class DatabaseFixture : public IdentityManagementTimeFixture
-{
-public:
-  DatabaseFixture()
-  {
-    auto parentDir = boost::filesystem::path(getenv("TEST_HOME"));
-    if (!boost::filesystem::exists(parentDir)) {
-      boost::filesystem::create_directory(parentDir);
-    }
-    dbDir = parentDir / ".ndncert";
-    if (!boost::filesystem::exists(dbDir)) {
-      boost::filesystem::create_directory(dbDir);
-    }
-  }
-
-  ~DatabaseFixture()
-  {
-    boost::filesystem::remove_all(dbDir);
-  }
-
-public:
-  boost::filesystem::path dbDir;
-};
-
-} // namespace tests
-} // namespace ndncert
-} // namespace ndn
-
-#endif // NDNCERT_TESTS_DATABASE_FIXTURE_HPP
+#endif  // NDNCERT_TESTS_COMMON_HPP

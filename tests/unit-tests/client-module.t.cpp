@@ -21,13 +21,7 @@
 #include "client-module.hpp"
 #include "challenge-module.hpp"
 #include "ca-module.hpp"
-
-#include "identity-management-fixture.hpp"
-
-#include <ndn-cxx/util/dummy-client-face.hpp>
-#include <ndn-cxx/security/signing-helpers.hpp>
-#include <ndn-cxx/security/transform/public-key.hpp>
-#include <ndn-cxx/security/verification-helpers.hpp>
+#include "test-common.hpp"
 
 namespace ndn {
 namespace ndncert {

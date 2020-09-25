@@ -18,30 +18,53 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "crypto-support/crypto-helper.hpp"
-#include "crypto-support/enc-tlv.hpp"
-#include "test-common.hpp"
+#include "boost-test.hpp"
+
+#include <boost/filesystem.hpp>
+#include <fstream>
+#include <stdlib.h>
 
 namespace ndn {
 namespace ndncert {
 namespace tests {
 
-BOOST_AUTO_TEST_SUITE(TestEncTlv)
-
-BOOST_AUTO_TEST_CASE(EncodingDecoding)
+class GlobalConfiguration
 {
-  const uint8_t key[] = {0xbc, 0x22, 0xf3, 0xf0, 0x5c, 0xc4, 0x0d, 0xb9,
-                         0x31, 0x1e, 0x41, 0x92, 0x96, 0x6f, 0xee, 0x92};
-  const std::string plaintext = "alongstringalongstringalongstringalongstringalongstringalongstringalongstringalongstring";
-  const std::string associatedData = "test";
-  auto block = encodeBlockWithAesGcm128(tlv::Content, key, (uint8_t*)plaintext.c_str(), plaintext.size(),
-                                        (uint8_t*)associatedData.c_str(), associatedData.size());
-  auto decoded = decodeBlockWithAesGcm128(block, key, (uint8_t*)associatedData.c_str(), associatedData.size());
-  BOOST_CHECK_EQUAL(plaintext, std::string((char*)decoded.get<uint8_t>(), decoded.size()));
-}
+public:
+  GlobalConfiguration()
+  {
+    const char* envHome = ::getenv("HOME");
+    if (envHome)
+      m_home = envHome;
 
-BOOST_AUTO_TEST_SUITE_END()
+    boost::filesystem::path dir{TMP_TESTS_PATH};
+    dir /= "test-home";
+    ::setenv("HOME", dir.c_str(), 1);
 
-}  // namespace tests
-}  // namespace ndncert
-}  // namespace ndn
+    boost::filesystem::create_directories(dir);
+    std::ofstream clientConf((dir / ".ndn" / "client.conf").c_str());
+    clientConf << "pib=pib-sqlite3" << std::endl
+               << "tpm=tpm-file" << std::endl;
+  }
+
+  ~GlobalConfiguration()
+  {
+    if (!m_home.empty())
+      ::setenv("HOME", m_home.data(), 1);
+  }
+
+private:
+  std::string m_home;
+};
+
+#if BOOST_VERSION >= 106500
+BOOST_TEST_GLOBAL_CONFIGURATION(GlobalConfiguration);
+#elif BOOST_VERSION >= 105900
+BOOST_GLOBAL_FIXTURE(GlobalConfiguration);
+#else
+BOOST_GLOBAL_FIXTURE(GlobalConfiguration)
+#endif
+
+} // namespace tests
+} // namespace ndncert
+} // namespace ndn

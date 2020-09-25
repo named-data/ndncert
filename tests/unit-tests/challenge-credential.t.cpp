@@ -19,7 +19,7 @@
  */
 
 #include "challenge-module/challenge-credential.hpp"
-#include "identity-management-fixture.hpp"
+#include "test-common.hpp"
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/util/io.hpp>
 
@@ -101,6 +101,6 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
 
 BOOST_AUTO_TEST_SUITE_END()
 
-} // namespace tests
-} // namespace ndncert
-} // namespace ndn
+}  // namespace tests
+}  // namespace ndncert
+}  // namespace ndn

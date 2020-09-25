@@ -23,13 +23,8 @@
 #include "challenge-module/challenge-email.hpp"
 #include "challenge-module/challenge-pin.hpp"
 #include "client-module.hpp"
-#include "database-fixture.hpp"
 #include "protocol-detail/info.hpp"
-
-#include <ndn-cxx/security/signing-helpers.hpp>
-#include <ndn-cxx/security/transform/public-key.hpp>
-#include <ndn-cxx/security/verification-helpers.hpp>
-#include <ndn-cxx/util/dummy-client-face.hpp>
+#include "test-common.hpp"
 
 namespace ndn {
 namespace ndncert {

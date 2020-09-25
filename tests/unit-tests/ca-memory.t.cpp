@@ -19,8 +19,8 @@
  */
 
 #include "ca-detail/ca-memory.hpp"
-#include "identity-management-fixture.hpp"
 #include "ca-detail/ca-sqlite.hpp"
+#include "test-common.hpp"
 
 namespace ndn {
 namespace ndncert {

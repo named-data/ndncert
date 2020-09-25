@@ -20,11 +20,7 @@
 
 #include "ca-config.hpp"
 #include "protocol-detail/info.hpp"
-#include "identity-management-fixture.hpp"
-
-#include <ndn-cxx/security/transform/base64-encode.hpp>
-#include <ndn-cxx/security/transform/buffer-source.hpp>
-#include <ndn-cxx/security/transform/stream-sink.hpp>
+#include "test-common.hpp"
 
 namespace ndn {
 namespace ndncert {

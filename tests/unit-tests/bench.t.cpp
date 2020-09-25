@@ -19,17 +19,10 @@
  */
 
 #include "ca-module.hpp"
-#include "identity-management-fixture.hpp"
 #include "client-module.hpp"
 #include "challenge-module/challenge-pin.hpp"
 #include "protocol-detail/info.hpp"
-
-#include <ndn-cxx/util/dummy-client-face.hpp>
-#include <ndn-cxx/security/signing-helpers.hpp>
-#include <ndn-cxx/security/transform/public-key.hpp>
-#include <ndn-cxx/security/verification-helpers.hpp>
-#include <ndn-cxx/metadata-object.hpp>
-#include <iostream>
+#include "test-common.hpp"
 
 namespace ndn {
 namespace ndncert {

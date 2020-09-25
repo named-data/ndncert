@@ -19,8 +19,7 @@
  */
 
 #include "challenge-module/challenge-email.hpp"
-
-#include "identity-management-fixture.hpp"
+#include "test-common.hpp"
 
 namespace ndn {
 namespace ndncert {

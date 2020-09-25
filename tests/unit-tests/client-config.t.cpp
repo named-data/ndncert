@@ -19,8 +19,7 @@
  */
 
 #include "client-config.hpp"
-
-#include "boost-test.hpp"
+#include "test-common.hpp"
 
 namespace ndn {
 namespace ndncert {
