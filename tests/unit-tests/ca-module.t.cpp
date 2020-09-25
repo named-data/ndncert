@@ -34,7 +34,7 @@ BOOST_FIXTURE_TEST_SUITE(TestCaModule, DatabaseFixture)
 
 BOOST_AUTO_TEST_CASE(Initialization)
 {
-  util::DummyClientFace face(io, {true, true});
+  util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
   BOOST_CHECK_EQUAL(ca.getCaConf().m_caPrefix, "/ndn");
 
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(HandleProbe)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, {true, true});
+  util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
   ca.setProbeHandler([&](const Block& probeInfo) {
     return "example";
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(HandleInfo)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, {true, true});
+  util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
   ca.setProbeHandler([&](const Block& probeInfo) {
     return "example";
@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_CASE(HandleProbeUsingDefaultHandler)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, {true, true});
+  util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE(HandleNew)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, {true, true});
+  util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
@@ -218,7 +218,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidValidityPeriod1)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, {true, true});
+  util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test");
   advanceClocks(time::milliseconds(20), 60);
 
@@ -251,7 +251,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithProbeToken)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, {true, true});
+  util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
   ca.m_config.m_probe = "email";
   advanceClocks(time::milliseconds(20), 60);
@@ -286,7 +286,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, {true, true});
+  util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 

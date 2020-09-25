@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_CASE(PacketSize0)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, {true, true});
+  util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
   ca.setProbeHandler([&](const Block& probeInfo) {
     return "example";
@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, {true, true});
+  util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 

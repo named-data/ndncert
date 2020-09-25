@@ -18,9 +18,12 @@
  */
 
 #include "challenge-credential.hpp"
-#include "../logging.hpp"
+
+#include <iostream>
 #include <ndn-cxx/security/verification-helpers.hpp>
 #include <ndn-cxx/util/io.hpp>
+
+#include "../logging.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -36,7 +39,7 @@ const std::string ChallengeCredential::JSON_CREDENTIAL_CERT = "issued-cert";
 const std::string ChallengeCredential::JSON_CREDENTIAL_SELF = "self-signed";
 
 ChallengeCredential::ChallengeCredential(const std::string& configPath)
-  : ChallengeModule("Credential")
+    : ChallengeModule("Credential")
 {
   if (configPath.empty()) {
     m_configFile = std::string(SYSCONFDIR) + "/ndncert/challenge-credential.conf";
@@ -84,39 +87,45 @@ ChallengeCredential::handleChallengeRequest(const Block& params, CertificateRequ
   if (m_trustAnchors.empty()) {
     parseConfigFile();
   }
-  // load credential parameter
-  // TODO: instead of string, should pass certificate byte value directly
-  std::istringstream ss1(readString(params.elements().at(1)));
-  auto cert = io::load<security::v2::Certificate>(ss1);
-  if (cert == nullptr) {
-    _LOG_ERROR("Cannot load credential parameter: cert");
-    request.m_status = STATUS_FAILURE;
-    request.m_challengeStatus = FAILURE_INVALID_FORMAT_CREDENTIAL;
-    updateRequestOnChallengeEnd(request);
-    return;
+  shared_ptr<security::v2::Certificate> selfSigned, credential;
+  auto& elements = params.elements();
+  for (size_t i = 0; i < elements.size(); i++) {
+    if (elements[i].type() == tlv_parameter_key) {
+      if (readString(elements[i]) == JSON_CREDENTIAL_CERT) {
+        std::istringstream ss(readString(params.elements()[i + 1]));
+        credential = io::load<security::v2::Certificate>(ss);
+        if (credential == nullptr) {
+          _LOG_ERROR("Cannot load credential parameter: cert");
+          request.m_status = STATUS_FAILURE;
+          request.m_challengeStatus = FAILURE_INVALID_FORMAT_CREDENTIAL;
+          updateRequestOnChallengeEnd(request);
+          return;
+        }
+      }
+      else if (readString(elements[i]) == JSON_CREDENTIAL_SELF) {
+        std::istringstream ss(readString(params.elements()[i + 1]));
+        selfSigned = io::load<security::v2::Certificate>(ss);
+        if (selfSigned == nullptr) {
+          _LOG_ERROR("Cannot load credential parameter: cert");
+          request.m_status = STATUS_FAILURE;
+          request.m_challengeStatus = FAILURE_INVALID_FORMAT_SELF_SIGNED;
+          updateRequestOnChallengeEnd(request);
+          return;
+        }
+      }
+      else {
+        continue;
+      }
+    }
   }
-  ss1.str("");
-  ss1.clear();
-
-  // load self-signed data
-  std::istringstream ss2(readString(params.elements().at(3)));
-  auto self = io::load<Data>(ss2);
-  if (self == nullptr) {
-    _LOG_TRACE("Cannot load credential parameter: self-signed cert");
-    request.m_status = STATUS_FAILURE;
-    request.m_challengeStatus = FAILURE_INVALID_FORMAT_SELF_SIGNED;
-    updateRequestOnChallengeEnd(request);
-    return;
-  }
-  ss2.str("");
-  ss2.clear();
 
   // verify the credential and the self-signed cert
-  Name signingKeyName = cert->getSignature().getKeyLocator().getName();
+  Name signingKeyName = credential->getSignature().getKeyLocator().getName();
   for (auto anchor : m_trustAnchors) {
     if (anchor.getKeyName() == signingKeyName) {
-      if (security::verifySignature(*cert, anchor) && security::verifySignature(*self, *cert)
-          && readString(self->getContent()) == request.m_requestId) {
+      if (security::verifySignature(*selfSigned, anchor) &&
+          security::verifySignature(*selfSigned, *credential) &&
+          readString(selfSigned->getContent()) == request.m_requestId) {
         request.m_status = STATUS_PENDING;
         request.m_challengeStatus = CHALLENGE_STATUS_SUCCESS;
         updateRequestOnChallengeEnd(request);
@@ -168,9 +177,9 @@ ChallengeCredential::genChallengeRequestTLV(int status, const std::string& chall
   if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
     request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
     request.push_back(makeStringBlock(tlv_parameter_key, JSON_CREDENTIAL_CERT));
-    request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_CREDENTIAL_CERT,"")));
+    request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_CREDENTIAL_CERT, "")));
     request.push_back(makeStringBlock(tlv_parameter_key, JSON_CREDENTIAL_SELF));
-    request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_CREDENTIAL_SELF,"")));
+    request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_CREDENTIAL_SELF, "")));
   }
   else {
     _LOG_ERROR("Client's status and challenge status are wrong");
@@ -178,5 +187,5 @@ ChallengeCredential::genChallengeRequestTLV(int status, const std::string& chall
   request.encode();
   return request;
 }
-} // namespace ndncert
-} // namespace ndn
+}  // namespace ndncert
+}  // namespace ndn
