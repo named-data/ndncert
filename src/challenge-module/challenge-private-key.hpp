@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017-2019, Regents of the University of California.
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -17,8 +17,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_CHALLENGE_CREDENTIAL_HPP
-#define NDNCERT_CHALLENGE_CREDENTIAL_HPP
+#ifndef NDNCERT_CHALLENGE_PRIVATE_KEY_HPP
+#define NDNCERT_CHALLENGE_PRIVATE_KEY_HPP
 
 #include "../challenge-module.hpp"
 
@@ -26,30 +26,27 @@ namespace ndn {
 namespace ndncert {
 
 /**
- * @brief Provide Credential based challenge
+ * @brief Private Key based challenge (for renewal and revocation)
  *
- * Credential here means the certificate issued by a trust anchor. Once the requester
- * could proof his/her possession of an existing certificate from other certificate issuer,
- * the requester could finish the challenge.
+ * Once the requester could proof his/her possession of the private key corresponds to
+ * the current CA's previous issued certificate, the requester could finish the challenge.
  *
- * The requester needs to provide the proof of the possession of a certificate issued by
- * a trust anchor. The challenge require the requester to pass the BASE64 certificate and
- * a BASE64 Data packet signed by the credential pub key and whose content is the request id.
+ * The requester needs to provide the proof of the possession the private for the certificate
+ * for the previous cerificate. The challenge require the requester to a BASE64 Data packet
+ * signed by the credential pub key and whose content is the request id.
  *
  * The main process of this challenge module is:
- *   1. Requester provides a certificate signed by that trusted certificate as credential.
+ *   1. The requester sign a Data packet which content is the request id.
  *   2. The challenge module will verify the signature of the credential.
- *   3. The content of the signed Data is the request id
  *
  * Failure info when application fails:
- *   FAILURE_INVALID_CREDENTIAL: When the cert issued from trust anchor or self-signed cert
- *     cannot be validated.
+ *   FAILURE_INVALID_CREDENTIAL: When the signature cannot be validated.
  *   FAILURE_INVALID_FORMAT: When the credential format is wrong.
  */
-class ChallengeCredential : public ChallengeModule
+class ChallengePrivateKey : public ChallengeModule
 {
 public:
-  ChallengeCredential(const std::string& configPath = "");
+  ChallengePrivateKey();
 
   // For CA
   void
@@ -66,22 +63,13 @@ public:
   genChallengeRequestTLV(int status, const std::string& challengeStatus, const JsonSection& params) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  void
-  parseConfigFile();
-
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+  static const std::string FAILURE_INVALID_REQUEST_TYPE;
   static const std::string FAILURE_INVALID_CREDENTIAL;
-  static const std::string FAILURE_INVALID_FORMAT_CREDENTIAL;
   static const std::string FAILURE_INVALID_FORMAT_SELF_SIGNED;
-  static const std::string JSON_CREDENTIAL_CERT;
   static const std::string JSON_PROOF_OF_PRIVATE_KEY;
-
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  std::list<security::v2::Certificate> m_trustAnchors;
-  std::string m_configFile;
 };
 
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_CHALLENGE_CREDENTIAL_HPP
+#endif // NDNCERT_CHALLENGE_PRIVATE_KEY_HPP

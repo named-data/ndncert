@@ -36,7 +36,7 @@ const std::string ChallengeCredential::FAILURE_INVALID_FORMAT_CREDENTIAL = "fail
 const std::string ChallengeCredential::FAILURE_INVALID_FORMAT_SELF_SIGNED = "failure-cannot-parse-self-signed";
 const std::string ChallengeCredential::FAILURE_INVALID_CREDENTIAL = "failure-invalid-credential";
 const std::string ChallengeCredential::JSON_CREDENTIAL_CERT = "issued-cert";
-const std::string ChallengeCredential::JSON_CREDENTIAL_SELF = "self-signed";
+const std::string ChallengeCredential::JSON_PROOF_OF_PRIVATE_KEY = "proof-of-private-key";
 
 ChallengeCredential::ChallengeCredential(const std::string& configPath)
     : ChallengeModule("Credential")
@@ -102,7 +102,7 @@ ChallengeCredential::handleChallengeRequest(const Block& params, CertificateRequ
           return;
         }
       }
-      else if (readString(elements[i]) == JSON_CREDENTIAL_SELF) {
+      else if (readString(elements[i]) == JSON_PROOF_OF_PRIVATE_KEY) {
         std::istringstream ss(readString(params.elements()[i + 1]));
         selfSigned = io::load<security::v2::Certificate>(ss);
         if (selfSigned == nullptr) {
@@ -148,7 +148,7 @@ ChallengeCredential::getRequirementForChallenge(int status, const std::string& c
   JsonSection result;
   if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
     result.put(JSON_CREDENTIAL_CERT, "Please_copy_anchor_signed_cert_here");
-    result.put(JSON_CREDENTIAL_SELF, "Please_copy_key_signed_request_id_data_here");
+    result.put(JSON_PROOF_OF_PRIVATE_KEY, "Please_copy_key_signed_request_id_data_here");
   }
   else {
     _LOG_ERROR("Client's status and challenge status are wrong");
@@ -162,7 +162,7 @@ ChallengeCredential::genChallengeRequestJson(int status, const std::string& chal
   JsonSection result;
   if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
     result.put(JSON_CREDENTIAL_CERT, params.get(JSON_CREDENTIAL_CERT, ""));
-    result.put(JSON_CREDENTIAL_SELF, params.get(JSON_CREDENTIAL_SELF, ""));
+    result.put(JSON_PROOF_OF_PRIVATE_KEY, params.get(JSON_PROOF_OF_PRIVATE_KEY, ""));
   }
   else {
     _LOG_ERROR("Client's status and challenge status are wrong");
@@ -178,8 +178,8 @@ ChallengeCredential::genChallengeRequestTLV(int status, const std::string& chall
     request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
     request.push_back(makeStringBlock(tlv_parameter_key, JSON_CREDENTIAL_CERT));
     request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_CREDENTIAL_CERT, "")));
-    request.push_back(makeStringBlock(tlv_parameter_key, JSON_CREDENTIAL_SELF));
-    request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_CREDENTIAL_SELF, "")));
+    request.push_back(makeStringBlock(tlv_parameter_key, JSON_PROOF_OF_PRIVATE_KEY));
+    request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_PROOF_OF_PRIVATE_KEY, "")));
   }
   else {
     _LOG_ERROR("Client's status and challenge status are wrong");

@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
   params.push_back(makeStringBlock(tlv_selected_challenge, "Credential"));
   params.push_back(makeStringBlock(tlv_parameter_key, ChallengeCredential::JSON_CREDENTIAL_CERT));
   params.push_back(makeStringBlock(tlv_parameter_value, credentialStr));
-  params.push_back(makeStringBlock(tlv_parameter_key, ChallengeCredential::JSON_CREDENTIAL_SELF));
+  params.push_back(makeStringBlock(tlv_parameter_key, ChallengeCredential::JSON_PROOF_OF_PRIVATE_KEY));
   params.push_back(makeStringBlock(tlv_parameter_value, selfSignedStr));
   params.encode();
 
