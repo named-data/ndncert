@@ -226,7 +226,20 @@ CaModule::onProbe(const Interest& request)
 void
 CaModule::onNew(const Interest& request)
 {
-  // NEW Naming Convention: /<CA-prefix>/CA/NEW/[SignedInterestParameters_Digest]
+    // NEW Naming Convention: /<CA-prefix>/CA/NEW/[SignedInterestParameters_Digest]
+    onRequestInit(request, REQUEST_TYPE_NEW);
+}
+
+void
+CaModule::onRevoke(const Interest& request)
+{
+    // REVOKE Naming Convention: /<CA-prefix>/CA/REVOKE/[SignedInterestParameters_Digest]
+    onRequestInit(request, REQUEST_TYPE_REVOKE);
+}
+
+void
+CaModule::onRequestInit(const Interest& request, int requestType)
+{
   // get ECDH pub key and cert request
   const auto& parameterTLV = request.getApplicationParameters();
   parameterTLV.parse();
@@ -258,52 +271,80 @@ CaModule::onNew(const Interest& request)
   hkdf(m_ecdh.context->sharedSecret, m_ecdh.context->sharedSecretLen,
        (uint8_t*)&saltInt, sizeof(saltInt), m_aesKey, sizeof(m_aesKey));
 
-  // parse certificate request
-  Block cert_req = parameterTLV.get(tlv_cert_request);
-  cert_req.parse();
-
   shared_ptr<security::v2::Certificate> clientCert = nullptr;
 
-  try {
-    security::v2::Certificate cert = security::v2::Certificate(cert_req.get(tlv::Data));
-    clientCert = make_shared<security::v2::Certificate>(cert);
-  }
-  catch (const std::exception& e) {
-    _LOG_ERROR("Unrecognized certificate request: " << e.what());
-    return;
-  }
-  // check the validity period
-  auto expectedPeriod = clientCert->getValidityPeriod().getPeriod();
-  auto currentTime = time::system_clock::now();
-  if (expectedPeriod.first < currentTime - REQUEST_VALIDITY_PERIOD_NOT_BEFORE_GRACE_PERIOD) {
-    _LOG_ERROR("Client requests a too old notBefore timepoint.");
-    return;
-  }
-  if (expectedPeriod.second > currentTime + m_config.m_maxValidityPeriod ||
-      expectedPeriod.second <= expectedPeriod.first) {
-    _LOG_ERROR("Client requests an invalid validity period or a notAfter timepoint beyond the allowed time period.");
-    return;
-  }
+  if (requestType == REQUEST_TYPE_NEW) {
+    // parse certificate request
+    Block cert_req = parameterTLV.get(tlv_cert_request);
+    cert_req.parse();
 
-  // verify the self-signed certificate, the request, and the token
-  if (!m_config.m_caPrefix.isPrefixOf(clientCert->getName()) // under ca prefix
-      || !security::v2::Certificate::isValidName(clientCert->getName()) // is valid cert name
-      || clientCert->getName().size() < m_config.m_caName.size() + IS_SUBNAME_MIN_OFFSET) {
-    _LOG_ERROR("Invalid self-signed certificate name " << clientCert->getName());
-    return;
-  }
-  if (!security::verifySignature(*clientCert, *clientCert)) {
-    _LOG_ERROR("Cert request with bad signature.");
-    return;
-  }
-  if (!security::verifySignature(request, *clientCert)) {
-    _LOG_ERROR("Interest with bad signature.");
-    return;
+    try {
+      security::v2::Certificate cert = security::v2::Certificate(cert_req.get(tlv::Data));
+      clientCert = make_shared<security::v2::Certificate>(cert);
+    }
+    catch (const std::exception &e) {
+      _LOG_ERROR("Unrecognized certificate request: " << e.what());
+      return;
+    }
+    // check the validity period
+    auto expectedPeriod = clientCert->getValidityPeriod().getPeriod();
+    auto currentTime = time::system_clock::now();
+    if (expectedPeriod.first < currentTime - REQUEST_VALIDITY_PERIOD_NOT_BEFORE_GRACE_PERIOD) {
+      _LOG_ERROR("Client requests a too old notBefore timepoint.");
+      return;
+    }
+    if (expectedPeriod.second > currentTime + m_config.m_maxValidityPeriod ||
+      expectedPeriod.second <= expectedPeriod.first) {
+      _LOG_ERROR("Client requests an invalid validity period or a notAfter timepoint beyond the allowed time period.");
+      return;
+    }
+
+    // verify the self-signed certificate, the request, and the token
+    if (!m_config.m_caPrefix.isPrefixOf(clientCert->getName()) // under ca prefix
+        || !security::v2::Certificate::isValidName(clientCert->getName()) // is valid cert name
+        || clientCert->getName().size() < m_config.m_caName.size() + IS_SUBNAME_MIN_OFFSET) {
+      _LOG_ERROR("Invalid self-signed certificate name " << clientCert->getName());
+      return;
+    }
+    if (!security::verifySignature(*clientCert, *clientCert)) {
+      _LOG_ERROR("Cert request with bad signature.");
+      return;
+    }
+    if (!security::verifySignature(request, *clientCert)) {
+      _LOG_ERROR("Interest with bad signature.");
+      return;
+    }
+  } else if (requestType == REQUEST_TYPE_REVOKE) {
+    // parse certificate request
+    Block cert_revoke = parameterTLV.get(tlv_cert_to_revoke);
+    cert_revoke.parse();
+
+    try {
+      security::v2::Certificate cert = security::v2::Certificate(cert_revoke.get(tlv::Data));
+      clientCert = make_shared<security::v2::Certificate>(cert);
+    }
+    catch (const std::exception &e) {
+      _LOG_ERROR("Unrecognized certificate: " << e.what());
+      return;
+    }
+
+    // verify the certificate
+    if (!m_config.m_caName.isPrefixOf(clientCert->getName()) // under ca prefix
+        || !security::v2::Certificate::isValidName(clientCert->getName()) // is valid cert name
+        || clientCert->getName().size() < m_config.m_caName.size() + IS_SUBNAME_MIN_OFFSET) {
+      _LOG_ERROR("Invalid certificate name " << clientCert->getName());
+      return;
+    }
+    const auto& cert = m_keyChain.getPib().getIdentity(m_config.m_caName).getDefaultKey().getDefaultCertificate();
+    if (!security::verifySignature(*clientCert, cert)) {
+      _LOG_ERROR("Cert request with bad signature.");
+      return;
+    }
   }
 
   // create new request instance
   std::string requestId = std::to_string(random::generateWord64());
-  CertificateRequest certRequest(m_config.m_caPrefix, requestId, REQUEST_TYPE_NEW, STATUS_BEFORE_CHALLENGE, *clientCert);
+  CertificateRequest certRequest(m_config.m_caPrefix, requestId, requestType, STATUS_BEFORE_CHALLENGE, *clientCert);
 
   try {
     m_storage->addRequest(certRequest);
@@ -316,10 +357,17 @@ CaModule::onNew(const Interest& request)
   Data result;
   result.setName(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  result.setContent(NEW::encodeDataContent(myEcdhPubKeyBase64,
-                                      std::to_string(saltInt),
-                                      certRequest,
-                                      m_config.m_supportedChallenges));
+  if (requestType == REQUEST_TYPE_NEW) {
+    result.setContent(NEW::encodeDataContent(myEcdhPubKeyBase64,
+                                               std::to_string(saltInt),
+                                               certRequest,
+                                               m_config.m_supportedChallenges));
+  } else if (requestType == REQUEST_TYPE_REVOKE) {
+    result.setContent(REVOKE::encodeDataContent(myEcdhPubKeyBase64,
+                                                std::to_string(saltInt),
+                                                certRequest,
+                                                m_config.m_supportedChallenges));
+  }
   m_keyChain.sign(result, signingByIdentity(m_config.m_caPrefix));
   m_face.put(result);
 
@@ -451,91 +499,6 @@ CaModule::onChallenge(const Interest& request)
     m_config.m_statusUpdateCallback(certRequest);
   }
 }
-
-void
-CaModule::onRevoke(const Interest& request)
-{
-  // NEW Naming Convention: /<CA-prefix>/CA/REVOKE/[SignedInterestParameters_Digest]
-  // get ECDH pub key and cert request
-  const auto& parameterJson = jsonFromBlock(request.getApplicationParameters());
-  if (parameterJson.empty()) {
-    _LOG_ERROR("Empty JSON obtained from the Interest parameter.");
-    return;
-  }
-  std::string peerKeyBase64 = parameterJson.get(JSON_CLIENT_ECDH, "");
-  if (peerKeyBase64 == "") {
-    _LOG_ERROR("Empty JSON_CLIENT_ECDH obtained from the Interest parameter.");
-    return;
-  }
-
-  // get server's ECDH pub key
-  auto myEcdhPubKeyBase64 = m_ecdh.getBase64PubKey();
-  try {
-    m_ecdh.deriveSecret(peerKeyBase64);
-  }
-  catch (const std::exception& e) {
-    _LOG_ERROR("Cannot derive a shared secret using the provided ECDH key: " << e.what());
-    return;
-  }
-
-  // parse certificate request
-  std::string certRevokeStr = parameterJson.get(JSON_CLIENT_CERT_REVOKE, "");
-  shared_ptr<security::v2::Certificate> clientCert = nullptr;
-  try {
-    std::stringstream ss(certRevokeStr);
-    clientCert = io::load<security::v2::Certificate>(ss);
-  }
-  catch (const std::exception& e) {
-    _LOG_ERROR("Unrecognized revocation request: " << e.what());
-    return;
-  }
-
-  // verify the certificate
-  if (!m_config.m_caName.isPrefixOf(clientCert->getName()) // under ca prefix
-        || !security::v2::Certificate::isValidName(clientCert->getName()) // is valid cert name
-        || clientCert->getName().size() != m_config.m_caName.size() + IS_SUBNAME_MIN_OFFSET) {
-        _LOG_ERROR("Invalid certificate name " << clientCert->getName());
-        return;
-  }
-  const auto& cert = m_keyChain.getPib().getIdentity(m_config.m_caName).getDefaultKey().getDefaultCertificate();
-  if (!security::verifySignature(*clientCert, cert)) {
-    _LOG_ERROR("Cert request with bad signature.");
-    return;
-  }
-
-  // generate salt for HKDF
-  auto saltInt = random::generateSecureWord64();
-  // hkdf
-  hkdf(m_ecdh.context->sharedSecret, m_ecdh.context->sharedSecretLen,
-         (uint8_t*)&saltInt, sizeof(saltInt), m_aesKey, sizeof(m_aesKey));
-
-  // create new request instance
-  std::string requestId = std::to_string(random::generateWord64());
-  CertificateRequest certRequest(m_config.m_caName, requestId, REQUEST_TYPE_REVOKE, STATUS_BEFORE_CHALLENGE,
-                                   *clientCert);
-  try {
-    m_storage->addRequest(certRequest);
-  }
-  catch (const std::exception& e) {
-    _LOG_ERROR("Cannot add new request instance into the storage: " << e.what());
-    return;
-  }
-
-  Data result;
-  result.setName(request.getName());
-  result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  result.setContent(REVOKE::encodeDataContent(myEcdhPubKeyBase64,
-                                              std::to_string(saltInt),
-                                              certRequest,
-                                              m_config.m_supportedChallenges));
-  m_keyChain.sign(result, signingByIdentity(m_config.m_caPrefix));
-  m_face.put(result);
-
-  if (m_config.m_statusUpdateCallback) {
-    m_config.m_statusUpdateCallback(certRequest);
-  }
-}
-
 
 security::v2::Certificate
 CaModule::issueCertificate(const CertificateRequest& certRequest)

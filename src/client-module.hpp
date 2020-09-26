@@ -97,6 +97,15 @@ public:
   onNewResponse(const Data& reply);
 
   shared_ptr<Interest>
+  generateRevokeInterest(const security::v2::Certificate& certificate);
+
+  std::list<std::string>
+  onRevokeResponse(const Data& reply);
+
+  std::list<std::string>
+  onRequestInitResponse(const Data& reply, int requestType);
+
+  shared_ptr<Interest>
   generateChallengeInterest(const Block& paramTLV);
 
   void
@@ -107,12 +116,6 @@ public:
 
   shared_ptr<Interest>
   generateCertFetchInterest();
-
-  shared_ptr<Interest>
-  generateRevokeInterest(const security::v2::Certificate& certificate);
-
-  std::list<std::string>
-  onRevokeResponse(const Data& reply);
 
   void
   onCertFetchResponse(const Data& reply);

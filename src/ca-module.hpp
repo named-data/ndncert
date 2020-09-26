@@ -84,13 +84,16 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   onProbe(const Interest& request);
 
   void
+  onRequestInit(const Interest& request, int requestType);
+
+  void
   onNew(const Interest& request);
 
   void
-  onChallenge(const Interest& request);
+  onRevoke(const Interest& request);
 
   void
-  onRevoke(const Interest& request);
+  onChallenge(const Interest& request);
 
   void
   onRegisterFailed(const std::string& reason);

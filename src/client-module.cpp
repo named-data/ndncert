@@ -214,6 +214,12 @@ ClientModule::generateNewInterest(const time::system_clock::TimePoint& notBefore
 std::list<std::string>
 ClientModule::onNewResponse(const Data& reply)
 {
+    return onRequestInitResponse(reply, REQUEST_TYPE_NEW);
+}
+
+std::list<std::string>
+ClientModule::onRequestInitResponse(const Data& reply, int requestType)
+{
   if (!security::verifySignature(reply, m_ca.m_anchor)) {
     _LOG_ERROR("Cannot verify data signature from " << m_ca.m_caPrefix.toUri());
     return std::list<std::string>();
@@ -276,33 +282,7 @@ ClientModule::generateRevokeInterest(const security::v2::Certificate& certificat
 std::list<std::string>
 ClientModule::onRevokeResponse(const Data& reply)
 {
-    if (!security::verifySignature(reply, m_ca.m_anchor)) {
-        _LOG_ERROR("Cannot verify data signature from " << m_ca.m_caName.toUri());
-        return std::list<std::string>();
-    }
-    auto contentTLV = reply.getContent();
-    contentTLV.parse();
-
-    // ECDH
-    const auto& peerKeyBase64Str = readString(contentTLV.get(tlv_ecdh_pub));
-    const auto& saltStr = readString(contentTLV.get(tlv_salt));
-    uint64_t saltInt = std::stoull(saltStr);
-    m_ecdh.deriveSecret(peerKeyBase64Str);
-
-    // HKDF
-    hkdf(m_ecdh.context->sharedSecret, m_ecdh.context->sharedSecretLen,
-         (uint8_t*)&saltInt, sizeof(saltInt), m_aesKey, sizeof(m_aesKey));
-
-    // update state
-    m_status = readNonNegativeInteger(contentTLV.get(tlv_status));
-    m_requestId = readString(contentTLV.get(tlv_request_id));
-    m_challengeList.clear();
-    for (auto const& element : contentTLV.elements()) {
-        if (element.type() == tlv_challenge) {
-            m_challengeList.push_back(readString(element));
-        }
-    }
-    return m_challengeList;
+    return onRequestInitResponse(reply, REQUEST_TYPE_REVOKE);
 }
 
 shared_ptr<Interest>
