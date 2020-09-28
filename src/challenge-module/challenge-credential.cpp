@@ -96,7 +96,7 @@ ChallengeCredential::handleChallengeRequest(const Block& params, CertificateRequ
         credential = io::load<security::v2::Certificate>(ss);
         if (credential == nullptr) {
           _LOG_ERROR("Cannot load credential parameter: cert");
-          request.m_status = STATUS_FAILURE;
+          request.m_status = Status::FAILURE;
           request.m_challengeStatus = FAILURE_INVALID_FORMAT_CREDENTIAL;
           updateRequestOnChallengeEnd(request);
           return;
@@ -107,7 +107,7 @@ ChallengeCredential::handleChallengeRequest(const Block& params, CertificateRequ
         selfSigned = io::load<security::v2::Certificate>(ss);
         if (selfSigned == nullptr) {
           _LOG_ERROR("Cannot load credential parameter: cert");
-          request.m_status = STATUS_FAILURE;
+          request.m_status = Status::FAILURE;
           request.m_challengeStatus = FAILURE_INVALID_FORMAT_SELF_SIGNED;
           updateRequestOnChallengeEnd(request);
           return;
@@ -126,7 +126,7 @@ ChallengeCredential::handleChallengeRequest(const Block& params, CertificateRequ
       if (security::verifySignature(*selfSigned, anchor) &&
           security::verifySignature(*selfSigned, *credential) &&
           readString(selfSigned->getContent()) == request.m_requestId) {
-        request.m_status = STATUS_PENDING;
+        request.m_status = Status::PENDING;
         request.m_challengeStatus = CHALLENGE_STATUS_SUCCESS;
         updateRequestOnChallengeEnd(request);
         return;
@@ -135,7 +135,7 @@ ChallengeCredential::handleChallengeRequest(const Block& params, CertificateRequ
   }
 
   _LOG_TRACE("Cannot verify the credential + self-signed Data + data content");
-  request.m_status = STATUS_FAILURE;
+  request.m_status = Status::FAILURE;
   request.m_challengeStatus = FAILURE_INVALID_CREDENTIAL;
   updateRequestOnChallengeEnd(request);
   return;
@@ -143,10 +143,10 @@ ChallengeCredential::handleChallengeRequest(const Block& params, CertificateRequ
 
 // For Client
 JsonSection
-ChallengeCredential::getRequirementForChallenge(int status, const std::string& challengeStatus)
+ChallengeCredential::getRequirementForChallenge(Status status, const std::string& challengeStatus)
 {
   JsonSection result;
-  if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
+  if (status == Status::BEFORE_CHALLENGE && challengeStatus == "") {
     result.put(JSON_CREDENTIAL_CERT, "Please_copy_anchor_signed_cert_here");
     result.put(JSON_PROOF_OF_PRIVATE_KEY, "Please_copy_key_signed_request_id_data_here");
   }
@@ -157,10 +157,10 @@ ChallengeCredential::getRequirementForChallenge(int status, const std::string& c
 }
 
 JsonSection
-ChallengeCredential::genChallengeRequestJson(int status, const std::string& challengeStatus, const JsonSection& params)
+ChallengeCredential::genChallengeRequestJson(Status status, const std::string& challengeStatus, const JsonSection& params)
 {
   JsonSection result;
-  if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
+  if (status == Status::BEFORE_CHALLENGE && challengeStatus == "") {
     result.put(JSON_CREDENTIAL_CERT, params.get(JSON_CREDENTIAL_CERT, ""));
     result.put(JSON_PROOF_OF_PRIVATE_KEY, params.get(JSON_PROOF_OF_PRIVATE_KEY, ""));
   }
@@ -171,10 +171,10 @@ ChallengeCredential::genChallengeRequestJson(int status, const std::string& chal
 }
 
 Block
-ChallengeCredential::genChallengeRequestTLV(int status, const std::string& challengeStatus, const JsonSection& params)
+ChallengeCredential::genChallengeRequestTLV(Status status, const std::string& challengeStatus, const JsonSection& params)
 {
   Block request = makeEmptyBlock(tlv_encrypted_payload);
-  if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
+  if (status == Status::BEFORE_CHALLENGE && challengeStatus == "") {
     request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
     request.push_back(makeStringBlock(tlv_parameter_key, JSON_CREDENTIAL_CERT));
     request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_CREDENTIAL_CERT, "")));

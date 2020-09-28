@@ -63,7 +63,7 @@ NEW::encodeDataContent(const std::string& ecdhKey, const std::string& salt,
   response.push_back(makeStringBlock(tlv_ecdh_pub, ecdhKey));
   response.push_back(makeStringBlock(tlv_salt, salt));
   response.push_back(makeStringBlock(tlv_request_id, request.m_requestId));
-  response.push_back(makeNonNegativeIntegerBlock(tlv_status, request.m_status));
+  response.push_back(makeNonNegativeIntegerBlock(tlv_status, static_cast<size_t>(request.m_status)));
   for (const auto& entry: challenges) {
     response.push_back(makeStringBlock(tlv_challenge, entry));
   }

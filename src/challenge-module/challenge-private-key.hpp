@@ -54,13 +54,13 @@ public:
 
   // For Client
   JsonSection
-  getRequirementForChallenge(int status, const std::string& challengeStatus) override;
+  getRequirementForChallenge(Status status, const std::string& challengeStatus) override;
 
   JsonSection
-  genChallengeRequestJson(int status, const std::string& challengeStatus, const JsonSection& params) override;
+  genChallengeRequestJson(Status status, const std::string& challengeStatus, const JsonSection& params) override;
 
   Block
-  genChallengeRequestTLV(int status, const std::string& challengeStatus, const JsonSection& params) override;
+  genChallengeRequestTLV(Status status, const std::string& challengeStatus, const JsonSection& params) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   static const std::string FAILURE_INVALID_REQUEST_TYPE;

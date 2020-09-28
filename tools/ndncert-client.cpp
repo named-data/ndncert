@@ -18,23 +18,23 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "challenge-module.hpp"
-#include "protocol-detail/info.hpp"
-#include "client-module.hpp"
-#include <iostream>
-#include <string>
-
 #include <boost/asio.hpp>
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
-
+#include <iostream>
 #include <ndn-cxx/security/verification-helpers.hpp>
+#include <string>
+
+#include "challenge-module.hpp"
+#include "client-module.hpp"
+#include "protocol-detail/info.hpp"
 
 namespace ndn {
 namespace ndncert {
 
-static void startApplication();
+static void
+startApplication();
 
 int nStep;
 Face face;
@@ -127,7 +127,7 @@ static void
 challengeCb(const Data& reply)
 {
   client.onChallengeResponse(reply);
-  if (client.getApplicationStatus() == STATUS_SUCCESS) {
+  if (client.getApplicationStatus() == Status::SUCCESS) {
     std::cerr << "DONE! Certificate has already been issued \n";
     face.expressInterest(*client.generateCertFetchInterest(), bind(&certFetchCb, _2),
                          bind(&onNackCb), bind(&timeoutCb));
@@ -149,8 +149,8 @@ challengeCb(const Data& reply)
     }
   }
   face.expressInterest(*client.generateChallengeInterest(challenge->genChallengeRequestTLV(client.getApplicationStatus(),
-                                                                                            client.getChallengeStatus(),
-                                                                                            requirement)),
+                                                                                           client.getChallengeStatus(),
+                                                                                           requirement)),
                        bind(&challengeCb, _2), bind(&onNackCb), bind(&timeoutCb));
 }
 
@@ -169,7 +169,7 @@ newCb(const Data& reply)
     std::cerr << "Step " << nStep++ << ": Please type in the challenge index that you want to perform\n";
     count = 0;
     for (auto item : challengeList) {
-      std::cerr << "\t" << count++ << " : "<< item << std::endl;
+      std::cerr << "\t" << count++ << " : " << item << std::endl;
     }
     getline(std::cin, choice);
     try {
@@ -208,8 +208,8 @@ newCb(const Data& reply)
     }
   }
   face.expressInterest(*client.generateChallengeInterest(challenge->genChallengeRequestTLV(client.getApplicationStatus(),
-                                                                                            client.getChallengeStatus(),
-                                                                                            requirement)),
+                                                                                           client.getChallengeStatus(),
+                                                                                           requirement)),
                        bind(&challengeCb, _2), bind(&onNackCb), bind(&timeoutCb));
 }
 
@@ -378,11 +378,8 @@ main(int argc, char* argv[])
   namespace po = boost::program_options;
   std::string configFilePath = std::string(SYSCONFDIR) + "/ndncert/client.conf";
   po::options_description description("General Usage\n ndncert-client [-h] [-c] [-v]\n");
-  description.add_options()
-    ("help,h", "produce help message")
-    ("config-file,c",     po::value<std::string>(&configFilePath), "configuration file name")
-    ("validity-period,v", po::value<int>(&validityPeriod)->default_value(-1),
-                          "desired validity period (hours) of the certificate being requested");
+  description.add_options()("help,h", "produce help message")("config-file,c", po::value<std::string>(&configFilePath), "configuration file name")("validity-period,v", po::value<int>(&validityPeriod)->default_value(-1),
+                                                                                                                                                   "desired validity period (hours) of the certificate being requested");
   po::positional_options_description p;
 
   po::variables_map vm;
@@ -410,10 +407,11 @@ main(int argc, char* argv[])
   return 0;
 }
 
-} // namespace ndncert
-} // namespace ndn
+}  // namespace ndncert
+}  // namespace ndn
 
-int main(int argc, char* argv[])
+int
+main(int argc, char* argv[])
 {
   return ndn::ndncert::main(argc, argv);
 }

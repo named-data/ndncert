@@ -55,7 +55,7 @@ public:
     return m_config;
   }
 
-  int
+  Status
   getApplicationStatus() const
   {
     return m_status;
@@ -135,7 +135,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   Name m_identityName;
 
   std::string m_requestId = "";
-  int m_status = STATUS_NOT_STARTED;
+  Status m_status = Status::NOT_STARTED;
   std::string m_challengeStatus = "";
   std::string m_challengeType = "";
   std::string m_certId = "";

@@ -49,9 +49,9 @@ class CertificateRequest
 {
 public:
   CertificateRequest();
-  CertificateRequest(const Name& caName, const std::string& requestId, int requestType, int status,
+  CertificateRequest(const Name& caName, const std::string& requestId, int requestType, Status status,
                      const security::v2::Certificate& cert);
-  CertificateRequest(const Name& caName, const std::string& requestId, int requestType, int status,
+  CertificateRequest(const Name& caName, const std::string& requestId, int requestType, Status status,
                      const std::string& challengeStatus, const std::string& challengeType,
                      const std::string& challengeTp, int remainingTime, int remainingTries,
                      const JsonSection& challengeSecrets, const security::v2::Certificate& cert);
@@ -63,7 +63,7 @@ public:
   Name m_caPrefix;
   std::string m_requestId = "";
   int m_requestType = -1;
-  int m_status = -1;
+  Status m_status = Status::NOT_STARTED;
   security::v2::Certificate m_cert;
   std::shared_ptr<Data> m_probeToken = nullptr;
 

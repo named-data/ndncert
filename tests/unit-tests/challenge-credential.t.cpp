@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
   auto identityA = addIdentity(Name("/example"));
   auto keyA = identityA.getDefaultKey();
   auto certA = key.getDefaultCertificate();
-  CertificateRequest request(Name("/example"), "123", REQUEST_TYPE_NEW, STATUS_BEFORE_CHALLENGE, certA);
+  CertificateRequest request(Name("/example"), "123", REQUEST_TYPE_NEW, Status::BEFORE_CHALLENGE, certA);
 
   // create requester's existing cert
   auto identityB = addIdentity(Name("/trust/cert"));
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
   params.encode();
 
   challenge.handleChallengeRequest(params, request);
-  BOOST_CHECK_EQUAL(request.m_status, STATUS_PENDING);
+  BOOST_CHECK(request.m_status == Status::PENDING);
   BOOST_CHECK_EQUAL(request.m_challengeStatus, CHALLENGE_STATUS_SUCCESS);
 }
 

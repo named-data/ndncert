@@ -315,7 +315,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
       BOOST_CHECK(security::verifySignature(response, cert));
 
       client.onChallengeResponse(response);
-      BOOST_CHECK_EQUAL(client.m_status, STATUS_CHALLENGE);
+      BOOST_CHECK(client.m_status == Status::CHALLENGE);
       BOOST_CHECK_EQUAL(client.m_challengeStatus, ChallengePin::NEED_CODE);
 
       auto paramJson = pinChallenge.getRequirementForChallenge(client.m_status, client.m_challengeStatus);
@@ -328,7 +328,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
       BOOST_CHECK(security::verifySignature(response, cert));
 
       client.onChallengeResponse(response);
-      BOOST_CHECK_EQUAL(client.m_status, STATUS_CHALLENGE);
+      BOOST_CHECK(client.m_status == Status::CHALLENGE);
       BOOST_CHECK_EQUAL(client.m_challengeStatus, ChallengePin::WRONG_CODE);
 
       auto paramJson = pinChallenge.getRequirementForChallenge(client.m_status, client.m_challengeStatus);
@@ -347,7 +347,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
       BOOST_CHECK(security::verifySignature(response, cert));
 
       client.onChallengeResponse(response);
-      BOOST_CHECK_EQUAL(client.m_status, STATUS_SUCCESS);
+      BOOST_CHECK(client.m_status == Status::SUCCESS);
       BOOST_CHECK_EQUAL(client.m_challengeStatus, CHALLENGE_STATUS_SUCCESS);
     }
   });
@@ -385,7 +385,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
   signatureInfo.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
           time::system_clock::now() + time::hours(10)));
   m_keyChain.sign(clientCert, signingByKey(clientKey.getName()).setSignatureInfo(signatureInfo));
-  CertificateRequest certRequest(Name("/ndn"), "122", REQUEST_TYPE_NEW, STATUS_SUCCESS, clientCert);
+  CertificateRequest certRequest(Name("/ndn"), "122", REQUEST_TYPE_NEW, Status::SUCCESS, clientCert);
   auto issuedCert = ca.issueCertificate(certRequest);
 
   ClientModule client(m_keyChain);

@@ -49,7 +49,7 @@ ChallengePin::handleChallengeRequest(const Block& params, CertificateRequest& re
   if (request.m_challengeStatus == "") {
     _LOG_TRACE("Challenge Interest arrives. Init the challenge");
     // for the first time, init the challenge
-    request.m_status = STATUS_CHALLENGE;
+    request.m_status = Status::CHALLENGE;
     request.m_challengeStatus = NEED_CODE;
     request.m_challengeType = CHALLENGE_TYPE;
     std::string secretCode = generateSecretCode();
@@ -69,7 +69,7 @@ ChallengePin::handleChallengeRequest(const Block& params, CertificateRequest& re
     const auto realCode = request.m_challengeSecrets.get<std::string>(JSON_PIN_CODE);
     if (currentTime - time::fromIsoString(request.m_challengeTp) >= m_secretLifetime) {
       // secret expires
-      request.m_status = STATUS_FAILURE;
+      request.m_status = Status::FAILURE;
       request.m_challengeStatus = CHALLENGE_STATUS_FAILURE_TIMEOUT;
       updateRequestOnChallengeEnd(request);
       _LOG_TRACE("Secret expired. Challenge failed.");
@@ -77,7 +77,7 @@ ChallengePin::handleChallengeRequest(const Block& params, CertificateRequest& re
     }
     else if (givenCode == realCode) {
       // the code is correct
-      request.m_status = STATUS_PENDING;
+      request.m_status = Status::PENDING;
       request.m_challengeStatus = CHALLENGE_STATUS_SUCCESS;
       updateRequestOnChallengeEnd(request);
       _LOG_TRACE("PIN code matched. Challenge succeeded.");
@@ -95,7 +95,7 @@ ChallengePin::handleChallengeRequest(const Block& params, CertificateRequest& re
       }
       else {
         // run out times
-        request.m_status = STATUS_FAILURE;
+        request.m_status = Status::FAILURE;
         request.m_challengeStatus = CHALLENGE_STATUS_FAILURE_MAXRETRY;
         updateRequestOnChallengeEnd(request);
         _LOG_TRACE("PIN code didn't match. Ran out tires. Challenge failed.");
@@ -105,23 +105,23 @@ ChallengePin::handleChallengeRequest(const Block& params, CertificateRequest& re
   }
   else {
     _LOG_ERROR("The challenge status is wrong");
-    request.m_status = STATUS_FAILURE;
+    request.m_status = Status::FAILURE;
     return;
   }
 }
 
 // For Client
 JsonSection
-ChallengePin::getRequirementForChallenge(int status, const std::string& challengeStatus)
+ChallengePin::getRequirementForChallenge(Status status, const std::string& challengeStatus)
 {
   JsonSection result;
-  if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
+  if (status == Status::BEFORE_CHALLENGE && challengeStatus == "") {
     // do nothing
   }
-  else if (status == STATUS_CHALLENGE && challengeStatus == NEED_CODE) {
+  else if (status == Status::CHALLENGE && challengeStatus == NEED_CODE) {
     result.put(JSON_PIN_CODE, "Please_input_your_verification_code");
   }
-  else if (status == STATUS_CHALLENGE && challengeStatus == WRONG_CODE) {
+  else if (status == Status::CHALLENGE && challengeStatus == WRONG_CODE) {
     result.put(JSON_PIN_CODE, "Incorrect_PIN_code_please_try_again");
   }
   else {
@@ -131,18 +131,18 @@ ChallengePin::getRequirementForChallenge(int status, const std::string& challeng
 }
 
 JsonSection
-ChallengePin::genChallengeRequestJson(int status, const std::string& challengeStatus, const JsonSection& params)
+ChallengePin::genChallengeRequestJson(Status status, const std::string& challengeStatus, const JsonSection& params)
 {
   JsonSection result;
-  if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
+  if (status == Status::BEFORE_CHALLENGE && challengeStatus == "") {
     // do nothing
     result.put(JSON_CLIENT_SELECTED_CHALLENGE, CHALLENGE_TYPE);
   }
-  else if (status == STATUS_CHALLENGE && challengeStatus == NEED_CODE) {
+  else if (status == Status::CHALLENGE && challengeStatus == NEED_CODE) {
     result.put(JSON_CLIENT_SELECTED_CHALLENGE, CHALLENGE_TYPE);
     result.put(JSON_PIN_CODE, params.get(JSON_PIN_CODE, ""));
   }
-  else if (status == STATUS_CHALLENGE && challengeStatus == WRONG_CODE) {
+  else if (status == Status::CHALLENGE && challengeStatus == WRONG_CODE) {
     result.put(JSON_CLIENT_SELECTED_CHALLENGE, CHALLENGE_TYPE);
     result.put(JSON_PIN_CODE, params.get(JSON_PIN_CODE, ""));
   }
@@ -153,19 +153,19 @@ ChallengePin::genChallengeRequestJson(int status, const std::string& challengeSt
 }
 
 Block
-ChallengePin::genChallengeRequestTLV(int status, const std::string& challengeStatus, const JsonSection& params)
+ChallengePin::genChallengeRequestTLV(Status status, const std::string& challengeStatus, const JsonSection& params)
 {
   Block request = makeEmptyBlock(tlv_encrypted_payload);
-  if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
+  if (status == Status::BEFORE_CHALLENGE && challengeStatus == "") {
     // do nothing
     request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
   }
-  else if (status == STATUS_CHALLENGE && challengeStatus == NEED_CODE) {
+  else if (status == Status::CHALLENGE && challengeStatus == NEED_CODE) {
     request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
     request.push_back(makeStringBlock(tlv_parameter_key, JSON_PIN_CODE));
     request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_PIN_CODE,"")));
   }
-  else if (status == STATUS_CHALLENGE && challengeStatus == WRONG_CODE) {
+  else if (status == Status::CHALLENGE && challengeStatus == WRONG_CODE) {
     request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
     request.push_back(makeStringBlock(tlv_parameter_key, JSON_PIN_CODE));
     request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_PIN_CODE,"")));

@@ -126,7 +126,7 @@ CaSqlite::getRequest(const std::string& requestId)
 
   if (statement.step() == SQLITE_ROW) {
     Name caName(statement.getBlock(2));
-    int status = statement.getInt(3);
+    Status status = static_cast<Status>(statement.getInt(3));
     std::string challengeStatus = statement.getString(4);
     security::v2::Certificate cert(statement.getBlock(6));
     std::string challengeType = statement.getString(7);
@@ -179,7 +179,7 @@ CaSqlite::addRequest(const CertificateRequest& request)
                              values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
     statement.bind(1, request.m_requestId, SQLITE_TRANSIENT);
     statement.bind(2, request.m_caPrefix.wireEncode(), SQLITE_TRANSIENT);
-    statement.bind(3, request.m_status);
+    statement.bind(3, static_cast<int>(request.m_status));
     statement.bind(4, request.m_challengeStatus, SQLITE_TRANSIENT);
     statement.bind(5, request.m_cert.getKeyName().wireEncode(),
                    SQLITE_TRANSIENT);
@@ -205,7 +205,7 @@ CaSqlite::addRequest(const CertificateRequest& request)
                              values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
     statement.bind(1, request.m_requestId, SQLITE_TRANSIENT);
     statement.bind(2, request.m_caPrefix.wireEncode(), SQLITE_TRANSIENT);
-    statement.bind(3, request.m_status);
+    statement.bind(3, static_cast<int>(request.m_status));
     statement.bind(4, request.m_challengeStatus, SQLITE_TRANSIENT);
     statement.bind(5, request.m_cert.getKeyName().wireEncode(),
                    SQLITE_TRANSIENT);
@@ -231,7 +231,7 @@ CaSqlite::updateRequest(const CertificateRequest& request)
                              SET status = ?, challenge_status = ?, challenge_type = ?, challenge_secrets = ?,
                              challenge_tp = ?, remaining_tries = ?, remaining_time = ?, request_type = ?
                              WHERE request_id = ?)_SQLTEXT_");
-  statement.bind(1, request.m_status);
+  statement.bind(1, static_cast<int>(request.m_status));
   statement.bind(2, request.m_challengeStatus, SQLITE_TRANSIENT);
   statement.bind(3, request.m_challengeType, SQLITE_TRANSIENT);
   statement.bind(4, convertJson2String(request.m_challengeSecrets), SQLITE_TRANSIENT);
@@ -258,7 +258,7 @@ CaSqlite::listAllRequests()
   while (statement.step() == SQLITE_ROW) {
     std::string requestId = statement.getString(1);
     Name caName(statement.getBlock(2));
-    int status = statement.getInt(3);
+    Status status = static_cast<Status>(statement.getInt(3));
     std::string challengeStatus = statement.getString(4);
     security::v2::Certificate cert(statement.getBlock(6));
     std::string challengeType = statement.getString(7);
@@ -289,7 +289,7 @@ CaSqlite::listAllRequests(const Name& caName)
   while (statement.step() == SQLITE_ROW) {
     std::string requestId = statement.getString(1);
     Name caName(statement.getBlock(2));
-    int status = statement.getInt(3);
+    Status status = static_cast<Status>(statement.getInt(3));
     std::string challengeStatus = statement.getString(4);
     security::v2::Certificate cert(statement.getBlock(6));
     std::string challengeType = statement.getString(7);

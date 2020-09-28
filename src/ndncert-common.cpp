@@ -18,27 +18,32 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "challenge.hpp"
-#include "../ndncert-common.hpp"
-#include "../certificate-request.hpp"
+#include "ndncert-common.hpp"
 
 namespace ndn {
 namespace ndncert {
 
-Block
-CHALLENGE::encodeDataPayload(const CertificateRequest& request)
-{
-  Block response = makeEmptyBlock(tlv_encrypted_payload);
-  response.push_back(makeNonNegativeIntegerBlock(tlv_status, static_cast<size_t>(request.m_status)));
-  response.push_back(makeStringBlock(tlv_challenge_status, request.m_challengeStatus));
-  response.push_back(makeNonNegativeIntegerBlock(tlv_remaining_tries, request.m_remainingTries));
-  response.push_back(makeNonNegativeIntegerBlock(tlv_remaining_time, request.m_remainingTime));
-  response.encode();
-  return response;
+std::string statusToString(Status status) {
+  switch (status)
+  {
+  case Status::BEFORE_CHALLENGE:
+    return "Before challenge";
+  case Status::CHALLENGE:
+    return "In challenge";
+  case Status::PENDING:
+    return "Pending after challenge";
+  case Status::SUCCESS:
+    return "Success";
+  case Status::FAILURE:
+    return "Failure";
+  case Status::NOT_STARTED:
+    return "Not started";
+  case Status::ENDED:
+    return "Ended";
+  default:
+    return "Unrecognized status";
+  }
 }
 
-} // namespace ndncert
-} // namespace ndn
-
-
-
+}  // namespace ndncert
+}  // namespace ndn

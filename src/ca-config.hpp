@@ -21,9 +21,10 @@
 #ifndef NDNCERT_CA_CONFIG_HPP
 #define NDNCERT_CA_CONFIG_HPP
 
+#include <ndn-cxx/security/v2/certificate.hpp>
+
 #include "certificate-request.hpp"
 #include "client-config.hpp"
-#include <ndn-cxx/security/v2/certificate.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -59,6 +60,7 @@ using StatusUpdateCallback = function<void(const CertificateRequest&)>;
  *  "ca-prefix": "",
  *  "ca-info": "",
  *  "max-validity-period": "",
+ *  "max-suffix-length": "",
  *  "probe-parameters":
  *  [
  *    {"probe-parameter-key": ""},
@@ -113,6 +115,11 @@ public:
    * The value is in the unit of second.
    */
   time::seconds m_maxValidityPeriod;
+  /**
+   * Maximum allowed suffix length of requested name.
+   * E.g., When its value is 2, at most 2 name components can be assigned after m_caPrefix.
+   */
+  size_t m_maxSuffixLength;
   /**
    * A list of supported challenges.
    */

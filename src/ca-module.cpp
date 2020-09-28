@@ -343,7 +343,7 @@ CaModule::onRequestInit(const Interest& request, int requestType)
 
   // create new request instance
   std::string requestId = std::to_string(random::generateWord64());
-  CertificateRequest certRequest(m_config.m_caPrefix, requestId, requestType, STATUS_BEFORE_CHALLENGE, *clientCert);
+  CertificateRequest certRequest(m_config.m_caPrefix, requestId, requestType, Status::BEFORE_CHALLENGE, *clientCert);
 
   try {
     m_storage->addRequest(certRequest);
@@ -416,7 +416,7 @@ CaModule::onChallenge(const Interest& request)
 
   if (challenge == nullptr) {
     _LOG_TRACE("Unrecognized challenge type " << challengeType);
-    certRequest.m_status = STATUS_FAILURE;
+    certRequest.m_status = Status::FAILURE;
     certRequest.m_challengeStatus = CHALLENGE_STATUS_UNKNOWN_CHALLENGE;
     payload = CHALLENGE::encodeDataPayload(certRequest);
   }
@@ -424,18 +424,18 @@ CaModule::onChallenge(const Interest& request)
     _LOG_TRACE("CHALLENGE module to be load: " << challengeType);
     // let challenge module handle the request
     challenge->handleChallengeRequest(paramTLV, certRequest);
-    if (certRequest.m_status == STATUS_FAILURE) {
+    if (certRequest.m_status == Status::FAILURE) {
       // if challenge failed
       m_storage->deleteRequest(certRequest.m_requestId);
       payload = CHALLENGE::encodeDataPayload(certRequest);
       _LOG_TRACE("Challenge failed");
     }
-    else if (certRequest.m_status == STATUS_PENDING) {
+    else if (certRequest.m_status == Status::PENDING) {
       // if challenge succeeded
       if (certRequest.m_requestType == REQUEST_TYPE_NEW) {
         auto issuedCert = issueCertificate(certRequest);
         certRequest.m_cert = issuedCert;
-        certRequest.m_status = STATUS_SUCCESS;
+        certRequest.m_status = Status::SUCCESS;
         try {
           m_storage->addCertificate(certRequest.m_requestId, issuedCert);
           m_storage->deleteRequest(certRequest.m_requestId);
@@ -455,7 +455,7 @@ CaModule::onChallenge(const Interest& request)
         _LOG_TRACE("Challenge succeeded. Certificate has been issued");
       }
       else if (certRequest.m_requestType == REQUEST_TYPE_REVOKE) {
-        certRequest.m_status = STATUS_SUCCESS;
+        certRequest.m_status = Status::SUCCESS;
         try {
           m_storage->deleteRequest(certRequest.m_requestId);
           _LOG_TRACE("Certificate Revoked");

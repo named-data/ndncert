@@ -70,13 +70,13 @@ public:
 
   // For Client
   virtual JsonSection
-  getRequirementForChallenge(int status, const std::string& challengeStatus) = 0;
+  getRequirementForChallenge(Status status, const std::string& challengeStatus) = 0;
 
   virtual JsonSection
-  genChallengeRequestJson(int status, const std::string& challengeStatus, const JsonSection& params) = 0;
+  genChallengeRequestJson(Status status, const std::string& challengeStatus, const JsonSection& params) = 0;
 
   virtual Block
-  genChallengeRequestTLV(int status, const std::string& challengeStatus, const JsonSection& params) = 0;
+  genChallengeRequestTLV(Status status, const std::string& challengeStatus, const JsonSection& params) = 0;
 
   // helpers
   static std::string

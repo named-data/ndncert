@@ -19,21 +19,23 @@
  */
 
 #include "client-module.hpp"
-#include "logging.hpp"
-#include "challenge-module.hpp"
-#include "crypto-support/enc-tlv.hpp"
-#include "protocol-detail/info.hpp"
-#include "protocol-detail/probe.hpp"
-#include "protocol-detail/new.hpp"
-#include "protocol-detail/challenge.hpp"
-#include "protocol-detail/revoke.hpp"
-#include <ndn-cxx/util/io.hpp>
+
 #include <ndn-cxx/security/signing-helpers.hpp>
-#include <ndn-cxx/security/verification-helpers.hpp>
-#include <ndn-cxx/util/random.hpp>
 #include <ndn-cxx/security/transform/base64-encode.hpp>
 #include <ndn-cxx/security/transform/buffer-source.hpp>
 #include <ndn-cxx/security/transform/stream-sink.hpp>
+#include <ndn-cxx/security/verification-helpers.hpp>
+#include <ndn-cxx/util/io.hpp>
+#include <ndn-cxx/util/random.hpp>
+
+#include "challenge-module.hpp"
+#include "crypto-support/enc-tlv.hpp"
+#include "logging.hpp"
+#include "protocol-detail/challenge.hpp"
+#include "protocol-detail/info.hpp"
+#include "protocol-detail/new.hpp"
+#include "protocol-detail/probe.hpp"
+#include "protocol-detail/revoke.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -41,7 +43,7 @@ namespace ndncert {
 _LOG_INIT(ndncert.client);
 
 ClientModule::ClientModule(security::v2::KeyChain& keyChain)
-  : m_keyChain(keyChain)
+    : m_keyChain(keyChain)
 {
 }
 
@@ -107,8 +109,7 @@ ClientModule::generateProbeInterest(const ClientCaItem& ca, const std::string& p
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
   interest->setApplicationParameters(
-    PROBE::encodeApplicationParametersFromProbeInfo(ca, probeInfo)
-  );
+      PROBE::encodeApplicationParametersFromProbeInfo(ca, probeInfo));
 
   // update local state
   m_ca = ca;
@@ -143,7 +144,7 @@ ClientModule::generateNewInterest(const time::system_clock::TimePoint& notBefore
                                   const Name& identityName, const shared_ptr<Data>& probeToken)
 {
   // Name requestedName = identityName;
-  if (!identityName.empty()) { // if identityName is not empty, find the corresponding CA
+  if (!identityName.empty()) {  // if identityName is not empty, find the corresponding CA
     bool findCa = false;
     for (const auto& caItem : m_config.m_caItems) {
       if (caItem.m_caPrefix.isPrefixOf(identityName)) {
@@ -151,12 +152,12 @@ ClientModule::generateNewInterest(const time::system_clock::TimePoint& notBefore
         findCa = true;
       }
     }
-    if (!findCa) { // if cannot find, cannot proceed
+    if (!findCa) {  // if cannot find, cannot proceed
       return nullptr;
     }
     m_identityName = identityName;
   }
-  else { // if identityName is empty, check m_identityName or generate a random name
+  else {  // if identityName is empty, check m_identityName or generate a random name
     if (!m_identityName.empty()) {
       // do nothing
     }
@@ -203,8 +204,7 @@ ClientModule::generateNewInterest(const time::system_clock::TimePoint& notBefore
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
   interest->setApplicationParameters(
-    NEW::encodeApplicationParameters(m_ecdh.getBase64PubKey(), certRequest, probeToken)
-  );
+      NEW::encodeApplicationParameters(m_ecdh.getBase64PubKey(), certRequest, probeToken));
 
   // sign the Interest packet
   m_keyChain.sign(*interest, signingByKey(m_key.getName()));
@@ -214,7 +214,7 @@ ClientModule::generateNewInterest(const time::system_clock::TimePoint& notBefore
 std::list<std::string>
 ClientModule::onNewResponse(const Data& reply)
 {
-    return onRequestInitResponse(reply, REQUEST_TYPE_NEW);
+  return onRequestInitResponse(reply, REQUEST_TYPE_NEW);
 }
 
 std::list<std::string>
@@ -228,7 +228,7 @@ ClientModule::onRequestInitResponse(const Data& reply, int requestType)
   contentTLV.parse();
 
   // ECDH
-  const auto& peerKeyBase64Str = readString(contentTLV.get(tlv_ecdh_pub));  
+  const auto& peerKeyBase64Str = readString(contentTLV.get(tlv_ecdh_pub));
   const auto& saltStr = readString(contentTLV.get(tlv_salt));
   uint64_t saltInt = std::stoull(saltStr);
   m_ecdh.deriveSecret(peerKeyBase64Str);
@@ -238,7 +238,7 @@ ClientModule::onRequestInitResponse(const Data& reply, int requestType)
        (uint8_t*)&saltInt, sizeof(saltInt), m_aesKey, sizeof(m_aesKey));
 
   // update state
-  m_status = readNonNegativeInteger(contentTLV.get(tlv_status));
+  m_status = static_cast<Status>(readNonNegativeInteger(contentTLV.get(tlv_status)));
   m_requestId = readString(contentTLV.get(tlv_request_id));
   m_challengeList.clear();
   for (auto const& element : contentTLV.elements()) {
@@ -252,37 +252,36 @@ ClientModule::onRequestInitResponse(const Data& reply, int requestType)
 shared_ptr<Interest>
 ClientModule::generateRevokeInterest(const security::v2::Certificate& certificate)
 {
-    // Name requestedName = identityName;
-    bool findCa = false;
-    for (const auto& caItem : m_config.m_caItems) {
-        if (caItem.m_caName.isPrefixOf(certificate.getName())) {
-            m_ca = caItem;
-            findCa = true;
-        }
+  // Name requestedName = identityName;
+  bool findCa = false;
+  for (const auto& caItem : m_config.m_caItems) {
+    if (caItem.m_caName.isPrefixOf(certificate.getName())) {
+      m_ca = caItem;
+      findCa = true;
     }
-    if (!findCa) { // if cannot find, cannot proceed
-        _LOG_TRACE("Cannot find corresponding CA for the certificate.");
-        return nullptr;
-    }
+  }
+  if (!findCa) {  // if cannot find, cannot proceed
+    _LOG_TRACE("Cannot find corresponding CA for the certificate.");
+    return nullptr;
+  }
 
-    // generate Interest packet
-    Name interestName = m_ca.m_caPrefix;
-    interestName.append("CA").append("REVOKE");
-    auto interest = make_shared<Interest>(interestName);
-    interest->setMustBeFresh(true);
-    interest->setCanBePrefix(false);
-    interest->setApplicationParameters(
-            REVOKE::encodeApplicationParameters(m_ecdh.getBase64PubKey(), certificate)
-    );
+  // generate Interest packet
+  Name interestName = m_ca.m_caPrefix;
+  interestName.append("CA").append("REVOKE");
+  auto interest = make_shared<Interest>(interestName);
+  interest->setMustBeFresh(true);
+  interest->setCanBePrefix(false);
+  interest->setApplicationParameters(
+      REVOKE::encodeApplicationParameters(m_ecdh.getBase64PubKey(), certificate));
 
-    // return the Interest packet
-    return interest;
+  // return the Interest packet
+  return interest;
 }
 
 std::list<std::string>
 ClientModule::onRevokeResponse(const Data& reply)
 {
-    return onRequestInitResponse(reply, REQUEST_TYPE_REVOKE);
+  return onRequestInitResponse(reply, REQUEST_TYPE_REVOKE);
 }
 
 shared_ptr<Interest>
@@ -299,7 +298,8 @@ ClientModule::generateChallengeInterest(const Block& challengeRequest)
 
   // encrypt the Interest parameters
   auto paramBlock = encodeBlockWithAesGcm128(tlv::ApplicationParameters, m_aesKey,
-                                             challengeRequest.value(), challengeRequest.value_size(), (const uint8_t*)"test", strlen("test"));
+                                             challengeRequest.value(), challengeRequest.value_size(),
+                                             (const uint8_t*)"test", strlen("test"));
   interest->setApplicationParameters(paramBlock);
 
   m_keyChain.sign(*interest, signingByKey(m_key.getName()));
@@ -319,7 +319,7 @@ ClientModule::onChallengeResponse(const Data& reply)
   contentTLV.parse();
 
   // update state
-  m_status = readNonNegativeInteger(contentTLV.get(tlv_status));
+  m_status = static_cast<Status>(readNonNegativeInteger(contentTLV.get(tlv_status)));
   m_challengeStatus = readString(contentTLV.get(tlv_challenge_status));
   m_remainingTries = readNonNegativeInteger(contentTLV.get(tlv_remaining_tries));
   m_freshBefore = time::system_clock::now() +
@@ -370,7 +370,7 @@ ClientModule::onCertFetchResponse(const Data& reply)
 void
 ClientModule::endSession()
 {
-  if (getApplicationStatus() == STATUS_SUCCESS || getApplicationStatus() == STATUS_ENDED) {
+  if (getApplicationStatus() == Status::SUCCESS || getApplicationStatus() == Status::ENDED) {
     return;
   }
   if (m_isNewlyCreatedIdentity) {
@@ -383,9 +383,8 @@ ClientModule::endSession()
     auto identity = m_keyChain.getPib().getIdentity(m_identityName);
     m_keyChain.deleteKey(identity, m_key);
   }
-  m_status = STATUS_ENDED;
+  m_status = Status::ENDED;
 }
-
 
 std::vector<std::string>
 ClientModule::parseProbeComponents(const std::string& probe)
@@ -402,5 +401,5 @@ ClientModule::parseProbeComponents(const std::string& probe)
   return components;
 }
 
-} // namespace ndncert
-} // namespace ndn
+}  // namespace ndncert
+}  // namespace ndn

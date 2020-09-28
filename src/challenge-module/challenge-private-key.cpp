@@ -48,7 +48,7 @@ ChallengePrivateKey::handleChallengeRequest(const Block& params, CertificateRequ
 {
   if (request.m_requestType == REQUEST_TYPE_NEW) {
       _LOG_TRACE("Cannot use this private key challenge for new certificate request");
-      request.m_status = STATUS_FAILURE;
+      request.m_status = Status::FAILURE;
       request.m_challengeStatus = FAILURE_INVALID_REQUEST_TYPE;
       updateRequestOnChallengeEnd(request);
   }
@@ -62,7 +62,7 @@ ChallengePrivateKey::handleChallengeRequest(const Block& params, CertificateRequ
         selfSigned = io::load<security::v2::Certificate>(ss);
         if (selfSigned == nullptr) {
           _LOG_ERROR("Cannot load credential parameter: cert");
-          request.m_status = STATUS_FAILURE;
+          request.m_status = Status::FAILURE;
           request.m_challengeStatus = FAILURE_INVALID_FORMAT_SELF_SIGNED;
           updateRequestOnChallengeEnd(request);
           return;
@@ -77,24 +77,24 @@ ChallengePrivateKey::handleChallengeRequest(const Block& params, CertificateRequ
   // verify the credential and the self-signed cert
   if (security::verifySignature(*selfSigned, request.m_cert) &&
     readString(selfSigned->getContent()) == request.m_requestId) {
-    request.m_status = STATUS_PENDING;
+    request.m_status = Status::PENDING;
     request.m_challengeStatus = CHALLENGE_STATUS_SUCCESS;
     updateRequestOnChallengeEnd(request);
     return;
   }
 
   _LOG_TRACE("Cannot verify the credential + self-signed Data + data content");
-  request.m_status = STATUS_FAILURE;
+  request.m_status = Status::FAILURE;
   request.m_challengeStatus = FAILURE_INVALID_CREDENTIAL;
   updateRequestOnChallengeEnd(request);
 }
 
 // For Client
 JsonSection
-ChallengePrivateKey::getRequirementForChallenge(int status, const std::string& challengeStatus)
+ChallengePrivateKey::getRequirementForChallenge(Status status, const std::string& challengeStatus)
 {
   JsonSection result;
-  if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
+  if (status == Status::BEFORE_CHALLENGE && challengeStatus == "") {
     result.put(JSON_PROOF_OF_PRIVATE_KEY, "Please_copy_key_signed_request_id_data_here");
   }
   else {
@@ -104,10 +104,10 @@ ChallengePrivateKey::getRequirementForChallenge(int status, const std::string& c
 }
 
 JsonSection
-ChallengePrivateKey::genChallengeRequestJson(int status, const std::string& challengeStatus, const JsonSection& params)
+ChallengePrivateKey::genChallengeRequestJson(Status status, const std::string& challengeStatus, const JsonSection& params)
 {
   JsonSection result;
-  if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
+  if (status == Status::BEFORE_CHALLENGE && challengeStatus == "") {
     result.put(JSON_PROOF_OF_PRIVATE_KEY, params.get(JSON_PROOF_OF_PRIVATE_KEY, ""));
   }
   else {
@@ -117,10 +117,10 @@ ChallengePrivateKey::genChallengeRequestJson(int status, const std::string& chal
 }
 
 Block
-ChallengePrivateKey::genChallengeRequestTLV(int status, const std::string& challengeStatus, const JsonSection& params)
+ChallengePrivateKey::genChallengeRequestTLV(Status status, const std::string& challengeStatus, const JsonSection& params)
 {
   Block request = makeEmptyBlock(tlv_encrypted_payload);
-  if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
+  if (status == Status::BEFORE_CHALLENGE && challengeStatus == "") {
     request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
     request.push_back(makeStringBlock(tlv_parameter_key, JSON_PROOF_OF_PRIVATE_KEY));
     request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_PROOF_OF_PRIVATE_KEY, "")));

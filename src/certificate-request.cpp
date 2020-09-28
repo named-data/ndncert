@@ -26,31 +26,31 @@ namespace ndncert {
 
 CertificateRequest::CertificateRequest() = default;
 
-CertificateRequest::CertificateRequest(const Name& caName, const std::string& requestId, int requestType, int status,
+CertificateRequest::CertificateRequest(const Name& caName, const std::string& requestId, int requestType, Status status,
                                        const security::v2::Certificate& cert)
-  : m_caPrefix(caName)
-  , m_requestId(requestId)
-  , m_requestType(requestType)
-  , m_status(status)
-  , m_cert(cert)
+    : m_caPrefix(caName)
+    , m_requestId(requestId)
+    , m_requestType(requestType)
+    , m_status(status)
+    , m_cert(cert)
 {
 }
 
-CertificateRequest::CertificateRequest(const Name& caName, const std::string& requestId, int requestType, int status,
+CertificateRequest::CertificateRequest(const Name& caName, const std::string& requestId, int requestType, Status status,
                                        const std::string& challengeStatus, const std::string& challengeType,
                                        const std::string& challengeTp, int remainingTime, int remainingTries,
                                        const JsonSection& challengeSecrets, const security::v2::Certificate& cert)
-  : m_caPrefix(caName)
-  , m_requestId(requestId)
-  , m_requestType(requestType)
-  , m_status(status)
-  , m_cert(cert)
-  , m_challengeStatus(challengeStatus)
-  , m_challengeType(challengeType)
-  , m_challengeTp(challengeTp)
-  , m_remainingTime(remainingTime)
-  , m_remainingTries(remainingTries)
-  , m_challengeSecrets(challengeSecrets)
+    : m_caPrefix(caName)
+    , m_requestId(requestId)
+    , m_requestType(requestType)
+    , m_status(status)
+    , m_cert(cert)
+    , m_challengeStatus(challengeStatus)
+    , m_challengeType(challengeType)
+    , m_challengeTp(challengeTp)
+    , m_remainingTime(remainingTime)
+    , m_remainingTries(remainingTries)
+    , m_challengeSecrets(challengeSecrets)
 {
 }
 
@@ -67,10 +67,8 @@ operator<<(std::ostream& os, const CertificateRequest& request)
   os << "  " << request.m_caPrefix << "\n";
   os << "Request ID:\n";
   os << "  " << request.m_requestId << "\n";
-  if (request.m_status != -1) {
-    os << "Request Status:\n";
-    os << "  " << request.m_status << "\n";
-  }
+  os << "Request Status:\n";
+  os << "  " << statusToString(request.m_status) << "\n";
   if (request.m_challengeStatus != "") {
     os << "Challenge Status:\n";
     os << "  " << request.m_challengeStatus << "\n";
@@ -85,5 +83,5 @@ operator<<(std::ostream& os, const CertificateRequest& request)
   return os;
 }
 
-} // namespace ndncert
-} // namespace ndn
+}  // namespace ndncert
+}  // namespace ndn

@@ -56,7 +56,7 @@ ChallengeEmail::handleChallengeRequest(const Block& params, CertificateRequest& 
     // for the first time, init the challenge
     std::string emailAddress = readString(params.get(tlv_parameter_value));
     if (!isValidEmailAddress(emailAddress)) {
-      request.m_status = STATUS_FAILURE;
+      request.m_status = Status::FAILURE;
       request.m_challengeStatus = FAILURE_INVALID_EMAIL;
       return;
     }
@@ -74,7 +74,7 @@ ChallengeEmail::handleChallengeRequest(const Block& params, CertificateRequest& 
         return;
       }
     }
-    request.m_status = STATUS_CHALLENGE;
+    request.m_status = Status::CHALLENGE;
     request.m_challengeStatus = NEED_CODE;
     request.m_challengeType = CHALLENGE_TYPE;
     std::string emailCode = generateSecretCode();
@@ -96,7 +96,7 @@ ChallengeEmail::handleChallengeRequest(const Block& params, CertificateRequest& 
     const auto realCode = request.m_challengeSecrets.get<std::string>(JSON_CODE);
     if (currentTime - time::fromIsoString(request.m_challengeTp) >= m_secretLifetime) {
       // secret expires
-      request.m_status = STATUS_FAILURE;
+      request.m_status = Status::FAILURE;
       request.m_challengeStatus = CHALLENGE_STATUS_FAILURE_TIMEOUT;
       updateRequestOnChallengeEnd(request);
       _LOG_TRACE("Secret expired. Challenge failed.");
@@ -104,7 +104,7 @@ ChallengeEmail::handleChallengeRequest(const Block& params, CertificateRequest& 
     }
     else if (givenCode == realCode) {
       // the code is correct
-      request.m_status = STATUS_PENDING;
+      request.m_status = Status::PENDING;
       request.m_challengeStatus = CHALLENGE_STATUS_SUCCESS;
       updateRequestOnChallengeEnd(request);
       _LOG_TRACE("Secret code matched. Challenge succeeded.");
@@ -122,7 +122,7 @@ ChallengeEmail::handleChallengeRequest(const Block& params, CertificateRequest& 
       }
       else {
         // run out times
-        request.m_status = STATUS_FAILURE;
+        request.m_status = Status::FAILURE;
         request.m_challengeStatus = CHALLENGE_STATUS_FAILURE_MAXRETRY;
         updateRequestOnChallengeEnd(request);
         _LOG_TRACE("Secret code didn't match. Ran out tires. Challenge failed.");
@@ -132,23 +132,23 @@ ChallengeEmail::handleChallengeRequest(const Block& params, CertificateRequest& 
   }
   else {
     _LOG_ERROR("The challenge status is wrong");
-    request.m_status = STATUS_FAILURE;
+    request.m_status = Status::FAILURE;
     return;
   }
 }
 
 // For Client
 JsonSection
-ChallengeEmail::getRequirementForChallenge(int status, const std::string& challengeStatus)
+ChallengeEmail::getRequirementForChallenge(Status status, const std::string& challengeStatus)
 {
   JsonSection result;
-  if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
+  if (status == Status::BEFORE_CHALLENGE && challengeStatus == "") {
     result.put(JSON_EMAIL, "Please_input_your_email_address");
   }
-  else if (status == STATUS_CHALLENGE && challengeStatus == NEED_CODE) {
+  else if (status == Status::CHALLENGE && challengeStatus == NEED_CODE) {
     result.put(JSON_CODE, "Please_input_your_verification_code");
   }
-  else if (status == STATUS_CHALLENGE && challengeStatus == WRONG_CODE) {
+  else if (status == Status::CHALLENGE && challengeStatus == WRONG_CODE) {
     result.put(JSON_CODE, "Incorrect_code_please_try_again");
   }
   else {
@@ -158,18 +158,18 @@ ChallengeEmail::getRequirementForChallenge(int status, const std::string& challe
 }
 
 JsonSection
-ChallengeEmail::genChallengeRequestJson(int status, const std::string& challengeStatus, const JsonSection& params)
+ChallengeEmail::genChallengeRequestJson(Status status, const std::string& challengeStatus, const JsonSection& params)
 {
   JsonSection result;
-  if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
+  if (status == Status::BEFORE_CHALLENGE && challengeStatus == "") {
     result.put(JSON_CLIENT_SELECTED_CHALLENGE, CHALLENGE_TYPE);
     result.put(JSON_EMAIL, params.get(JSON_EMAIL, ""));
   }
-  else if (status == STATUS_CHALLENGE && challengeStatus == NEED_CODE) {
+  else if (status == Status::CHALLENGE && challengeStatus == NEED_CODE) {
     result.put(JSON_CLIENT_SELECTED_CHALLENGE, CHALLENGE_TYPE);
     result.put(JSON_CODE, params.get(JSON_CODE, ""));
   }
-  else if (status == STATUS_CHALLENGE && challengeStatus == WRONG_CODE) {
+  else if (status == Status::CHALLENGE && challengeStatus == WRONG_CODE) {
     result.put(JSON_CLIENT_SELECTED_CHALLENGE, CHALLENGE_TYPE);
     result.put(JSON_CODE, params.get(JSON_CODE, ""));
   }
@@ -180,20 +180,20 @@ ChallengeEmail::genChallengeRequestJson(int status, const std::string& challenge
 }
 
 Block
-ChallengeEmail::genChallengeRequestTLV(int status, const std::string& challengeStatus, const JsonSection& params)
+ChallengeEmail::genChallengeRequestTLV(Status status, const std::string& challengeStatus, const JsonSection& params)
 {
   Block request = makeEmptyBlock(tlv_encrypted_payload);
-  if (status == STATUS_BEFORE_CHALLENGE && challengeStatus == "") {
+  if (status == Status::BEFORE_CHALLENGE && challengeStatus == "") {
     request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
     request.push_back(makeStringBlock(tlv_parameter_key, JSON_EMAIL));
     request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_EMAIL,"")));
   }
-  else if (status == STATUS_CHALLENGE && challengeStatus == NEED_CODE) {
+  else if (status == Status::CHALLENGE && challengeStatus == NEED_CODE) {
     request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
     request.push_back(makeStringBlock(tlv_parameter_key, JSON_CODE));
     request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_CODE,"")));
   }
-  else if (status == STATUS_CHALLENGE && challengeStatus == WRONG_CODE) {
+  else if (status == Status::CHALLENGE && challengeStatus == WRONG_CODE) {
     request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
     request.push_back(makeStringBlock(tlv_parameter_key, JSON_CODE));
     request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_CODE,"")));

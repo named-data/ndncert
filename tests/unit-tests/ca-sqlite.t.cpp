@@ -81,30 +81,30 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   auto cert1 = key1.getDefaultCertificate();
 
   // add operation
-  CertificateRequest request1(Name("/ndn/site1"), "123", REQUEST_TYPE_NEW, STATUS_BEFORE_CHALLENGE, cert1);
+  CertificateRequest request1(Name("/ndn/site1"), "123", REQUEST_TYPE_NEW, Status::BEFORE_CHALLENGE, cert1);
   BOOST_CHECK_NO_THROW(storage.addRequest(request1));
 
   // get operation
   auto result = storage.getRequest("123");
   BOOST_CHECK_EQUAL(request1.m_cert, result.m_cert);
-  BOOST_CHECK_EQUAL(request1.m_status, result.m_status);
+  BOOST_CHECK(request1.m_status == result.m_status);
   BOOST_CHECK_EQUAL(request1.m_caPrefix, result.m_caPrefix);
 
   // update operation
   JsonSection json;
   json.put("test", "4567");
-  CertificateRequest request2(Name("/ndn/site1"), "123", REQUEST_TYPE_NEW, STATUS_CHALLENGE, CHALLENGE_STATUS_SUCCESS,
+  CertificateRequest request2(Name("/ndn/site1"), "123", REQUEST_TYPE_NEW, Status::CHALLENGE, CHALLENGE_STATUS_SUCCESS,
                              "Email", time::toIsoString(time::system_clock::now()), 3600, 3, json, cert1);
   storage.updateRequest(request2);
   result = storage.getRequest("123");
   BOOST_CHECK_EQUAL(request2.m_cert, result.m_cert);
-  BOOST_CHECK_EQUAL(request2.m_status, result.m_status);
+  BOOST_CHECK(request2.m_status == result.m_status);
   BOOST_CHECK_EQUAL(request2.m_caPrefix, result.m_caPrefix);
 
   auto identity2 = addIdentity(Name("/ndn/site2"));
   auto key2 = identity2.getDefaultKey();
   auto cert2 = key2.getDefaultCertificate();
-  CertificateRequest request3(Name("/ndn/site2"), "456", REQUEST_TYPE_NEW, STATUS_BEFORE_CHALLENGE, cert2);
+  CertificateRequest request3(Name("/ndn/site2"), "456", REQUEST_TYPE_NEW, Status::BEFORE_CHALLENGE, cert2);
   storage.addRequest(request3);
 
   // list operation

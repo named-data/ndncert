@@ -10,7 +10,7 @@
   ]
   "supported-challenges":
   [
-    { "challenge": "PIN" },
-    { "challenge": "Email" }
+    { "challenge": "pin" },
+    { "challenge": "email" }
   ]
 }

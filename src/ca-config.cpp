@@ -58,6 +58,8 @@ CaConfig::parse(const JsonSection& configJson)
   m_caInfo = configJson.get(CONFIG_CA_INFO, "");
   // CA max validity period
   m_maxValidityPeriod = time::seconds(configJson.get(CONFIG_MAX_VALIDITY_PERIOD, 3600));
+  // CA max suffix length
+  m_maxSuffixLength = configJson.get(CONFIG_MAX_SUFFIX_LENGTH, 1);
   // probe
   m_probeParameterKeys.clear();
   auto probeParameters = configJson.get_child_optional(CONFIG_PROBE_PARAMETERS);

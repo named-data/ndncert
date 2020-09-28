@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(HandlePrivateKeyChallengeRequest)
   auto identityA = addIdentity(Name("/example"));
   auto keyA = identityA.getDefaultKey();
   auto certA = keyA.getDefaultCertificate();
-  CertificateRequest request(Name("/example"), "123", REQUEST_TYPE_REVOKE, STATUS_BEFORE_CHALLENGE, certA);
+  CertificateRequest request(Name("/example"), "123", REQUEST_TYPE_REVOKE, Status::BEFORE_CHALLENGE, certA);
 
   security::v2::Certificate privateKeyProof;
   privateKeyProof.setName(Name(keyA.getName()).append("proof-of-private-key").appendVersion());
@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(HandlePrivateKeyChallengeRequest)
   params.encode();
 
   challenge.handleChallengeRequest(params, request);
-  BOOST_CHECK_EQUAL(request.m_status, STATUS_PENDING);
+  BOOST_CHECK(request.m_status == Status::PENDING);
   BOOST_CHECK_EQUAL(request.m_challengeStatus, CHALLENGE_STATUS_SUCCESS);
 }
 
