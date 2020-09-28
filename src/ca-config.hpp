@@ -21,10 +21,9 @@
 #ifndef NDNCERT_CA_CONFIG_HPP
 #define NDNCERT_CA_CONFIG_HPP
 
-#include <ndn-cxx/security/v2/certificate.hpp>
-
 #include "certificate-request.hpp"
 #include "client-config.hpp"
+#include <ndn-cxx/security/v2/certificate.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -38,7 +37,6 @@ namespace ndncert {
  * @p vector, input, a list of parameter key-value pair used for name assignment.
  * @return a vector containing the possible namespaces derived from the parameters.
  */
-// using ProbeHandler = function<std::string /*identity name*/ (const Block& tlv /*requester input*/)>;
 using NameAssignmentFunc = function<std::vector<std::string>(const std::vector<std::tuple<std::string, std::string>>)>;
 
 /**
@@ -76,41 +74,16 @@ using StatusUpdateCallback = function<void(const CertificateRequest&)>;
 class CaConfig {
 public:
   /**
-   * @brief Error that can be thrown from CaConfig
-   */
-  class Error : public std::runtime_error {
-  public:
-    using std::runtime_error::runtime_error;
-  };
-
-public:
-  /**
    * Load CA configuration from the file.
    *
    * @param fileName, the configuration file name.
-   * @throw CaConfig::Error when config file does not exist or the configuration
+   * @throw std::runtime_error when config file does not exist or the configuration
    *        in the file cannot be parsed correctly.
-   * @throw CaConfig::Error when the ca-prefix attribute in JSON text is empty.
-   * @throw CaConfig::Error when the challenge is not specified or is not supported.
+   * @throw std::runtime_error when the ca-prefix attribute in JSON text is empty.
+   * @throw std::runtime_error when the challenge is not specified or is not supported.
    */
   void
   load(const std::string& fileName);
-
-  /**
-   * Set the NameAssignmentFunction.
-   */
-  // void
-  // setNameAssignmentFunc(const NameAssignmentFunc& nameAssignmentFunc) {
-  //   m_nameAssignmentFunc = nameAssignmentFunc;
-  // }
-
-  /**
-   * Set the StatusUpdateCallback.
-   */
-  void
-  setStatusUpdateCallback(const StatusUpdateCallback& statusUpdateCallback) {
-    m_statusUpdateCallback = statusUpdateCallback;
-  }
 
 private:
   void

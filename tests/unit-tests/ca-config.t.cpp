@@ -44,19 +44,19 @@ BOOST_AUTO_TEST_CASE(ReadConfigFile)
 BOOST_AUTO_TEST_CASE(ReadNonexistConfigFile)
 {
   CaConfig config;
-  BOOST_CHECK_THROW(config.load("tests/unit-tests/Nonexist"), CaConfig::Error);
+  BOOST_CHECK_THROW(config.load("tests/unit-tests/Nonexist"), std::runtime_error);
 }
 
 BOOST_AUTO_TEST_CASE(ReadConfigFileWithoutCaPrefix)
 {
   CaConfig config;
-  BOOST_CHECK_THROW(config.load("tests/unit-tests/ca.conf.test2"), CaConfig::Error);
+  BOOST_CHECK_THROW(config.load("tests/unit-tests/ca.conf.test2"), std::runtime_error);
 }
 
 BOOST_AUTO_TEST_CASE(ReadConfigFileWithChallengeNotSupported)
 {
   CaConfig config;
-  BOOST_CHECK_THROW(config.load("tests/unit-tests/ca.conf.test3"), CaConfig::Error);
+  BOOST_CHECK_THROW(config.load("tests/unit-tests/ca.conf.test3"), std::runtime_error);
 }
 
 BOOST_AUTO_TEST_CASE(InfoContentEncodingDecoding)
@@ -76,8 +76,8 @@ BOOST_AUTO_TEST_CASE(InfoContentEncodingDecoding)
   BOOST_CHECK_EQUAL(cert.wireEncode(), decoded.m_anchor.wireEncode());
 }
 
-BOOST_AUTO_TEST_SUITE_END() // TestCaConfig
+BOOST_AUTO_TEST_SUITE_END()  // TestCaConfig
 
-} // namespace tests
-} // namespace ndncert
-} // namespace ndn
+}  // namespace tests
+}  // namespace ndncert
+}  // namespace ndn

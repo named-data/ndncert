@@ -19,13 +19,13 @@
  */
 
 #include "ca-config.hpp"
-#include "challenge-module.hpp"
 
 #include <boost/filesystem.hpp>
-#include <ndn-cxx/util/io.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/info_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <ndn-cxx/util/io.hpp>
+
+#include "challenge-module.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -38,10 +38,10 @@ CaConfig::load(const std::string& fileName)
     boost::property_tree::read_json(fileName, configJson);
   }
   catch (const std::exception& error) {
-    BOOST_THROW_EXCEPTION(Error("Failed to parse configuration file " + fileName + ", " + error.what()));
+    BOOST_THROW_EXCEPTION(std::runtime_error("Failed to parse configuration file " + fileName + ", " + error.what()));
   }
   if (configJson.begin() == configJson.end()) {
-    BOOST_THROW_EXCEPTION(Error("Error processing configuration file: " + fileName + " no data"));
+    BOOST_THROW_EXCEPTION(std::runtime_error("std::runtime_error processing configuration file: " + fileName + " no data"));
   }
   parse(configJson);
 }
@@ -52,7 +52,7 @@ CaConfig::parse(const JsonSection& configJson)
   // CA prefix
   m_caPrefix = Name(configJson.get(CONFIG_CA_PREFIX, ""));
   if (m_caPrefix.empty()) {
-    BOOST_THROW_EXCEPTION(Error("Cannot parse ca-prefix from the config file"));
+    BOOST_THROW_EXCEPTION(std::runtime_error("Cannot parse ca-prefix from the config file"));
   }
   // CA info
   m_caInfo = configJson.get(CONFIG_CA_INFO, "");
@@ -68,7 +68,7 @@ CaConfig::parse(const JsonSection& configJson)
   m_supportedChallenges.clear();
   auto challengeList = configJson.get_child_optional(CONFIG_SUPPORTED_CHALLENGES);
   if (!challengeList) {
-    BOOST_THROW_EXCEPTION(Error("Cannot parse challenge list"));
+    BOOST_THROW_EXCEPTION(std::runtime_error("Cannot parse challenge list"));
   }
   parseChallengeList(*challengeList);
 }
@@ -76,13 +76,12 @@ CaConfig::parse(const JsonSection& configJson)
 void
 CaConfig::parseProbeParameters(const JsonSection& section)
 {
-  auto it = section.begin();
-  for (; it != section.end(); it++) {
-    auto probeParameter = it->second.get(CONFIG_PROBE_PARAMETER, "");
-    if (probeParameter == "") {
-      BOOST_THROW_EXCEPTION(Error("Cannot read probe-parameter-key in probe-parameters from the config file"));
-    }
+  for (const auto item : section) {
+    auto probeParameter = item.second.get(CONFIG_PROBE_PARAMETER, "");
     probeParameter = boost::algorithm::to_lower_copy(probeParameter);
+    if (probeParameter == "") {
+      BOOST_THROW_EXCEPTION(std::runtime_error("Cannot read probe-parameter-key in probe-parameters from the config file"));
+    }
     m_probeParameterKeys.push_back(probeParameter);
   }
 }
@@ -90,20 +89,19 @@ CaConfig::parseProbeParameters(const JsonSection& section)
 void
 CaConfig::parseChallengeList(const JsonSection& section)
 {
-  auto it = section.begin();
-  for (; it != section.end(); it++) {
-    auto challengeType = it->second.get(CONFIG_CHALLENGE, "");
-    if (challengeType == "") {
-      BOOST_THROW_EXCEPTION(Error("Cannot read type in supported-challenges from the config file"));
-    }
+  for (const auto item : section) {
+    auto challengeType = item.second.get(CONFIG_CHALLENGE, "");
     challengeType = boost::algorithm::to_lower_copy(challengeType);
+    if (challengeType == "") {
+      BOOST_THROW_EXCEPTION(std::runtime_error("Cannot read type in supported-challenges from the config file"));
+    }
     if (!ChallengeModule::supportChallenge(challengeType)) {
-      BOOST_THROW_EXCEPTION(Error("Does not support challenge read from the config file"));
+      BOOST_THROW_EXCEPTION(std::runtime_error("Does not support challenge read from the config file"));
     }
     m_supportedChallenges.push_back(challengeType);
   }
   if (m_supportedChallenges.size() == 0) {
-    BOOST_THROW_EXCEPTION(Error("At least one challenge should be identified under supported-challenges"));
+    BOOST_THROW_EXCEPTION(std::runtime_error("At least one challenge should be identified under supported-challenges"));
   }
 }
 
