@@ -99,7 +99,8 @@ enum : uint32_t {
   tlv_error_code = 171,
   tlv_error_info = 173,
   tlv_authentication_tag = 175,
-  tlv_cert_to_revoke = 177
+  tlv_max_suffix_length = 177,
+  tlv_cert_to_revoke = 179
 };
 
 // Parse CA Configuration file
@@ -133,7 +134,7 @@ const std::string JSON_CLIENT_PROBE_INFO = "probe-info";
 const std::string JSON_CLIENT_ECDH = "ecdh-pub";
 const std::string JSON_CLIENT_CERT_REQ = "cert-request";
 const std::string JSON_CLIENT_SELECTED_CHALLENGE = "selected-challenge";
-const std::string JSON_CLIENT_CERT_REVOKE = "cert-revoke";
+const std::string JSON_CLIENT_CERT_TO_REVOKE = "cert-to-revoke";
 
 // NDNCERT Status Enum
 enum {
