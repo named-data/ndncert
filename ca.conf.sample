@@ -3,10 +3,14 @@
   "issuing-freshness": "720",
   "validity-period": "360",
   "ca-info": "An example NDNCERT CA",
-  "probe": "[JSON attribute]:[JSON attribute]:[...] Example: email:UID"
+  "probe-parameters":
+  [
+    {"probe-parameter-key": "email"},
+    {"probe-parameter-key": "uid"}
+  ]
   "supported-challenges":
   [
-    { "type": "PIN" },
-    { "type": "Email" }
+    { "challenge": "PIN" },
+    { "challenge": "Email" }
   ]
 }
