@@ -28,17 +28,6 @@ namespace ndn {
 namespace ndncert {
 
 class PROBE {
-
-public:
-  /**
-   * @brief Error that can be thrown from PROBE
-   */
-  class Error : public std::runtime_error
-  {
-    public:
-    using std::runtime_error::runtime_error;
-  };
-
 public:
   static std::vector<std::string>
   parseProbeComponents(const std::string& probe);
@@ -53,4 +42,4 @@ public:
 }  // namespace ndncert
 }  // namespace ndn
 
-#endif // NDNCERT_PROTOCOL_DETAIL_HPP
+#endif  // NDNCERT_PROTOCOL_DETAIL_HPP

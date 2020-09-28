@@ -21,26 +21,35 @@
 #ifndef NDNCERT_PROTOCOL_DETAIL_NEW_HPP
 #define NDNCERT_PROTOCOL_DETAIL_NEW_HPP
 
+#include <ndn-cxx/security/v2/certificate.hpp>
+
 #include "../certificate-request.hpp"
 #include "ndn-cxx/encoding/block.hpp"
-#include <ndn-cxx/security/v2/certificate.hpp>
 
 namespace ndn {
 namespace ndncert {
 
 class NEW {
 public:
+  /**
+   * Encode Client's certificate request into a ApplicationParameters TLV for NEW Interest.
+   * For client side use.
+   */
   static Block
   encodeApplicationParameters(const std::string& ecdhPub, const security::v2::Certificate& certRequest,
-                                const shared_ptr<Data>& probeToken);
+                              const shared_ptr<Data>& probeToken);
 
+  /**
+   * Encode CA's response of NEW Interest into a content TLV for NEW Data packet.
+   * For CA side use.
+   */
   static Block
   encodeDataContent(const std::string& ecdhKey, const std::string& salt,
-                             const CertificateRequest& request,
-                             const std::list<std::string>& challenges);
+                    const CertificateRequest& request,
+                    const std::list<std::string>& challenges);
 };
 
 }  // namespace ndncert
 }  // namespace ndn
 
-#endif // NDNCERT_PROTOCOL_DETAIL_HPP
+#endif  // NDNCERT_PROTOCOL_DETAIL_HPP

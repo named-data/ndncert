@@ -153,7 +153,7 @@ CaModule::generateCaConfigData()
   const auto& pib = m_keyChain.getPib();
   const auto& identity = pib.getIdentity(m_config.m_caPrefix);
   const auto& cert = identity.getDefaultKey().getDefaultCertificate();
-  Block contentTLV = INFO::encodeContentFromCAConfig(m_config, cert);
+  Block contentTLV = INFO::encodeDataContent(m_config, cert);
 
   Name infoPacketName(m_config.m_caPrefix);
   infoPacketName.append("CA").append("INFO").appendVersion().appendSegment(0);

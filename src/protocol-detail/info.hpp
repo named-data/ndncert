@@ -29,9 +29,15 @@ namespace ndncert {
 
 class INFO {
 public:
+  /**
+   * Encode CA configuration and its certificate into a TLV block as INFO Data packet content.
+   */
   static Block
-  encodeContentFromCAConfig(const CaConfig& caConfig, const security::v2::Certificate& certificate);
+  encodeDataContent(const CaConfig& caConfig, const security::v2::Certificate& certificate);
 
+  /**
+   * Decode CA configuration from the TLV block of INFO Data packet content.
+   */
   static ClientCaItem
   decodeClientConfigFromContent(const Block& block);
 };

@@ -19,9 +19,11 @@
  */
 
 #include "probe.hpp"
-#include "boost/throw_exception.hpp"
-#include "../logging.hpp"
+
+#include <boost/throw_exception.hpp>
 #include <ndn-cxx/encoding/tlv.hpp>
+
+#include "../logging.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -48,19 +50,18 @@ PROBE::encodeApplicationParametersFromProbeInfo(const ClientCaItem& ca, const st
   auto content = makeEmptyBlock(tlv::ApplicationParameters);
 
   std::vector<std::string> fields = parseProbeComponents(ca.m_probe);
-  std::vector<std::string> arguments  = parseProbeComponents(probeInfo);;
+  std::vector<std::string> arguments = parseProbeComponents(probeInfo);
+  ;
 
   if (arguments.size() != fields.size()) {
-    BOOST_THROW_EXCEPTION(Error("Error in genProbeRequestJson: argument list does not match field list in the config file."));
+    BOOST_THROW_EXCEPTION(std::runtime_error("Error in genProbeRequestJson: argument list does not match field list in the config file."));
   }
 
   for (size_t i = 0; i < fields.size(); ++i) {
-      content.push_back(
-        makeStringBlock(tlv_parameter_key, fields.at(i))
-      );
-      content.push_back(
-        makeStringBlock(tlv_parameter_value, arguments.at(i))
-      );
+    content.push_back(
+        makeStringBlock(tlv_parameter_key, fields.at(i)));
+    content.push_back(
+        makeStringBlock(tlv_parameter_value, arguments.at(i)));
   }
   content.encode();
   return content;
@@ -81,7 +82,7 @@ PROBE::encodeDataContent(const Name& identifier, const std::string& m_probe, con
   fields.push_back(m_probe.substr(last));
 
   Block content = makeEmptyBlock(tlv::Content);
-  
+
   // TODO: Currently have no mechanism to utilize the given params to determine name
   //for (size_t i = 0; i < fields.size(); ++i) {
   //  root.put(fields.at(i), parameterJson.get(fields.at(i), ""));
