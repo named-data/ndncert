@@ -38,9 +38,6 @@ BOOST_AUTO_TEST_CASE(PacketSize0)
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
-  ca.setProbeHandler([&](const Block& probeInfo) {
-    return "example";
-  });
   advanceClocks(time::milliseconds(20), 60);
 
   Interest interest = MetadataObject::makeDiscoveryInterest(Name("/ndn/CA/INFO"));

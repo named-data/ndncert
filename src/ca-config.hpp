@@ -32,13 +32,13 @@ namespace ndncert {
 /**
  * @brief The name assignment function provided by the CA operator to generate available
  * namecomponents.
- * The function does not guarantee that all the returned names are available. Therefore the 
+ * The function does not guarantee that all the returned names are available. Therefore the
  * CA should further check the availability of each returned name and remove unavailable results.
  *
  * @p vector, input, a list of parameter key-value pair used for name assignment.
  * @return a vector containing the possible namespaces derived from the parameters.
  */
-using ProbeHandler = function<std::string /*identity name*/ (const Block& tlv /*requester input*/)>;
+// using ProbeHandler = function<std::string /*identity name*/ (const Block& tlv /*requester input*/)>;
 using NameAssignmentFunc = function<std::vector<std::string>(const std::vector<std::tuple<std::string, std::string>>)>;
 
 /**
@@ -99,10 +99,10 @@ public:
   /**
    * Set the NameAssignmentFunction.
    */
-  void
-  setNameAssignmentFunc(const NameAssignmentFunc& nameAssignmentFunc) {
-    m_nameAssignmentFunc = nameAssignmentFunc;
-  }
+  // void
+  // setNameAssignmentFunc(const NameAssignmentFunc& nameAssignmentFunc) {
+  //   m_nameAssignmentFunc = nameAssignmentFunc;
+  // }
 
   /**
    * Set the StatusUpdateCallback.
@@ -152,21 +152,6 @@ public:
    * StatusUpdate Callback function
    */
   StatusUpdateCallback m_statusUpdateCallback;
-
-  //====================old
-
-  // basic info
-  Name m_caName;
-
-  // essential config
-  time::seconds m_freshnessPeriod;
-  time::days m_validityPeriod;
-
-  // optional parameters
-  std::string m_probe;
-
-  // callbacks
-  ProbeHandler m_probeHandler;
 };
 
 }  // namespace ndncert

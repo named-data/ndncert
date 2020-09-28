@@ -49,46 +49,46 @@ BOOST_AUTO_TEST_CASE(Initialization)
   BOOST_CHECK_EQUAL(ca.m_interestFilterHandles.size(), 5); // onInfo, onProbe, onNew, onChallenge, onRevoke
 }
 
-BOOST_AUTO_TEST_CASE(HandleProbe)
-{
-  auto identity = addIdentity(Name("/ndn"));
-  auto key = identity.getDefaultKey();
-  auto cert = key.getDefaultCertificate();
+// BOOST_AUTO_TEST_CASE(HandleProbe)
+// {
+//   auto identity = addIdentity(Name("/ndn"));
+//   auto key = identity.getDefaultKey();
+//   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, m_keyChain, {true, true});
-  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
-  ca.setProbeHandler([&](const Block& probeInfo) {
-    return "example";
-  });
-  advanceClocks(time::milliseconds(20), 60);
+//   util::DummyClientFace face(io, m_keyChain, {true, true});
+//   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
+//   ca.setProbeHandler([&](const Block& probeInfo) {
+//     return "example";
+//   });
+//   advanceClocks(time::milliseconds(20), 60);
 
-  Interest interest("/ndn/CA/PROBE");
-  interest.setCanBePrefix(false);
+//   Interest interest("/ndn/CA/PROBE");
+//   interest.setCanBePrefix(false);
 
-  Block paramTLV = makeEmptyBlock(tlv::ApplicationParameters);
-  paramTLV.push_back(makeStringBlock(tlv_parameter_key, JSON_CLIENT_PROBE_INFO));
-  paramTLV.push_back(makeStringBlock(tlv_parameter_value, "zhiyi"));
-  paramTLV.encode();
+//   Block paramTLV = makeEmptyBlock(tlv::ApplicationParameters);
+//   paramTLV.push_back(makeStringBlock(tlv_parameter_key, JSON_CLIENT_PROBE_INFO));
+//   paramTLV.push_back(makeStringBlock(tlv_parameter_value, "zhiyi"));
+//   paramTLV.encode();
 
-  interest.setApplicationParameters(paramTLV);
+//   interest.setApplicationParameters(paramTLV);
 
-  int count = 0;
-  face.onSendData.connect([&](const Data& response) {
-    count++;
-    BOOST_CHECK(security::verifySignature(response, cert));
-    Block contentBlock = response.getContent();
-    contentBlock.parse();
-    Block probeResponse = contentBlock.get(tlv_probe_response);
-    probeResponse.parse();
-    Name caName;
-    caName.wireDecode(probeResponse.get(tlv::Name));
-    BOOST_CHECK_EQUAL(caName, "/ndn/example");
-  });
-  face.receive(interest);
+//   int count = 0;
+//   face.onSendData.connect([&](const Data& response) {
+//     count++;
+//     BOOST_CHECK(security::verifySignature(response, cert));
+//     Block contentBlock = response.getContent();
+//     contentBlock.parse();
+//     Block probeResponse = contentBlock.get(tlv_probe_response);
+//     probeResponse.parse();
+//     Name caName;
+//     caName.wireDecode(probeResponse.get(tlv::Name));
+//     BOOST_CHECK_EQUAL(caName, "/ndn/example");
+//   });
+//   face.receive(interest);
 
-  advanceClocks(time::milliseconds(20), 60);
-  BOOST_CHECK_EQUAL(count, 1);
-}
+//   advanceClocks(time::milliseconds(20), 60);
+//   BOOST_CHECK_EQUAL(count, 1);
+// }
 
 BOOST_AUTO_TEST_CASE(HandleInfo)
 {
@@ -98,9 +98,6 @@ BOOST_AUTO_TEST_CASE(HandleInfo)
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
-  ca.setProbeHandler([&](const Block& probeInfo) {
-    return "example";
-  });
   advanceClocks(time::milliseconds(20), 60);
 
   Interest interest("/ndn/CA/INFO");
@@ -253,7 +250,6 @@ BOOST_AUTO_TEST_CASE(HandleNewWithProbeToken)
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
-  ca.m_config.m_probe = "email";
   advanceClocks(time::milliseconds(20), 60);
 
   ClientModule client(m_keyChain);

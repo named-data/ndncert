@@ -58,8 +58,8 @@ public:
     return m_storage;
   }
 
-  bool
-  setProbeHandler(const ProbeHandler& handler);
+  void
+  setNameAssignmentFunction(const NameAssignmentFunc& handler);
 
   bool
   setStatusUpdateCallback(const StatusUpdateCallback& onUpdateCallback);

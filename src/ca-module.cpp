@@ -111,11 +111,10 @@ CaModule::registerPrefix()
   m_registeredPrefixHandles.push_back(prefixId);
 }
 
-bool
-CaModule::setProbeHandler(const ProbeHandler& handler)
+void
+CaModule::setNameAssignmentFunction(const NameAssignmentFunc& handler)
 {
-  m_config.m_probeHandler = handler;
-  return false;
+  m_config.m_nameAssignmentFunc = handler;
 }
 
 bool
@@ -187,40 +186,40 @@ CaModule::onProbe(const Interest& request)
   _LOG_TRACE("Received PROBE request");
 
   // process PROBE requests: find an available name
-  std::string availableId;
+  std::string availableId = "";
   const auto& parameterTLV = request.getApplicationParameters();
   parameterTLV.parse();
   if (!parameterTLV.hasValue()) {
     _LOG_ERROR("Empty TLV obtained from the Interest parameter.");
     return;
   }
-  //std::string probeInfoStr = parameterJson.get(JSON_CLIENT_PROBE_INFO, "");
-  if (m_config.m_probeHandler) {
-    try {
-      availableId = m_config.m_probeHandler(parameterTLV);
-    }
-    catch (const std::exception& e) {
-      _LOG_TRACE("Cannot find PROBE input from PROBE parameters: " << e.what());
-      return;
-    }
-  }
-  else {
-    // if there is no app-specified name lookup, use a random name id
-    availableId = std::to_string(random::generateSecureWord64());
-  }
-  Name newIdentityName = m_config.m_caPrefix;
-  newIdentityName.append(availableId);
-  _LOG_TRACE("Handle PROBE: generate an identity " << newIdentityName);
 
-  Block contentTLV = PROBE::encodeDataContent(newIdentityName.toUri(), m_config.m_probe, parameterTLV);
+  // if (m_config.m_nameAssignmentFunc) {
+  //   try {
+  //     availableId = m_config.m_nameAssignmentFunc(parameterTLV);
+  //   }
+  //   catch (const std::exception& e) {
+  //     _LOG_TRACE("Cannot find PROBE input from PROBE parameters: " << e.what());
+  //     return;
+  //   }
+  // }
+  // else {
+  //   // if there is no app-specified name lookup, use a random name id
+  //   availableId = std::to_string(random::generateSecureWord64());
+  // }
+  // Name newIdentityName = m_config.m_caPrefix;
+  // newIdentityName.append(availableId);
+  // _LOG_TRACE("Handle PROBE: generate an identity " << newIdentityName);
 
-  Data result;
-  result.setName(request.getName());
-  result.setContent(contentTLV);
-  result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  m_keyChain.sign(result, signingByIdentity(m_config.m_caPrefix));
-  m_face.put(result);
-  _LOG_TRACE("Handle PROBE: send out the PROBE response");
+  // Block contentTLV = PROBE::encodeDataContent(newIdentityName.toUri(), m_config.m_probe, parameterTLV);
+
+  // Data result;
+  // result.setName(request.getName());
+  // result.setContent(contentTLV);
+  // result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
+  // m_keyChain.sign(result, signingByIdentity(m_config.m_caPrefix));
+  // m_face.put(result);
+  // _LOG_TRACE("Handle PROBE: send out the PROBE response");
 }
 
 void
@@ -302,7 +301,7 @@ CaModule::onRequestInit(const Interest& request, int requestType)
     // verify the self-signed certificate, the request, and the token
     if (!m_config.m_caPrefix.isPrefixOf(clientCert->getName()) // under ca prefix
         || !security::v2::Certificate::isValidName(clientCert->getName()) // is valid cert name
-        || clientCert->getName().size() < m_config.m_caName.size() + IS_SUBNAME_MIN_OFFSET) {
+        || clientCert->getName().size() < m_config.m_caPrefix.size() + IS_SUBNAME_MIN_OFFSET) {
       _LOG_ERROR("Invalid self-signed certificate name " << clientCert->getName());
       return;
     }
@@ -329,13 +328,13 @@ CaModule::onRequestInit(const Interest& request, int requestType)
     }
 
     // verify the certificate
-    if (!m_config.m_caName.isPrefixOf(clientCert->getName()) // under ca prefix
+    if (!m_config.m_caPrefix.isPrefixOf(clientCert->getName()) // under ca prefix
         || !security::v2::Certificate::isValidName(clientCert->getName()) // is valid cert name
-        || clientCert->getName().size() < m_config.m_caName.size() + IS_SUBNAME_MIN_OFFSET) {
+        || clientCert->getName().size() < m_config.m_caPrefix.size() + IS_SUBNAME_MIN_OFFSET) {
       _LOG_ERROR("Invalid certificate name " << clientCert->getName());
       return;
     }
-    const auto& cert = m_keyChain.getPib().getIdentity(m_config.m_caName).getDefaultKey().getDefaultCertificate();
+    const auto& cert = m_keyChain.getPib().getIdentity(m_config.m_caPrefix).getDefaultKey().getDefaultCertificate();
     if (!security::verifySignature(*clientCert, cert)) {
       _LOG_ERROR("Cert request with bad signature.");
       return;
