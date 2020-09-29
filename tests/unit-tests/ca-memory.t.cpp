@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   json.put("code", "1234");
 
   // update operation
-  CertificateRequest request2(Name("/ndn/site1"), "123", RequestType::NEW, Status::CHALLENGE, CHALLENGE_STATUS_SUCCESS,
+  CertificateRequest request2(Name("/ndn/site1"), "123", RequestType::NEW, Status::CHALLENGE, "test",
                               "Email", time::toIsoString(time::system_clock::now()), 3600, 3, json, cert1);
   storage.updateRequest(request2);
   result = storage.getRequest("123");

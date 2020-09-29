@@ -117,30 +117,6 @@ const std::string CONFIG_SUPPORTED_CHALLENGES = "supported-challenges";
 const std::string CONFIG_CHALLENGE = "challenge";
 const std::string CONFIG_MAX_SUFFIX_LENGTH = "max-suffix-length";
 
-// // JSON format for Certificate Issuer (CA)
-const std::string JSON_CA_NAME = "name";
-const std::string JSON_CA_CONFIG = "ca-config";
-const std::string JSON_CA_ECDH = "ecdh-pub";
-const std::string JSON_CA_SALT = "salt";
-const std::string JSON_CA_REQUEST_ID = "request-id";
-const std::string JSON_CA_STATUS = "status";
-const std::string JSON_CA_CHALLENGES = "challenges";
-const std::string JSON_CA_CHALLENGE_ID = "challenge-id";
-const std::string JSON_CA_CERT_ID = "certificate-id";
-
-// // JSON format for Challenge Module
-const std::string JSON_CHALLENGE_STATUS = "challenge-status";
-const std::string JSON_CHALLENGE_REMAINING_TRIES = "remaining-tries";
-const std::string JSON_CHALLENGE_REMAINING_TIME = "remaining-time";
-const std::string JSON_CHALLENGE_ISSUED_CERT_NAME = "issued-cert-name";
-
-// // JSON format for Certificate Requester
-const std::string JSON_CLIENT_PROBE_INFO = "probe-info";
-const std::string JSON_CLIENT_ECDH = "ecdh-pub";
-const std::string JSON_CLIENT_CERT_REQ = "cert-request";
-const std::string JSON_CLIENT_SELECTED_CHALLENGE = "selected-challenge";
-const std::string JSON_CLIENT_CERT_TO_REVOKE = "cert-to-revoke";
-
 // NDNCERT Status Enum
 enum class Status : uint16_t {
   BEFORE_CHALLENGE = 0,
@@ -175,12 +151,6 @@ enum class RequestType : uint16_t {
 };
 
 std::string requestTypeToString(RequestType type);
-
-// Pre-defined challenge status
-const std::string CHALLENGE_STATUS_SUCCESS = "success";
-const std::string CHALLENGE_STATUS_FAILURE_TIMEOUT = "failure-timeout";
-const std::string CHALLENGE_STATUS_FAILURE_MAXRETRY = "failure-max-retry";
-const std::string CHALLENGE_STATUS_UNKNOWN_CHALLENGE = "unknown-challenge";
 
 }  // namespace ndncert
 }  // namespace ndn
