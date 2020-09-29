@@ -113,7 +113,7 @@ ChallengeCredential::handleChallengeRequest(const Block& params, CertificateRequ
   Name signingKeyName = credential->getSignature().getKeyLocator().getName();
   for (auto anchor : m_trustAnchors) {
     if (anchor.getKeyName() == signingKeyName) {
-      if (security::verifySignature(*selfSigned, anchor) &&
+      if (security::verifySignature(*credential, anchor) &&
           security::verifySignature(*selfSigned, *credential) &&
           readString(selfSigned->getContent()) == request.m_requestId) {
         return returnWithSuccess(request);
