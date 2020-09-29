@@ -47,7 +47,7 @@ ChallengeEmail::ChallengeEmail(const std::string& scriptPath,
 }
 
 // For CA
-std::tuple<Error, std::string>
+std::tuple<ErrorCode, std::string>
 ChallengeEmail::handleChallengeRequest(const Block& params, CertificateRequest& request)
 {
   params.parse();
@@ -56,7 +56,7 @@ ChallengeEmail::handleChallengeRequest(const Block& params, CertificateRequest& 
     // for the first time, init the challenge
     std::string emailAddress = readString(params.get(tlv_parameter_value));
     if (!isValidEmailAddress(emailAddress)) {
-      return returnWithError(request, Error::INVALID_PARAMETER, "Invalid email address format.");
+      return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Invalid email address format.");
     }
     auto lastComponentRequested = readString(request.m_cert.getIdentity().get(-1));
     if (lastComponentRequested != emailAddress) {
@@ -78,7 +78,7 @@ ChallengeEmail::handleChallengeRequest(const Block& params, CertificateRequest& 
     auto secret = request.m_challengeSecrets;
     // check if run out of time
     if (currentTime - time::fromIsoString(request.m_challengeTp) >= m_secretLifetime) {
-      return returnWithError(request, Error::OUT_OF_TIME, "Secret expired.");
+      return returnWithError(request, ErrorCode::OUT_OF_TIME, "Secret expired.");
     }
     // check if provided secret is correct
     if (givenCode == secret.get<std::string>(PARAMETER_KEY_CODE)) {
@@ -95,10 +95,10 @@ ChallengeEmail::handleChallengeRequest(const Block& params, CertificateRequest& 
     else {
       // run out times
       _LOG_TRACE("Wrong secret code provided. Ran out tires. Challenge failed.");
-      return returnWithError(request, Error::OUT_OF_TRIES, "Ran out tires.");
+      return returnWithError(request, ErrorCode::OUT_OF_TRIES, "Ran out tires.");
     }
   }
-  return returnWithError(request, Error::INVALID_PARAMETER, "Unexpected status or challenge status");
+  return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Unexpected status or challenge status");
 }
 
 // For Client

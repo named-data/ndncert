@@ -24,7 +24,7 @@ namespace ndn {
 namespace ndncert {
 
 Block
-ERROR::encodeDataContent(Error errorCode, const std::string& description)
+ErrorTLV::encodeDataContent(ErrorCode errorCode, const std::string& description)
 {
   Block response = makeEmptyBlock(tlv::Content);
   response.push_back(makeNonNegativeIntegerBlock(tlv_error_code, static_cast<size_t>(errorCode)));
@@ -33,11 +33,11 @@ ERROR::encodeDataContent(Error errorCode, const std::string& description)
   return response;
 }
 
-std::tuple<Error, std::string>
-ERROR::decodefromDataContent(const Block& block)
+std::tuple<ErrorCode, std::string>
+ErrorTLV::decodefromDataContent(const Block& block)
 {
   block.parse();
-  Error error = static_cast<Error>(readNonNegativeInteger(block.get(tlv_error_code)));
+  ErrorCode error = static_cast<ErrorCode>(readNonNegativeInteger(block.get(tlv_error_code)));
   auto description = readString(block.get(tlv_error_info));
   return std::make_tuple(error, description);
 }

@@ -52,7 +52,7 @@ public:
   ChallengeCredential(const std::string& configPath = "");
 
   // For CA
-  std::tuple<Error, std::string>
+  std::tuple<ErrorCode, std::string>
   handleChallengeRequest(const Block& params, CertificateRequest& request) override;
 
   // For Client

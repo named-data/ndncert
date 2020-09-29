@@ -27,18 +27,18 @@
 namespace ndn {
 namespace ndncert {
 
-class ERROR {
+class ErrorTLV {
 public:
   /**
    * Encode error information into a Data content TLV
    */
   static Block
-  encodeDataContent(Error errorCode, const std::string& description);
+  encodeDataContent(ErrorCode errorCode, const std::string& description);
 
   /**
    * Decode error information from Data content TLV
    */
-  static std::tuple<Error, std::string>
+  static std::tuple<ErrorCode, std::string>
   decodefromDataContent(const Block& block);
 };
 

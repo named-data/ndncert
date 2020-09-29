@@ -76,7 +76,7 @@ ChallengeCredential::parseConfigFile()
 }
 
 // For CA
-std::tuple<Error, std::string>
+std::tuple<ErrorCode, std::string>
 ChallengeCredential::handleChallengeRequest(const Block& params, CertificateRequest& request)
 {
   params.parse();
@@ -92,7 +92,7 @@ ChallengeCredential::handleChallengeRequest(const Block& params, CertificateRequ
         credential = io::load<security::v2::Certificate>(ss);
         if (credential == nullptr) {
           _LOG_ERROR("Cannot load challenge parameter: credential");
-          return returnWithError(request, Error::INVALID_PARAMETER, "Cannot challenge credential: credential.");
+          return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Cannot challenge credential: credential.");
         }
       }
       else if (readString(elements[i]) == PARAMETER_KEY_PROOF_OF_PRIVATE_KEY) {
@@ -100,7 +100,7 @@ ChallengeCredential::handleChallengeRequest(const Block& params, CertificateRequ
         selfSigned = io::load<security::v2::Certificate>(ss);
         if (selfSigned == nullptr) {
           _LOG_ERROR("Cannot load challenge parameter: proof of private key");
-          return returnWithError(request, Error::INVALID_PARAMETER, "Cannot load challenge parameter: proof of private key.");
+          return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Cannot load challenge parameter: proof of private key.");
         }
       }
       else {
@@ -122,7 +122,7 @@ ChallengeCredential::handleChallengeRequest(const Block& params, CertificateRequ
   }
 
   _LOG_TRACE("Cannot verify the proof of private key against credential");
-  return returnWithError(request, Error::INVALID_PARAMETER, "Cannot verify the proof of private key against credential.");
+  return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Cannot verify the proof of private key against credential.");
 }
 
 // For Client

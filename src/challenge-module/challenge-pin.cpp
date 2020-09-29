@@ -42,7 +42,7 @@ ChallengePin::ChallengePin(const size_t& maxAttemptTimes, const time::seconds& s
 }
 
 // For CA
-std::tuple<Error, std::string>
+std::tuple<ErrorCode, std::string>
 ChallengePin::handleChallengeRequest(const Block& params, CertificateRequest& request)
 {
   params.parse();
@@ -63,7 +63,7 @@ ChallengePin::handleChallengeRequest(const Block& params, CertificateRequest& re
     std::string givenCode = readString(params.get(tlv_parameter_value));
     auto secret = request.m_challengeSecrets;
     if (currentTime - time::fromIsoString(request.m_challengeTp) >= m_secretLifetime) {
-      return returnWithError(request, Error::OUT_OF_TIME, "Secret expired.");
+      return returnWithError(request, ErrorCode::OUT_OF_TIME, "Secret expired.");
     }
     if (givenCode == secret.get<std::string>(PARAMETER_KEY_CODE)) {
       _LOG_TRACE("Correct PIN code. Challenge succeeded.");
@@ -78,10 +78,10 @@ ChallengePin::handleChallengeRequest(const Block& params, CertificateRequest& re
     else {
       // run out times
       _LOG_TRACE("Wrong PIN code provided. Ran out tires. Challenge failed.");
-      return returnWithError(request, Error::OUT_OF_TRIES, "Ran out tires.");
+      return returnWithError(request, ErrorCode::OUT_OF_TRIES, "Ran out tires.");
     }
   }
-  return returnWithError(request, Error::INVALID_PARAMETER, "Unexpected status or challenge status");
+  return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Unexpected status or challenge status");
 }
 
 // For Client

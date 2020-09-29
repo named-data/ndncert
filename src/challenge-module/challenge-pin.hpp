@@ -52,7 +52,7 @@ public:
                const time::seconds& secretLifetime = time::seconds(3600));
 
   // For CA
-  std::tuple<Error, std::string>
+  std::tuple<ErrorCode, std::string>
   handleChallengeRequest(const Block& params, CertificateRequest& request) override;
 
   // For Client

@@ -51,7 +51,7 @@ public:
   createChallengeModule(const std::string& challengeType);
 
   // For CA
-  virtual std::tuple<Error, std::string>
+  virtual std::tuple<ErrorCode, std::string>
   handleChallengeRequest(const Block& params, CertificateRequest& request) = 0;
 
   // For Client
@@ -68,14 +68,14 @@ public:
 
 protected:
   // used by challenge modules
-  std::tuple<Error, std::string>
-  returnWithError(CertificateRequest& request, Error errorCode, std::string&& errorInfo);
+  std::tuple<ErrorCode, std::string>
+  returnWithError(CertificateRequest& request, ErrorCode errorCode, std::string&& errorInfo);
 
-  std::tuple<Error, std::string>
+  std::tuple<ErrorCode, std::string>
   returnWithNewChallengeStatus(CertificateRequest& request, const std::string& challengeStatus,
                                JsonSection&& challengeSecret, size_t remainingTries, size_t remainingTime);
 
-  std::tuple<Error, std::string>
+  std::tuple<ErrorCode, std::string>
   returnWithSuccess(CertificateRequest& request);
 
 public:

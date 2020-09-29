@@ -70,8 +70,8 @@ ChallengeModule::generateSecretCode()
   return result;
 }
 
-std::tuple<Error, std::string>
-ChallengeModule::returnWithError(CertificateRequest& request, Error errorCode, std::string&& errorInfo)
+std::tuple<ErrorCode, std::string>
+ChallengeModule::returnWithError(CertificateRequest& request, ErrorCode errorCode, std::string&& errorInfo)
 {
   request.m_status = Status::FAILURE;
   request.m_challengeType = "";
@@ -83,7 +83,7 @@ ChallengeModule::returnWithError(CertificateRequest& request, Error errorCode, s
   return std::make_tuple(errorCode, std::move(errorInfo));
 }
 
-std::tuple<Error, std::string>
+std::tuple<ErrorCode, std::string>
 ChallengeModule::returnWithNewChallengeStatus(CertificateRequest& request, const std::string& challengeStatus,
                                               JsonSection&& challengeSecret, size_t remainingTries, size_t remainingTime)
 {
@@ -94,10 +94,10 @@ ChallengeModule::returnWithNewChallengeStatus(CertificateRequest& request, const
   request.m_challengeTp = time::toIsoString(time::system_clock::now());
   request.m_remainingTime = remainingTries;
   request.m_remainingTries = remainingTime;
-  return std::make_tuple(Error::NO_ERROR, "");
+  return std::make_tuple(ErrorCode::NO_ERROR, "");
 }
 
-std::tuple<Error, std::string>
+std::tuple<ErrorCode, std::string>
 ChallengeModule::returnWithSuccess(CertificateRequest& request)
 {
   request.m_status = Status::PENDING;
@@ -107,7 +107,7 @@ ChallengeModule::returnWithSuccess(CertificateRequest& request)
   request.m_challengeTp = "";
   request.m_remainingTime = 0;
   request.m_remainingTries = 0;
-  return std::make_tuple(Error::NO_ERROR, "");
+  return std::make_tuple(ErrorCode::NO_ERROR, "");
 }
 
 } // namespace ndncert
