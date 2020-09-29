@@ -19,13 +19,6 @@
  */
 
 #include "ca-module.hpp"
-
-#include <ndn-cxx/metadata-object.hpp>
-#include <ndn-cxx/security/signing-helpers.hpp>
-#include <ndn-cxx/security/verification-helpers.hpp>
-#include <ndn-cxx/util/io.hpp>
-#include <ndn-cxx/util/random.hpp>
-
 #include "challenge-module.hpp"
 #include "crypto-support/enc-tlv.hpp"
 #include "logging.hpp"
@@ -35,6 +28,11 @@
 #include "protocol-detail/new.hpp"
 #include "protocol-detail/probe.hpp"
 #include "protocol-detail/revoke.hpp"
+#include <ndn-cxx/metadata-object.hpp>
+#include <ndn-cxx/security/signing-helpers.hpp>
+#include <ndn-cxx/security/verification-helpers.hpp>
+#include <ndn-cxx/util/io.hpp>
+#include <ndn-cxx/util/random.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -96,7 +94,7 @@ CaModule::registerPrefix()
 
         // register NEW prefix
         filterId = m_face.setInterestFilter(Name(name).append("NEW"),
-                                            bind(&CaModule::onNewRenewRevoke, this, _1, _2, RequestType::NEW));
+                                            bind(&CaModule::onNewRenewRevoke, this, _2, RequestType::NEW));
         m_interestFilterHandles.push_back(filterId);
 
         // register SELECT prefix
@@ -106,7 +104,7 @@ CaModule::registerPrefix()
 
         // register REVOKE prefix
         filterId = m_face.setInterestFilter(Name(name).append("REVOKE"),
-                                            bind(&CaModule::onNewRenewRevoke, this, _1, _2, RequestType::REVOKE));
+                                            bind(&CaModule::onNewRenewRevoke, this, _2, RequestType::REVOKE));
         m_interestFilterHandles.push_back(filterId);
         _LOG_TRACE("Prefix " << name << " got registered");
       },
@@ -120,11 +118,10 @@ CaModule::setNameAssignmentFunction(const NameAssignmentFunc& handler)
   m_config.m_nameAssignmentFunc = handler;
 }
 
-bool
+void
 CaModule::setStatusUpdateCallback(const StatusUpdateCallback& onUpdateCallback)
 {
   m_config.m_statusUpdateCallback = onUpdateCallback;
-  return false;
 }
 
 shared_ptr<Data>
@@ -226,7 +223,7 @@ CaModule::onProbe(const Interest& request)
 }
 
 void
-CaModule::onNewRenewRevoke(const InterestFilter& filter, const Interest& request, RequestType requestType)
+CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
 {
   // NEW Naming Convention: /<CA-prefix>/CA/NEW/[SignedInterestParameters_Digest]
   // REVOKE Naming Convention: /<CA-prefix>/CA/REVOKE/[SignedInterestParameters_Digest]
@@ -236,6 +233,8 @@ CaModule::onNewRenewRevoke(const InterestFilter& filter, const Interest& request
 
   if (!parameterTLV.hasValue()) {
     _LOG_ERROR("Empty TLV obtained from the Interest parameter.");
+    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
+                                       "Empty TLV obtained from the Interest parameter."));
     return;
   }
 
@@ -243,6 +242,8 @@ CaModule::onNewRenewRevoke(const InterestFilter& filter, const Interest& request
 
   if (peerKeyBase64 == "") {
     _LOG_ERROR("Empty ECDH PUB obtained from the Interest parameter.");
+    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
+                                       "Empty ECDH PUB obtained from the Interest parameter."));
     return;
   }
 
@@ -253,6 +254,8 @@ CaModule::onNewRenewRevoke(const InterestFilter& filter, const Interest& request
   }
   catch (const std::exception& e) {
     _LOG_ERROR("Cannot derive a shared secret using the provided ECDH key: " << e.what());
+    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
+                                       "Cannot derive a shared secret using the provided ECDH key."));
     return;
   }
   // generate salt for HKDF
@@ -262,75 +265,70 @@ CaModule::onNewRenewRevoke(const InterestFilter& filter, const Interest& request
        (uint8_t*)&saltInt, sizeof(saltInt), m_aesKey, sizeof(m_aesKey));
 
   shared_ptr<security::v2::Certificate> clientCert = nullptr;
-
+  // parse certificate request
+  Block requestPayload = parameterTLV.get(tlv_cert_request);
+  requestPayload.parse();
+  try {
+    security::v2::Certificate cert = security::v2::Certificate(requestPayload.get(tlv::Data));
+    clientCert = make_shared<security::v2::Certificate>(cert);
+  }
+  catch (const std::exception& e) {
+    _LOG_ERROR("Unrecognized self-signed certificate: " << e.what());
+    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
+                                        "Unrecognized self-signed certificate."));
+    return;
+  }
   if (requestType == RequestType::NEW) {
-    // parse certificate request
-    Block cert_req = parameterTLV.get(tlv_cert_request);
-    cert_req.parse();
-
-    try {
-      security::v2::Certificate cert = security::v2::Certificate(cert_req.get(tlv::Data));
-      clientCert = make_shared<security::v2::Certificate>(cert);
-    }
-    catch (const std::exception& e) {
-      _LOG_ERROR("Unrecognized certificate request: " << e.what());
-      return;
-    }
     // check the validity period
     auto expectedPeriod = clientCert->getValidityPeriod().getPeriod();
     auto currentTime = time::system_clock::now();
-    if (expectedPeriod.first < currentTime - REQUEST_VALIDITY_PERIOD_NOT_BEFORE_GRACE_PERIOD) {
-      _LOG_ERROR("Client requests a too old notBefore timepoint.");
-      return;
-    }
-    if (expectedPeriod.second > currentTime + m_config.m_maxValidityPeriod ||
+    if (expectedPeriod.first < currentTime - REQUEST_VALIDITY_PERIOD_NOT_BEFORE_GRACE_PERIOD ||
+        expectedPeriod.second > currentTime + m_config.m_maxValidityPeriod ||
         expectedPeriod.second <= expectedPeriod.first) {
-      _LOG_ERROR("Client requests an invalid validity period or a notAfter timepoint beyond the allowed time period.");
+      _LOG_ERROR("An invalid validity period is being requested.");
+      m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::BAD_VALIDITY_PERIOD,
+                                         "An invalid validity period is being requested."));
       return;
     }
-
     // verify the self-signed certificate, the request, and the token
-    if (!m_config.m_caPrefix.isPrefixOf(clientCert->getName()) // under ca prefix
-        || !security::v2::Certificate::isValidName(clientCert->getName()) // is valid cert name
+    if (!m_config.m_caPrefix.isPrefixOf(clientCert->getIdentity())
+        || !security::v2::Certificate::isValidName(clientCert->getName())
         || clientCert->getIdentity().size() <= m_config.m_caPrefix.size()
         || clientCert->getIdentity().size() > m_config.m_caPrefix.size() + m_config.m_maxSuffixLength) {
-      _LOG_ERROR("Invalid self-signed certificate name " << clientCert->getName());
+      _LOG_ERROR("An invalid certificate name is being requested " << clientCert->getName());
+      m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
+                                         "An invalid certificate name is being requested."));
       return;
     }
     if (!security::verifySignature(*clientCert, *clientCert)) {
-      _LOG_ERROR("Cert request with bad signature.");
+      _LOG_ERROR("Invalid signature in the self-signed certificate.");
+      m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::BAD_SIGNATURE,
+                                         "Invalid signature in the self-signed certificate."));
       return;
     }
     if (!security::verifySignature(request, *clientCert)) {
-      _LOG_ERROR("Interest with bad signature.");
+      _LOG_ERROR("Invalid signature in the Interest packet.");
+      m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::BAD_SIGNATURE,
+                                         "Invalid signature in the Interest packet."));
       return;
     }
   }
   else if (requestType == RequestType::REVOKE) {
-    // parse certificate request
-    Block cert_revoke = parameterTLV.get(tlv_cert_to_revoke);
-    cert_revoke.parse();
-
-    try {
-      security::v2::Certificate cert = security::v2::Certificate(cert_revoke.get(tlv::Data));
-      clientCert = make_shared<security::v2::Certificate>(cert);
-    }
-    catch (const std::exception& e) {
-      _LOG_ERROR("Unrecognized certificate: " << e.what());
-      return;
-    }
-
     // verify the certificate
-    if (!m_config.m_caPrefix.isPrefixOf(clientCert->getName()) // under ca prefix
-        || !security::v2::Certificate::isValidName(clientCert->getName()) // is valid cert name
+    if (!m_config.m_caPrefix.isPrefixOf(clientCert->getIdentity())
+        || !security::v2::Certificate::isValidName(clientCert->getName())
         || clientCert->getIdentity().size() <= m_config.m_caPrefix.size()
         || clientCert->getIdentity().size() > m_config.m_caPrefix.size() + m_config.m_maxSuffixLength) {
-      _LOG_ERROR("Invalid certificate name " << clientCert->getName());
+      _LOG_ERROR("An invalid certificate name is being requested " << clientCert->getName());
+      m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
+                                         "An invalid certificate name is being requested."));
       return;
     }
     const auto& cert = m_keyChain.getPib().getIdentity(m_config.m_caPrefix).getDefaultKey().getDefaultCertificate();
     if (!security::verifySignature(*clientCert, cert)) {
-      _LOG_ERROR("Cert request with bad signature.");
+      _LOG_ERROR("Invalid signature in the certificate to revoke.");
+      m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::BAD_SIGNATURE,
+                                         "Invalid signature in the certificate to revoke."));
       return;
     }
   }
@@ -338,15 +336,7 @@ CaModule::onNewRenewRevoke(const InterestFilter& filter, const Interest& request
   // create new request instance
   std::string requestId = std::to_string(random::generateWord64());
   CertificateRequest certRequest(m_config.m_caPrefix, requestId, requestType, Status::BEFORE_CHALLENGE, *clientCert);
-
-  try {
-    m_storage->addRequest(certRequest);
-  }
-  catch (const std::exception& e) {
-    _LOG_ERROR("Cannot add new request instance into the storage: " << e.what());
-    return;
-  }
-
+  m_storage->addRequest(certRequest);
   Data result;
   result.setName(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
@@ -364,7 +354,6 @@ CaModule::onNewRenewRevoke(const InterestFilter& filter, const Interest& request
   }
   m_keyChain.sign(result, signingByIdentity(m_config.m_caPrefix));
   m_face.put(result);
-
   if (m_config.m_statusUpdateCallback) {
     m_config.m_statusUpdateCallback(certRequest);
   }
@@ -376,16 +365,16 @@ CaModule::onChallenge(const Interest& request)
   // get certificate request state
   CertificateRequest certRequest = getCertificateRequest(request);
   if (certRequest.m_requestId == "") {
-    // cannot get the request state
-    _LOG_ERROR("Cannot find certificate request state from CA's storage.");
+    _LOG_ERROR("No certificate request state can be found.");
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
-                                       "Cannot find certificate request state from CA's storage."));
+                                       "No certificate request state can be found."));
     return;
   }
   // verify signature
   if (!security::verifySignature(request, certRequest.m_cert)) {
-    _LOG_ERROR("Challenge Interest with bad signature.");
-    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::BAD_SIGNATURE, "Bad signature."));
+    _LOG_ERROR("Invalid Signature in the Interest packet.");
+    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::BAD_SIGNATURE,
+                                       "Invalid Signature in the Interest packet."));
     return;
   }
   // decrypt the parameters
@@ -395,17 +384,17 @@ CaModule::onChallenge(const Interest& request)
                                                (uint8_t*)"test", strlen("test"));
   }
   catch (const std::exception& e) {
-    _LOG_ERROR("Cannot successfully decrypt the Interest parameters: " << e.what());
+    _LOG_ERROR("Interest paramaters decryption failed: " << e.what());
     m_storage->deleteRequest(certRequest.m_requestId);
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
-                                       "Cannot successfully decrypt the Interest parameters."));
+                                       "Interest paramaters decryption failed."));
     return;
   }
   if (paramTLVPayload.size() == 0) {
-    _LOG_ERROR("Got an empty buffer from content decryption.");
+    _LOG_ERROR("No parameters are found after decryption.");
     m_storage->deleteRequest(certRequest.m_requestId);
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
-                                       "Empty buffer from content decryption."));
+                                       "No parameters are found after decryption."));
     return;
   }
   Block paramTLV = makeBinaryBlock(tlv_encrypted_payload, paramTLVPayload.data(), paramTLVPayload.size());
@@ -415,9 +404,9 @@ CaModule::onChallenge(const Interest& request)
   std::string challengeType = readString(paramTLV.get(tlv_selected_challenge));
   auto challenge = ChallengeModule::createChallengeModule(challengeType);
   if (challenge == nullptr) {
-    _LOG_TRACE("Unrecognized challenge type " << challengeType);
+    _LOG_TRACE("Unrecognized challenge type: " << challengeType);
     m_storage->deleteRequest(certRequest.m_requestId);
-    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER, "Unrecognized challenge type"));
+    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER, "Unrecognized challenge type."));
     return;
   }
 
@@ -436,37 +425,20 @@ CaModule::onChallenge(const Interest& request)
       auto issuedCert = issueCertificate(certRequest);
       certRequest.m_cert = issuedCert;
       certRequest.m_status = Status::SUCCESS;
-      try {
-        m_storage->addCertificate(certRequest.m_requestId, issuedCert);
-        m_storage->deleteRequest(certRequest.m_requestId);
-        _LOG_TRACE("New Certificate Issued " << issuedCert.getName());
-      }
-      catch (const std::exception& e) {
-        _LOG_ERROR("Cannot add issued cert and remove the request: " << e.what());
-        return;
-      }
+      m_storage->addCertificate(certRequest.m_requestId, issuedCert);
+      m_storage->deleteRequest(certRequest.m_requestId);
 
       payload = CHALLENGE::encodeDataPayload(certRequest);
       payload.parse();
       payload.push_back(makeNestedBlock(tlv_issued_cert_name, issuedCert.getName()));
       payload.encode();
-
-      //contentJson.add(JSON_CA_CERT_ID, readString(issuedCert.getName().at(-1)));
-      _LOG_TRACE("Challenge succeeded. Certificate has been issued");
+      _LOG_TRACE("Challenge succeeded. Certificate has been issued: " << issuedCert.getName());
     }
     else if (certRequest.m_requestType == RequestType::REVOKE) {
       certRequest.m_status = Status::SUCCESS;
-      try {
-        m_storage->deleteRequest(certRequest.m_requestId);
-        _LOG_TRACE("Certificate Revoked");
-      }
-      catch (const std::exception& e) {
-        _LOG_ERROR("Cannot add issued cert and remove the request: " << e.what());
-        return;
-      }
+      m_storage->deleteRequest(certRequest.m_requestId);
 
       payload = CHALLENGE::encodeDataPayload(certRequest);
-      payload.parse();
       _LOG_TRACE("Challenge succeeded. Certificate has been revoked");
     }
   }
@@ -479,14 +451,11 @@ CaModule::onChallenge(const Interest& request)
   Data result;
   result.setName(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-
-  // encrypt the content
   auto contentBlock = encodeBlockWithAesGcm128(tlv::Content, m_aesKey, payload.value(),
                                                payload.value_size(), (uint8_t*)"test", strlen("test"));
   result.setContent(contentBlock);
   m_keyChain.sign(result, signingByIdentity(m_config.m_caPrefix));
   m_face.put(result);
-
   if (m_config.m_statusUpdateCallback) {
     m_config.m_statusUpdateCallback(certRequest);
   }

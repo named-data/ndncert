@@ -61,7 +61,7 @@ public:
   void
   setNameAssignmentFunction(const NameAssignmentFunc& handler);
 
-  bool
+  void
   setStatusUpdateCallback(const StatusUpdateCallback& onUpdateCallback);
 
   static JsonSection
@@ -84,7 +84,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   onProbe(const Interest& request);
 
   void
-  onNewRenewRevoke(const InterestFilter& filter, const Interest& request, RequestType requestType);
+  onNewRenewRevoke(const Interest& request, RequestType requestType);
 
   void
   onChallenge(const Interest& request);

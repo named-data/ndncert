@@ -235,7 +235,10 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidValidityPeriod1)
                                               current_tp + time::hours(2),
                                               Name("/ndn/zhiyi"));
   face.onSendData.connect([&](const Data& response) {
-    BOOST_CHECK(false);
+    auto contentTlv = response.getContent();
+    contentTlv.parse();
+    auto errorCode = static_cast<ErrorCode>(readNonNegativeInteger(contentTlv.get(tlv_error_code)));
+    BOOST_CHECK(errorCode != ErrorCode::NO_ERROR);
   });
   face.receive(*interest1);
   face.receive(*interest2);
@@ -284,7 +287,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithLongSuffix)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, m_keyChain, { true, true });
+  util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
@@ -294,20 +297,34 @@ BOOST_AUTO_TEST_CASE(HandleNewWithLongSuffix)
   item.m_anchor = cert;
   client.getClientConf().m_caItems.push_back(item);
 
-  auto interest = client.generateNewInterest(time::system_clock::now(),
-            time::system_clock::now() + time::days(1),
-            Name("/ndn/a/b/c"));
+  auto interest1 = client.generateNewInterest(time::system_clock::now(),
+                                              time::system_clock::now() + time::days(1),
+                                              Name("/ndn/a"));
+  auto interest2 = client.generateNewInterest(time::system_clock::now(),
+                                              time::system_clock::now() + time::days(1),
+                                              Name("/ndn/a/b"));
+  auto interest3 = client.generateNewInterest(time::system_clock::now(),
+                                              time::system_clock::now() + time::days(1),
+                                              Name("/ndn/a/b/c/d"));
 
-  int count = 0;
   face.onSendData.connect([&](const Data& response) {
-    count++;
+    auto contentTlv = response.getContent();
+    contentTlv.parse();
+    if (interest3->getName().isPrefixOf(response.getName())) {
+      auto errorCode = static_cast<ErrorCode>(readNonNegativeInteger(contentTlv.get(tlv_error_code)));
+      BOOST_CHECK(errorCode != ErrorCode::NO_ERROR);
+    }
+    else {
+      // should successfully get responses
+      BOOST_CHECK_EXCEPTION(readNonNegativeInteger(contentTlv.get(tlv_error_code)), std::runtime_error,
+                            [](const auto& e) { return true; });
+    }
   });
-  face.receive(*interest);
-
+  face.receive(*interest1);
+  face.receive(*interest2);
+  face.receive(*interest3);
   advanceClocks(time::milliseconds(20), 60);
-  BOOST_CHECK_EQUAL(count, 1);
 }
-
 
 BOOST_AUTO_TEST_CASE(HandleNewWithInvalidLength1)
 {
@@ -325,10 +342,13 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidLength1)
   item.m_anchor = cert;
   client.getClientConf().m_caItems.push_back(item);
   auto current_tp = time::system_clock::now();
-  auto interest1 = client.generateNewInterest(current_tp, current_tp + time::days(1),Name("/ndn"));
-  auto interest2 = client.generateNewInterest(current_tp, current_tp + time::days(1),Name("/ndn/a/b/c/d"));
+  auto interest1 = client.generateNewInterest(current_tp, current_tp + time::days(1), Name("/ndn"));
+  auto interest2 = client.generateNewInterest(current_tp, current_tp + time::days(1), Name("/ndn/a/b/c/d"));
   face.onSendData.connect([&](const Data& response) {
-      BOOST_CHECK(false);
+    auto contentTlv = response.getContent();
+    contentTlv.parse();
+    auto errorCode = static_cast<ErrorCode>(readNonNegativeInteger(contentTlv.get(tlv_error_code)));
+    BOOST_CHECK(errorCode != ErrorCode::NO_ERROR);
   });
   face.receive(*interest1);
   face.receive(*interest2);
