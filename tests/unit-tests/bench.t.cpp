@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
   face.onSendData.connect([&](const Data& response) {
     if (Name("/ndn/CA/NEW").isPrefixOf(response.getName())) {
       std::cout << "NEW Data Size: " << response.wireEncode().size() << std::endl;
-      client.onNewResponse(response);
+      client.onNewRenewRevokeResponse(response);
       auto paramList = pinChallenge.getRequestedParameterList(client.m_status, client.m_challengeStatus);
       challengeInterest = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
                                                                                                client.m_challengeStatus,

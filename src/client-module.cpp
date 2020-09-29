@@ -212,13 +212,7 @@ ClientModule::generateNewInterest(const time::system_clock::TimePoint& notBefore
 }
 
 std::list<std::string>
-ClientModule::onNewResponse(const Data& reply)
-{
-  return onRequestInitResponse(reply, RequestType::NEW);
-}
-
-std::list<std::string>
-ClientModule::onRequestInitResponse(const Data& reply, RequestType requestType)
+ClientModule::onNewRenewRevokeResponse(const Data& reply)
 {
   if (!security::verifySignature(reply, m_ca.m_anchor)) {
     _LOG_ERROR("Cannot verify data signature from " << m_ca.m_caPrefix.toUri());
@@ -276,12 +270,6 @@ ClientModule::generateRevokeInterest(const security::v2::Certificate& certificat
 
   // return the Interest packet
   return interest;
-}
-
-std::list<std::string>
-ClientModule::onRevokeResponse(const Data& reply)
-{
-  return onRequestInitResponse(reply, RequestType::REVOKE);
 }
 
 shared_ptr<Interest>

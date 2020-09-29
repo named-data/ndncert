@@ -93,17 +93,11 @@ public:
                       const time::system_clock::TimePoint& notAfter,
                       const Name& identityName = Name(), const shared_ptr<Data>& probeToken = nullptr);
 
-  std::list<std::string>
-  onNewResponse(const Data& reply);
-
   shared_ptr<Interest>
   generateRevokeInterest(const security::v2::Certificate& certificate);
 
   std::list<std::string>
-  onRevokeResponse(const Data& reply);
-
-  std::list<std::string>
-  onRequestInitResponse(const Data& reply, RequestType requestType);
+  onNewRenewRevokeResponse(const Data& reply);
 
   shared_ptr<Interest>
   generateChallengeInterest(const Block& paramTLV);

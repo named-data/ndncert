@@ -201,7 +201,7 @@ BOOST_AUTO_TEST_CASE(HandleNew)
 
     BOOST_CHECK(challengeBlockCount != 0);
 
-    client.onNewResponse(response);
+    client.onNewRenewRevokeResponse(response);
     BOOST_CHECK_EQUAL_COLLECTIONS(client.m_aesKey, client.m_aesKey + sizeof(client.m_aesKey),
                                   ca.m_aesKey, ca.m_aesKey + sizeof(ca.m_aesKey));
   });
@@ -364,7 +364,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
   int count = 0;
   face.onSendData.connect([&](const Data& response) {
     if (Name("/ndn/CA/NEW").isPrefixOf(response.getName())) {
-      client.onNewResponse(response);
+      client.onNewRenewRevokeResponse(response);
       auto paramList = pinChallenge.getRequestedParameterList(client.m_status, client.m_challengeStatus);
       challengeInterest = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
                                                                                                client.m_challengeStatus,
@@ -472,7 +472,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
 
     BOOST_CHECK(challengeBlockCount != 0);
 
-    client.onRevokeResponse(response);
+    client.onNewRenewRevokeResponse(response);
     BOOST_CHECK_EQUAL_COLLECTIONS(client.m_aesKey, client.m_aesKey + sizeof(client.m_aesKey),
                                   ca.m_aesKey, ca.m_aesKey + sizeof(ca.m_aesKey));
   });

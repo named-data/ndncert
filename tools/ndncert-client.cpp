@@ -146,7 +146,7 @@ static void
 newCb(const Data& reply)
 {
   int challengeIndex = 0;
-  auto challengeList = client.onNewResponse(reply);
+  auto challengeList = client.onNewRenewRevokeResponse(reply);
   if (challengeList.size() < 1) {
     std::cerr << "There is no available challenge provided by the CA. Exit" << std::endl;
     return;
