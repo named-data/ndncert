@@ -441,7 +441,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
   signatureInfo.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
                                                            time::system_clock::now() + time::hours(10)));
   m_keyChain.sign(clientCert, signingByKey(clientKey.getName()).setSignatureInfo(signatureInfo));
-  CertificateRequest certRequest(Name("/ndn"), "122", REQUEST_TYPE_NEW, Status::SUCCESS, clientCert);
+  CertificateRequest certRequest(Name("/ndn"), "122", RequestType::NEW, Status::SUCCESS, clientCert);
   auto issuedCert = ca.issueCertificate(certRequest);
 
   ClientModule client(m_keyChain);

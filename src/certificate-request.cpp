@@ -26,7 +26,7 @@ namespace ndncert {
 
 CertificateRequest::CertificateRequest() = default;
 
-CertificateRequest::CertificateRequest(const Name& caName, const std::string& requestId, int requestType, Status status,
+CertificateRequest::CertificateRequest(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
                                        const security::v2::Certificate& cert)
     : m_caPrefix(caName)
     , m_requestId(requestId)
@@ -36,7 +36,7 @@ CertificateRequest::CertificateRequest(const Name& caName, const std::string& re
 {
 }
 
-CertificateRequest::CertificateRequest(const Name& caName, const std::string& requestId, int requestType, Status status,
+CertificateRequest::CertificateRequest(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
                                        const std::string& challengeStatus, const std::string& challengeType,
                                        const std::string& challengeTp, int remainingTime, int remainingTries,
                                        const JsonSection& challengeSecrets, const security::v2::Certificate& cert)

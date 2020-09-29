@@ -19,13 +19,11 @@
  */
 
 #include "ca-config.hpp"
-
+#include "challenge-module.hpp"
+#include <ndn-cxx/util/io.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
-#include <ndn-cxx/util/io.hpp>
-
-#include "challenge-module.hpp"
 
 namespace ndn {
 namespace ndncert {

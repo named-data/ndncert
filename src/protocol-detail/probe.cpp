@@ -19,11 +19,9 @@
  */
 
 #include "probe.hpp"
-
-#include <boost/throw_exception.hpp>
-#include <ndn-cxx/encoding/tlv.hpp>
-
 #include "../logging.hpp"
+#include <ndn-cxx/encoding/tlv.hpp>
+#include <boost/throw_exception.hpp>
 
 namespace ndn {
 namespace ndncert {

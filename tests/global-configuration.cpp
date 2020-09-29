@@ -19,7 +19,6 @@
  */
 
 #include "boost-test.hpp"
-
 #include <boost/filesystem.hpp>
 #include <fstream>
 #include <stdlib.h>

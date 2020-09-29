@@ -32,12 +32,6 @@ namespace ndncert {
 
 typedef boost::property_tree::ptree JsonSection;
 
-//Request Type Enum
-enum {
-    REQUEST_TYPE_NEW = 0,
-    REQUEST_TYPE_REVOKE = 1
-};
-
 /**
  * @brief Represents a certificate request instance.
  *
@@ -45,13 +39,12 @@ enum {
  * m_challengeDefinedField to finish verification.
  *
  */
-class CertificateRequest
-{
+class CertificateRequest {
 public:
   CertificateRequest();
-  CertificateRequest(const Name& caName, const std::string& requestId, int requestType, Status status,
+  CertificateRequest(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
                      const security::v2::Certificate& cert);
-  CertificateRequest(const Name& caName, const std::string& requestId, int requestType, Status status,
+  CertificateRequest(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
                      const std::string& challengeStatus, const std::string& challengeType,
                      const std::string& challengeTp, int remainingTime, int remainingTries,
                      const JsonSection& challengeSecrets, const security::v2::Certificate& cert);
@@ -62,7 +55,7 @@ public:
 public:
   Name m_caPrefix;
   std::string m_requestId = "";
-  int m_requestType = -1;
+  RequestType m_requestType = RequestType::NOTINITIALIZED;
   Status m_status = Status::NOT_STARTED;
   security::v2::Certificate m_cert;
   std::shared_ptr<Data> m_probeToken = nullptr;
@@ -78,7 +71,7 @@ public:
 std::ostream&
 operator<<(std::ostream& os, const CertificateRequest& request);
 
-} // namespace ndncert
-} // namespace ndn
+}  // namespace ndncert
+}  // namespace ndn
 
-#endif // NDNCERT_CERTIFICATE_REQUEST_HPP
+#endif  // NDNCERT_CERTIFICATE_REQUEST_HPP

@@ -84,13 +84,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   onProbe(const Interest& request);
 
   void
-  onRequestInit(const Interest& request, int requestType);
-
-  void
-  onNew(const Interest& request);
-
-  void
-  onRevoke(const Interest& request);
+  onNewRenewRevoke(const InterestFilter& filter, const Interest& request, RequestType requestType);
 
   void
   onChallenge(const Interest& request);

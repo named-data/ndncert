@@ -45,5 +45,22 @@ std::string statusToString(Status status) {
   }
 }
 
+std::string requestTypeToString(RequestType type)
+{
+  switch (type)
+  {
+  case RequestType::NEW:
+    return "New";
+  case RequestType::RENEW:
+    return "Renew";
+  case RequestType::REVOKE:
+    return "Revoke";
+  case RequestType::NOTINITIALIZED:
+    return "Not initalized";
+  default:
+    return "Unrecognized type";
+  }
+}
+
 }  // namespace ndncert
 }  // namespace ndn

@@ -103,7 +103,7 @@ public:
   onRevokeResponse(const Data& reply);
 
   std::list<std::string>
-  onRequestInitResponse(const Data& reply, int requestType);
+  onRequestInitResponse(const Data& reply, RequestType requestType);
 
   shared_ptr<Interest>
   generateChallengeInterest(const Block& paramTLV);

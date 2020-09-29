@@ -76,7 +76,7 @@ main(int argc, char* argv[])
 
   for (const auto& entry : requestList) {
     std::cerr << "Request ID: " << entry.m_requestId << "\t"
-              << "Request Type" << entry.m_requestType << "\t"
+              << "Request Type" << requestTypeToString(entry.m_requestType) << "\t"
               << "Current Status: " << statusToString(entry.m_status) << std::endl
               << "Applying CA: " << entry.m_caPrefix << std::endl
               << "Applying for key: " << entry.m_cert.getName() << std::endl

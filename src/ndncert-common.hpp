@@ -35,10 +35,6 @@
 #define PROTECTED_WITH_TESTS_ELSE_PRIVATE private
 #endif
 
-#include <boost/algorithm/string.hpp>
-#include <boost/assert.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/throw_exception.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <ndn-cxx/data.hpp>
@@ -50,6 +46,10 @@
 #include <ndn-cxx/name.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/security/v2/certificate.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/assert.hpp>
+#include <boost/noncopyable.hpp>
+#include <boost/throw_exception.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -160,6 +160,15 @@ enum class ErrorCode : uint16_t {
   OUT_OF_TIME = 8,
   NO_AVAILABLE_NAMES = 9
 };
+
+enum class RequestType : uint16_t {
+  NOTINITIALIZED = 0,
+  NEW = 1,
+  RENEW = 2,
+  REVOKE = 3
+};
+
+std::string requestTypeToString(RequestType type);
 
 // Pre-defined challenge status
 const std::string CHALLENGE_STATUS_SUCCESS = "success";

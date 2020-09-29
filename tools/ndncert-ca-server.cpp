@@ -83,14 +83,10 @@ main(int argc, char* argv[])
 
   if (wantRepoOut) {
       ca.setStatusUpdateCallback([&] (const CertificateRequest& request) {
-          if (request.m_status == Status::SUCCESS && request.m_requestType == REQUEST_TYPE_NEW) {
+          if (request.m_status == Status::SUCCESS && request.m_requestType == RequestType::NEW) {
             auto issuedCert = request.m_cert;
             boost::asio::ip::tcp::iostream requestStream;
-#if BOOST_VERSION >= 106700
             requestStream.expires_after(std::chrono::seconds(3));
-#else
-            requestStream.expires_from_now(boost::posix_time::seconds(3));
-#endif // BOOST_VERSION >= 106700
             requestStream.connect(repoHost, repoPort);
             if (!requestStream) {
               std::cerr << "ERROR: Cannot publish certificate to repo-ng"

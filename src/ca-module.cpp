@@ -58,10 +58,10 @@ CaModule::CaModule(Face& face, security::v2::KeyChain& keyChain,
 
 CaModule::~CaModule()
 {
-  for (auto handle : m_interestFilterHandles) {
+  for (auto& handle : m_interestFilterHandles) {
     handle.cancel();
   }
-  for (auto handle : m_registeredPrefixHandles) {
+  for (auto& handle : m_registeredPrefixHandles) {
     handle.unregister();
   }
 }
@@ -96,7 +96,7 @@ CaModule::registerPrefix()
 
         // register NEW prefix
         filterId = m_face.setInterestFilter(Name(name).append("NEW"),
-                                            bind(&CaModule::onNew, this, _2));
+                                            bind(&CaModule::onNewRenewRevoke, this, _1, _2, RequestType::NEW));
         m_interestFilterHandles.push_back(filterId);
 
         // register SELECT prefix
@@ -106,7 +106,7 @@ CaModule::registerPrefix()
 
         // register REVOKE prefix
         filterId = m_face.setInterestFilter(Name(name).append("REVOKE"),
-                                            bind(&CaModule::onRevoke, this, _2));
+                                            bind(&CaModule::onNewRenewRevoke, this, _1, _2, RequestType::REVOKE));
         m_interestFilterHandles.push_back(filterId);
         _LOG_TRACE("Prefix " << name << " got registered");
       },
@@ -226,22 +226,10 @@ CaModule::onProbe(const Interest& request)
 }
 
 void
-CaModule::onNew(const Interest& request)
+CaModule::onNewRenewRevoke(const InterestFilter& filter, const Interest& request, RequestType requestType)
 {
   // NEW Naming Convention: /<CA-prefix>/CA/NEW/[SignedInterestParameters_Digest]
-  onRequestInit(request, REQUEST_TYPE_NEW);
-}
-
-void
-CaModule::onRevoke(const Interest& request)
-{
   // REVOKE Naming Convention: /<CA-prefix>/CA/REVOKE/[SignedInterestParameters_Digest]
-  onRequestInit(request, REQUEST_TYPE_REVOKE);
-}
-
-void
-CaModule::onRequestInit(const Interest& request, int requestType)
-{
   // get ECDH pub key and cert request
   const auto& parameterTLV = request.getApplicationParameters();
   parameterTLV.parse();
@@ -275,7 +263,7 @@ CaModule::onRequestInit(const Interest& request, int requestType)
 
   shared_ptr<security::v2::Certificate> clientCert = nullptr;
 
-  if (requestType == REQUEST_TYPE_NEW) {
+  if (requestType == RequestType::NEW) {
     // parse certificate request
     Block cert_req = parameterTLV.get(tlv_cert_request);
     cert_req.parse();
@@ -318,7 +306,7 @@ CaModule::onRequestInit(const Interest& request, int requestType)
       return;
     }
   }
-  else if (requestType == REQUEST_TYPE_REVOKE) {
+  else if (requestType == RequestType::REVOKE) {
     // parse certificate request
     Block cert_revoke = parameterTLV.get(tlv_cert_to_revoke);
     cert_revoke.parse();
@@ -362,13 +350,13 @@ CaModule::onRequestInit(const Interest& request, int requestType)
   Data result;
   result.setName(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  if (requestType == REQUEST_TYPE_NEW) {
+  if (requestType == RequestType::NEW) {
     result.setContent(NEW::encodeDataContent(myEcdhPubKeyBase64,
                                              std::to_string(saltInt),
                                              certRequest,
                                              m_config.m_supportedChallenges));
   }
-  else if (requestType == REQUEST_TYPE_REVOKE) {
+  else if (requestType == RequestType::REVOKE) {
     result.setContent(REVOKE::encodeDataContent(myEcdhPubKeyBase64,
                                                 std::to_string(saltInt),
                                                 certRequest,
@@ -444,7 +432,7 @@ CaModule::onChallenge(const Interest& request)
   Block payload;
   if (certRequest.m_status == Status::PENDING) {
     // if challenge succeeded
-    if (certRequest.m_requestType == REQUEST_TYPE_NEW) {
+    if (certRequest.m_requestType == RequestType::NEW) {
       auto issuedCert = issueCertificate(certRequest);
       certRequest.m_cert = issuedCert;
       certRequest.m_status = Status::SUCCESS;
@@ -466,7 +454,7 @@ CaModule::onChallenge(const Interest& request)
       //contentJson.add(JSON_CA_CERT_ID, readString(issuedCert.getName().at(-1)));
       _LOG_TRACE("Challenge succeeded. Certificate has been issued");
     }
-    else if (certRequest.m_requestType == REQUEST_TYPE_REVOKE) {
+    else if (certRequest.m_requestType == RequestType::REVOKE) {
       certRequest.m_status = Status::SUCCESS;
       try {
         m_storage->deleteRequest(certRequest.m_requestId);
