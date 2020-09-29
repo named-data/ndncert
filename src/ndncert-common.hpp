@@ -149,6 +149,7 @@ enum class Status : uint16_t {
 std::string statusToString(Status status);
 
 enum class Error : uint16_t {
+  NO_ERROR = 0,
   BAD_INTEREST_FORMAT = 1,
   BAD_PARAMETER_FORMAT = 2,
   BAD_SIGNATURE = 3,

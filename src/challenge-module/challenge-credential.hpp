@@ -52,31 +52,26 @@ public:
   ChallengeCredential(const std::string& configPath = "");
 
   // For CA
-  void
+  std::tuple<Error, std::string>
   handleChallengeRequest(const Block& params, CertificateRequest& request) override;
 
   // For Client
-  JsonSection
-  getRequirementForChallenge(Status status, const std::string& challengeStatus) override;
-
-  JsonSection
-  genChallengeRequestJson(Status status, const std::string& challengeStatus, const JsonSection& params) override;
+  std::vector<std::tuple<std::string, std::string>>
+  getRequestedParameterList(Status status, const std::string& challengeStatus) override;
 
   Block
-  genChallengeRequestTLV(Status status, const std::string& challengeStatus, const JsonSection& params) override;
+  genChallengeRequestTLV(Status status, const std::string& challengeStatus,
+                         std::vector<std::tuple<std::string, std::string>>&& params) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
   parseConfigFile();
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  static const std::string FAILURE_INVALID_CREDENTIAL;
-  static const std::string FAILURE_INVALID_FORMAT_CREDENTIAL;
-  static const std::string FAILURE_INVALID_FORMAT_SELF_SIGNED;
-  static const std::string JSON_CREDENTIAL_CERT;
-  static const std::string JSON_PROOF_OF_PRIVATE_KEY;
+  // parameters
+  static const std::string PARAMETER_KEY_CREDENTIAL_CERT;
+  static const std::string PARAMETER_KEY_PROOF_OF_PRIVATE_KEY;
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::list<security::v2::Certificate> m_trustAnchors;
   std::string m_configFile;
 };

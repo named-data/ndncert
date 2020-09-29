@@ -43,24 +43,20 @@ std::string challengeType;
 int validityPeriod = -1;
 ClientModule client(keyChain);
 
-static std::list<std::string>
-captureParams(const JsonSection& requirement)
+static void
+captureParams(std::vector<std::tuple<std::string, std::string>>& requirement)
 {
   std::list<std::string> results;
-  for (const auto& item : requirement) {
-    std::cerr << item.second.get<std::string>("") << std::endl;
-    std::cerr << "Please provide the argument: " << item.first << " : " << std::endl;
-    std::string tempParam;
-    getline(std::cin, tempParam);
-    results.push_back(tempParam);
+  for (auto& item : requirement) {
+    std::cerr << std::get<1>(item) << std::endl;
+    std::string captured;
+    getline(std::cin, captured);
+    std::get<1>(item) = captured;
   }
   std::cerr << "Got it. This is what you've provided:" << std::endl;
-  auto it1 = results.begin();
-  auto it2 = requirement.begin();
-  for (; it1 != results.end() && it2 != requirement.end(); it1++, it2++) {
-    std::cerr << it2->first << " : " << *it1 << std::endl;
+  for (const auto& item : requirement) {
+    std::cerr << std::get<0>(item) << " : " << std::get<1>(item) << std::endl;
   }
-  return results;
 }
 
 static std::list<std::string>
@@ -135,22 +131,15 @@ challengeCb(const Data& reply)
   }
 
   auto challenge = ChallengeModule::createChallengeModule(challengeType);
-  auto requirement = challenge->getRequirementForChallenge(client.getApplicationStatus(),
-                                                           client.getChallengeStatus());
+  auto requirement = challenge->getRequestedParameterList(client.getApplicationStatus(),
+                                                          client.getChallengeStatus());
   if (requirement.size() > 0) {
     std::cerr << "Step " << nStep++ << ": Please satisfy following instruction(s)\n";
-    std::string redo = "";
-    std::list<std::string> capturedParams;
-    capturedParams = captureParams(requirement);
-    auto it1 = capturedParams.begin();
-    auto it2 = requirement.begin();
-    for (; it1 != capturedParams.end() && it2 != requirement.end(); it1++, it2++) {
-      it2->second.put("", *it1);
-    }
+    captureParams(requirement);
   }
   face.expressInterest(*client.generateChallengeInterest(challenge->genChallengeRequestTLV(client.getApplicationStatus(),
                                                                                            client.getChallengeStatus(),
-                                                                                           requirement)),
+                                                                                           std::move(requirement))),
                        bind(&challengeCb, _2), bind(&onNackCb), bind(&timeoutCb));
 }
 
@@ -194,22 +183,15 @@ newCb(const Data& reply)
     std::cerr << "Error. Cannot load selected Challenge Module. Exit." << std::endl;
     return;
   }
-  auto requirement = challenge->getRequirementForChallenge(client.getApplicationStatus(),
-                                                           client.getChallengeStatus());
+  auto requirement = challenge->getRequestedParameterList(client.getApplicationStatus(),
+                                                          client.getChallengeStatus());
   if (requirement.size() > 0) {
-    std::cerr << "Step " << nStep++ << ": Please satisfy following instruction(s)\n";
-    std::string redo = "";
-    std::list<std::string> capturedParams;
-    capturedParams = captureParams(requirement);
-    auto it1 = capturedParams.begin();
-    auto it2 = requirement.begin();
-    for (; it1 != capturedParams.end() && it2 != requirement.end(); it1++, it2++) {
-      it2->second.put("", *it1);
-    }
+    std::cerr << "Step " << nStep++ << ": Please provide parameters used for Identity Verification Challenge\n";
+    captureParams(requirement);
   }
   face.expressInterest(*client.generateChallengeInterest(challenge->genChallengeRequestTLV(client.getApplicationStatus(),
                                                                                            client.getChallengeStatus(),
-                                                                                           requirement)),
+                                                                                           std::move(requirement))),
                        bind(&challengeCb, _2), bind(&onNackCb), bind(&timeoutCb));
 }
 

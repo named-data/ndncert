@@ -28,15 +28,11 @@
 namespace ndn {
 namespace ndncert {
 
-_LOG_INIT(ndncert.ChallengeCredential);
-
+_LOG_INIT(ndncert.challenge.credential);
 NDNCERT_REGISTER_CHALLENGE(ChallengeCredential, "Credential");
 
-const std::string ChallengeCredential::FAILURE_INVALID_FORMAT_CREDENTIAL = "failure-cannot-parse-credential";
-const std::string ChallengeCredential::FAILURE_INVALID_FORMAT_SELF_SIGNED = "failure-cannot-parse-self-signed";
-const std::string ChallengeCredential::FAILURE_INVALID_CREDENTIAL = "failure-invalid-credential";
-const std::string ChallengeCredential::JSON_CREDENTIAL_CERT = "issued-cert";
-const std::string ChallengeCredential::JSON_PROOF_OF_PRIVATE_KEY = "proof-of-private-key";
+const std::string ChallengeCredential::PARAMETER_KEY_CREDENTIAL_CERT = "issued-cert";
+const std::string ChallengeCredential::PARAMETER_KEY_PROOF_OF_PRIVATE_KEY = "proof-of-private-key";
 
 ChallengeCredential::ChallengeCredential(const std::string& configPath)
     : ChallengeModule("Credential")
@@ -57,12 +53,12 @@ ChallengeCredential::parseConfigFile()
     boost::property_tree::read_json(m_configFile, config);
   }
   catch (const boost::property_tree::info_parser_error& error) {
-    BOOST_THROW_EXCEPTION(Error("Failed to parse configuration file " + m_configFile +
-                                " " + error.message() + " line " + std::to_string(error.line())));
+    BOOST_THROW_EXCEPTION(std::runtime_error("Failed to parse configuration file " + m_configFile +
+                                             " " + error.message() + " line " + std::to_string(error.line())));
   }
 
   if (config.begin() == config.end()) {
-    BOOST_THROW_EXCEPTION(Error("Error processing configuration file: " + m_configFile + " no data"));
+    BOOST_THROW_EXCEPTION(std::runtime_error("Error processing configuration file: " + m_configFile + " no data"));
   }
 
   m_trustAnchors.clear();
@@ -80,7 +76,7 @@ ChallengeCredential::parseConfigFile()
 }
 
 // For CA
-void
+std::tuple<Error, std::string>
 ChallengeCredential::handleChallengeRequest(const Block& params, CertificateRequest& request)
 {
   params.parse();
@@ -91,26 +87,20 @@ ChallengeCredential::handleChallengeRequest(const Block& params, CertificateRequ
   auto& elements = params.elements();
   for (size_t i = 0; i < elements.size(); i++) {
     if (elements[i].type() == tlv_parameter_key) {
-      if (readString(elements[i]) == JSON_CREDENTIAL_CERT) {
+      if (readString(elements[i]) == PARAMETER_KEY_CREDENTIAL_CERT) {
         std::istringstream ss(readString(params.elements()[i + 1]));
         credential = io::load<security::v2::Certificate>(ss);
         if (credential == nullptr) {
-          _LOG_ERROR("Cannot load credential parameter: cert");
-          request.m_status = Status::FAILURE;
-          request.m_challengeStatus = FAILURE_INVALID_FORMAT_CREDENTIAL;
-          updateRequestOnChallengeEnd(request);
-          return;
+          _LOG_ERROR("Cannot load challenge parameter: credential");
+          return returnWithError(request, Error::INVALID_PARAMETER, "Cannot challenge credential: credential.");
         }
       }
-      else if (readString(elements[i]) == JSON_PROOF_OF_PRIVATE_KEY) {
+      else if (readString(elements[i]) == PARAMETER_KEY_PROOF_OF_PRIVATE_KEY) {
         std::istringstream ss(readString(params.elements()[i + 1]));
         selfSigned = io::load<security::v2::Certificate>(ss);
         if (selfSigned == nullptr) {
-          _LOG_ERROR("Cannot load credential parameter: cert");
-          request.m_status = Status::FAILURE;
-          request.m_challengeStatus = FAILURE_INVALID_FORMAT_SELF_SIGNED;
-          updateRequestOnChallengeEnd(request);
-          return;
+          _LOG_ERROR("Cannot load challenge parameter: proof of private key");
+          return returnWithError(request, Error::INVALID_PARAMETER, "Cannot load challenge parameter: proof of private key.");
         }
       }
       else {
@@ -126,63 +116,56 @@ ChallengeCredential::handleChallengeRequest(const Block& params, CertificateRequ
       if (security::verifySignature(*selfSigned, anchor) &&
           security::verifySignature(*selfSigned, *credential) &&
           readString(selfSigned->getContent()) == request.m_requestId) {
-        request.m_status = Status::PENDING;
-        request.m_challengeStatus = CHALLENGE_STATUS_SUCCESS;
-        updateRequestOnChallengeEnd(request);
-        return;
+        return returnWithSuccess(request);
       }
     }
   }
 
-  _LOG_TRACE("Cannot verify the credential + self-signed Data + data content");
-  request.m_status = Status::FAILURE;
-  request.m_challengeStatus = FAILURE_INVALID_CREDENTIAL;
-  updateRequestOnChallengeEnd(request);
-  return;
+  _LOG_TRACE("Cannot verify the proof of private key against credential");
+  return returnWithError(request, Error::INVALID_PARAMETER, "Cannot verify the proof of private key against credential.");
 }
 
 // For Client
-JsonSection
-ChallengeCredential::getRequirementForChallenge(Status status, const std::string& challengeStatus)
+std::vector<std::tuple<std::string, std::string>>
+ChallengeCredential::getRequestedParameterList(Status status, const std::string& challengeStatus)
 {
-  JsonSection result;
-  if (status == Status::BEFORE_CHALLENGE && challengeStatus == "") {
-    result.put(JSON_CREDENTIAL_CERT, "Please_copy_anchor_signed_cert_here");
-    result.put(JSON_PROOF_OF_PRIVATE_KEY, "Please_copy_key_signed_request_id_data_here");
+  std::vector<std::tuple<std::string, std::string>> result;
+  if (status == Status::BEFORE_CHALLENGE) {
+    result.push_back(std::make_tuple(PARAMETER_KEY_CREDENTIAL_CERT, "Please provide the certificate issued by a trusted CA."));
+    result.push_back(std::make_tuple(PARAMETER_KEY_PROOF_OF_PRIVATE_KEY, "Please sign a Data packet with request ID as the content."));
   }
   else {
-    _LOG_ERROR("Client's status and challenge status are wrong");
-  }
-  return result;
-}
-
-JsonSection
-ChallengeCredential::genChallengeRequestJson(Status status, const std::string& challengeStatus, const JsonSection& params)
-{
-  JsonSection result;
-  if (status == Status::BEFORE_CHALLENGE && challengeStatus == "") {
-    result.put(JSON_CREDENTIAL_CERT, params.get(JSON_CREDENTIAL_CERT, ""));
-    result.put(JSON_PROOF_OF_PRIVATE_KEY, params.get(JSON_PROOF_OF_PRIVATE_KEY, ""));
-  }
-  else {
-    _LOG_ERROR("Client's status and challenge status are wrong");
+    BOOST_THROW_EXCEPTION(std::runtime_error("Unexpected status or challenge status."));
   }
   return result;
 }
 
 Block
-ChallengeCredential::genChallengeRequestTLV(Status status, const std::string& challengeStatus, const JsonSection& params)
+ChallengeCredential::genChallengeRequestTLV(Status status, const std::string& challengeStatus,
+                                            std::vector<std::tuple<std::string, std::string>>&& params)
 {
   Block request = makeEmptyBlock(tlv_encrypted_payload);
-  if (status == Status::BEFORE_CHALLENGE && challengeStatus == "") {
+  if (status == Status::BEFORE_CHALLENGE) {
+    if (params.size() != 2) {
+      BOOST_THROW_EXCEPTION(std::runtime_error("Wrong parameter provided."));
+    }
     request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
-    request.push_back(makeStringBlock(tlv_parameter_key, JSON_CREDENTIAL_CERT));
-    request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_CREDENTIAL_CERT, "")));
-    request.push_back(makeStringBlock(tlv_parameter_key, JSON_PROOF_OF_PRIVATE_KEY));
-    request.push_back(makeStringBlock(tlv_parameter_value, params.get(JSON_PROOF_OF_PRIVATE_KEY, "")));
+    for (const auto& item : params) {
+      if (std::get<0>(item) == PARAMETER_KEY_CREDENTIAL_CERT) {
+        request.push_back(makeStringBlock(tlv_parameter_key, PARAMETER_KEY_CREDENTIAL_CERT));
+        request.push_back(makeStringBlock(tlv_parameter_value, std::get<1>(item)));
+      }
+      else if (std::get<0>(item) == PARAMETER_KEY_PROOF_OF_PRIVATE_KEY) {
+        request.push_back(makeStringBlock(tlv_parameter_key, PARAMETER_KEY_PROOF_OF_PRIVATE_KEY));
+        request.push_back(makeStringBlock(tlv_parameter_value, std::get<1>(item)));
+      }
+      else {
+        BOOST_THROW_EXCEPTION(std::runtime_error("Wrong parameter provided."));
+      }
+    }
   }
   else {
-    _LOG_ERROR("Client's status and challenge status are wrong");
+    BOOST_THROW_EXCEPTION(std::runtime_error("Unexpected status or challenge status."));
   }
   request.encode();
   return request;

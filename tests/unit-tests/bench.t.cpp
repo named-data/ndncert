@@ -110,10 +110,10 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
     if (Name("/ndn/CA/NEW").isPrefixOf(response.getName())) {
       std::cout << "NEW Data Size: " << response.wireEncode().size() << std::endl;
       client.onNewResponse(response);
-      auto paramJson = pinChallenge.getRequirementForChallenge(client.m_status, client.m_challengeStatus);
+      auto paramList = pinChallenge.getRequestedParameterList(client.m_status, client.m_challengeStatus);
       challengeInterest = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
                                                                                                client.m_challengeStatus,
-                                                                                               paramJson));
+                                                                                               std::move(paramList)));
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 0) {
       count++;
@@ -123,10 +123,10 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
       BOOST_CHECK(client.m_status == Status::CHALLENGE);
       BOOST_CHECK_EQUAL(client.m_challengeStatus, ChallengePin::NEED_CODE);
 
-      auto paramJson = pinChallenge.getRequirementForChallenge(client.m_status, client.m_challengeStatus);
+      auto paramList = pinChallenge.getRequestedParameterList(client.m_status, client.m_challengeStatus);
       challengeInterest2 = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
                                                                                                 client.m_challengeStatus,
-                                                                                                paramJson));
+                                                                                                std::move(paramList)));
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 1) {
       count++;
@@ -136,16 +136,13 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
       BOOST_CHECK(client.m_status == Status::CHALLENGE);
       BOOST_CHECK_EQUAL(client.m_challengeStatus, ChallengePin::WRONG_CODE);
 
-      auto paramJson = pinChallenge.getRequirementForChallenge(client.m_status, client.m_challengeStatus);
+      auto paramList = pinChallenge.getRequestedParameterList(client.m_status, client.m_challengeStatus);
       auto request = ca.getCertificateRequest(*challengeInterest2);
-      auto secret = request.m_challengeSecrets.get(ChallengePin::JSON_PIN_CODE, "");
-      for (auto& i : paramJson) {
-        if (i.first == ChallengePin::JSON_PIN_CODE)
-          i.second.put("", secret);
-      }
+      auto secret = request.m_challengeSecrets.get(ChallengePin::PARAMETER_KEY_CODE, "");
+      std::get<1>(paramList[0]) = secret;
       challengeInterest3 = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
                                                                                                 client.m_challengeStatus,
-                                                                                                paramJson));
+                                                                                                std::move(paramList)));
       std::cout << "CHALLENGE Interest Size: " << challengeInterest3->wireEncode().size() << std::endl;
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 2) {
@@ -155,7 +152,6 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
 
       client.onChallengeResponse(response);
       BOOST_CHECK(client.m_status == Status::SUCCESS);
-      BOOST_CHECK_EQUAL(client.m_challengeStatus, CHALLENGE_STATUS_SUCCESS);
     }
   });
 

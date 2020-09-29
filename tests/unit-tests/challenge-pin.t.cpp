@@ -54,19 +54,18 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
   JsonSection secret;
-  secret.add(ChallengePin::JSON_PIN_CODE, "12345");
+  secret.add(ChallengePin::PARAMETER_KEY_CODE, "12345");
   CertificateRequest request(Name("/ndn/site1"), "123", REQUEST_TYPE_NEW, Status::CHALLENGE, ChallengePin::NEED_CODE, "pin",
                              time::toIsoString(time::system_clock::now()), 3600, 3, secret, cert);
 
   Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
-  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengePin::JSON_PIN_CODE));
+  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengePin::PARAMETER_KEY_CODE));
   paramTLV.push_back(makeStringBlock(tlv_parameter_value, "12345"));
 
   ChallengePin challenge;
   challenge.handleChallengeRequest(paramTLV, request);
 
   BOOST_CHECK(request.m_status == Status::PENDING);
-  BOOST_CHECK_EQUAL(request.m_challengeStatus, CHALLENGE_STATUS_SUCCESS);
   BOOST_CHECK_EQUAL(request.m_challengeSecrets.empty(), true);
 }
 
@@ -76,12 +75,12 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithWrongCode)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
   JsonSection secret;
-  secret.add(ChallengePin::JSON_PIN_CODE, "12345");
+  secret.add(ChallengePin::PARAMETER_KEY_CODE, "12345");
   CertificateRequest request(Name("/ndn/site1"), "123", REQUEST_TYPE_NEW, Status::CHALLENGE, ChallengePin::NEED_CODE, "pin",
                              time::toIsoString(time::system_clock::now()), 3600, 3, secret, cert);
 
   Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
-  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengePin::JSON_PIN_CODE));
+  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengePin::PARAMETER_KEY_CODE));
   paramTLV.push_back(makeStringBlock(tlv_parameter_value, "45678"));
 
   ChallengePin challenge;

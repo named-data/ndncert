@@ -52,26 +52,24 @@ public:
                const time::seconds& secretLifetime = time::seconds(3600));
 
   // For CA
-  void
+  std::tuple<Error, std::string>
   handleChallengeRequest(const Block& params, CertificateRequest& request) override;
 
   // For Client
-  JsonSection
-  getRequirementForChallenge(Status status, const std::string& challengeStatus) override;
-
-  JsonSection
-  genChallengeRequestJson(Status status, const std::string& challengeStatus, const JsonSection& params) override;
+  std::vector<std::tuple<std::string, std::string>>
+  getRequestedParameterList(Status status, const std::string& challengeStatus) override;
 
   Block
-  genChallengeRequestTLV(Status status, const std::string& challengeStatus, const JsonSection& params) override;
+  genChallengeRequestTLV(Status status, const std::string& challengeStatus,
+                         std::vector<std::tuple<std::string, std::string>>&& params) override;
 
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   // challenge status
   static const std::string NEED_CODE;
   static const std::string WRONG_CODE;
-  // JSON attribute
-  static const std::string JSON_PIN_CODE;
+  // parameters
+  static const std::string PARAMETER_KEY_CODE;
 
 private:
   time::seconds m_secretLifetime;

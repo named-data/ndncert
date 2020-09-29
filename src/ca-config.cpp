@@ -97,7 +97,7 @@ CaConfig::parseChallengeList(const JsonSection& section)
     if (challengeType == "") {
       BOOST_THROW_EXCEPTION(std::runtime_error("Cannot read type in supported-challenges from the config file"));
     }
-    if (!ChallengeModule::supportChallenge(challengeType)) {
+    if (!ChallengeModule::isChallengeSupported(challengeType)) {
       BOOST_THROW_EXCEPTION(std::runtime_error("Does not support challenge read from the config file"));
     }
     m_supportedChallenges.push_back(challengeType);

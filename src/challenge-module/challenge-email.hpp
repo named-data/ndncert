@@ -58,18 +58,16 @@ public:
                  const time::seconds secretLifetime = time::minutes(20));
 
   // For CA
-  void
+  std::tuple<Error, std::string>
   handleChallengeRequest(const Block& params, CertificateRequest& request) override;
 
   // For Client
-  JsonSection
-  getRequirementForChallenge(Status status, const std::string& challengeStatus) override;
-
-  JsonSection
-  genChallengeRequestJson(Status status, const std::string& challengeStatus, const JsonSection& params) override;
+  std::vector<std::tuple<std::string, std::string>>
+  getRequestedParameterList(Status status, const std::string& challengeStatus) override;
 
   Block
-  genChallengeRequestTLV(Status status, const std::string& challengeStatus, const JsonSection& params) override;
+  genChallengeRequestTLV(Status status, const std::string& challengeStatus,
+                         std::vector<std::tuple<std::string, std::string>>&& params) override;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   static bool
@@ -83,10 +81,9 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   // challenge status
   static const std::string NEED_CODE;
   static const std::string WRONG_CODE;
-  static const std::string FAILURE_INVALID_EMAIL;
-  // JSON attribute
-  static const std::string JSON_EMAIL;
-  static const std::string JSON_CODE;
+  // parameters
+  static const std::string PARAMETER_KEY_EMAIL;
+  static const std::string PARAMETER_KEY_CODE;
 
 private:
   std::string m_sendEmailScript;

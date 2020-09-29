@@ -32,7 +32,7 @@ ChallengeModule::ChallengeModule(const std::string& uniqueType)
 ChallengeModule::~ChallengeModule() = default;
 
 bool
-ChallengeModule::supportChallenge(const std::string& challengeType)
+ChallengeModule::isChallengeSupported(const std::string& challengeType)
 {
   ChallengeFactory& factory = getFactory();
   auto i = factory.find(challengeType);
@@ -70,16 +70,45 @@ ChallengeModule::generateSecretCode()
   return result;
 }
 
-void
-ChallengeModule::updateRequestOnChallengeEnd(CertificateRequest& request)
+std::tuple<Error, std::string>
+ChallengeModule::returnWithError(CertificateRequest& request, Error errorCode, std::string&& errorInfo)
 {
+  request.m_status = Status::FAILURE;
+  request.m_challengeType = "";
+  request.m_challengeStatus = "";
   request.m_challengeSecrets = JsonSection();
   request.m_challengeTp = "";
-  request.m_challengeType = "";
   request.m_remainingTime = 0;
   request.m_remainingTries = 0;
+  return std::make_tuple(errorCode, std::move(errorInfo));
 }
 
+std::tuple<Error, std::string>
+ChallengeModule::returnWithNewChallengeStatus(CertificateRequest& request, const std::string& challengeStatus,
+                                              JsonSection&& challengeSecret, size_t remainingTries, size_t remainingTime)
+{
+  request.m_status = Status::CHALLENGE;
+  request.m_challengeType = CHALLENGE_TYPE;
+  request.m_challengeStatus = std::move(challengeStatus);
+  request.m_challengeSecrets = std::move(challengeSecret);
+  request.m_challengeTp = time::toIsoString(time::system_clock::now());
+  request.m_remainingTime = remainingTries;
+  request.m_remainingTries = remainingTime;
+  return std::make_tuple(Error::NO_ERROR, "");
+}
+
+std::tuple<Error, std::string>
+ChallengeModule::returnWithSuccess(CertificateRequest& request)
+{
+  request.m_status = Status::PENDING;
+  request.m_challengeType = CHALLENGE_TYPE;
+  request.m_challengeStatus = "";
+  request.m_challengeSecrets = JsonSection();
+  request.m_challengeTp = "";
+  request.m_remainingTime = 0;
+  request.m_remainingTries = 0;
+  return std::make_tuple(Error::NO_ERROR, "");
+}
 
 } // namespace ndncert
 } // namespace ndn

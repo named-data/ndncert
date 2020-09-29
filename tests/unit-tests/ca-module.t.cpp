@@ -46,49 +46,51 @@ BOOST_AUTO_TEST_CASE(Initialization)
 
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK_EQUAL(ca.m_registeredPrefixHandles.size(), 2);
-  BOOST_CHECK_EQUAL(ca.m_interestFilterHandles.size(), 5); // onInfo, onProbe, onNew, onChallenge, onRevoke
+  BOOST_CHECK_EQUAL(ca.m_interestFilterHandles.size(), 5);  // onInfo, onProbe, onNew, onChallenge, onRevoke
 }
 
-// BOOST_AUTO_TEST_CASE(HandleProbe)
-// {
-//   auto identity = addIdentity(Name("/ndn"));
-//   auto key = identity.getDefaultKey();
-//   auto cert = key.getDefaultCertificate();
+BOOST_AUTO_TEST_CASE(HandleProbe)
+{
+  auto identity = addIdentity(Name("/ndn"));
+  auto key = identity.getDefaultKey();
+  auto cert = key.getDefaultCertificate();
 
-//   util::DummyClientFace face(io, m_keyChain, {true, true});
-//   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
-//   ca.setProbeHandler([&](const Block& probeInfo) {
-//     return "example";
-//   });
-//   advanceClocks(time::milliseconds(20), 60);
+  util::DummyClientFace face(io, m_keyChain, {true, true});
+  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
+  ca.setNameAssignmentFunction([&](const std::vector<std::tuple<std::string, std::string>>) -> std::vector<std::string> {
+    std::vector<std::string> result;
+    result.push_back("example");
+    return result;
+  });
+  advanceClocks(time::milliseconds(20), 60);
 
-//   Interest interest("/ndn/CA/PROBE");
-//   interest.setCanBePrefix(false);
+  Interest interest("/ndn/CA/PROBE");
+  interest.setCanBePrefix(false);
 
-//   Block paramTLV = makeEmptyBlock(tlv::ApplicationParameters);
-//   paramTLV.push_back(makeStringBlock(tlv_parameter_key, JSON_CLIENT_PROBE_INFO));
-//   paramTLV.push_back(makeStringBlock(tlv_parameter_value, "zhiyi"));
-//   paramTLV.encode();
+  Block paramTLV = makeEmptyBlock(tlv::ApplicationParameters);
+  paramTLV.push_back(makeStringBlock(tlv_parameter_key, JSON_CLIENT_PROBE_INFO));
+  paramTLV.push_back(makeStringBlock(tlv_parameter_value, "zhiyi"));
+  paramTLV.encode();
 
-//   interest.setApplicationParameters(paramTLV);
+  interest.setApplicationParameters(paramTLV);
 
-//   int count = 0;
-//   face.onSendData.connect([&](const Data& response) {
-//     count++;
-//     BOOST_CHECK(security::verifySignature(response, cert));
-//     Block contentBlock = response.getContent();
-//     contentBlock.parse();
-//     Block probeResponse = contentBlock.get(tlv_probe_response);
-//     probeResponse.parse();
-//     Name caName;
-//     caName.wireDecode(probeResponse.get(tlv::Name));
-//     BOOST_CHECK_EQUAL(caName, "/ndn/example");
-//   });
-//   face.receive(interest);
+  int count = 0;
+  face.onSendData.connect([&](const Data& response) {
+    count++;
+    BOOST_CHECK(security::verifySignature(response, cert));
+    Block contentBlock = response.getContent();
+    contentBlock.parse();
+    Block probeResponse = contentBlock.get(tlv_probe_response);
+    probeResponse.parse();
+    Name caName;
+    caName.wireDecode(probeResponse.get(tlv::Name));
+    BOOST_CHECK_EQUAL(caName, "/ndn/example");
+  });
+  face.receive(interest);
 
-//   advanceClocks(time::milliseconds(20), 60);
-//   BOOST_CHECK_EQUAL(count, 1);
-// }
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK_EQUAL(count, 1);
+}
 
 BOOST_AUTO_TEST_CASE(HandleInfo)
 {
@@ -305,10 +307,10 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
   face.onSendData.connect([&](const Data& response) {
     if (Name("/ndn/CA/NEW").isPrefixOf(response.getName())) {
       client.onNewResponse(response);
-      auto paramJson = pinChallenge.getRequirementForChallenge(client.m_status, client.m_challengeStatus);
+      auto paramList = pinChallenge.getRequestedParameterList(client.m_status, client.m_challengeStatus);
       challengeInterest = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
                                                                                                client.m_challengeStatus,
-                                                                                               paramJson));
+                                                                                               std::move(paramList)));
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 0) {
       count++;
@@ -318,10 +320,10 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
       BOOST_CHECK(client.m_status == Status::CHALLENGE);
       BOOST_CHECK_EQUAL(client.m_challengeStatus, ChallengePin::NEED_CODE);
 
-      auto paramJson = pinChallenge.getRequirementForChallenge(client.m_status, client.m_challengeStatus);
+      auto paramList = pinChallenge.getRequestedParameterList(client.m_status, client.m_challengeStatus);
       challengeInterest2 = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
                                                                                                 client.m_challengeStatus,
-                                                                                                paramJson));
+                                                                                                std::move(paramList)));
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 1) {
       count++;
@@ -331,16 +333,13 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
       BOOST_CHECK(client.m_status == Status::CHALLENGE);
       BOOST_CHECK_EQUAL(client.m_challengeStatus, ChallengePin::WRONG_CODE);
 
-      auto paramJson = pinChallenge.getRequirementForChallenge(client.m_status, client.m_challengeStatus);
+      auto paramList = pinChallenge.getRequestedParameterList(client.m_status, client.m_challengeStatus);
       auto request = ca.getCertificateRequest(*challengeInterest2);
-      auto secret = request.m_challengeSecrets.get(ChallengePin::JSON_PIN_CODE, "");
-      for (auto& i : paramJson) {
-        if (i.first == ChallengePin::JSON_PIN_CODE)
-          i.second.put("", secret);
-      }
+      auto secret = request.m_challengeSecrets.get(ChallengePin::PARAMETER_KEY_CODE, "");
+      std::get<1>(paramList[0]) = secret;
       challengeInterest3 = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
                                                                                                 client.m_challengeStatus,
-                                                                                                paramJson));
+                                                                                                std::move(paramList)));
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 2) {
       count++;
@@ -348,7 +347,6 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
 
       client.onChallengeResponse(response);
       BOOST_CHECK(client.m_status == Status::SUCCESS);
-      BOOST_CHECK_EQUAL(client.m_challengeStatus, CHALLENGE_STATUS_SUCCESS);
     }
   });
 
@@ -369,7 +367,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, { true, true });
+  util::DummyClientFace face(io, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
@@ -383,7 +381,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
   clientCert.setContent(clientKey.getPublicKey().data(), clientKey.getPublicKey().size());
   SignatureInfo signatureInfo;
   signatureInfo.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
-          time::system_clock::now() + time::hours(10)));
+                                                           time::system_clock::now() + time::hours(10)));
   m_keyChain.sign(clientCert, signingByKey(clientKey.getName()).setSignatureInfo(signatureInfo));
   CertificateRequest certRequest(Name("/ndn"), "122", REQUEST_TYPE_NEW, Status::SUCCESS, clientCert);
   auto issuedCert = ca.issueCertificate(certRequest);
@@ -397,7 +395,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
   auto interest = client.generateRevokeInterest(issuedCert);
 
   int count = 0;
-  face.onSendData.connect([&] (const Data& response) {
+  face.onSendData.connect([&](const Data& response) {
     count++;
     BOOST_CHECK(security::verifySignature(response, cert));
     auto contentBlock = response.getContent();
@@ -409,16 +407,16 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
 
     auto challengeBlockCount = 0;
     for (auto const& element : contentBlock.elements()) {
-        if (element.type() == tlv_challenge) {
-            challengeBlockCount++;
-        }
+      if (element.type() == tlv_challenge) {
+        challengeBlockCount++;
+      }
     }
 
     BOOST_CHECK(challengeBlockCount != 0);
 
     client.onRevokeResponse(response);
     BOOST_CHECK_EQUAL_COLLECTIONS(client.m_aesKey, client.m_aesKey + sizeof(client.m_aesKey),
-            ca.m_aesKey, ca.m_aesKey + sizeof(ca.m_aesKey));
+                                  ca.m_aesKey, ca.m_aesKey + sizeof(ca.m_aesKey));
   });
   face.receive(*interest);
 
@@ -432,7 +430,7 @@ BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, { true, true });
+  util::DummyClientFace face(io, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
@@ -446,7 +444,7 @@ BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
   clientCert.setContent(clientKey.getPublicKey().data(), clientKey.getPublicKey().size());
   SignatureInfo signatureInfo;
   signatureInfo.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
-          time::system_clock::now() + time::hours(10)));
+                                                           time::system_clock::now() + time::hours(10)));
   m_keyChain.sign(clientCert, signingByKey(clientKey.getName()).setSignatureInfo(signatureInfo));
 
   ClientModule client(m_keyChain);
@@ -458,7 +456,7 @@ BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
   auto interest = client.generateRevokeInterest(clientCert);
 
   int count = 0;
-  face.onSendData.connect([&] (const Data& response) {
+  face.onSendData.connect([&](const Data& response) {
     count++;
   });
   face.receive(*interest);
@@ -467,8 +465,7 @@ BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
   BOOST_CHECK_EQUAL(count, 0);
 }
 
-
-BOOST_AUTO_TEST_SUITE_END() // TestCaModule
+BOOST_AUTO_TEST_SUITE_END()  // TestCaModule
 
 }  // namespace tests
 }  // namespace ndncert

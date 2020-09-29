@@ -48,7 +48,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmail)
   CertificateRequest request(Name("/ndn/site1"), "123", REQUEST_TYPE_NEW, Status::BEFORE_CHALLENGE, cert);
 
   Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
-  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengeEmail::JSON_EMAIL));
+  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengeEmail::PARAMETER_KEY_EMAIL));
   paramTLV.push_back(makeStringBlock(tlv_parameter_value, "zhiyi@cs.ucla.edu"));
 
   ChallengeEmail challenge("./tests/unit-tests/test-send-email.sh");
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmail)
 
   BOOST_CHECK(request.m_status == Status::CHALLENGE);
   BOOST_CHECK_EQUAL(request.m_challengeStatus, ChallengeEmail::NEED_CODE);
-  BOOST_CHECK(request.m_challengeSecrets.get<std::string>(ChallengeEmail::JSON_CODE) != "");
+  BOOST_CHECK(request.m_challengeSecrets.get<std::string>(ChallengeEmail::PARAMETER_KEY_CODE) != "");
   BOOST_CHECK(request.m_remainingTime != 0);
   BOOST_CHECK(request.m_remainingTries != 0);
   BOOST_CHECK(request.m_challengeTp != "");
@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmail)
 
   end = line.find(delimiter);
   std::string secret = line.substr(0, end);
-  auto stored_secret = request.m_challengeSecrets.get<std::string>(ChallengeEmail::JSON_CODE);
+  auto stored_secret = request.m_challengeSecrets.get<std::string>(ChallengeEmail::PARAMETER_KEY_CODE);
   BOOST_CHECK_EQUAL(secret, stored_secret);
   line = line.substr(end + 1);
 
@@ -98,13 +98,12 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithInvalidEmail)
   CertificateRequest request(Name("/ndn/site1"), "123", REQUEST_TYPE_NEW, Status::BEFORE_CHALLENGE, cert);
 
   Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
-  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengeEmail::JSON_EMAIL));
+  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengeEmail::PARAMETER_KEY_EMAIL));
   paramTLV.push_back(makeStringBlock(tlv_parameter_value, "zhiyi@cs"));
 
   ChallengeEmail challenge;
   challenge.handleChallengeRequest(paramTLV, request);
 
-  BOOST_CHECK_EQUAL(request.m_challengeStatus, ChallengeEmail::FAILURE_INVALID_EMAIL);
   BOOST_CHECK(request.m_status == Status::FAILURE);
 }
 
@@ -114,18 +113,17 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
   JsonSection json;
-  json.put(ChallengeEmail::JSON_CODE, "4567");
+  json.put(ChallengeEmail::PARAMETER_KEY_CODE, "4567");
   CertificateRequest request(Name("/ndn/site1"), "123", REQUEST_TYPE_NEW, Status::CHALLENGE, ChallengeEmail::NEED_CODE,
                              "Email", time::toIsoString(time::system_clock::now()), 3600, 3, json, cert);
 
   Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
-  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengeEmail::JSON_CODE));
+  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengeEmail::PARAMETER_KEY_CODE));
   paramTLV.push_back(makeStringBlock(tlv_parameter_value, "4567"));
 
   ChallengeEmail challenge;
   challenge.handleChallengeRequest(paramTLV, request);
 
-  BOOST_CHECK_EQUAL(request.m_challengeStatus, CHALLENGE_STATUS_SUCCESS);
   BOOST_CHECK(request.m_status == Status::PENDING);
   BOOST_CHECK_EQUAL(request.m_challengeSecrets.empty(), true);
 }
@@ -136,12 +134,12 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithWrongCode)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
   JsonSection json;
-  json.put(ChallengeEmail::JSON_CODE, "4567");
+  json.put(ChallengeEmail::PARAMETER_KEY_CODE, "4567");
   CertificateRequest request(Name("/ndn/site1"), "123", REQUEST_TYPE_NEW, Status::CHALLENGE, ChallengeEmail::NEED_CODE,
                              "email", time::toIsoString(time::system_clock::now()), 3600, 3, json, cert);
 
   Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
-  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengeEmail::JSON_CODE));
+  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengeEmail::PARAMETER_KEY_CODE));
   paramTLV.push_back(makeStringBlock(tlv_parameter_value, "7890"));
 
   ChallengeEmail challenge;

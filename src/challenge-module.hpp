@@ -21,35 +21,21 @@
 #ifndef NDNCERT_CHALLENGE_MODULE_HPP
 #define NDNCERT_CHALLENGE_MODULE_HPP
 
-#include "ndncert-common.hpp"
+#include <tuple>
+
 #include "certificate-request.hpp"
+#include "ndncert-common.hpp"
 
 namespace ndn {
 namespace ndncert {
 
-class ChallengeModule : noncopyable
-{
+class ChallengeModule : noncopyable {
 public:
-  /**
-   * @brief Error that can be thrown from ChallengeModule
-   *
-   * ChallengeModule should throw Error to notice CA there's an Error. In this case, CA will
-   * generate an Error JSON file back to end entity.
-   */
-  class Error : public std::runtime_error
-  {
-  public:
-    using std::runtime_error::runtime_error;
-  };
+  explicit ChallengeModule(const std::string& uniqueType);
 
-public:
-  explicit
-  ChallengeModule(const std::string& uniqueType);
+  virtual ~ChallengeModule();
 
-  virtual
-  ~ChallengeModule();
-
-  template<class ChallengeType>
+  template <class ChallengeType>
   static void
   registerChallengeModule(const std::string& typeName)
   {
@@ -59,56 +45,60 @@ public:
   }
 
   static bool
-  supportChallenge(const std::string& challengeType);
+  isChallengeSupported(const std::string& challengeType);
 
   static unique_ptr<ChallengeModule>
   createChallengeModule(const std::string& challengeType);
 
   // For CA
-  virtual void
+  virtual std::tuple<Error, std::string>
   handleChallengeRequest(const Block& params, CertificateRequest& request) = 0;
 
   // For Client
-  virtual JsonSection
-  getRequirementForChallenge(Status status, const std::string& challengeStatus) = 0;
-
-  virtual JsonSection
-  genChallengeRequestJson(Status status, const std::string& challengeStatus, const JsonSection& params) = 0;
+  virtual std::vector<std::tuple<std::string, std::string>>
+  getRequestedParameterList(Status status, const std::string& challengeStatus) = 0;
 
   virtual Block
-  genChallengeRequestTLV(Status status, const std::string& challengeStatus, const JsonSection& params) = 0;
+  genChallengeRequestTLV(Status status, const std::string& challengeStatus,
+                         std::vector<std::tuple<std::string, std::string>>&& params) = 0;
 
   // helpers
   static std::string
   generateSecretCode();
 
 protected:
+  // used by challenge modules
+  std::tuple<Error, std::string>
+  returnWithError(CertificateRequest& request, Error errorCode, std::string&& errorInfo);
 
-  void
-  updateRequestOnChallengeEnd(CertificateRequest& request);
+  std::tuple<Error, std::string>
+  returnWithNewChallengeStatus(CertificateRequest& request, const std::string& challengeStatus,
+                               JsonSection&& challengeSecret, size_t remainingTries, size_t remainingTime);
+
+  std::tuple<Error, std::string>
+  returnWithSuccess(CertificateRequest& request);
 
 public:
   const std::string CHALLENGE_TYPE;
 
 private:
-  typedef function<unique_ptr<ChallengeModule> ()> ChallengeCreateFunc;
+  typedef function<unique_ptr<ChallengeModule>()> ChallengeCreateFunc;
   typedef std::map<std::string, ChallengeCreateFunc> ChallengeFactory;
 
   static ChallengeFactory&
   getFactory();
 };
 
-#define NDNCERT_REGISTER_CHALLENGE(C, T)                           \
-static class NdnCert ## C ## ChallengeRegistrationClass            \
-{                                                                  \
-public:                                                            \
-  NdnCert ## C ## ChallengeRegistrationClass()                     \
-  {                                                                \
-    ::ndn::ndncert::ChallengeModule::registerChallengeModule<C>(T);\
-  }                                                                \
-} g_NdnCert ## C ## ChallengeRegistrationVariable
+#define NDNCERT_REGISTER_CHALLENGE(C, T)                              \
+  static class NdnCert##C##ChallengeRegistrationClass {               \
+  public:                                                             \
+    NdnCert##C##ChallengeRegistrationClass()                          \
+    {                                                                 \
+      ::ndn::ndncert::ChallengeModule::registerChallengeModule<C>(T); \
+    }                                                                 \
+  } g_NdnCert##C##ChallengeRegistrationVariable
 
-} // namespace ndncert
-} // namespace ndn
+}  // namespace ndncert
+}  // namespace ndn
 
-#endif // NDNCERT_CHALLENGE_MODULE_HPP
+#endif  // NDNCERT_CHALLENGE_MODULE_HPP

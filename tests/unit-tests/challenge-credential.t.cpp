@@ -89,15 +89,14 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
 
   Block params = makeEmptyBlock(tlv_encrypted_payload);
   params.push_back(makeStringBlock(tlv_selected_challenge, "Credential"));
-  params.push_back(makeStringBlock(tlv_parameter_key, ChallengeCredential::JSON_CREDENTIAL_CERT));
+  params.push_back(makeStringBlock(tlv_parameter_key, ChallengeCredential::PARAMETER_KEY_CREDENTIAL_CERT));
   params.push_back(makeStringBlock(tlv_parameter_value, credentialStr));
-  params.push_back(makeStringBlock(tlv_parameter_key, ChallengeCredential::JSON_PROOF_OF_PRIVATE_KEY));
+  params.push_back(makeStringBlock(tlv_parameter_key, ChallengeCredential::PARAMETER_KEY_PROOF_OF_PRIVATE_KEY));
   params.push_back(makeStringBlock(tlv_parameter_value, selfSignedStr));
   params.encode();
 
   challenge.handleChallengeRequest(params, request);
   BOOST_CHECK(request.m_status == Status::PENDING);
-  BOOST_CHECK_EQUAL(request.m_challengeStatus, CHALLENGE_STATUS_SUCCESS);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
