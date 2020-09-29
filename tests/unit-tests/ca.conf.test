@@ -9,5 +9,6 @@
   "supported-challenges":
   [
       { "challenge": "PIN" }
-  ]
+  ],
+  "max-suffix-length": 3
 }

@@ -93,6 +93,7 @@ ClientConfig::extractCaItem(const JsonSection& configSection)
   item.m_caInfo = configSection.get("ca-info", "");
   item.m_probe = configSection.get("probe", "");
   std::istringstream ss(configSection.get("certificate", ""));
+  item.m_maxSuffixLength = configSection.get<size_t>(CONFIG_MAX_SUFFIX_LENGTH, 1);
   auto anchor = io::load<security::v2::Certificate>(ss);
   if (anchor == nullptr) {
     BOOST_THROW_EXCEPTION(Error("Cannot load the certificate from config file"));

@@ -53,6 +53,11 @@ public:
    * CA's certificate.
    */
   security::v2::Certificate m_anchor;
+  /**
+   * Maximum allowed suffix length of requested name.
+   * E.g., When its value is 2, at most 2 name components can be assigned after m_caPrefix.
+   */
+  size_t m_maxSuffixLength;
 
   //=======old
 

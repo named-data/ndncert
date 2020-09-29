@@ -278,6 +278,64 @@ BOOST_AUTO_TEST_CASE(HandleNewWithProbeToken)
   BOOST_CHECK_EQUAL(count, 1);
 }
 
+BOOST_AUTO_TEST_CASE(HandleNewWithLongSuffix)
+{
+  auto identity = addIdentity(Name("/ndn"));
+  auto key = identity.getDefaultKey();
+  auto cert = key.getDefaultCertificate();
+
+  util::DummyClientFace face(io, m_keyChain, { true, true });
+  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
+  advanceClocks(time::milliseconds(20), 60);
+
+  ClientModule client(m_keyChain);
+  ClientCaItem item;
+  item.m_caPrefix = Name("/ndn");
+  item.m_anchor = cert;
+  client.getClientConf().m_caItems.push_back(item);
+
+  auto interest = client.generateNewInterest(time::system_clock::now(),
+            time::system_clock::now() + time::days(1),
+            Name("/ndn/a/b/c"));
+
+  int count = 0;
+  face.onSendData.connect([&](const Data& response) {
+    count++;
+  });
+  face.receive(*interest);
+
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK_EQUAL(count, 1);
+}
+
+
+BOOST_AUTO_TEST_CASE(HandleNewWithInvalidLength1)
+{
+  auto identity = addIdentity(Name("/ndn"));
+  auto key = identity.getDefaultKey();
+  auto cert = key.getDefaultCertificate();
+
+  util::DummyClientFace face(io, m_keyChain, {true, true});
+  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test");
+  advanceClocks(time::milliseconds(20), 60);
+
+  ClientModule client(m_keyChain);
+  ClientCaItem item;
+  item.m_caPrefix = Name("/ndn");
+  item.m_anchor = cert;
+  client.getClientConf().m_caItems.push_back(item);
+  auto current_tp = time::system_clock::now();
+  auto interest1 = client.generateNewInterest(current_tp, current_tp + time::days(1),Name("/ndn"));
+  auto interest2 = client.generateNewInterest(current_tp, current_tp + time::days(1),Name("/ndn/a/b/c/d"));
+  face.onSendData.connect([&](const Data& response) {
+      BOOST_CHECK(false);
+  });
+  face.receive(*interest1);
+  face.receive(*interest2);
+
+  advanceClocks(time::milliseconds(20), 60);
+}
+
 BOOST_AUTO_TEST_CASE(HandleChallenge)
 {
   auto identity = addIdentity(Name("/ndn"));
