@@ -303,17 +303,11 @@ CaModule::onRequestInit(const Interest& request, int requestType)
     }
 
     // verify the self-signed certificate, the request, and the token
-<<<<<<< HEAD
     if (!m_config.m_caPrefix.isPrefixOf(clientCert->getName()) // under ca prefix
         || !security::v2::Certificate::isValidName(clientCert->getName()) // is valid cert name
         || clientCert->getName().size() < m_config.m_caPrefix.size() + IS_SUBNAME_MIN_OFFSET
         || clientCert->getName().size() >
                 m_config.m_caPrefix.size() + IS_SUBNAME_MIN_OFFSET - 1 + m_config.m_maxSuffixLength) {
-=======
-    if (!m_config.m_caPrefix.isPrefixOf(clientCert->getName())             // under ca prefix
-        || !security::v2::Certificate::isValidName(clientCert->getName())  // is valid cert name
-        || clientCert->getName().size() < m_config.m_caPrefix.size() + IS_SUBNAME_MIN_OFFSET) {
->>>>>>> apply Error Data packet in challenge status
       _LOG_ERROR("Invalid self-signed certificate name " << clientCert->getName());
       return;
     }
@@ -341,17 +335,11 @@ CaModule::onRequestInit(const Interest& request, int requestType)
     }
 
     // verify the certificate
-<<<<<<< HEAD
     if (!m_config.m_caPrefix.isPrefixOf(clientCert->getName()) // under ca prefix
         || !security::v2::Certificate::isValidName(clientCert->getName()) // is valid cert name
         || clientCert->getName().size() < m_config.m_caPrefix.size() + IS_SUBNAME_MIN_OFFSET
         || clientCert->getName().size() >
                 m_config.m_caPrefix.size() + IS_SUBNAME_MIN_OFFSET - 1 + m_config.m_maxSuffixLength) {
-=======
-    if (!m_config.m_caPrefix.isPrefixOf(clientCert->getName())             // under ca prefix
-        || !security::v2::Certificate::isValidName(clientCert->getName())  // is valid cert name
-        || clientCert->getName().size() < m_config.m_caPrefix.size() + IS_SUBNAME_MIN_OFFSET) {
->>>>>>> apply Error Data packet in challenge status
       _LOG_ERROR("Invalid certificate name " << clientCert->getName());
       return;
     }
