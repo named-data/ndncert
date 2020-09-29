@@ -91,7 +91,7 @@ public:
   shared_ptr<Interest>
   generateNewInterest(const time::system_clock::TimePoint& notBefore,
                       const time::system_clock::TimePoint& notAfter,
-                      const Name& identityName = Name(), const shared_ptr<Data>& probeToken = nullptr);
+                      const Name& identityName = Name());
 
   shared_ptr<Interest>
   generateRevokeInterest(const security::v2::Certificate& certificate);

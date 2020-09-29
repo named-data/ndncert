@@ -247,40 +247,6 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidValidityPeriod1)
   advanceClocks(time::milliseconds(20), 60);
 }
 
-BOOST_AUTO_TEST_CASE(HandleNewWithProbeToken)
-{
-  auto identity = addIdentity(Name("/ndn"));
-  auto key = identity.getDefaultKey();
-  auto cert = key.getDefaultCertificate();
-
-  util::DummyClientFace face(io, m_keyChain, {true, true});
-  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
-  advanceClocks(time::milliseconds(20), 60);
-
-  ClientModule client(m_keyChain);
-  ClientCaItem item;
-  item.m_caPrefix = Name("/ndn");
-  item.m_anchor = cert;
-  client.getClientConf().m_caItems.push_back(item);
-
-  auto data = make_shared<Data>(Name("/ndn/CA/PROBE/123"));
-  m_keyChain.sign(*data, signingByIdentity(ca.m_config.m_caPrefix));
-
-  auto interest = client.generateNewInterest(time::system_clock::now(),
-                                             time::system_clock::now() + time::days(1),
-                                             Name("/ndn/zhiyi"), data);
-
-  int count = 0;
-  face.onSendData.connect([&](const Data& response) {
-    count++;
-    BOOST_CHECK(security::verifySignature(response, cert));
-  });
-  face.receive(*interest);
-
-  advanceClocks(time::milliseconds(20), 60);
-  BOOST_CHECK_EQUAL(count, 1);
-}
-
 BOOST_AUTO_TEST_CASE(HandleNewWithLongSuffix)
 {
   auto identity = addIdentity(Name("/ndn"));

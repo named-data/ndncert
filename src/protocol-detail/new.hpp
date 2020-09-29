@@ -36,8 +36,7 @@ public:
    * For client side use.
    */
   static Block
-  encodeApplicationParameters(const std::string& ecdhPub, const security::v2::Certificate& certRequest,
-                              const shared_ptr<Data>& probeToken);
+  encodeApplicationParameters(const std::string& ecdhPub, const security::v2::Certificate& certRequest);
 
   /**
    * Encode CA's response of NEW Interest into a content TLV for NEW Data packet.

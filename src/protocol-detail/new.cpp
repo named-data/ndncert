@@ -33,8 +33,7 @@ namespace ndncert {
 _LOG_INIT(ndncert.client);
 
 Block
-NEW::encodeApplicationParameters(const std::string& ecdhPub, const security::v2::Certificate& certRequest,
-                                const shared_ptr<Data>& probeToken)
+NEW::encodeApplicationParameters(const std::string& ecdhPub, const security::v2::Certificate& certRequest)
 {
   Block request = makeEmptyBlock(tlv::ApplicationParameters);
   std::stringstream ss;

@@ -54,12 +54,6 @@ CertificateRequest::CertificateRequest(const Name& caName, const std::string& re
 {
 }
 
-void
-CertificateRequest::setProbeToken(const shared_ptr<Data>& probeToken)
-{
-  m_probeToken = probeToken;
-}
-
 std::ostream&
 operator<<(std::ostream& os, const CertificateRequest& request)
 {

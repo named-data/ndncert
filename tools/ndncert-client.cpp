@@ -235,10 +235,9 @@ probeCb(const Data& reply)
     std::cerr << "Invalid period time. Exit." << std::endl;
     return;
   }
-  auto probeToken = make_shared<Data>(reply);
   auto now = time::system_clock::now();
   std::cerr << "The validity period of your certificate will be: " << validityPeriod << " hours" << std::endl;
-  auto interest = client.generateNewInterest(now, now + time::hours(validityPeriod), Name(), probeToken);
+  auto interest = client.generateNewInterest(now, now + time::hours(validityPeriod), Name());
   if (interest != nullptr) {
     face.expressInterest(*interest, bind(&newCb, _2), bind(&onNackCb), bind(&timeoutCb));
   }

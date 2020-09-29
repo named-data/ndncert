@@ -49,16 +49,12 @@ public:
                      const std::string& challengeTp, int remainingTime, int remainingTries,
                      const JsonSection& challengeSecrets, const security::v2::Certificate& cert);
 
-  void
-  setProbeToken(const std::shared_ptr<Data>& probeToken);
-
 public:
   Name m_caPrefix;
   std::string m_requestId = "";
   RequestType m_requestType = RequestType::NOTINITIALIZED;
   Status m_status = Status::NOT_STARTED;
   security::v2::Certificate m_cert;
-  std::shared_ptr<Data> m_probeToken = nullptr;
 
   std::string m_challengeStatus = "";
   std::string m_challengeType = "";

@@ -141,7 +141,7 @@ ClientModule::onProbeResponse(const Data& reply)
 shared_ptr<Interest>
 ClientModule::generateNewInterest(const time::system_clock::TimePoint& notBefore,
                                   const time::system_clock::TimePoint& notAfter,
-                                  const Name& identityName, const shared_ptr<Data>& probeToken)
+                                  const Name& identityName)
 {
   // Name requestedName = identityName;
   if (!identityName.empty()) {  // if identityName is not empty, find the corresponding CA
@@ -204,7 +204,7 @@ ClientModule::generateNewInterest(const time::system_clock::TimePoint& notBefore
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
   interest->setApplicationParameters(
-      NEW::encodeApplicationParameters(m_ecdh.getBase64PubKey(), certRequest, probeToken));
+      NEW::encodeApplicationParameters(m_ecdh.getBase64PubKey(), certRequest));
 
   // sign the Interest packet
   m_keyChain.sign(*interest, signingByKey(m_key.getName()));

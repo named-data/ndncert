@@ -137,10 +137,6 @@ CaSqlite::getRequest(const std::string& requestId)
     CertificateRequest request(caName, requestId, requestType, status, challengeStatus, challengeType,
                               challengeTp, remainingTime, remainingTries,
                               convertString2Json(challengeSecrets), cert);
-    if (statement.getSize(13) != 0) {
-      shared_ptr<Data> probeToken = make_shared<Data>(statement.getBlock(13));
-      request.setProbeToken(probeToken);
-    }
     return request;
   }
   else {
@@ -169,56 +165,28 @@ CaSqlite::addRequest(const CertificateRequest& request)
     return;
   }
 
-  if (request.m_probeToken != nullptr) {
-    Sqlite3Statement statement(
-        m_database,
-        R"_SQLTEXT_(INSERT INTO CertRequests (request_id, ca_name, status,
-                    challenge_status, cert_key_name, cert_request, challenge_type, challenge_secrets,
-                    challenge_tp, remaining_tries, remaining_time, request_type, probe_token)
-                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
-    statement.bind(1, request.m_requestId, SQLITE_TRANSIENT);
-    statement.bind(2, request.m_caPrefix.wireEncode(), SQLITE_TRANSIENT);
-    statement.bind(3, static_cast<int>(request.m_status));
-    statement.bind(4, request.m_challengeStatus, SQLITE_TRANSIENT);
-    statement.bind(5, request.m_cert.getKeyName().wireEncode(),
-                   SQLITE_TRANSIENT);
-    statement.bind(6, request.m_cert.wireEncode(), SQLITE_TRANSIENT);
-    statement.bind(7, request.m_challengeType, SQLITE_TRANSIENT);
-    statement.bind(8, convertJson2String(request.m_challengeSecrets),
-                   SQLITE_TRANSIENT);
-    statement.bind(9, request.m_challengeTp, SQLITE_TRANSIENT);
-    statement.bind(10, request.m_remainingTries);
-    statement.bind(11, request.m_remainingTime);
-    statement.bind(12, static_cast<int>(request.m_requestType));
-    statement.bind(13, request.m_probeToken->wireEncode(), SQLITE_TRANSIENT);
-    if (statement.step() != SQLITE_DONE) {
-      BOOST_THROW_EXCEPTION(Error("Request " + request.m_requestId + " cannot be added to database"));
-    }
-  }
-  else {
-    Sqlite3Statement statement(
-        m_database,
-        R"_SQLTEXT_(INSERT INTO CertRequests (request_id, ca_name, status,
-                    challenge_status, cert_key_name, cert_request, challenge_type, challenge_secrets,
-                    challenge_tp, remaining_tries, remaining_time, request_type)
-                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
-    statement.bind(1, request.m_requestId, SQLITE_TRANSIENT);
-    statement.bind(2, request.m_caPrefix.wireEncode(), SQLITE_TRANSIENT);
-    statement.bind(3, static_cast<int>(request.m_status));
-    statement.bind(4, request.m_challengeStatus, SQLITE_TRANSIENT);
-    statement.bind(5, request.m_cert.getKeyName().wireEncode(),
-                   SQLITE_TRANSIENT);
-    statement.bind(6, request.m_cert.wireEncode(), SQLITE_TRANSIENT);
-    statement.bind(7, request.m_challengeType, SQLITE_TRANSIENT);
-    statement.bind(8, convertJson2String(request.m_challengeSecrets),
-                   SQLITE_TRANSIENT);
-    statement.bind(9, request.m_challengeTp, SQLITE_TRANSIENT);
-    statement.bind(10, request.m_remainingTries);
-    statement.bind(11, request.m_remainingTime);
-    statement.bind(12, static_cast<int>(request.m_requestType));
-    if (statement.step() != SQLITE_DONE) {
-      BOOST_THROW_EXCEPTION(Error("Request " + request.m_requestId + " cannot be added to database"));
-    }
+  Sqlite3Statement statement(
+      m_database,
+      R"_SQLTEXT_(INSERT INTO CertRequests (request_id, ca_name, status,
+                  challenge_status, cert_key_name, cert_request, challenge_type, challenge_secrets,
+                  challenge_tp, remaining_tries, remaining_time, request_type)
+                  values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
+  statement.bind(1, request.m_requestId, SQLITE_TRANSIENT);
+  statement.bind(2, request.m_caPrefix.wireEncode(), SQLITE_TRANSIENT);
+  statement.bind(3, static_cast<int>(request.m_status));
+  statement.bind(4, request.m_challengeStatus, SQLITE_TRANSIENT);
+  statement.bind(5, request.m_cert.getKeyName().wireEncode(),
+                  SQLITE_TRANSIENT);
+  statement.bind(6, request.m_cert.wireEncode(), SQLITE_TRANSIENT);
+  statement.bind(7, request.m_challengeType, SQLITE_TRANSIENT);
+  statement.bind(8, convertJson2String(request.m_challengeSecrets),
+                  SQLITE_TRANSIENT);
+  statement.bind(9, request.m_challengeTp, SQLITE_TRANSIENT);
+  statement.bind(10, request.m_remainingTries);
+  statement.bind(11, request.m_remainingTime);
+  statement.bind(12, static_cast<int>(request.m_requestType));
+  if (statement.step() != SQLITE_DONE) {
+    BOOST_THROW_EXCEPTION(Error("Request " + request.m_requestId + " cannot be added to database"));
   }
 }
 
