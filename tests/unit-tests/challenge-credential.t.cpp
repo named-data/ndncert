@@ -57,32 +57,38 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
   auto certA = key.getDefaultCertificate();
   CertificateRequest request(Name("/example"), "123", RequestType::NEW, Status::BEFORE_CHALLENGE, certA);
 
-  // create requester's existing cert
+  // create requester's credential
   auto identityB = addIdentity(Name("/trust/cert"));
   auto keyB = identityB.getDefaultKey();
-  auto certB = key.getDefaultCertificate();
+  auto credentialName = Name(keyB.getName()).append("Credential").appendVersion();
+  security::v2::Certificate credential;
+  credential.setName(credentialName);
+  credential.setContent(keyB.getPublicKey().data(), keyB.getPublicKey().size());
+  SignatureInfo signatureInfo;
+  signatureInfo.setValidityPeriod(security::ValidityPeriod(system_clock::now(), system_clock::now() + time::minutes(1)));
+  m_keyChain.sign(credential, signingByCertificate(trustAnchor).setSignatureInfo(signatureInfo));
 
-  // using trust anchor to sign cert request to get credential
-  Name credentialName = certB.getKeyName();
-  credentialName.append("Credential").appendVersion();
-  security::v2::Certificate selfSigned;
-  selfSigned.setName(credentialName);
-  selfSigned.setContent(makeStringBlock(tlv::Content, "123"));
-  m_keyChain.sign(selfSigned, signingByCertificate(trustAnchor));
+  // using private key to sign cert request
+  Name idSignatureName = credential.getKeyName();
+  idSignatureName.append("request-id-signature").appendVersion();
+  security::v2::Certificate idSignature;
+  idSignature.setName(idSignatureName);
+  idSignature.setContent(makeStringBlock(tlv::Content, "123"));
+  m_keyChain.sign(idSignature, signingByCertificate(credential));
 
   std::stringstream ss;
-  io::save<security::v2::Certificate>(selfSigned, ss);
+  io::save<security::v2::Certificate>(idSignature, ss);
   auto checkCert = *(io::load<security::v2::Certificate>(ss));
-  BOOST_CHECK_EQUAL(checkCert, selfSigned);
+  BOOST_CHECK_EQUAL(checkCert, idSignature);
   ss.str("");
   ss.clear();
 
-  io::save<security::v2::Certificate>(selfSigned, ss);
-  std::string selfSignedStr = ss.str();
+  io::save<security::v2::Certificate>(idSignature, ss);
+  std::string idSignatureStr = ss.str();
   ss.str("");
   ss.clear();
 
-  io::save<security::v2::Certificate>(certB, ss);
+  io::save<security::v2::Certificate>(credential, ss);
   std::string credentialStr = ss.str();
   ss.str("");
   ss.clear();
@@ -92,7 +98,7 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
   params.push_back(makeStringBlock(tlv_parameter_key, ChallengeCredential::PARAMETER_KEY_CREDENTIAL_CERT));
   params.push_back(makeStringBlock(tlv_parameter_value, credentialStr));
   params.push_back(makeStringBlock(tlv_parameter_key, ChallengeCredential::PARAMETER_KEY_PROOF_OF_PRIVATE_KEY));
-  params.push_back(makeStringBlock(tlv_parameter_value, selfSignedStr));
+  params.push_back(makeStringBlock(tlv_parameter_value, idSignatureStr));
   params.encode();
 
   challenge.handleChallengeRequest(params, request);
