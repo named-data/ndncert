@@ -30,7 +30,6 @@
 
 #include "challenge-module.hpp"
 #include "crypto-support/enc-tlv.hpp"
-#include "logging.hpp"
 #include "protocol-detail/challenge.hpp"
 #include "protocol-detail/info.hpp"
 #include "protocol-detail/new.hpp"

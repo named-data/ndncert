@@ -19,10 +19,7 @@
  */
 
 #include "challenge-pin.hpp"
-
 #include <ndn-cxx/util/random.hpp>
-
-#include "logging.hpp"
 
 namespace ndn {
 namespace ndncert {

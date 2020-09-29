@@ -19,11 +19,8 @@
  */
 
 #include "challenge-email.hpp"
-
-#include <regex>
-
 #include "../ca-module.hpp"
-#include "../logging.hpp"
+#include <regex>
 
 namespace ndn {
 namespace ndncert {

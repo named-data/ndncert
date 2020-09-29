@@ -18,12 +18,9 @@
  */
 
 #include "challenge-credential.hpp"
-
 #include <iostream>
 #include <ndn-cxx/security/verification-helpers.hpp>
 #include <ndn-cxx/util/io.hpp>
-
-#include "../logging.hpp"
 
 namespace ndn {
 namespace ndncert {

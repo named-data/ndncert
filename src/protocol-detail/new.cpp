@@ -19,9 +19,7 @@
  */
 
 #include "new.hpp"
-#include "../logging.hpp"
 #include "../ndncert-common.hpp"
-
 #include <ndn-cxx/security/transform/base64-encode.hpp>
 #include <ndn-cxx/security/transform/buffer-source.hpp>
 #include <ndn-cxx/security/transform/stream-sink.hpp>

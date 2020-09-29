@@ -46,6 +46,7 @@
 #include <ndn-cxx/name.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/security/v2/certificate.hpp>
+#include <ndn-cxx/util/logger.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/assert.hpp>
 #include <boost/noncopyable.hpp>
@@ -71,6 +72,11 @@ using std::shared_ptr;
 using std::size_t;
 using std::unique_ptr;
 using std::weak_ptr;
+
+#define _LOG_INIT(name) NDN_LOG_INIT(ndncert.name)
+#define _LOG_DEBUG(x) NDN_LOG_DEBUG(__FILE__ << ":" << __LINE__ << ":" << " " << x)
+#define _LOG_TRACE(x) NDN_LOG_TRACE(__FILE__ << ":" << __LINE__ << ":" << " " << x)
+#define _LOG_ERROR(x) NDN_LOG_ERROR(x)
 
 enum : uint32_t {
   tlv_ca_prefix = 129,

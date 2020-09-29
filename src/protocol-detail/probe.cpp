@@ -19,7 +19,6 @@
  */
 
 #include "probe.hpp"
-#include "../logging.hpp"
 #include <ndn-cxx/encoding/tlv.hpp>
 #include <boost/throw_exception.hpp>
 
