@@ -51,6 +51,9 @@
 #include <boost/assert.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/throw_exception.hpp>
+#include <boost/property_tree/info_parser.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -151,6 +154,14 @@ enum class RequestType : uint16_t {
 };
 
 std::string requestTypeToString(RequestType type);
+
+typedef boost::property_tree::ptree JsonSection;
+
+std::string
+convertJson2String(const JsonSection& json);
+
+JsonSection
+convertString2Json(const std::string& jsonContent);
 
 }  // namespace ndncert
 }  // namespace ndn

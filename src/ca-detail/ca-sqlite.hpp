@@ -78,13 +78,6 @@ public:
   std::list<security::v2::Certificate>
   listAllIssuedCertificates(const Name& caName) override;
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  static std::string
-  convertJson2String(const JsonSection& json);
-
-  static JsonSection
-  convertString2Json(const std::string& jsonContent);
-
 private:
   sqlite3* m_database;
 };

@@ -24,7 +24,23 @@
 namespace ndn {
 namespace ndncert {
 
-CertificateRequest::CertificateRequest() = default;
+ChallengeState::ChallengeState(const std::string& challengeStatus,
+                               const system_clock::TimePoint& challengeTp,
+                               size_t remainingTries, time::seconds remainingTime,
+                               JsonSection&& challengeSecrets)
+    : m_challengeStatus(challengeStatus)
+    , m_timestamp(challengeTp)
+    , m_remainingTries(remainingTries)
+    , m_remainingTime(remainingTime)
+    , m_secrets(std::move(challengeSecrets))
+{
+}
+
+CertificateRequest::CertificateRequest()
+    : m_requestType(RequestType::NOTINITIALIZED)
+    , m_status(Status::NOT_STARTED)
+{
+}
 
 CertificateRequest::CertificateRequest(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
                                        const security::v2::Certificate& cert)
@@ -37,39 +53,41 @@ CertificateRequest::CertificateRequest(const Name& caName, const std::string& re
 }
 
 CertificateRequest::CertificateRequest(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
-                                       const std::string& challengeStatus, const std::string& challengeType,
-                                       const std::string& challengeTp, int remainingTime, int remainingTries,
-                                       const JsonSection& challengeSecrets, const security::v2::Certificate& cert)
+                                       const security::v2::Certificate& cert, const std::string& challengeType,
+                                       const std::string& challengeStatus, const system_clock::TimePoint& challengeTp,
+                                       size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets)
     : m_caPrefix(caName)
     , m_requestId(requestId)
     , m_requestType(requestType)
     , m_status(status)
     , m_cert(cert)
-    , m_challengeStatus(challengeStatus)
     , m_challengeType(challengeType)
-    , m_challengeTp(challengeTp)
-    , m_remainingTime(remainingTime)
-    , m_remainingTries(remainingTries)
-    , m_challengeSecrets(challengeSecrets)
+    , m_challengeState(ChallengeState(challengeStatus, challengeTp, remainingTries, remainingTime, std::move(challengeSecrets)))
 {
 }
 
 std::ostream&
 operator<<(std::ostream& os, const CertificateRequest& request)
 {
-  os << "Request CA name:\n";
+  os << "Request's CA name:\n";
   os << "  " << request.m_caPrefix << "\n";
-  os << "Request ID:\n";
+  os << "Request's request ID:\n";
   os << "  " << request.m_requestId << "\n";
-  os << "Request Status:\n";
+  os << "Request's status:\n";
   os << "  " << statusToString(request.m_status) << "\n";
-  if (request.m_challengeStatus != "") {
+  os << "Request's challenge type:\n";
+  os << "  " << request.m_challengeType << "\n";
+  if (request.m_challengeState) {
     os << "Challenge Status:\n";
-    os << "  " << request.m_challengeStatus << "\n";
-  }
-  if (request.m_challengeType != "") {
-    os << "Request Challenge Type:\n";
-    os << "  " << request.m_challengeType << "\n";
+    os << "  " << request.m_challengeState->m_challengeStatus << "\n";
+    os << "Challenge remaining tries:\n";
+    os << "  " << request.m_challengeState->m_remainingTries << " times\n";
+    os << "Challenge remaining time:\n";
+    os << "  " << request.m_challengeState->m_remainingTime.count() << " seconds\n";
+    os << "Challenge last update:\n";
+    os << "  " << time::toIsoString(request.m_challengeState->m_timestamp) << "\n";
+    os << "Challenge secret:\n";
+    os << "  " << convertJson2String(request.m_challengeState->m_secrets) << "\n";
   }
   os << "Certificate:\n";
   util::IndentedStream os2(os, "  ");

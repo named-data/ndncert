@@ -20,10 +20,11 @@
 
 #include "ca-sqlite.hpp"
 
+#include <sqlite3.h>
+
+#include <boost/filesystem.hpp>
 #include <ndn-cxx/security/v2/validation-policy.hpp>
 #include <ndn-cxx/util/sqlite3-statement.hpp>
-#include <sqlite3.h>
-#include <boost/filesystem.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -42,15 +43,14 @@ CREATE TABLE IF NOT EXISTS
     ca_name BLOB NOT NULL,
     request_type INTEGER NOT NULL,
     status INTEGER NOT NULL,
-    challenge_status TEXT,
     cert_key_name BLOB NOT NULL,
     cert_request BLOB NOT NULL,
     challenge_type TEXT,
-    challenge_secrets TEXT,
+    challenge_status TEXT,
     challenge_tp TEXT,
     remaining_tries INTEGER,
     remaining_time INTEGER,
-    probe_token BLOB
+    challenge_secrets TEXT
   );
 CREATE UNIQUE INDEX IF NOT EXISTS
   CertRequestIdIndex ON CertRequests(request_id);
@@ -71,7 +71,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS
 )_DBTEXT_";
 
 CaSqlite::CaSqlite(const std::string& location)
-  : CaStorage()
+    : CaStorage()
 {
   // Determine the path of sqlite db
   boost::filesystem::path dbDir;
@@ -94,7 +94,7 @@ CaSqlite::CaSqlite(const std::string& location)
 #else
                                nullptr
 #endif
-                               );
+  );
   if (result != SQLITE_OK)
     BOOST_THROW_EXCEPTION(Error("CaSqlite DB cannot be opened/created: " + dbDir.string()));
 
@@ -117,27 +117,33 @@ CertificateRequest
 CaSqlite::getRequest(const std::string& requestId)
 {
   Sqlite3Statement statement(m_database,
-                             R"_SQLTEXT_(SELECT id, request_id, ca_name, status,
-                             challenge_status, cert_key_name, cert_request, challenge_type, challenge_secrets,
-                             challenge_tp, remaining_tries, remaining_time, request_type, probe_token
+                             R"_SQLTEXT_(SELECT id, ca_name, status,
+                             challenge_status, cert_request,
+                             challenge_type, challenge_secrets,
+                             challenge_tp, remaining_tries, remaining_time, request_type
                              FROM CertRequests where request_id = ?)_SQLTEXT_");
   statement.bind(1, requestId, SQLITE_TRANSIENT);
 
   if (statement.step() == SQLITE_ROW) {
-    Name caName(statement.getBlock(2));
-    auto status = static_cast<Status>(statement.getInt(3));
-    auto challengeStatus = statement.getString(4);
-    security::v2::Certificate cert(statement.getBlock(6));
-    auto challengeType = statement.getString(7);
-    auto challengeSecrets = statement.getString(8);
-    auto challengeTp = statement.getString(9);
-    auto remainingTries = statement.getInt(10);
-    auto remainingTime = statement.getInt(11);
-    auto requestType = static_cast<RequestType>(statement.getInt(12));
-    CertificateRequest request(caName, requestId, requestType, status, challengeStatus, challengeType,
-                              challengeTp, remainingTime, remainingTries,
-                              convertString2Json(challengeSecrets), cert);
-    return request;
+    Name caName(statement.getBlock(1));
+    auto status = static_cast<Status>(statement.getInt(2));
+    auto challengeStatus = statement.getString(3);
+    security::v2::Certificate cert(statement.getBlock(4));
+    auto challengeType = statement.getString(5);
+    auto challengeSecrets = statement.getString(6);
+    auto challengeTp = statement.getString(7);
+    auto remainingTries = statement.getInt(8);
+    auto remainingTime = statement.getInt(9);
+    auto requestType = static_cast<RequestType>(statement.getInt(10));
+    if (challengeType != "") {
+      return CertificateRequest(caName, requestId, requestType, status, cert,
+                                challengeType, challengeStatus, time::fromIsoString(challengeTp),
+                                remainingTries, time::seconds(remainingTime),
+                                convertString2Json(challengeSecrets));
+    }
+    else {
+      return CertificateRequest(caName, requestId, requestType, status, cert);
+    }
   }
   else {
     BOOST_THROW_EXCEPTION(Error("Request " + requestId + " cannot be fetched from database"));
@@ -148,43 +154,43 @@ void
 CaSqlite::addRequest(const CertificateRequest& request)
 {
   // check whether request is there already
+  auto keyNameTlv = request.m_cert.getKeyName().wireEncode();
   Sqlite3Statement statement1(m_database,
                               R"_SQLTEXT_(SELECT * FROM CertRequests where cert_key_name = ?)_SQLTEXT_");
-  statement1.bind(1, request.m_cert.getKeyName().wireEncode(), SQLITE_TRANSIENT);
+  statement1.bind(1, keyNameTlv, SQLITE_TRANSIENT);
   if (statement1.step() == SQLITE_ROW) {
     BOOST_THROW_EXCEPTION(Error("Request for " + request.m_cert.getKeyName().toUri() + " already exists"));
-    return;
   }
 
   // check whether certificate is already issued
   Sqlite3Statement statement2(m_database,
                               R"_SQLTEXT_(SELECT * FROM IssuedCerts where cert_key_name = ?)_SQLTEXT_");
-  statement2.bind(1, request.m_cert.getKeyName().wireEncode(), SQLITE_TRANSIENT);
+  statement2.bind(1, keyNameTlv, SQLITE_TRANSIENT);
   if (statement2.step() == SQLITE_ROW) {
     BOOST_THROW_EXCEPTION(Error("Cert for " + request.m_cert.getKeyName().toUri() + " already exists"));
-    return;
   }
 
   Sqlite3Statement statement(
       m_database,
-      R"_SQLTEXT_(INSERT INTO CertRequests (request_id, ca_name, status,
-                  challenge_status, cert_key_name, cert_request, challenge_type, challenge_secrets,
-                  challenge_tp, remaining_tries, remaining_time, request_type)
+      R"_SQLTEXT_(INSERT INTO CertRequests (request_id, ca_name, status, request_type,
+                  cert_key_name, cert_request, challenge_type, challenge_status, challenge_secrets,
+                  challenge_tp, remaining_tries, remaining_time)
                   values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
   statement.bind(1, request.m_requestId, SQLITE_TRANSIENT);
   statement.bind(2, request.m_caPrefix.wireEncode(), SQLITE_TRANSIENT);
   statement.bind(3, static_cast<int>(request.m_status));
-  statement.bind(4, request.m_challengeStatus, SQLITE_TRANSIENT);
-  statement.bind(5, request.m_cert.getKeyName().wireEncode(),
-                  SQLITE_TRANSIENT);
+  statement.bind(4, static_cast<int>(request.m_requestType));
+  statement.bind(5, keyNameTlv, SQLITE_TRANSIENT);
   statement.bind(6, request.m_cert.wireEncode(), SQLITE_TRANSIENT);
-  statement.bind(7, request.m_challengeType, SQLITE_TRANSIENT);
-  statement.bind(8, convertJson2String(request.m_challengeSecrets),
-                  SQLITE_TRANSIENT);
-  statement.bind(9, request.m_challengeTp, SQLITE_TRANSIENT);
-  statement.bind(10, request.m_remainingTries);
-  statement.bind(11, request.m_remainingTime);
-  statement.bind(12, static_cast<int>(request.m_requestType));
+  if (request.m_challengeState) {
+    statement.bind(7, request.m_challengeType, SQLITE_TRANSIENT);
+    statement.bind(8, request.m_challengeState->m_challengeStatus, SQLITE_TRANSIENT);
+    statement.bind(9, convertJson2String(request.m_challengeState->m_secrets),
+                   SQLITE_TRANSIENT);
+    statement.bind(10, time::toIsoString(request.m_challengeState->m_timestamp), SQLITE_TRANSIENT);
+    statement.bind(11, request.m_challengeState->m_remainingTries);
+    statement.bind(12, request.m_challengeState->m_remainingTime.count());
+  }
   if (statement.step() != SQLITE_DONE) {
     BOOST_THROW_EXCEPTION(Error("Request " + request.m_requestId + " cannot be added to database"));
   }
@@ -195,18 +201,27 @@ CaSqlite::updateRequest(const CertificateRequest& request)
 {
   Sqlite3Statement statement(m_database,
                              R"_SQLTEXT_(UPDATE CertRequests
-                             SET status = ?, challenge_status = ?, challenge_type = ?, challenge_secrets = ?,
-                             challenge_tp = ?, remaining_tries = ?, remaining_time = ?, request_type = ?
+                             SET status = ?, challenge_type = ?, challenge_status = ?, challenge_secrets = ?,
+                             challenge_tp = ?, remaining_tries = ?, remaining_time = ?
                              WHERE request_id = ?)_SQLTEXT_");
   statement.bind(1, static_cast<int>(request.m_status));
-  statement.bind(2, request.m_challengeStatus, SQLITE_TRANSIENT);
-  statement.bind(3, request.m_challengeType, SQLITE_TRANSIENT);
-  statement.bind(4, convertJson2String(request.m_challengeSecrets), SQLITE_TRANSIENT);
-  statement.bind(5, request.m_challengeTp, SQLITE_TRANSIENT);
-  statement.bind(6, request.m_remainingTries);
-  statement.bind(7, request.m_remainingTime);
-  statement.bind(8, static_cast<int>(request.m_requestType));
-  statement.bind(9, request.m_requestId, SQLITE_TRANSIENT);
+  statement.bind(2, request.m_challengeType, SQLITE_TRANSIENT);
+  if (request.m_challengeState) {
+    statement.bind(3, request.m_challengeState->m_challengeStatus, SQLITE_TRANSIENT);
+    statement.bind(4, convertJson2String(request.m_challengeState->m_secrets),
+                   SQLITE_TRANSIENT);
+    statement.bind(5, time::toIsoString(request.m_challengeState->m_timestamp), SQLITE_TRANSIENT);
+    statement.bind(6, request.m_challengeState->m_remainingTries);
+    statement.bind(7, request.m_challengeState->m_remainingTime.count());
+  }
+  else {
+    statement.bind(3, "", SQLITE_TRANSIENT);
+    statement.bind(4, "", SQLITE_TRANSIENT);
+    statement.bind(5, "", SQLITE_TRANSIENT);
+    statement.bind(6, 0);
+    statement.bind(7, 0);
+  }
+  statement.bind(8, request.m_requestId, SQLITE_TRANSIENT);
 
   if (statement.step() != SQLITE_DONE) {
     addRequest(request);
@@ -221,7 +236,6 @@ CaSqlite::listAllRequests()
                              challenge_status, cert_key_name, cert_request, challenge_type, challenge_secrets,
                              challenge_tp, remaining_tries, remaining_time, request_type
                              FROM CertRequests)_SQLTEXT_");
-
   while (statement.step() == SQLITE_ROW) {
     auto requestId = statement.getString(1);
     Name caName(statement.getBlock(2));
@@ -234,10 +248,15 @@ CaSqlite::listAllRequests()
     auto remainingTries = statement.getInt(10);
     auto remainingTime = statement.getInt(11);
     auto requestType = static_cast<RequestType>(statement.getInt(12));
-    CertificateRequest entry(caName, requestId, requestType, status, challengeStatus, challengeType,
-                             challengeTp, remainingTime, remainingTries,
-                             convertString2Json(challengeSecrets), cert);
-    result.push_back(entry);
+    if (challengeType != "") {
+      result.push_back(CertificateRequest(caName, requestId, requestType, status, cert,
+                                          challengeType, challengeStatus, time::fromIsoString(challengeTp),
+                                          remainingTries, time::seconds(remainingTime),
+                                          convertString2Json(challengeSecrets)));
+    }
+    else {
+      result.push_back(CertificateRequest(caName, requestId, requestType, status, cert));
+    }
   }
   return result;
 }
@@ -265,10 +284,15 @@ CaSqlite::listAllRequests(const Name& caName)
     auto remainingTries = statement.getInt(10);
     auto remainingTime = statement.getInt(11);
     auto requestType = static_cast<RequestType>(statement.getInt(12));
-    CertificateRequest entry(caName, requestId, requestType, status, challengeStatus, challengeType,
-                             challengeTp, remainingTime, remainingTries,
-                             convertString2Json(challengeSecrets), cert);
-    result.push_back(entry);
+    if (challengeType != "") {
+      result.push_back(CertificateRequest(caName, requestId, requestType, status, cert,
+                                          challengeType, challengeStatus, time::fromIsoString(challengeTp),
+                                          remainingTries, time::seconds(remainingTime),
+                                          convertString2Json(challengeSecrets)));
+    }
+    else {
+      result.push_back(CertificateRequest(caName, requestId, requestType, status, cert));
+    }
   }
   return result;
 }
@@ -360,22 +384,5 @@ CaSqlite::listAllIssuedCertificates(const Name& caName)
   return result;
 }
 
-std::string
-CaSqlite::convertJson2String(const JsonSection& json)
-{
-  std::stringstream ss;
-  boost::property_tree::write_json(ss, json);
-  return ss.str();
-}
-
-JsonSection
-CaSqlite::convertString2Json(const std::string& jsonContent)
-{
-  std::istringstream ss(jsonContent);
-  JsonSection json;
-  boost::property_tree::json_parser::read_json(ss, json);
-  return json;
-}
-
-} // namespace ndncert
-} // namespace ndn
+}  // namespace ndncert
+}  // namespace ndn

@@ -30,9 +30,9 @@ CHALLENGE::encodeDataPayload(const CertificateRequest& request)
 {
   Block response = makeEmptyBlock(tlv_encrypted_payload);
   response.push_back(makeNonNegativeIntegerBlock(tlv_status, static_cast<size_t>(request.m_status)));
-  response.push_back(makeStringBlock(tlv_challenge_status, request.m_challengeStatus));
-  response.push_back(makeNonNegativeIntegerBlock(tlv_remaining_tries, request.m_remainingTries));
-  response.push_back(makeNonNegativeIntegerBlock(tlv_remaining_time, request.m_remainingTime));
+  response.push_back(makeStringBlock(tlv_challenge_status, request.m_challengeState->m_challengeStatus));
+  response.push_back(makeNonNegativeIntegerBlock(tlv_remaining_tries, request.m_challengeState->m_remainingTries));
+  response.push_back(makeNonNegativeIntegerBlock(tlv_remaining_time, request.m_challengeState->m_remainingTime.count()));
   response.encode();
   return response;
 }

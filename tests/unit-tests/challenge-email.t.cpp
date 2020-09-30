@@ -55,11 +55,10 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmail)
   challenge.handleChallengeRequest(paramTLV, request);
 
   BOOST_CHECK(request.m_status == Status::CHALLENGE);
-  BOOST_CHECK_EQUAL(request.m_challengeStatus, ChallengeEmail::NEED_CODE);
-  BOOST_CHECK(request.m_challengeSecrets.get<std::string>(ChallengeEmail::PARAMETER_KEY_CODE) != "");
-  BOOST_CHECK(request.m_remainingTime != 0);
-  BOOST_CHECK(request.m_remainingTries != 0);
-  BOOST_CHECK(request.m_challengeTp != "");
+  BOOST_CHECK_EQUAL(request.m_challengeState->m_challengeStatus, ChallengeEmail::NEED_CODE);
+  BOOST_CHECK(request.m_challengeState->m_secrets.get<std::string>(ChallengeEmail::PARAMETER_KEY_CODE) != "");
+  BOOST_CHECK(request.m_challengeState->m_remainingTime.count() != 0);
+  BOOST_CHECK(request.m_challengeState->m_remainingTries != 0);
   BOOST_CHECK_EQUAL(request.m_challengeType, "email");
 
   std::string line = "";
@@ -76,7 +75,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmail)
 
   end = line.find(delimiter);
   std::string secret = line.substr(0, end);
-  auto stored_secret = request.m_challengeSecrets.get<std::string>(ChallengeEmail::PARAMETER_KEY_CODE);
+  auto stored_secret = request.m_challengeState->m_secrets.get<std::string>(ChallengeEmail::PARAMETER_KEY_CODE);
   BOOST_CHECK_EQUAL(secret, stored_secret);
   line = line.substr(end + 1);
 
@@ -114,8 +113,9 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
   auto cert = key.getDefaultCertificate();
   JsonSection json;
   json.put(ChallengeEmail::PARAMETER_KEY_CODE, "4567");
-  CertificateRequest request(Name("/ndn/site1"), "123", RequestType::NEW, Status::CHALLENGE, ChallengeEmail::NEED_CODE,
-                             "Email", time::toIsoString(time::system_clock::now()), 3600, 3, json, cert);
+  CertificateRequest request(Name("/ndn/site1"), "123", RequestType::NEW, Status::CHALLENGE, cert,
+                             "email", ChallengeEmail::NEED_CODE, time::system_clock::now(),
+                             3, time::seconds(3600), std::move(json));
 
   Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
   paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengeEmail::PARAMETER_KEY_CODE));
@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
   challenge.handleChallengeRequest(paramTLV, request);
 
   BOOST_CHECK(request.m_status == Status::PENDING);
-  BOOST_CHECK_EQUAL(request.m_challengeSecrets.empty(), true);
+  BOOST_CHECK(!request.m_challengeState);
 }
 
 BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithWrongCode)
@@ -135,8 +135,9 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithWrongCode)
   auto cert = key.getDefaultCertificate();
   JsonSection json;
   json.put(ChallengeEmail::PARAMETER_KEY_CODE, "4567");
-  CertificateRequest request(Name("/ndn/site1"), "123", RequestType::NEW, Status::CHALLENGE, ChallengeEmail::NEED_CODE,
-                             "email", time::toIsoString(time::system_clock::now()), 3600, 3, json, cert);
+  CertificateRequest request(Name("/ndn/site1"), "123", RequestType::NEW, Status::CHALLENGE, cert,
+                             "email", ChallengeEmail::NEED_CODE, time::system_clock::now(),
+                             3, time::seconds(3600), std::move(json));
 
   Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
   paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengeEmail::PARAMETER_KEY_CODE));
@@ -145,13 +146,13 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithWrongCode)
   ChallengeEmail challenge;
   challenge.handleChallengeRequest(paramTLV, request);
 
-  BOOST_CHECK_EQUAL(request.m_challengeStatus, ChallengeEmail::WRONG_CODE);
+  BOOST_CHECK_EQUAL(request.m_challengeState->m_challengeStatus, ChallengeEmail::WRONG_CODE);
   BOOST_CHECK(request.m_status == Status::CHALLENGE);
-  BOOST_CHECK_EQUAL(request.m_challengeSecrets.empty(), false);
+  BOOST_CHECK_EQUAL(request.m_challengeState->m_secrets.empty(), false);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
 
-} // namespace tests
-} // namespace ndncert
-} // namespace ndn
+}  // namespace tests
+}  // namespace ndncert
+}  // namespace ndn

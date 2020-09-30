@@ -95,8 +95,8 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   json.put("code", "1234");
 
   // update operation
-  CertificateRequest request2(Name("/ndn/site1"), "123", RequestType::NEW, Status::CHALLENGE, "test",
-                              "Email", time::toIsoString(time::system_clock::now()), 3600, 3, json, cert1);
+  CertificateRequest request2(Name("/ndn/site1"), "123", RequestType::NEW, Status::CHALLENGE, cert1,
+                              "email", "test", time::system_clock::now(), 3, time::seconds(3600), std::move(json));
   storage.updateRequest(request2);
   result = storage.getRequest("123");
   BOOST_CHECK_EQUAL(request2.m_cert, result.m_cert);

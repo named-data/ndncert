@@ -73,7 +73,7 @@ protected:
 
   std::tuple<ErrorCode, std::string>
   returnWithNewChallengeStatus(CertificateRequest& request, const std::string& challengeStatus,
-                               JsonSection&& challengeSecret, size_t remainingTries, size_t remainingTime);
+                               JsonSection&& challengeSecret, size_t remainingTries, time::seconds remainingTime);
 
   std::tuple<ErrorCode, std::string>
   returnWithSuccess(CertificateRequest& request);

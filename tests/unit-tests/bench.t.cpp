@@ -138,7 +138,7 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
 
       auto paramList = pinChallenge.getRequestedParameterList(client.m_status, client.m_challengeStatus);
       auto request = ca.getCertificateRequest(*challengeInterest2);
-      auto secret = request.m_challengeSecrets.get(ChallengePin::PARAMETER_KEY_CODE, "");
+      auto secret = request.m_challengeState->m_secrets.get(ChallengePin::PARAMETER_KEY_CODE, "");
       std::get<1>(paramList[0]) = secret;
       challengeInterest3 = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
                                                                                                 client.m_challengeStatus,

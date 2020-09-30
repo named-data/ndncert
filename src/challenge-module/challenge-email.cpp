@@ -65,34 +65,38 @@ ChallengeEmail::handleChallengeRequest(const Block& params, CertificateRequest& 
     // send out the email
     sendEmail(emailAddress, emailCode, request);
     _LOG_TRACE("Secret for request " << request.m_requestId << " : " << emailCode);
-    return returnWithNewChallengeStatus(request, NEED_CODE, std::move(secretJson), m_maxAttemptTimes, m_secretLifetime.count());
+    return returnWithNewChallengeStatus(request, NEED_CODE, std::move(secretJson), m_maxAttemptTimes, m_secretLifetime);
   }
-
-  if (request.m_challengeStatus == NEED_CODE || request.m_challengeStatus == WRONG_CODE) {
-    _LOG_TRACE("Challenge Interest arrives. Challenge Status: " << request.m_challengeStatus);
-    // the incoming interest should bring the pin code
-    std::string givenCode = readString(params.get(tlv_parameter_value));
-    auto secret = request.m_challengeSecrets;
-    // check if run out of time
-    if (currentTime - time::fromIsoString(request.m_challengeTp) >= m_secretLifetime) {
-      return returnWithError(request, ErrorCode::OUT_OF_TIME, "Secret expired.");
-    }
-    // check if provided secret is correct
-    if (givenCode == secret.get<std::string>(PARAMETER_KEY_CODE)) {
-      // the code is correct
-      _LOG_TRACE("Correct secret code. Challenge succeeded.");
-      return returnWithSuccess(request);
-    }
-    // otherwise, check remaining attempt times
-    if (request.m_remainingTries > 1) {
-      auto remainTime = m_secretLifetime - (currentTime - time::fromIsoString(request.m_challengeTp));
-      _LOG_TRACE("Wrong secret code provided. Remaining Tries - 1.");
-      return returnWithNewChallengeStatus(request, WRONG_CODE, std::move(secret), request.m_remainingTries - 1, remainTime.count());
-    }
-    else {
-      // run out times
-      _LOG_TRACE("Wrong secret code provided. Ran out tires. Challenge failed.");
-      return returnWithError(request, ErrorCode::OUT_OF_TRIES, "Ran out tires.");
+  if (request.m_challengeState) {
+    if (request.m_challengeState->m_challengeStatus == NEED_CODE ||
+        request.m_challengeState->m_challengeStatus == WRONG_CODE) {
+      _LOG_TRACE("Challenge Interest arrives. Challenge Status: " << request.m_challengeState->m_challengeStatus);
+      // the incoming interest should bring the pin code
+      std::string givenCode = readString(params.get(tlv_parameter_value));
+      auto secret = request.m_challengeState->m_secrets;
+      // check if run out of time
+      if (currentTime - request.m_challengeState->m_timestamp >= m_secretLifetime) {
+        return returnWithError(request, ErrorCode::OUT_OF_TIME, "Secret expired.");
+      }
+      // check if provided secret is correct
+      if (givenCode == secret.get<std::string>(PARAMETER_KEY_CODE)) {
+        // the code is correct
+        _LOG_TRACE("Correct secret code. Challenge succeeded.");
+        return returnWithSuccess(request);
+      }
+      // otherwise, check remaining attempt times
+      if (request.m_challengeState->m_remainingTries > 1) {
+        auto remainTime = m_secretLifetime - (currentTime - request.m_challengeState->m_timestamp);
+        _LOG_TRACE("Wrong secret code provided. Remaining Tries - 1.");
+        return returnWithNewChallengeStatus(request, WRONG_CODE, std::move(secret),
+                                            request.m_challengeState->m_remainingTries - 1,
+                                            time::duration_cast<time::seconds>(remainTime));
+      }
+      else {
+        // run out times
+        _LOG_TRACE("Wrong secret code provided. Ran out tires. Challenge failed.");
+        return returnWithError(request, ErrorCode::OUT_OF_TRIES, "Ran out tires.");
+      }
     }
   }
   return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Unexpected status or challenge status");

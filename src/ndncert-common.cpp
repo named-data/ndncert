@@ -62,5 +62,22 @@ std::string requestTypeToString(RequestType type)
   }
 }
 
+std::string
+convertJson2String(const JsonSection& json)
+{
+  std::stringstream ss;
+  boost::property_tree::write_json(ss, json);
+  return ss.str();
+}
+
+JsonSection
+convertString2Json(const std::string& jsonContent)
+{
+  std::istringstream ss(jsonContent);
+  JsonSection json;
+  boost::property_tree::json_parser::read_json(ss, json);
+  return json;
+}
+
 }  // namespace ndncert
 }  // namespace ndn

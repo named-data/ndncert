@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmptyInfo)
   challenge.handleChallengeRequest(makeEmptyBlock(tlv_encrypted_payload), request);
 
   BOOST_CHECK(request.m_status == Status::CHALLENGE);
-  BOOST_CHECK_EQUAL(request.m_challengeStatus, ChallengePin::NEED_CODE);
+  BOOST_CHECK_EQUAL(request.m_challengeState->m_challengeStatus, ChallengePin::NEED_CODE);
   BOOST_CHECK_EQUAL(request.m_challengeType, "pin");
 }
 
@@ -55,8 +55,9 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
   auto cert = key.getDefaultCertificate();
   JsonSection secret;
   secret.add(ChallengePin::PARAMETER_KEY_CODE, "12345");
-  CertificateRequest request(Name("/ndn/site1"), "123", RequestType::NEW, Status::CHALLENGE, ChallengePin::NEED_CODE, "pin",
-                             time::toIsoString(time::system_clock::now()), 3600, 3, secret, cert);
+  CertificateRequest request(Name("/ndn/site1"), "123", RequestType::NEW, Status::CHALLENGE, cert,
+                             "pin", ChallengePin::NEED_CODE, time::system_clock::now(),
+                             3, time::seconds(3600), std::move(secret));
 
   Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
   paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengePin::PARAMETER_KEY_CODE));
@@ -66,7 +67,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
   challenge.handleChallengeRequest(paramTLV, request);
 
   BOOST_CHECK(request.m_status == Status::PENDING);
-  BOOST_CHECK_EQUAL(request.m_challengeSecrets.empty(), true);
+  BOOST_CHECK(!request.m_challengeState);
 }
 
 BOOST_AUTO_TEST_CASE(OnChallengeRequestWithWrongCode)
@@ -76,8 +77,9 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithWrongCode)
   auto cert = key.getDefaultCertificate();
   JsonSection secret;
   secret.add(ChallengePin::PARAMETER_KEY_CODE, "12345");
-  CertificateRequest request(Name("/ndn/site1"), "123", RequestType::NEW, Status::CHALLENGE, ChallengePin::NEED_CODE, "pin",
-                             time::toIsoString(time::system_clock::now()), 3600, 3, secret, cert);
+  CertificateRequest request(Name("/ndn/site1"), "123", RequestType::NEW, Status::CHALLENGE, cert,
+                             "pin", ChallengePin::NEED_CODE, time::system_clock::now(),
+                             3, time::seconds(3600), std::move(secret));
 
   Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
   paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengePin::PARAMETER_KEY_CODE));
@@ -87,8 +89,8 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithWrongCode)
   challenge.handleChallengeRequest(paramTLV, request);
 
   BOOST_CHECK(request.m_status == Status::CHALLENGE);
-  BOOST_CHECK_EQUAL(request.m_challengeStatus, ChallengePin::WRONG_CODE);
-  BOOST_CHECK_EQUAL(request.m_challengeSecrets.empty(), false);
+  BOOST_CHECK_EQUAL(request.m_challengeState->m_challengeStatus, ChallengePin::WRONG_CODE);
+  BOOST_CHECK_EQUAL(request.m_challengeState->m_secrets.empty(), false);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

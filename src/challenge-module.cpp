@@ -75,25 +75,17 @@ ChallengeModule::returnWithError(CertificateRequest& request, ErrorCode errorCod
 {
   request.m_status = Status::FAILURE;
   request.m_challengeType = "";
-  request.m_challengeStatus = "";
-  request.m_challengeSecrets = JsonSection();
-  request.m_challengeTp = "";
-  request.m_remainingTime = 0;
-  request.m_remainingTries = 0;
+  request.m_challengeState = boost::none;
   return std::make_tuple(errorCode, std::move(errorInfo));
 }
 
 std::tuple<ErrorCode, std::string>
 ChallengeModule::returnWithNewChallengeStatus(CertificateRequest& request, const std::string& challengeStatus,
-                                              JsonSection&& challengeSecret, size_t remainingTries, size_t remainingTime)
+                                              JsonSection&& challengeSecret, size_t remainingTries, time::seconds remainingTime)
 {
   request.m_status = Status::CHALLENGE;
   request.m_challengeType = CHALLENGE_TYPE;
-  request.m_challengeStatus = std::move(challengeStatus);
-  request.m_challengeSecrets = std::move(challengeSecret);
-  request.m_challengeTp = time::toIsoString(time::system_clock::now());
-  request.m_remainingTime = remainingTries;
-  request.m_remainingTries = remainingTime;
+  request.m_challengeState = ChallengeState(challengeStatus, time::system_clock::now(), remainingTries, remainingTime, std::move(challengeSecret));
   return std::make_tuple(ErrorCode::NO_ERROR, "");
 }
 
@@ -102,11 +94,7 @@ ChallengeModule::returnWithSuccess(CertificateRequest& request)
 {
   request.m_status = Status::PENDING;
   request.m_challengeType = CHALLENGE_TYPE;
-  request.m_challengeStatus = "";
-  request.m_challengeSecrets = JsonSection();
-  request.m_challengeTp = "";
-  request.m_remainingTime = 0;
-  request.m_remainingTries = 0;
+  request.m_challengeState = boost::none;
   return std::make_tuple(ErrorCode::NO_ERROR, "");
 }
 

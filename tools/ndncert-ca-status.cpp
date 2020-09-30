@@ -28,14 +28,6 @@
 namespace ndn {
 namespace ndncert {
 
-std::string
-convertJson2String(const JsonSection& json)
-{
-  std::stringstream ss;
-  boost::property_tree::write_json(ss, json);
-  return ss.str();
-}
-
 int
 main(int argc, char* argv[])
 {
@@ -71,25 +63,14 @@ main(int argc, char* argv[])
     requestList = storage.listAllRequests();
     certList = storage.listAllIssuedCertificates();
   }
-
   std::cerr << "The pending requests :" << std::endl;
-
   for (const auto& entry : requestList) {
-    std::cerr << "Request ID: " << entry.m_requestId << "\t"
-              << "Request Type" << requestTypeToString(entry.m_requestType) << "\t"
-              << "Current Status: " << statusToString(entry.m_status) << std::endl
-              << "Applying CA: " << entry.m_caPrefix << std::endl
-              << "Applying for key: " << entry.m_cert.getName() << std::endl
-              << "Challenge remaining tries: " << entry.m_remainingTries << std::endl
-              << "Challenge Secret: " << convertJson2String(entry.m_challengeSecrets) << std::endl;
+    std::cerr << entry;
   }
-
-  std::cerr << "\n\n" << "The issued certs :" << std::endl;
-
+  std::cerr << "\n\nThe issued certs :" << std::endl;
   for (const auto& entry : certList) {
     std::cerr << entry.getName().toUri() << std::endl;
   }
-
   return 0;
 }
 

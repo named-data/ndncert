@@ -22,15 +22,20 @@
 #define NDNCERT_CERTIFICATE_REQUEST_HPP
 
 #include "ndncert-common.hpp"
-#include <ndn-cxx/security/v2/certificate.hpp>
-#include <boost/property_tree/info_parser.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
 
 namespace ndn {
 namespace ndncert {
 
-typedef boost::property_tree::ptree JsonSection;
+struct ChallengeState {
+  ChallengeState(const std::string& challengeStatus, const system_clock::TimePoint& challengeTp,
+                 size_t remainingTries, time::seconds remainingTime,
+                 JsonSection&& challengeSecrets);
+  std::string m_challengeStatus;
+  system_clock::TimePoint m_timestamp;
+  size_t m_remainingTries;
+  time::seconds m_remainingTime;
+  JsonSection m_secrets;
+};
 
 /**
  * @brief Represents a certificate request instance.
@@ -45,23 +50,19 @@ public:
   CertificateRequest(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
                      const security::v2::Certificate& cert);
   CertificateRequest(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
-                     const std::string& challengeStatus, const std::string& challengeType,
-                     const std::string& challengeTp, int remainingTime, int remainingTries,
-                     const JsonSection& challengeSecrets, const security::v2::Certificate& cert);
+                     const security::v2::Certificate& cert, const std::string& challengeType,
+                     const std::string& challengeStatus, const system_clock::TimePoint& challengeTp,
+                     size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets);
 
 public:
   Name m_caPrefix;
-  std::string m_requestId = "";
-  RequestType m_requestType = RequestType::NOTINITIALIZED;
-  Status m_status = Status::NOT_STARTED;
+  std::string m_requestId;
+  RequestType m_requestType;
+  Status m_status;
   security::v2::Certificate m_cert;
 
-  std::string m_challengeStatus = "";
-  std::string m_challengeType = "";
-  std::string m_challengeTp = "";
-  int m_remainingTime = 0;
-  int m_remainingTries = 0;
-  JsonSection m_challengeSecrets;
+  std::string m_challengeType;
+  boost::optional<ChallengeState> m_challengeState;
 };
 
 std::ostream&
