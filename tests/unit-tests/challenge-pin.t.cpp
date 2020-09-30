@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "challenge-module/challenge-pin.hpp"
+#include "challenge-modules/challenge-pin.hpp"
 #include "test-common.hpp"
 
 namespace ndn {

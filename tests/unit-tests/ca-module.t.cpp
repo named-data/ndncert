@@ -20,8 +20,8 @@
 
 #include "ca-module.hpp"
 #include "challenge-module.hpp"
-#include "challenge-module/challenge-email.hpp"
-#include "challenge-module/challenge-pin.hpp"
+#include "challenge-modules/challenge-email.hpp"
+#include "challenge-modules/challenge-pin.hpp"
 #include "client-module.hpp"
 #include "protocol-detail/info.hpp"
 #include "test-common.hpp"

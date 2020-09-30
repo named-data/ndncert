@@ -20,7 +20,7 @@
 
 #include "ca-module.hpp"
 #include "client-module.hpp"
-#include "challenge-module/challenge-pin.hpp"
+#include "challenge-modules/challenge-pin.hpp"
 #include "protocol-detail/info.hpp"
 #include "test-common.hpp"
 
