@@ -21,8 +21,7 @@
 #ifndef NDNCERT_PROTOCOL_DETAIL_INFO_HPP
 #define NDNCERT_PROTOCOL_DETAIL_INFO_HPP
 
-#include "../ca-config.hpp"
-#include "../client-config.hpp"
+#include "../configuration.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -33,13 +32,13 @@ public:
    * Encode CA configuration and its certificate into a TLV block as INFO Data packet content.
    */
   static Block
-  encodeDataContent(const CaConfig& caConfig, const security::v2::Certificate& certificate);
+  encodeDataContent(const CaConfigItem& caConfig, const security::v2::Certificate& certificate);
 
   /**
    * Decode CA configuration from the TLV block of INFO Data packet content.
    */
-  static ClientCaItem
-  decodeClientConfigFromContent(const Block& block);
+  static CaConfigItem
+  decodeDataContentToCaProfile(const Block& block);
 };
 
 }  // namespace ndncert

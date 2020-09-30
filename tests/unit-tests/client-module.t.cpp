@@ -32,26 +32,32 @@ BOOST_FIXTURE_TEST_SUITE(TestClientModule, IdentityManagementTimeFixture)
 BOOST_AUTO_TEST_CASE(ClientModuleInitialize)
 {
   ClientModule client(m_keyChain);
-  client.getClientConf().load("tests/unit-tests/client.conf.test");
+  client.getClientConf().load("tests/unit-tests/config-files/config-client-1");
   BOOST_CHECK_EQUAL(client.getClientConf().m_caItems.size(), 2);
 }
 
 BOOST_AUTO_TEST_CASE(Probe)
 {
   ClientModule client(m_keyChain);
-  client.getClientConf().load("tests/unit-tests/client.conf.test");
+  client.getClientConf().load("tests/unit-tests/config-files/config-client-1");
 
   auto identity = addIdentity(Name("/site"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  ClientCaItem item;
-  item.m_probe = "email:uid:name";
+  CaConfigItem item;
+  item.m_probeParameterKeys.push_back("email");
+  item.m_probeParameterKeys.push_back("uid");
+  item.m_probeParameterKeys.push_back("name");
   item.m_caPrefix = Name("/site");
-  item.m_anchor = cert;
+  item.m_cert = std::make_shared<security::v2::Certificate>(cert);
   client.getClientConf().m_caItems.push_back(item);
 
-  auto firstInterest = client.generateProbeInterest(item, "zhiyi@cs.ucla.edu:987654321:Zhiyi Zhang");
+  std::vector<std::tuple<std::string, std::string>> probeParams;
+  probeParams.push_back(std::make_tuple("email", "zhiyi@cs.ucla.edu"));
+  probeParams.push_back(std::make_tuple("uid", "987654321"));
+  probeParams.push_back(std::make_tuple("name", "Zhiyi Zhang"));
+  auto firstInterest = client.generateProbeInterest(item, std::move(probeParams));
   BOOST_CHECK(firstInterest->getName().at(-1).isParametersSha256Digest());
   // ignore the last name component (ParametersSha256Digest)
   BOOST_CHECK_EQUAL(firstInterest->getName().getPrefix(-1), "/site/CA/PROBE");
@@ -62,16 +68,16 @@ BOOST_AUTO_TEST_CASE(Probe)
 // BOOST_AUTO_TEST_CASE(GenProbeRequestJson)
 // {
 //   ClientModule client(m_keyChain);
-//   client.getClientConf().load("tests/unit-tests/client.conf.test");
+//   client.getClientConf().load("tests/unit-tests/config-files/config-client-1");
 
 //   auto identity = addIdentity(Name("/site"));
 //   auto key = identity.getDefaultKey();
 //   auto cert = key.getDefaultCertificate();
 
-//   ClientCaItem item;
+//   CaConfigItem item;
 //   item.m_probe = "email:uid:name";
 //   item.m_caPrefix = Name("/site");
-//   item.m_anchor = cert;
+//   item.m_cert = std::make_shared<security::v2::Certificate>(cert);
 //   client.getClientConf().m_caItems.push_back(item);
 
 //   auto interestPacket = client.genProbeRequestJson(item, "yufeng@ucla.edu:123456789:Yufeng Zhang");

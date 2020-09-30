@@ -1,8 +1,8 @@
 {
   "ca-prefix": "/example",
-  "issuing-freshness": "720",
-  "validity-period": "360",
   "ca-info": "An example NDNCERT CA",
+  "max-validity-period": "1296000",
+  "max-suffix-length": "2",
   "probe-parameters":
   [
     {"probe-parameter-key": "email"},

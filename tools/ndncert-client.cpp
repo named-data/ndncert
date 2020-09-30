@@ -58,21 +58,19 @@ captureParams(std::vector<std::tuple<std::string, std::string>>& requirement)
   }
 }
 
-static std::list<std::string>
-captureParams(const std::vector<std::string>& requirement)
+static std::vector<std::tuple<std::string, std::string>>
+captureParams(const std::list<std::string>& requirement)
 {
-  std::list<std::string> results;
+  std::vector<std::tuple<std::string, std::string>> results;
   for (const auto& item : requirement) {
     std::cerr << "Please provide the argument: " << item << " : " << std::endl;
-    std::string tempParam;
-    getline(std::cin, tempParam);
-    results.push_back(tempParam);
+    std::string captured;
+    getline(std::cin, captured);
+    results.push_back(std::make_tuple(item, captured));
   }
   std::cerr << "Got it. This is what you've provided:" << std::endl;
-  auto it1 = results.begin();
-  auto it2 = requirement.begin();
-  for (; it1 != results.end() && it2 != requirement.end(); it1++, it2++) {
-    std::cerr << *it2 << " : " << *it1 << std::endl;
+  for (const auto& item : results) {
+    std::cerr << std::get<0>(item) << " : " << std::get<1>(item) << std::endl;
   }
   return results;
 }
@@ -203,12 +201,12 @@ InfoCb(const Data& reply)
     std::cerr << "The fetched CA information cannot be trusted because its integrity is broken" << std::endl;
     return;
   }
-  auto caItem = INFO::decodeClientConfigFromContent(contentBlock);
+  auto caItem = INFO::decodeDataContentToCaProfile(contentBlock);
 
   std::cerr << "Will use a new trust anchor, please double check the identity info: \n"
             << "This trust anchor information is signed by " << reply.getSignature().getKeyLocator()
             << std::endl
-            << "The certificate is " << caItem.m_anchor << std::endl
+            << "The certificate is " << *caItem.m_cert << std::endl
             << "Do you trust the information? Type in YES or NO" << std::endl;
 
   std::string answer;
@@ -259,7 +257,7 @@ startApplication()
               << "Introduction: " << item.m_caInfo << "\n"
               << "***************************************\n";
   }
-  std::vector<ClientCaItem> caVector{std::begin(caList), std::end(caList)};
+  std::vector<CaConfigItem> caVector{std::begin(caList), std::end(caList)};
   std::cerr << "Step "
             << nStep++ << ": Please type in the CA INDEX that you want to apply"
             << " or type in NONE if your expected CA is not in the list\n";
@@ -290,19 +288,10 @@ startApplication()
     }
     auto targetCaItem = caVector[caIndex];
 
-    if (targetCaItem.m_probe != "") {
+    if (!targetCaItem.m_probeParameterKeys.empty()) {
       std::cerr << "Step " << nStep++ << ": Please provide information for name assignment" << std::endl;
-      std::vector<std::string> probeFields = ClientModule::parseProbeComponents(targetCaItem.m_probe);
-      std::string redo = "";
-      std::list<std::string> capturedParams;
-      capturedParams = captureParams(probeFields);
-      std::string probeInfo;
-      for (const auto& item : capturedParams) {
-        probeInfo += item;
-        probeInfo += ":";
-      }
-      probeInfo = probeInfo.substr(0, probeInfo.size() - 1);
-      face.expressInterest(*client.generateProbeInterest(targetCaItem, probeInfo),
+      auto capturedParams = captureParams(targetCaItem.m_probeParameterKeys);
+      face.expressInterest(*client.generateProbeInterest(targetCaItem, std::move(capturedParams)),
                            bind(&probeCb, _2), bind(&onNackCb), bind(&timeoutCb));
     }
     else {

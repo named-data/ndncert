@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(PacketSize0)
   auto cert = key.getDefaultCertificate();
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
-  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
+  CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
   Interest interest = MetadataObject::makeDiscoveryInterest(Name("/ndn/CA/INFO"));
@@ -63,10 +63,10 @@ BOOST_AUTO_TEST_CASE(PacketSize0)
       BOOST_CHECK(security::verifySignature(response, cert));
       auto contentBlock = response.getContent();
       contentBlock.parse();
-      auto caItem = INFO::decodeClientConfigFromContent(contentBlock);
+      auto caItem = INFO::decodeDataContentToCaProfile(contentBlock);
       BOOST_CHECK_EQUAL(caItem.m_caPrefix, "/ndn");
-      BOOST_CHECK_EQUAL(caItem.m_probe, "");
-      BOOST_CHECK_EQUAL(caItem.m_anchor.wireEncode(), cert.wireEncode());
+      BOOST_CHECK_EQUAL(caItem.m_probeParameterKeys.size(), 0);
+      BOOST_CHECK_EQUAL(caItem.m_cert->wireEncode(), cert.wireEncode());
       BOOST_CHECK_EQUAL(caItem.m_caInfo, "ndn testbed ca");
     }
   });
@@ -85,14 +85,14 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
   auto cert = key.getDefaultCertificate();
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
-  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
+  CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
   // generate NEW Interest
   ClientModule client(m_keyChain);
-  ClientCaItem item;
+  CaConfigItem item;
   item.m_caPrefix = Name("/ndn");
-  item.m_anchor = cert;
+  item.m_cert = std::make_shared<security::v2::Certificate>(cert);
   client.getClientConf().m_caItems.push_back(item);
   auto newInterest = client.generateNewInterest(time::system_clock::now(),
                                                 time::system_clock::now() + time::days(1), Name("/ndn/alice"));

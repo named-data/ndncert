@@ -1,9 +1,0 @@
-{
-  "ca-prefix": "/ndn",
-  "ca-info": "ndn testbed ca",
-  "max-validity-period": "86400",
-  "supported-challenges":
-  [
-      { "challenge": "ABC" }
-  ]
-}

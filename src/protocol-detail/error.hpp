@@ -21,8 +21,7 @@
 #ifndef NDNCERT_PROTOCOL_DETAIL_ERROR_HPP
 #define NDNCERT_PROTOCOL_DETAIL_ERROR_HPP
 
-#include "../ca-config.hpp"
-#include "../client-config.hpp"
+#include "../configuration.hpp"
 
 namespace ndn {
 namespace ndncert {

@@ -21,22 +21,18 @@
 #ifndef NDNCERT_PROTOCOL_DETAIL_PROBE_HPP
 #define NDNCERT_PROTOCOL_DETAIL_PROBE_HPP
 
-#include "../ca-config.hpp"
-#include "../client-config.hpp"
+#include "../configuration.hpp"
 
 namespace ndn {
 namespace ndncert {
 
 class PROBE {
 public:
-  static std::vector<std::string>
-  parseProbeComponents(const std::string& probe);
+  static Block
+  encodeApplicationParameters(std::vector<std::tuple<std::string, std::string>>&& parameters);
 
   static Block
-  encodeApplicationParametersFromProbeInfo(const ClientCaItem& ca, const std::string& probeInfo);
-
-  static Block
-  encodeDataContent(const Name& identifier, const std::string& m_probe, const Block& parameterTLV);
+  encodeDataContent(const std::vector<Name>& identifiers, boost::optional<size_t> maxSuffixLength);
 };
 
 }  // namespace ndncert

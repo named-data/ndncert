@@ -35,8 +35,8 @@ BOOST_FIXTURE_TEST_SUITE(TestCaModule, DatabaseFixture)
 BOOST_AUTO_TEST_CASE(Initialization)
 {
   util::DummyClientFace face(io, m_keyChain, {true, true});
-  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
-  BOOST_CHECK_EQUAL(ca.getCaConf().m_caPrefix, "/ndn");
+  CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
+  BOOST_CHECK_EQUAL(ca.getCaConf().m_caItem.m_caPrefix, "/ndn");
 
   auto identity = addIdentity(Name("/ndn/site2"));
   auto key = identity.getDefaultKey();
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(HandleInfo)
   auto cert = key.getDefaultCertificate();
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
-  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
+  CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
   Interest interest("/ndn/CA/INFO");
@@ -68,10 +68,10 @@ BOOST_AUTO_TEST_CASE(HandleInfo)
     BOOST_CHECK(security::verifySignature(response, cert));
     auto contentBlock = response.getContent();
     contentBlock.parse();
-    auto caItem = INFO::decodeClientConfigFromContent(contentBlock);
+    auto caItem = INFO::decodeDataContentToCaProfile(contentBlock);
     BOOST_CHECK_EQUAL(caItem.m_caPrefix, "/ndn");
-    BOOST_CHECK_EQUAL(caItem.m_probe, "");
-    BOOST_CHECK_EQUAL(caItem.m_anchor.wireEncode(), cert.wireEncode());
+    BOOST_CHECK_EQUAL(caItem.m_probeParameterKeys.size(), 0);
+    BOOST_CHECK_EQUAL(caItem.m_cert->wireEncode(), cert.wireEncode());
     BOOST_CHECK_EQUAL(caItem.m_caInfo, "ndn testbed ca");
   });
   face.receive(interest);
@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(HandleProbe)
   auto cert = key.getDefaultCertificate();
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
-  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
+  CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   ca.setNameAssignmentFunction([&](const std::vector<std::tuple<std::string, std::string>>) -> std::vector<std::string> {
     std::vector<std::string> result;
     result.push_back("example");
@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_CASE(HandleProbeUsingDefaultHandler)
   auto cert = key.getDefaultCertificate();
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
-  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
+  CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
   Interest interest("/ndn/CA/PROBE");
@@ -168,13 +168,13 @@ BOOST_AUTO_TEST_CASE(HandleNew)
   auto cert = key.getDefaultCertificate();
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
-  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
+  CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
   ClientModule client(m_keyChain);
-  ClientCaItem item;
+  CaConfigItem item;
   item.m_caPrefix = Name("/ndn");
-  item.m_anchor = cert;
+  item.m_cert = std::make_shared<security::v2::Certificate>(cert);
   client.getClientConf().m_caItems.push_back(item);
 
   auto interest = client.generateNewInterest(time::system_clock::now(),
@@ -219,13 +219,13 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidValidityPeriod1)
   auto cert = key.getDefaultCertificate();
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
-  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test");
+  CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1");
   advanceClocks(time::milliseconds(20), 60);
 
   ClientModule client(m_keyChain);
-  ClientCaItem item;
+  CaConfigItem item;
   item.m_caPrefix = Name("/ndn");
-  item.m_anchor = cert;
+  item.m_cert = std::make_shared<security::v2::Certificate>(cert);
   client.getClientConf().m_caItems.push_back(item);
   auto current_tp = time::system_clock::now();
   auto interest1 = client.generateNewInterest(current_tp, current_tp - time::hours(1),
@@ -255,13 +255,13 @@ BOOST_AUTO_TEST_CASE(HandleNewWithLongSuffix)
   auto cert = key.getDefaultCertificate();
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
-  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
+  CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
   ClientModule client(m_keyChain);
-  ClientCaItem item;
+  CaConfigItem item;
   item.m_caPrefix = Name("/ndn");
-  item.m_anchor = cert;
+  item.m_cert = std::make_shared<security::v2::Certificate>(cert);
   client.getClientConf().m_caItems.push_back(item);
 
   auto interest1 = client.generateNewInterest(time::system_clock::now(),
@@ -300,13 +300,13 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidLength1)
   auto cert = key.getDefaultCertificate();
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
-  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test");
+  CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1");
   advanceClocks(time::milliseconds(20), 60);
 
   ClientModule client(m_keyChain);
-  ClientCaItem item;
+  CaConfigItem item;
   item.m_caPrefix = Name("/ndn");
-  item.m_anchor = cert;
+  item.m_cert = std::make_shared<security::v2::Certificate>(cert);
   client.getClientConf().m_caItems.push_back(item);
   auto current_tp = time::system_clock::now();
   auto interest1 = client.generateNewInterest(current_tp, current_tp + time::days(1), Name("/ndn"));
@@ -330,14 +330,14 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
   auto cert = key.getDefaultCertificate();
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
-  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
+  CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
   // generate NEW Interest
   ClientModule client(m_keyChain);
-  ClientCaItem item;
+  CaConfigItem item;
   item.m_caPrefix = Name("/ndn");
-  item.m_anchor = cert;
+  item.m_cert = std::make_shared<security::v2::Certificate>(cert);
   client.getClientConf().m_caItems.push_back(item);
   auto newInterest = client.generateNewInterest(time::system_clock::now(),
                                                 time::system_clock::now() + time::days(1), Name("/ndn/zhiyi"));
@@ -413,7 +413,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
   auto cert = key.getDefaultCertificate();
 
   util::DummyClientFace face(io, {true, true});
-  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
+  CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
   //generate a certificate
@@ -432,9 +432,9 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
   auto issuedCert = ca.issueCertificate(certRequest);
 
   ClientModule client(m_keyChain);
-  ClientCaItem item;
-  item.m_caName = Name("/ndn");
-  item.m_anchor = cert;
+  CaConfigItem item;
+  item.m_caPrefix = Name("/ndn");
+  item.m_cert = std::make_shared<security::v2::Certificate>(cert);
   client.getClientConf().m_caItems.push_back(item);
 
   auto interest = client.generateRevokeInterest(issuedCert);
@@ -477,7 +477,7 @@ BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
   auto cert = key.getDefaultCertificate();
 
   util::DummyClientFace face(io, {true, true});
-  CaModule ca(face, m_keyChain, "tests/unit-tests/ca.conf.test", "ca-storage-memory");
+  CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
   //generate a certificate
@@ -494,9 +494,9 @@ BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
   m_keyChain.sign(clientCert, signingByKey(clientKey.getName()).setSignatureInfo(signatureInfo));
 
   ClientModule client(m_keyChain);
-  ClientCaItem item;
-  item.m_caName = Name("/ndn");
-  item.m_anchor = cert;
+  CaConfigItem item;
+  item.m_caPrefix = Name("/ndn");
+  item.m_cert = std::make_shared<security::v2::Certificate>(cert);
   client.getClientConf().m_caItems.push_back(item);
 
   auto interest = client.generateRevokeInterest(clientCert);

@@ -24,14 +24,15 @@ namespace ndn {
 namespace ndncert {
 
 Block
-INFO::encodeDataContent(const CaConfig& caConfig, const security::v2::Certificate& certificate)
+INFO::encodeDataContent(const CaConfigItem& caConfig, const security::v2::Certificate& certificate)
 {
   auto content = makeEmptyBlock(tlv::Content);
   content.push_back(makeNestedBlock(tlv_ca_prefix, caConfig.m_caPrefix));
   std::string caInfo = "";
   if (caConfig.m_caInfo == "") {
     caInfo = "Issued by " + certificate.getSignature().getKeyLocator().getName().toUri();
-  } else {
+  }
+  else {
     caInfo = caConfig.m_caInfo;
   }
   content.push_back(makeStringBlock(tlv_ca_info, caInfo));
@@ -41,38 +42,42 @@ INFO::encodeDataContent(const CaConfig& caConfig, const security::v2::Certificat
   }
   content.push_back(makeNonNegativeIntegerBlock(tlv_max_validity_period, caConfig.m_maxValidityPeriod.count()));
   content.push_back(makeNestedBlock(tlv_ca_certificate, certificate));
-  content.push_back(makeNonNegativeIntegerBlock(tlv_max_suffix_length, caConfig.m_maxSuffixLength));
+  if (caConfig.m_maxSuffixLength) {
+    content.push_back(makeNonNegativeIntegerBlock(tlv_max_suffix_length, *caConfig.m_maxSuffixLength));
+  }
   content.encode();
   return content;
 }
 
-ClientCaItem
-INFO::decodeClientConfigFromContent(const Block& block)
+CaConfigItem
+INFO::decodeDataContentToCaProfile(const Block& block)
 {
-  ClientCaItem result;
+  CaConfigItem result;
   block.parse();
   for (auto const& item : block.elements()) {
-    if (item.type() == tlv_ca_prefix) {
-      item.parse();
+    item.parse();
+    switch (item.type()) {
+    case tlv_ca_prefix:
       result.m_caPrefix.wireDecode(item.get(tlv::Name));
-    }
-    else if (item.type() == tlv_ca_info) {
+      break;
+    case tlv_ca_info:
       result.m_caInfo = readString(item);
-    }
-    else if (item.type() == tlv_parameter_key) {
+      break;
+    case tlv_parameter_key:
       result.m_probeParameterKeys.push_back(readString(item));
-    }
-    else if (item.type() == tlv_max_validity_period) {
+      break;
+    case tlv_max_validity_period:
       result.m_maxValidityPeriod = time::seconds(readNonNegativeInteger(item));
-    }
-    else if (item.type() == tlv_ca_certificate) {
-      item.parse();
-      result.m_anchor.wireDecode(item.get(tlv::Data));
-    } else if (item.type() == tlv_max_suffix_length) {
+      break;
+    case tlv_max_suffix_length:
       result.m_maxSuffixLength = readNonNegativeInteger(item);
-    }
-    else {
+      break;
+    case tlv_ca_certificate:
+      result.m_cert->wireDecode(item.get(tlv::Data));
+      break;
+    default:
       continue;
+      break;
     }
   }
   return result;

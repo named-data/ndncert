@@ -22,10 +22,61 @@
 #define NDNCERT_CA_CONFIG_HPP
 
 #include "request-state.hpp"
-#include "client-config.hpp"
 
 namespace ndn {
 namespace ndncert {
+
+struct CaConfigItem {
+  /**
+   * CA Name prefix (without /CA suffix).
+   */
+  Name m_caPrefix;
+  /**
+   * CA Information.
+   * Default: "".
+   */
+  std::string m_caInfo;
+  /**
+   * A list of parameter-keys for PROBE.
+   * Default: empty list.
+   */
+  std::list<std::string> m_probeParameterKeys;
+  /**
+   * Maximum allowed validity period of the certificate being requested.
+   * The value is in the unit of second.
+   * Default: one day (86400 seconds).
+   */
+  time::seconds m_maxValidityPeriod;
+  /**
+   * Maximum allowed suffix length of requested name.
+   * E.g., When its value is 2, at most 2 name components can be assigned after m_caPrefix.
+   * Default: none.
+   */
+  boost::optional<size_t> m_maxSuffixLength;
+  /**
+   * A list of supported challenges. Only CA side will have m_supportedChallenges.
+   * Default: empty list.
+   */
+  std::list<std::string> m_supportedChallenges;
+  /**
+   * CA's certificate. Only Client side will have m_cert.
+   * Default: nullptr.
+   */
+  std::shared_ptr<security::v2::Certificate> m_cert;
+
+  void
+  parse(const JsonSection& configJson);
+
+  JsonSection
+  toJson() const;
+
+private:
+  void
+  parseProbeParameters(const JsonSection& section);
+
+  void
+  parseChallengeList(const JsonSection& configSection);
+};
 
 /**
  * @brief The name assignment function provided by the CA operator to generate available
@@ -75,53 +126,15 @@ class CaConfig {
 public:
   /**
    * Load CA configuration from the file.
-   *
-   * @param fileName, the configuration file name.
-   * @throw std::runtime_error when config file does not exist or the configuration
-   *        in the file cannot be parsed correctly.
-   * @throw std::runtime_error when the ca-prefix attribute in JSON text is empty.
-   * @throw std::runtime_error when the challenge is not specified or is not supported.
+   * @throw std::runtime_error when config file cannot be correctly parsed.
    */
   void
   load(const std::string& fileName);
 
-private:
   void
-  parse(const JsonSection& configJson);
+  save(const std::string& fileName) const;
 
-  void
-  parseProbeParameters(const JsonSection& section);
-
-  void
-  parseChallengeList(const JsonSection& configSection);
-
-public:
-  /**
-   * CA Name prefix (without /CA suffix).
-   */
-  Name m_caPrefix;
-  /**
-   * CA Information.
-   */
-  std::string m_caInfo;
-  /**
-   * A list of parameter-keys for PROBE.
-   */
-  std::list<std::string> m_probeParameterKeys;
-  /**
-   * Maximum allowed validity period of the certificate being requested.
-   * The value is in the unit of second.
-   */
-  time::seconds m_maxValidityPeriod;
-  /**
-   * Maximum allowed suffix length of requested name.
-   * E.g., When its value is 2, at most 2 name components can be assigned after m_caPrefix.
-   */
-  size_t m_maxSuffixLength;
-  /**
-   * A list of supported challenges.
-   */
-  std::list<std::string> m_supportedChallenges;
+  CaConfigItem m_caItem;
   /**
    * NameAssignmentFunc Callback function
    */
@@ -130,6 +143,35 @@ public:
    * StatusUpdate Callback function
    */
   StatusUpdateCallback m_statusUpdateCallback;
+};
+
+/**
+ * @brief Represents Client configuration
+ *
+ * For Client configuration format, please refer to:
+ *   https://github.com/named-data/ndncert/wiki/Client-Configuration-Sample
+ */
+class ClientConfig {
+public:
+  /**
+   * @throw std::runtime_error when config file cannot be correctly parsed.
+   */
+  void
+  load(const std::string& fileName);
+
+  /**
+   * @throw std::runtime_error when config file cannot be correctly parsed.
+   */
+  void
+  load(const JsonSection& configSection);
+
+  void
+  save(const std::string& fileName) const;
+
+  void
+  removeCaItem(const Name& caName);
+
+  std::list<CaConfigItem> m_caItems;
 };
 
 }  // namespace ndncert

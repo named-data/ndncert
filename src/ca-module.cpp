@@ -75,7 +75,7 @@ CaModule::registerPrefix()
   _LOG_TRACE("Prefix " << localhopInfoPrefix << " got registered");
 
   // register prefixes
-  Name prefix = m_config.m_caPrefix;
+  Name prefix = m_config.m_caItem.m_caPrefix;
   prefix.append("CA");
 
   prefixId = m_face.registerPrefix(
@@ -137,7 +137,7 @@ CaModule::generateCaConfigMetaData()
   Name discoveryInterestName(infoPacket->getName().getPrefix(-2));
   name::Component metadataComponent(32, reinterpret_cast<const uint8_t*>("metadata"), std::strlen("metadata"));
   discoveryInterestName.append(metadataComponent);
-  auto metadataData = metadata.makeData(discoveryInterestName, m_keyChain, signingByIdentity(m_config.m_caPrefix));
+  auto metadataData = metadata.makeData(discoveryInterestName, m_keyChain, signingByIdentity(m_config.m_caItem.m_caPrefix));
   return make_shared<Data>(metadataData);
 }
 
@@ -150,16 +150,16 @@ CaModule::generateCaConfigData()
   // otherwise, directly reply m_infoData
 
   const auto& pib = m_keyChain.getPib();
-  const auto& identity = pib.getIdentity(m_config.m_caPrefix);
+  const auto& identity = pib.getIdentity(m_config.m_caItem.m_caPrefix);
   const auto& cert = identity.getDefaultKey().getDefaultCertificate();
-  Block contentTLV = INFO::encodeDataContent(m_config, cert);
+  Block contentTLV = INFO::encodeDataContent(m_config.m_caItem, cert);
 
-  Name infoPacketName(m_config.m_caPrefix);
+  Name infoPacketName(m_config.m_caItem.m_caPrefix);
   infoPacketName.append("CA").append("INFO").appendVersion().appendSegment(0);
   Data infoData(infoPacketName);
   infoData.setContent(contentTLV);
   infoData.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  m_keyChain.sign(infoData, signingByIdentity(m_config.m_caPrefix));
+  m_keyChain.sign(infoData, signingByIdentity(m_config.m_caItem.m_caPrefix));
   return make_shared<Data>(infoData);
 }
 
@@ -193,9 +193,9 @@ CaModule::onProbe(const Interest& request)
     return;
   }
 
-  // if (m_config.m_nameAssignmentFunc) {
+  // if (m_config.m_caItem.m_nameAssignmentFunc) {
   //   try {
-  //     availableId = m_config.m_nameAssignmentFunc(parameterTLV);
+  //     availableId = m_config.m_caItem.m_nameAssignmentFunc(parameterTLV);
   //   }
   //   catch (const std::exception& e) {
   //     _LOG_TRACE("Cannot find PROBE input from PROBE parameters: " << e.what());
@@ -206,17 +206,17 @@ CaModule::onProbe(const Interest& request)
   //   // if there is no app-specified name lookup, use a random name id
   //   availableId = std::to_string(random::generateSecureWord64());
   // }
-  // Name newIdentityName = m_config.m_caPrefix;
+  // Name newIdentityName = m_config.m_caItem.m_caPrefix;
   // newIdentityName.append(availableId);
   // _LOG_TRACE("Handle PROBE: generate an identity " << newIdentityName);
 
-  // Block contentTLV = PROBE::encodeDataContent(newIdentityName.toUri(), m_config.m_probe, parameterTLV);
+  // Block contentTLV = PROBE::encodeDataContent(newIdentityName.toUri(), m_config.m_caItem.m_probe, parameterTLV);
 
   // Data result;
   // result.setName(request.getName());
   // result.setContent(contentTLV);
   // result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  // m_keyChain.sign(result, signingByIdentity(m_config.m_caPrefix));
+  // m_keyChain.sign(result, signingByIdentity(m_config.m_caItem.m_caPrefix));
   // m_face.put(result);
   // _LOG_TRACE("Handle PROBE: send out the PROBE response");
 }
@@ -284,23 +284,31 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
     auto expectedPeriod = clientCert->getValidityPeriod().getPeriod();
     auto currentTime = time::system_clock::now();
     if (expectedPeriod.first < currentTime - REQUEST_VALIDITY_PERIOD_NOT_BEFORE_GRACE_PERIOD ||
-        expectedPeriod.second > currentTime + m_config.m_maxValidityPeriod ||
+        expectedPeriod.second > currentTime + m_config.m_caItem.m_maxValidityPeriod ||
         expectedPeriod.second <= expectedPeriod.first) {
       _LOG_ERROR("An invalid validity period is being requested.");
       m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::BAD_VALIDITY_PERIOD,
                                          "An invalid validity period is being requested."));
       return;
     }
-    // verify the self-signed certificate, the request, and the token
-    if (!m_config.m_caPrefix.isPrefixOf(clientCert->getIdentity())
+    // verify identity name
+    if (!m_config.m_caItem.m_caPrefix.isPrefixOf(clientCert->getIdentity())
         || !security::v2::Certificate::isValidName(clientCert->getName())
-        || clientCert->getIdentity().size() <= m_config.m_caPrefix.size()
-        || clientCert->getIdentity().size() > m_config.m_caPrefix.size() + m_config.m_maxSuffixLength) {
+        || clientCert->getIdentity().size() <= m_config.m_caItem.m_caPrefix.size()) {
       _LOG_ERROR("An invalid certificate name is being requested " << clientCert->getName());
       m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
                                          "An invalid certificate name is being requested."));
       return;
     }
+    if (m_config.m_caItem.m_maxSuffixLength) {
+      if (clientCert->getIdentity().size() > m_config.m_caItem.m_caPrefix.size() + *m_config.m_caItem.m_maxSuffixLength) {
+        _LOG_ERROR("An invalid certificate name is being requested " << clientCert->getName());
+        m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
+                                           "An invalid certificate name is being requested."));
+        return;
+      }
+    }
+    // verify signature
     if (!security::verifySignature(*clientCert, *clientCert)) {
       _LOG_ERROR("Invalid signature in the self-signed certificate.");
       m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::BAD_SIGNATURE,
@@ -315,17 +323,24 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
     }
   }
   else if (requestType == RequestType::REVOKE) {
-    // verify the certificate
-    if (!m_config.m_caPrefix.isPrefixOf(clientCert->getIdentity())
+    // verify identity name
+    if (!m_config.m_caItem.m_caPrefix.isPrefixOf(clientCert->getIdentity())
         || !security::v2::Certificate::isValidName(clientCert->getName())
-        || clientCert->getIdentity().size() <= m_config.m_caPrefix.size()
-        || clientCert->getIdentity().size() > m_config.m_caPrefix.size() + m_config.m_maxSuffixLength) {
+        || clientCert->getIdentity().size() <= m_config.m_caItem.m_caPrefix.size()) {
       _LOG_ERROR("An invalid certificate name is being requested " << clientCert->getName());
       m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
                                          "An invalid certificate name is being requested."));
       return;
     }
-    const auto& cert = m_keyChain.getPib().getIdentity(m_config.m_caPrefix).getDefaultKey().getDefaultCertificate();
+    if (m_config.m_caItem.m_maxSuffixLength) {
+      if (clientCert->getIdentity().size() > m_config.m_caItem.m_caPrefix.size() + *m_config.m_caItem.m_maxSuffixLength) {
+        _LOG_ERROR("An invalid certificate name is being requested " << clientCert->getName());
+        m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
+                                           "An invalid certificate name is being requested."));
+        return;
+      }
+    }
+    const auto& cert = m_keyChain.getPib().getIdentity(m_config.m_caItem.m_caPrefix).getDefaultKey().getDefaultCertificate();
     if (!security::verifySignature(*clientCert, cert)) {
       _LOG_ERROR("Invalid signature in the certificate to revoke.");
       m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::BAD_SIGNATURE,
@@ -336,7 +351,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
 
   // create new request instance
   std::string requestId = std::to_string(random::generateWord64());
-  RequestState requestState(m_config.m_caPrefix, requestId, requestType, Status::BEFORE_CHALLENGE, *clientCert,
+  RequestState requestState(m_config.m_caItem.m_caPrefix, requestId, requestType, Status::BEFORE_CHALLENGE, *clientCert,
           makeBinaryBlock(tlv::ContentType_Key, aesKey, sizeof(aesKey)));
   m_storage->addRequest(requestState);
   Data result;
@@ -346,15 +361,15 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
     result.setContent(NEW::encodeDataContent(myEcdhPubKeyBase64,
                                              std::to_string(saltInt),
                                              requestState,
-                                             m_config.m_supportedChallenges));
+                                             m_config.m_caItem.m_supportedChallenges));
   }
   else if (requestType == RequestType::REVOKE) {
     result.setContent(REVOKE::encodeDataContent(myEcdhPubKeyBase64,
                                                 std::to_string(saltInt),
                                                 requestState,
-                                                m_config.m_supportedChallenges));
+                                                m_config.m_caItem.m_supportedChallenges));
   }
-  m_keyChain.sign(result, signingByIdentity(m_config.m_caPrefix));
+  m_keyChain.sign(result, signingByIdentity(m_config.m_caItem.m_caPrefix));
   m_face.put(result);
   if (m_config.m_statusUpdateCallback) {
     m_config.m_statusUpdateCallback(requestState);
@@ -456,7 +471,7 @@ CaModule::onChallenge(const Interest& request)
   auto contentBlock = encodeBlockWithAesGcm128(tlv::Content, requestState.m_encryptionKey.value(), payload.value(),
                                                payload.value_size(), (uint8_t*)"test", strlen("test"));
   result.setContent(contentBlock);
-  m_keyChain.sign(result, signingByIdentity(m_config.m_caPrefix));
+  m_keyChain.sign(result, signingByIdentity(m_config.m_caItem.m_caPrefix));
   m_face.put(result);
   if (m_config.m_statusUpdateCallback) {
     m_config.m_statusUpdateCallback(requestState);
@@ -479,7 +494,7 @@ CaModule::issueCertificate(const RequestState& requestState)
   SignatureInfo signatureInfo;
   signatureInfo.setValidityPeriod(period);
   security::SigningInfo signingInfo(security::SigningInfo::SIGNER_TYPE_ID,
-                                    m_config.m_caPrefix, signatureInfo);
+                                    m_config.m_caItem.m_caPrefix, signatureInfo);
 
   m_keyChain.sign(newCert, signingInfo);
   _LOG_TRACE("new cert got signed" << newCert);
@@ -492,7 +507,7 @@ CaModule::getCertificateRequest(const Interest& request)
   std::string requestId;
   RequestState requestState;
   try {
-    requestId = readString(request.getName().at(m_config.m_caPrefix.size() + 2));
+    requestId = readString(request.getName().at(m_config.m_caItem.m_caPrefix.size() + 2));
   }
   catch (const std::exception& e) {
     _LOG_ERROR("Cannot read the request ID out from the request: " << e.what());
@@ -545,7 +560,7 @@ CaModule::generateErrorDataPacket(const Name& name, ErrorCode error, const std::
   result.setName(name);
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
   result.setContent(ErrorTLV::encodeDataContent(error, errorInfo));
-  m_keyChain.sign(result, signingByIdentity(m_config.m_caPrefix));
+  m_keyChain.sign(result, signingByIdentity(m_config.m_caItem.m_caPrefix));
   return result;
 }
 

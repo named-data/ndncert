@@ -68,10 +68,10 @@ bool
 ClientModule::verifyInfoResponse(const Data& reply)
 {
   // parse the ca item
-  auto caItem = INFO::decodeClientConfigFromContent(reply.getContent());
+  auto caItem = INFO::decodeDataContentToCaProfile(reply.getContent());
 
   // verify the probe Data's sig
-  if (!security::verifySignature(reply, caItem.m_anchor)) {
+  if (!security::verifySignature(reply, *caItem.m_cert)) {
     _LOG_ERROR("Cannot verify data signature from " << m_ca.m_caPrefix.toUri());
     return false;
   }
@@ -84,7 +84,7 @@ ClientModule::addCaFromInfoResponse(const Data& reply)
   const Block& contentBlock = reply.getContent();
 
   // parse the ca item
-  auto caItem = INFO::decodeClientConfigFromContent(contentBlock);
+  auto caItem = INFO::decodeDataContentToCaProfile(contentBlock);
 
   // update the local config
   bool findItem = false;
@@ -100,15 +100,15 @@ ClientModule::addCaFromInfoResponse(const Data& reply)
 }
 
 shared_ptr<Interest>
-ClientModule::generateProbeInterest(const ClientCaItem& ca, const std::string& probeInfo)
+ClientModule::generateProbeInterest(const CaConfigItem& ca,
+                                    std::vector<std::tuple<std::string, std::string>>&& probeInfo)
 {
   Name interestName = ca.m_caPrefix;
   interestName.append("CA").append("PROBE");
   auto interest = make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
-  interest->setApplicationParameters(
-      PROBE::encodeApplicationParametersFromProbeInfo(ca, probeInfo));
+  interest->setApplicationParameters(PROBE::encodeApplicationParameters(std::move(probeInfo)));
 
   // update local state
   m_ca = ca;
@@ -118,7 +118,7 @@ ClientModule::generateProbeInterest(const ClientCaItem& ca, const std::string& p
 void
 ClientModule::onProbeResponse(const Data& reply)
 {
-  if (!security::verifySignature(reply, m_ca.m_anchor)) {
+  if (!security::verifySignature(reply, *m_ca.m_cert)) {
     _LOG_ERROR("Cannot verify data signature from " << m_ca.m_caPrefix.toUri());
     return;
   }
@@ -213,7 +213,7 @@ ClientModule::generateNewInterest(const time::system_clock::TimePoint& notBefore
 std::list<std::string>
 ClientModule::onNewRenewRevokeResponse(const Data& reply)
 {
-  if (!security::verifySignature(reply, m_ca.m_anchor)) {
+  if (!security::verifySignature(reply, *m_ca.m_cert)) {
     _LOG_ERROR("Cannot verify data signature from " << m_ca.m_caPrefix.toUri());
     return std::list<std::string>();
   }
@@ -248,7 +248,7 @@ ClientModule::generateRevokeInterest(const security::v2::Certificate& certificat
   // Name requestedName = identityName;
   bool findCa = false;
   for (const auto& caItem : m_config.m_caItems) {
-    if (caItem.m_caName.isPrefixOf(certificate.getName())) {
+    if (caItem.m_caPrefix.isPrefixOf(certificate.getName())) {
       m_ca = caItem;
       findCa = true;
     }
@@ -296,7 +296,7 @@ ClientModule::generateChallengeInterest(const Block& challengeRequest)
 void
 ClientModule::onChallengeResponse(const Data& reply)
 {
-  if (!security::verifySignature(reply, m_ca.m_anchor)) {
+  if (!security::verifySignature(reply, *m_ca.m_cert)) {
     _LOG_ERROR("Cannot verify data signature from " << m_ca.m_caPrefix.toUri());
     return;
   }
@@ -371,21 +371,6 @@ ClientModule::endSession()
     m_keyChain.deleteKey(identity, m_key);
   }
   m_status = Status::ENDED;
-}
-
-std::vector<std::string>
-ClientModule::parseProbeComponents(const std::string& probe)
-{
-  std::vector<std::string> components;
-  std::string delimiter = ":";
-  size_t last = 0;
-  size_t next = 0;
-  while ((next = probe.find(delimiter, last)) != std::string::npos) {
-    components.push_back(probe.substr(last, next - last));
-    last = next + 1;
-  }
-  components.push_back(probe.substr(last));
-  return components;
 }
 
 }  // namespace ndncert

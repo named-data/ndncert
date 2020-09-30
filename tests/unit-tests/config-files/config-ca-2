@@ -1,0 +1,9 @@
+{
+  "ca-prefix": "/ndn",
+  "ca-info": "missing max validity period, max suffix length, and probe",
+  "supported-challenges":
+  [
+      { "challenge": "pin" },
+      { "challenge": "email" }
+  ]
+}

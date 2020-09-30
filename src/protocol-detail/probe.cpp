@@ -26,39 +26,13 @@ namespace ndn {
 namespace ndncert {
 
 // For Client
-std::vector<std::string>
-PROBE::parseProbeComponents(const std::string& probe)
-{
-  std::vector<std::string> components;
-  std::string delimiter = ":";
-  size_t last = 0;
-  size_t next = 0;
-  while ((next = probe.find(delimiter, last)) != std::string::npos) {
-    components.push_back(probe.substr(last, next - last));
-    last = next + 1;
-  }
-  components.push_back(probe.substr(last));
-  return components;
-}
-
 Block
-PROBE::encodeApplicationParametersFromProbeInfo(const ClientCaItem& ca, const std::string& probeInfo)
+PROBE::encodeApplicationParameters(std::vector<std::tuple<std::string, std::string>>&& parameters)
 {
   auto content = makeEmptyBlock(tlv::ApplicationParameters);
-
-  std::vector<std::string> fields = parseProbeComponents(ca.m_probe);
-  std::vector<std::string> arguments = parseProbeComponents(probeInfo);
-  ;
-
-  if (arguments.size() != fields.size()) {
-    BOOST_THROW_EXCEPTION(std::runtime_error("Error in genProbeRequestJson: argument list does not match field list in the config file."));
-  }
-
-  for (size_t i = 0; i < fields.size(); ++i) {
-    content.push_back(
-        makeStringBlock(tlv_parameter_key, fields.at(i)));
-    content.push_back(
-        makeStringBlock(tlv_parameter_value, arguments.at(i)));
+  for (size_t i = 0; i < parameters.size(); ++i) {
+    content.push_back(makeStringBlock(tlv_parameter_key, std::get<0>(parameters[i])));
+    content.push_back(makeStringBlock(tlv_parameter_value, std::get<1>(parameters[i])));
   }
   content.encode();
   return content;
@@ -66,29 +40,15 @@ PROBE::encodeApplicationParametersFromProbeInfo(const ClientCaItem& ca, const st
 
 // For CA
 Block
-PROBE::encodeDataContent(const Name& identifier, const std::string& m_probe, const Block& parameterTLV)
+PROBE::encodeDataContent(const std::vector<Name>& identifiers, boost::optional<size_t> maxSuffixLength)
 {
-  std::vector<std::string> fields;
-  std::string delimiter = ":";
-  size_t last = 0;
-  size_t next = 0;
-  while ((next = m_probe.find(delimiter, last)) != std::string::npos) {
-    fields.push_back(m_probe.substr(last, next - last));
-    last = next + 1;
-  }
-  fields.push_back(m_probe.substr(last));
-
   Block content = makeEmptyBlock(tlv::Content);
-
-  // TODO: Currently have no mechanism to utilize the given params to determine name
-  //for (size_t i = 0; i < fields.size(); ++i) {
-  //  root.put(fields.at(i), parameterJson.get(fields.at(i), ""));
-  //}
-
-  content.push_back(makeNestedBlock(tlv_probe_response, identifier));
-
-  // TODO: Must be determined based on CA config
-  content.push_back(makeEmptyBlock(tlv_allow_longer_name));
+  for (const auto& name : identifiers) {
+    content.push_back(makeNestedBlock(tlv_probe_response, name));
+  }
+  if (maxSuffixLength) {
+    content.push_back(makeNonNegativeIntegerBlock(tlv_max_suffix_length, *maxSuffixLength));
+  }
   content.encode();
   return content;
 }

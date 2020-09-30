@@ -1,0 +1,13 @@
+{
+  "ca-list":
+  [
+    {
+        "ca-prefix": "/ndn/edu/ucla",
+        "ca-info": "missing certificate",
+        "probe-parameters":
+        [
+          { "probe-parameter-key": "email" }
+        ]
+    }
+  ]
+}

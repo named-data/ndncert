@@ -21,7 +21,7 @@
 #ifndef NDNCERT_CA_MODULE_HPP
 #define NDNCERT_CA_MODULE_HPP
 
-#include "ca-config.hpp"
+#include "configuration.hpp"
 #include "crypto-support/crypto-helper.hpp"
 #include "ca-storage.hpp"
 
