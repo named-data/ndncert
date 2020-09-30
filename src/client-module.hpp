@@ -22,7 +22,7 @@
 #define NDNCERT_CLIENT_MODULE_HPP
 
 #include "client-config.hpp"
-#include "certificate-request.hpp"
+#include "request-state.hpp"
 #include "crypto-support/crypto-helper.hpp"
 
 namespace ndn {

@@ -21,8 +21,7 @@
 #ifndef NDNCERT_PROTOCOL_DETAIL_CHALLENGE_HPP
 #define NDNCERT_PROTOCOL_DETAIL_CHALLENGE_HPP
 
-#include "../certificate-request.hpp"
-#include <ndn-cxx/encoding/block.hpp>
+#include "../request-state.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -30,7 +29,7 @@ namespace ndncert {
 class CHALLENGE {
 public:
   static Block
-  encodeDataPayload(const CertificateRequest& request);
+  encodeDataPayload(const RequestState& request);
 };
 
 }  // namespace ndncert

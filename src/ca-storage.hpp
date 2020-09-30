@@ -21,7 +21,7 @@
 #ifndef NDNCERT_CA_STORAGE_HPP
 #define NDNCERT_CA_STORAGE_HPP
 
-#include "certificate-request.hpp"
+#include "request-state.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -42,22 +42,22 @@ public:
   ~CaStorage();
 
 public: // certificate request related
-  virtual CertificateRequest
+  virtual RequestState
   getRequest(const std::string& requestId) = 0;
 
   virtual void
-  addRequest(const CertificateRequest& request) = 0;
+  addRequest(const RequestState& request) = 0;
 
   virtual void
-  updateRequest(const CertificateRequest& request) = 0;
+  updateRequest(const RequestState& request) = 0;
 
   virtual void
   deleteRequest(const std::string& requestId) = 0;
 
-  virtual std::list<CertificateRequest>
+  virtual std::list<RequestState>
   listAllRequests() = 0;
 
-  virtual std::list<CertificateRequest>
+  virtual std::list<RequestState>
   listAllRequests(const Name& caName) = 0;
 
 public: // certificate related

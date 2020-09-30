@@ -74,7 +74,7 @@ ChallengeCredential::parseConfigFile()
 
 // For CA
 std::tuple<ErrorCode, std::string>
-ChallengeCredential::handleChallengeRequest(const Block& params, CertificateRequest& request)
+ChallengeCredential::handleChallengeRequest(const Block& params, RequestState& request)
 {
   params.parse();
   if (m_trustAnchors.empty()) {

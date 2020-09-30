@@ -21,10 +21,7 @@
 #ifndef NDNCERT_PROTOCOL_DETAIL_NEW_HPP
 #define NDNCERT_PROTOCOL_DETAIL_NEW_HPP
 
-#include <ndn-cxx/security/v2/certificate.hpp>
-
-#include "../certificate-request.hpp"
-#include "ndn-cxx/encoding/block.hpp"
+#include "../request-state.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -44,7 +41,7 @@ public:
    */
   static Block
   encodeDataContent(const std::string& ecdhKey, const std::string& salt,
-                    const CertificateRequest& request,
+                    const RequestState& request,
                     const std::list<std::string>& challenges);
 };
 

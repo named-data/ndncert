@@ -21,9 +21,7 @@
 #ifndef NDNCERT_CA_CONFIG_HPP
 #define NDNCERT_CA_CONFIG_HPP
 
-#include <ndn-cxx/security/v2/certificate.hpp>
-
-#include "certificate-request.hpp"
+#include "request-state.hpp"
 #include "client-config.hpp"
 
 namespace ndn {
@@ -46,9 +44,9 @@ using NameAssignmentFunc = function<std::vector<std::string>(const std::vector<s
  * fired whenever a request instance is created, challenge status is updated, and when certificate
  * is issued.
  *
- * @p CertificateRequest, input, the state of the certificate request whose status is updated.
+ * @p RequestState, input, the state of the certificate request whose status is updated.
  */
-using StatusUpdateCallback = function<void(const CertificateRequest&)>;
+using StatusUpdateCallback = function<void(const RequestState&)>;
 
 /**
  * @brief CA's configuration on NDNCERT.

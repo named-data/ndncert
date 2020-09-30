@@ -82,7 +82,7 @@ main(int argc, char* argv[])
   CaModule ca(face, keyChain, configFilePath);
 
   if (wantRepoOut) {
-      ca.setStatusUpdateCallback([&] (const CertificateRequest& request) {
+      ca.setStatusUpdateCallback([&] (const RequestState& request) {
           if (request.m_status == Status::SUCCESS && request.m_requestType == RequestType::NEW) {
             auto issuedCert = request.m_cert;
             boost::asio::ip::tcp::iostream requestStream;

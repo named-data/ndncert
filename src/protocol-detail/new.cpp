@@ -53,7 +53,7 @@ NEW::encodeApplicationParameters(const std::string& ecdhPub, const security::v2:
 
 Block
 NEW::encodeDataContent(const std::string& ecdhKey, const std::string& salt,
-                             const CertificateRequest& request,
+                             const RequestState& request,
                              const std::list<std::string>& challenges)
 {
   Block response = makeEmptyBlock(tlv::Content);

@@ -21,10 +21,8 @@
 #ifndef NDNCERT_CHALLENGE_MODULE_HPP
 #define NDNCERT_CHALLENGE_MODULE_HPP
 
+#include "request-state.hpp"
 #include <tuple>
-
-#include "certificate-request.hpp"
-#include "ndncert-common.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -52,7 +50,7 @@ public:
 
   // For CA
   virtual std::tuple<ErrorCode, std::string>
-  handleChallengeRequest(const Block& params, CertificateRequest& request) = 0;
+  handleChallengeRequest(const Block& params, RequestState& request) = 0;
 
   // For Client
   virtual std::vector<std::tuple<std::string, std::string>>
@@ -69,14 +67,14 @@ public:
 protected:
   // used by challenge modules
   std::tuple<ErrorCode, std::string>
-  returnWithError(CertificateRequest& request, ErrorCode errorCode, std::string&& errorInfo);
+  returnWithError(RequestState& request, ErrorCode errorCode, std::string&& errorInfo);
 
   std::tuple<ErrorCode, std::string>
-  returnWithNewChallengeStatus(CertificateRequest& request, const std::string& challengeStatus,
+  returnWithNewChallengeStatus(RequestState& request, const std::string& challengeStatus,
                                JsonSection&& challengeSecret, size_t remainingTries, time::seconds remainingTime);
 
   std::tuple<ErrorCode, std::string>
-  returnWithSuccess(CertificateRequest& request);
+  returnWithSuccess(RequestState& request);
 
 public:
   const std::string CHALLENGE_TYPE;

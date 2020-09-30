@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "certificate-request.hpp"
+#include "request-state.hpp"
 #include <ndn-cxx/util/indented-stream.hpp>
 
 namespace ndn {
@@ -36,13 +36,13 @@ ChallengeState::ChallengeState(const std::string& challengeStatus,
 {
 }
 
-CertificateRequest::CertificateRequest()
+RequestState::RequestState()
     : m_requestType(RequestType::NOTINITIALIZED)
     , m_status(Status::NOT_STARTED)
 {
 }
 
-CertificateRequest::CertificateRequest(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
+RequestState::RequestState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
                                        const security::v2::Certificate& cert)
     : m_caPrefix(caName)
     , m_requestId(requestId)
@@ -52,7 +52,7 @@ CertificateRequest::CertificateRequest(const Name& caName, const std::string& re
 {
 }
 
-CertificateRequest::CertificateRequest(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
+RequestState::RequestState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
                                        const security::v2::Certificate& cert, const std::string& challengeType,
                                        const std::string& challengeStatus, const system_clock::TimePoint& challengeTp,
                                        size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets)
@@ -67,7 +67,7 @@ CertificateRequest::CertificateRequest(const Name& caName, const std::string& re
 }
 
 std::ostream&
-operator<<(std::ostream& os, const CertificateRequest& request)
+operator<<(std::ostream& os, const RequestState& request)
 {
   os << "Request's CA name:\n";
   os << "  " << request.m_caPrefix << "\n";

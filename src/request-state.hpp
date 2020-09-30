@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_CERTIFICATE_REQUEST_HPP
-#define NDNCERT_CERTIFICATE_REQUEST_HPP
+#ifndef NDNCERT_REQUEST_STATE_HPP
+#define NDNCERT_REQUEST_STATE_HPP
 
 #include "ndncert-common.hpp"
 
@@ -44,12 +44,12 @@ struct ChallengeState {
  * m_challengeDefinedField to finish verification.
  *
  */
-class CertificateRequest {
+class RequestState {
 public:
-  CertificateRequest();
-  CertificateRequest(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
+  RequestState();
+  RequestState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
                      const security::v2::Certificate& cert);
-  CertificateRequest(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
+  RequestState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
                      const security::v2::Certificate& cert, const std::string& challengeType,
                      const std::string& challengeStatus, const system_clock::TimePoint& challengeTp,
                      size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets);
@@ -66,9 +66,9 @@ public:
 };
 
 std::ostream&
-operator<<(std::ostream& os, const CertificateRequest& request);
+operator<<(std::ostream& os, const RequestState& request);
 
 }  // namespace ndncert
 }  // namespace ndn
 
-#endif  // NDNCERT_CERTIFICATE_REQUEST_HPP
+#endif  // NDNCERT_REQUEST_STATE_HPP

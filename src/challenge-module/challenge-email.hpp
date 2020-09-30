@@ -22,8 +22,6 @@
 #define NDNCERT_CHALLENGE_EMAIL_HPP
 
 #include "../challenge-module.hpp"
-#include <ndn-cxx/util/time.hpp>
-#include <ndn-cxx/encoding/block.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -59,7 +57,7 @@ public:
 
   // For CA
   std::tuple<ErrorCode, std::string>
-  handleChallengeRequest(const Block& params, CertificateRequest& request) override;
+  handleChallengeRequest(const Block& params, RequestState& request) override;
 
   // For Client
   std::vector<std::tuple<std::string, std::string>>
@@ -75,7 +73,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 
   void
   sendEmail(const std::string& emailAddress, const std::string& secret,
-            const CertificateRequest& request) const;
+            const RequestState& request) const;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   // challenge status

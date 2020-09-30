@@ -92,11 +92,11 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
   onRegisterFailed(const std::string& reason);
 
-  CertificateRequest
+  RequestState
   getCertificateRequest(const Interest& request);
 
   security::v2::Certificate
-  issueCertificate(const CertificateRequest& certRequest);
+  issueCertificate(const RequestState& certRequest);
 
   void
   registerPrefix();

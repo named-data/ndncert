@@ -113,7 +113,7 @@ CaSqlite::~CaSqlite()
   sqlite3_close(m_database);
 }
 
-CertificateRequest
+RequestState
 CaSqlite::getRequest(const std::string& requestId)
 {
   Sqlite3Statement statement(m_database,
@@ -136,13 +136,13 @@ CaSqlite::getRequest(const std::string& requestId)
     auto remainingTime = statement.getInt(9);
     auto requestType = static_cast<RequestType>(statement.getInt(10));
     if (challengeType != "") {
-      return CertificateRequest(caName, requestId, requestType, status, cert,
+      return RequestState(caName, requestId, requestType, status, cert,
                                 challengeType, challengeStatus, time::fromIsoString(challengeTp),
                                 remainingTries, time::seconds(remainingTime),
                                 convertString2Json(challengeSecrets));
     }
     else {
-      return CertificateRequest(caName, requestId, requestType, status, cert);
+      return RequestState(caName, requestId, requestType, status, cert);
     }
   }
   else {
@@ -151,7 +151,7 @@ CaSqlite::getRequest(const std::string& requestId)
 }
 
 void
-CaSqlite::addRequest(const CertificateRequest& request)
+CaSqlite::addRequest(const RequestState& request)
 {
   // check whether request is there already
   auto keyNameTlv = request.m_cert.getKeyName().wireEncode();
@@ -197,7 +197,7 @@ CaSqlite::addRequest(const CertificateRequest& request)
 }
 
 void
-CaSqlite::updateRequest(const CertificateRequest& request)
+CaSqlite::updateRequest(const RequestState& request)
 {
   Sqlite3Statement statement(m_database,
                              R"_SQLTEXT_(UPDATE CertRequests
@@ -228,10 +228,10 @@ CaSqlite::updateRequest(const CertificateRequest& request)
   }
 }
 
-std::list<CertificateRequest>
+std::list<RequestState>
 CaSqlite::listAllRequests()
 {
-  std::list<CertificateRequest> result;
+  std::list<RequestState> result;
   Sqlite3Statement statement(m_database, R"_SQLTEXT_(SELECT id, request_id, ca_name, status,
                              challenge_status, cert_key_name, cert_request, challenge_type, challenge_secrets,
                              challenge_tp, remaining_tries, remaining_time, request_type
@@ -249,22 +249,22 @@ CaSqlite::listAllRequests()
     auto remainingTime = statement.getInt(11);
     auto requestType = static_cast<RequestType>(statement.getInt(12));
     if (challengeType != "") {
-      result.push_back(CertificateRequest(caName, requestId, requestType, status, cert,
+      result.push_back(RequestState(caName, requestId, requestType, status, cert,
                                           challengeType, challengeStatus, time::fromIsoString(challengeTp),
                                           remainingTries, time::seconds(remainingTime),
                                           convertString2Json(challengeSecrets)));
     }
     else {
-      result.push_back(CertificateRequest(caName, requestId, requestType, status, cert));
+      result.push_back(RequestState(caName, requestId, requestType, status, cert));
     }
   }
   return result;
 }
 
-std::list<CertificateRequest>
+std::list<RequestState>
 CaSqlite::listAllRequests(const Name& caName)
 {
-  std::list<CertificateRequest> result;
+  std::list<RequestState> result;
   Sqlite3Statement statement(m_database,
                              R"_SQLTEXT_(SELECT id, request_id, ca_name, status,
                              challenge_status, cert_key_name, cert_request, challenge_type, challenge_secrets,
@@ -285,13 +285,13 @@ CaSqlite::listAllRequests(const Name& caName)
     auto remainingTime = statement.getInt(11);
     auto requestType = static_cast<RequestType>(statement.getInt(12));
     if (challengeType != "") {
-      result.push_back(CertificateRequest(caName, requestId, requestType, status, cert,
+      result.push_back(RequestState(caName, requestId, requestType, status, cert,
                                           challengeType, challengeStatus, time::fromIsoString(challengeTp),
                                           remainingTries, time::seconds(remainingTime),
                                           convertString2Json(challengeSecrets)));
     }
     else {
-      result.push_back(CertificateRequest(caName, requestId, requestType, status, cert));
+      result.push_back(RequestState(caName, requestId, requestType, status, cert));
     }
   }
   return result;

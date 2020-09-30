@@ -53,7 +53,7 @@ main(int argc, char* argv[])
   }
 
   CaSqlite storage;
-  std::list<CertificateRequest> requestList;
+  std::list<RequestState> requestList;
   std::list<security::v2::Certificate> certList;
   if (caNameString != "") {
     requestList = storage.listAllRequests(Name(caNameString));

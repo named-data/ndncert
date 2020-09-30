@@ -21,7 +21,7 @@
 #ifndef NDNCERT_CLIENT_CONFIG_HPP
 #define NDNCERT_CLIENT_CONFIG_HPP
 
-#include "certificate-request.hpp"
+#include "request-state.hpp"
 #include <ndn-cxx/security/v2/certificate.hpp>
 
 namespace ndn {

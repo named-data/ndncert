@@ -53,7 +53,7 @@ REVOKE::encodeApplicationParameters(const std::string& ecdhPub, const security::
 
 Block
 REVOKE::encodeDataContent(const std::string& ecdhKey, const std::string& salt,
-                             const CertificateRequest& request,
+                             const RequestState& request,
                              const std::list<std::string>& challenges)
 {
   Block response = makeEmptyBlock(tlv::Content);

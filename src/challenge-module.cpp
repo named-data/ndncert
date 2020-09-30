@@ -71,7 +71,7 @@ ChallengeModule::generateSecretCode()
 }
 
 std::tuple<ErrorCode, std::string>
-ChallengeModule::returnWithError(CertificateRequest& request, ErrorCode errorCode, std::string&& errorInfo)
+ChallengeModule::returnWithError(RequestState& request, ErrorCode errorCode, std::string&& errorInfo)
 {
   request.m_status = Status::FAILURE;
   request.m_challengeType = "";
@@ -80,7 +80,7 @@ ChallengeModule::returnWithError(CertificateRequest& request, ErrorCode errorCod
 }
 
 std::tuple<ErrorCode, std::string>
-ChallengeModule::returnWithNewChallengeStatus(CertificateRequest& request, const std::string& challengeStatus,
+ChallengeModule::returnWithNewChallengeStatus(RequestState& request, const std::string& challengeStatus,
                                               JsonSection&& challengeSecret, size_t remainingTries, time::seconds remainingTime)
 {
   request.m_status = Status::CHALLENGE;
@@ -90,7 +90,7 @@ ChallengeModule::returnWithNewChallengeStatus(CertificateRequest& request, const
 }
 
 std::tuple<ErrorCode, std::string>
-ChallengeModule::returnWithSuccess(CertificateRequest& request)
+ChallengeModule::returnWithSuccess(RequestState& request)
 {
   request.m_status = Status::PENDING;
   request.m_challengeType = CHALLENGE_TYPE;

@@ -334,7 +334,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
 
   // create new request instance
   std::string requestId = std::to_string(random::generateWord64());
-  CertificateRequest certRequest(m_config.m_caPrefix, requestId, requestType, Status::BEFORE_CHALLENGE, *clientCert);
+  RequestState certRequest(m_config.m_caPrefix, requestId, requestType, Status::BEFORE_CHALLENGE, *clientCert);
   m_storage->addRequest(certRequest);
   Data result;
   result.setName(request.getName());
@@ -362,7 +362,7 @@ void
 CaModule::onChallenge(const Interest& request)
 {
   // get certificate request state
-  CertificateRequest certRequest = getCertificateRequest(request);
+  RequestState certRequest = getCertificateRequest(request);
   if (certRequest.m_requestId == "") {
     _LOG_ERROR("No certificate request state can be found.");
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
@@ -461,7 +461,7 @@ CaModule::onChallenge(const Interest& request)
 }
 
 security::v2::Certificate
-CaModule::issueCertificate(const CertificateRequest& certRequest)
+CaModule::issueCertificate(const RequestState& certRequest)
 {
   auto expectedPeriod =
       certRequest.m_cert.getValidityPeriod().getPeriod();
@@ -483,11 +483,11 @@ CaModule::issueCertificate(const CertificateRequest& certRequest)
   return newCert;
 }
 
-CertificateRequest
+RequestState
 CaModule::getCertificateRequest(const Interest& request)
 {
   std::string requestId;
-  CertificateRequest certRequest;
+  RequestState certRequest;
   try {
     requestId = readString(request.getName().at(m_config.m_caPrefix.size() + 2));
   }

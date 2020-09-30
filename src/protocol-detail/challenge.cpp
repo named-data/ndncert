@@ -20,13 +20,13 @@
 
 #include "challenge.hpp"
 #include "../ndncert-common.hpp"
-#include "../certificate-request.hpp"
+#include "../request-state.hpp"
 
 namespace ndn {
 namespace ndncert {
 
 Block
-CHALLENGE::encodeDataPayload(const CertificateRequest& request)
+CHALLENGE::encodeDataPayload(const RequestState& request)
 {
   Block response = makeEmptyBlock(tlv_encrypted_payload);
   response.push_back(makeNonNegativeIntegerBlock(tlv_status, static_cast<size_t>(request.m_status)));

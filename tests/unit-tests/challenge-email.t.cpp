@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmail)
   auto identity = addIdentity(Name("/ndn/site1"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
-  CertificateRequest request(Name("/ndn/site1"), "123", RequestType::NEW, Status::BEFORE_CHALLENGE, cert);
+  RequestState request(Name("/ndn/site1"), "123", RequestType::NEW, Status::BEFORE_CHALLENGE, cert);
 
   Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
   paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengeEmail::PARAMETER_KEY_EMAIL));
@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithInvalidEmail)
   auto identity = addIdentity(Name("/ndn/site1"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
-  CertificateRequest request(Name("/ndn/site1"), "123", RequestType::NEW, Status::BEFORE_CHALLENGE, cert);
+  RequestState request(Name("/ndn/site1"), "123", RequestType::NEW, Status::BEFORE_CHALLENGE, cert);
 
   Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
   paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengeEmail::PARAMETER_KEY_EMAIL));
@@ -113,7 +113,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
   auto cert = key.getDefaultCertificate();
   JsonSection json;
   json.put(ChallengeEmail::PARAMETER_KEY_CODE, "4567");
-  CertificateRequest request(Name("/ndn/site1"), "123", RequestType::NEW, Status::CHALLENGE, cert,
+  RequestState request(Name("/ndn/site1"), "123", RequestType::NEW, Status::CHALLENGE, cert,
                              "email", ChallengeEmail::NEED_CODE, time::system_clock::now(),
                              3, time::seconds(3600), std::move(json));
 
@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithWrongCode)
   auto cert = key.getDefaultCertificate();
   JsonSection json;
   json.put(ChallengeEmail::PARAMETER_KEY_CODE, "4567");
-  CertificateRequest request(Name("/ndn/site1"), "123", RequestType::NEW, Status::CHALLENGE, cert,
+  RequestState request(Name("/ndn/site1"), "123", RequestType::NEW, Status::CHALLENGE, cert,
                              "email", ChallengeEmail::NEED_CODE, time::system_clock::now(),
                              3, time::seconds(3600), std::move(json));
 
