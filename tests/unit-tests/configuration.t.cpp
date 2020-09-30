@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(CAConfigFile)
   BOOST_CHECK_EQUAL(config.m_caItem.m_maxValidityPeriod, time::seconds(86400));
   BOOST_CHECK(!config.m_caItem.m_maxSuffixLength);
   BOOST_CHECK_EQUAL(config.m_caItem.m_probeParameterKeys.size(), 0);
-  BOOST_CHECK_EQUAL(config.m_caItem.m_supportedChallenges.size(), 0);
+  BOOST_CHECK_EQUAL(config.m_caItem.m_supportedChallenges.size(), 2);
   BOOST_CHECK_EQUAL(config.m_caItem.m_supportedChallenges.front(), "pin");
   BOOST_CHECK_EQUAL(config.m_caItem.m_supportedChallenges.back(), "email");
 }
@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE(ClientConfigFile)
   BOOST_CHECK_EQUAL(config.m_caItems.size(), 2);
 
   auto& config1 = config.m_caItems.front();
-  BOOST_CHECK_EQUAL(config1.m_caPrefix, "/ndn");
+  BOOST_CHECK_EQUAL(config1.m_caPrefix, "/ndn/edu/ucla");
   BOOST_CHECK_EQUAL(config1.m_caInfo, "ndn testbed ca");
   BOOST_CHECK_EQUAL(config1.m_maxValidityPeriod, time::seconds(864000));
   BOOST_CHECK_EQUAL(*config1.m_maxSuffixLength, 3);
@@ -79,9 +79,9 @@ BOOST_AUTO_TEST_CASE(ClientConfigFile)
   BOOST_CHECK_EQUAL(config1.m_cert->getName(),
                     "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
 
-  auto& config2 = config.m_caItems.front();
-  BOOST_CHECK_EQUAL(config2.m_caPrefix, "/ndn");
-  BOOST_CHECK_EQUAL(config2.m_caInfo, "ndn testbed ca");
+  auto& config2 = config.m_caItems.back();
+  BOOST_CHECK_EQUAL(config2.m_caPrefix, "/ndn/edu/ucla/zhiyi");
+  BOOST_CHECK_EQUAL(config2.m_caInfo, "");
   BOOST_CHECK_EQUAL(config2.m_maxValidityPeriod, time::seconds(86400));
   BOOST_CHECK(!config2.m_maxSuffixLength);
   BOOST_CHECK_EQUAL(config2.m_probeParameterKeys.size(), 0);

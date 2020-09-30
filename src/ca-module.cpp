@@ -267,7 +267,13 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
 
   shared_ptr<security::v2::Certificate> clientCert = nullptr;
   // parse certificate request
-  Block requestPayload = parameterTLV.get(tlv_cert_request);
+  Block requestPayload;
+  if (requestType == RequestType::NEW) {
+    requestPayload = parameterTLV.get(tlv_cert_request);
+  }
+  else if (requestType == RequestType::REVOKE) {
+    requestPayload = parameterTLV.get(tlv_cert_to_revoke);
+  }
   requestPayload.parse();
   try {
     security::v2::Certificate cert = security::v2::Certificate(requestPayload.get(tlv::Data));

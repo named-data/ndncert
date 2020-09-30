@@ -65,7 +65,8 @@ BOOST_AUTO_TEST_CASE(PacketSize0)
       contentBlock.parse();
       auto caItem = INFO::decodeDataContentToCaProfile(contentBlock);
       BOOST_CHECK_EQUAL(caItem.m_caPrefix, "/ndn");
-      BOOST_CHECK_EQUAL(caItem.m_probeParameterKeys.size(), 0);
+      BOOST_CHECK_EQUAL(caItem.m_probeParameterKeys.size(), 1);
+      BOOST_CHECK_EQUAL(caItem.m_probeParameterKeys.front(), "full name");
       BOOST_CHECK_EQUAL(caItem.m_cert->wireEncode(), cert.wireEncode());
       BOOST_CHECK_EQUAL(caItem.m_caInfo, "ndn testbed ca");
     }

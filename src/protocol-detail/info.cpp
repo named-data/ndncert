@@ -36,7 +36,6 @@ INFO::encodeDataContent(const CaConfigItem& caConfig, const security::v2::Certif
     caInfo = caConfig.m_caInfo;
   }
   content.push_back(makeStringBlock(tlv_ca_info, caInfo));
-
   for (const auto& key : caConfig.m_probeParameterKeys) {
     content.push_back(makeStringBlock(tlv_parameter_key, key));
   }
@@ -55,9 +54,9 @@ INFO::decodeDataContentToCaProfile(const Block& block)
   CaConfigItem result;
   block.parse();
   for (auto const& item : block.elements()) {
-    item.parse();
     switch (item.type()) {
     case tlv_ca_prefix:
+      item.parse();
       result.m_caPrefix.wireDecode(item.get(tlv::Name));
       break;
     case tlv_ca_info:
@@ -73,7 +72,8 @@ INFO::decodeDataContentToCaProfile(const Block& block)
       result.m_maxSuffixLength = readNonNegativeInteger(item);
       break;
     case tlv_ca_certificate:
-      result.m_cert->wireDecode(item.get(tlv::Data));
+      item.parse();
+      result.m_cert = std::make_shared<security::v2::Certificate>(item.get(tlv::Data));
       break;
     default:
       continue;
