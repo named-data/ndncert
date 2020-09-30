@@ -113,8 +113,6 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::list<RegisteredPrefixHandle> m_registeredPrefixHandles;
   std::list<InterestFilterHandle> m_interestFilterHandles;
 
-  ECDHState m_ecdh;
-  uint8_t m_aesKey[16] = {0};
 };
 
 } // namespace ndncert

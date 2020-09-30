@@ -50,7 +50,8 @@ CREATE TABLE IF NOT EXISTS
     challenge_tp TEXT,
     remaining_tries INTEGER,
     remaining_time INTEGER,
-    challenge_secrets TEXT
+    challenge_secrets TEXT,
+    encryption_key BLOB NOT NULL
   );
 CREATE UNIQUE INDEX IF NOT EXISTS
   CertRequestIdIndex ON CertRequests(request_id);
@@ -120,7 +121,7 @@ CaSqlite::getRequest(const std::string& requestId)
                              R"_SQLTEXT_(SELECT id, ca_name, status,
                              challenge_status, cert_request,
                              challenge_type, challenge_secrets,
-                             challenge_tp, remaining_tries, remaining_time, request_type
+                             challenge_tp, remaining_tries, remaining_time, request_type, encryption_key
                              FROM CertRequests where request_id = ?)_SQLTEXT_");
   statement.bind(1, requestId, SQLITE_TRANSIENT);
 
@@ -135,14 +136,15 @@ CaSqlite::getRequest(const std::string& requestId)
     auto remainingTries = statement.getInt(8);
     auto remainingTime = statement.getInt(9);
     auto requestType = static_cast<RequestType>(statement.getInt(10));
+    auto encryptionKey = statement.getBlock(11);
     if (challengeType != "") {
       return RequestState(caName, requestId, requestType, status, cert,
                                 challengeType, challengeStatus, time::fromIsoString(challengeTp),
                                 remainingTries, time::seconds(remainingTime),
-                                convertString2Json(challengeSecrets));
+                                convertString2Json(challengeSecrets), encryptionKey);
     }
     else {
-      return RequestState(caName, requestId, requestType, status, cert);
+      return RequestState(caName, requestId, requestType, status, cert, encryptionKey);
     }
   }
   else {
@@ -174,14 +176,15 @@ CaSqlite::addRequest(const RequestState& request)
       m_database,
       R"_SQLTEXT_(INSERT INTO CertRequests (request_id, ca_name, status, request_type,
                   cert_key_name, cert_request, challenge_type, challenge_status, challenge_secrets,
-                  challenge_tp, remaining_tries, remaining_time)
-                  values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
+                  challenge_tp, remaining_tries, remaining_time, encryption_key)
+                  values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
   statement.bind(1, request.m_requestId, SQLITE_TRANSIENT);
   statement.bind(2, request.m_caPrefix.wireEncode(), SQLITE_TRANSIENT);
   statement.bind(3, static_cast<int>(request.m_status));
   statement.bind(4, static_cast<int>(request.m_requestType));
   statement.bind(5, keyNameTlv, SQLITE_TRANSIENT);
   statement.bind(6, request.m_cert.wireEncode(), SQLITE_TRANSIENT);
+  statement.bind(13, request.m_encryptionKey, SQLITE_TRANSIENT);
   if (request.m_challengeState) {
     statement.bind(7, request.m_challengeType, SQLITE_TRANSIENT);
     statement.bind(8, request.m_challengeState->m_challengeStatus, SQLITE_TRANSIENT);
@@ -234,7 +237,7 @@ CaSqlite::listAllRequests()
   std::list<RequestState> result;
   Sqlite3Statement statement(m_database, R"_SQLTEXT_(SELECT id, request_id, ca_name, status,
                              challenge_status, cert_key_name, cert_request, challenge_type, challenge_secrets,
-                             challenge_tp, remaining_tries, remaining_time, request_type
+                             challenge_tp, remaining_tries, remaining_time, request_type, encryption_key
                              FROM CertRequests)_SQLTEXT_");
   while (statement.step() == SQLITE_ROW) {
     auto requestId = statement.getString(1);
@@ -248,14 +251,15 @@ CaSqlite::listAllRequests()
     auto remainingTries = statement.getInt(10);
     auto remainingTime = statement.getInt(11);
     auto requestType = static_cast<RequestType>(statement.getInt(12));
+    auto encryptionKey = statement.getBlock(13);
     if (challengeType != "") {
       result.push_back(RequestState(caName, requestId, requestType, status, cert,
                                           challengeType, challengeStatus, time::fromIsoString(challengeTp),
                                           remainingTries, time::seconds(remainingTime),
-                                          convertString2Json(challengeSecrets)));
+                                          convertString2Json(challengeSecrets), encryptionKey));
     }
     else {
-      result.push_back(RequestState(caName, requestId, requestType, status, cert));
+      result.push_back(RequestState(caName, requestId, requestType, status, cert, encryptionKey));
     }
   }
   return result;
@@ -268,7 +272,7 @@ CaSqlite::listAllRequests(const Name& caName)
   Sqlite3Statement statement(m_database,
                              R"_SQLTEXT_(SELECT id, request_id, ca_name, status,
                              challenge_status, cert_key_name, cert_request, challenge_type, challenge_secrets,
-                             challenge_tp, remaining_tries, remaining_time, request_type
+                             challenge_tp, remaining_tries, remaining_time, request_type, encryption_key
                              FROM CertRequests WHERE ca_name = ?)_SQLTEXT_");
   statement.bind(1, caName.wireEncode(), SQLITE_TRANSIENT);
 
@@ -284,14 +288,15 @@ CaSqlite::listAllRequests(const Name& caName)
     auto remainingTries = statement.getInt(10);
     auto remainingTime = statement.getInt(11);
     auto requestType = static_cast<RequestType>(statement.getInt(12));
+    auto encryptionKey = statement.getBlock(13);
     if (challengeType != "") {
       result.push_back(RequestState(caName, requestId, requestType, status, cert,
                                           challengeType, challengeStatus, time::fromIsoString(challengeTp),
                                           remainingTries, time::seconds(remainingTime),
-                                          convertString2Json(challengeSecrets)));
+                                          convertString2Json(challengeSecrets), encryptionKey));
     }
     else {
-      result.push_back(RequestState(caName, requestId, requestType, status, cert));
+      result.push_back(RequestState(caName, requestId, requestType, status, cert, encryptionKey));
     }
   }
   return result;

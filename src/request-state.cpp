@@ -43,19 +43,21 @@ RequestState::RequestState()
 }
 
 RequestState::RequestState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
-                                       const security::v2::Certificate& cert)
+                                       const security::v2::Certificate& cert, Block encryptionKey)
     : m_caPrefix(caName)
     , m_requestId(requestId)
     , m_requestType(requestType)
     , m_status(status)
     , m_cert(cert)
+    , m_encryptionKey(std::move(encryptionKey))
 {
 }
 
 RequestState::RequestState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
                                        const security::v2::Certificate& cert, const std::string& challengeType,
                                        const std::string& challengeStatus, const system_clock::TimePoint& challengeTp,
-                                       size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets)
+                                       size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
+                                       Block encryptionKey)
     : m_caPrefix(caName)
     , m_requestId(requestId)
     , m_requestType(requestType)
@@ -63,6 +65,7 @@ RequestState::RequestState(const Name& caName, const std::string& requestId, Req
     , m_cert(cert)
     , m_challengeType(challengeType)
     , m_challengeState(ChallengeState(challengeStatus, challengeTp, remainingTries, remainingTime, std::move(challengeSecrets)))
+    , m_encryptionKey(std::move(encryptionKey))
 {
 }
 

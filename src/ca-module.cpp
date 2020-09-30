@@ -247,9 +247,10 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   }
 
   // get server's ECDH pub key
-  auto myEcdhPubKeyBase64 = m_ecdh.getBase64PubKey();
+  ECDHState ecdh;
+  auto myEcdhPubKeyBase64 = ecdh.getBase64PubKey();
   try {
-    m_ecdh.deriveSecret(peerKeyBase64);
+    ecdh.deriveSecret(peerKeyBase64);
   }
   catch (const std::exception& e) {
     _LOG_ERROR("Cannot derive a shared secret using the provided ECDH key: " << e.what());
@@ -260,8 +261,9 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   // generate salt for HKDF
   auto saltInt = random::generateSecureWord64();
   // hkdf
-  hkdf(m_ecdh.context->sharedSecret, m_ecdh.context->sharedSecretLen,
-       (uint8_t*)&saltInt, sizeof(saltInt), m_aesKey, sizeof(m_aesKey));
+  uint8_t aesKey[AES_128_KEY_LEN];
+  hkdf(ecdh.context->sharedSecret, ecdh.context->sharedSecretLen,
+       (uint8_t*)&saltInt, sizeof(saltInt), aesKey, sizeof(aesKey));
 
   shared_ptr<security::v2::Certificate> clientCert = nullptr;
   // parse certificate request
@@ -334,7 +336,8 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
 
   // create new request instance
   std::string requestId = std::to_string(random::generateWord64());
-  RequestState certRequest(m_config.m_caPrefix, requestId, requestType, Status::BEFORE_CHALLENGE, *clientCert);
+  RequestState certRequest(m_config.m_caPrefix, requestId, requestType, Status::BEFORE_CHALLENGE, *clientCert,
+          makeBinaryBlock(tlv::ContentType_Key, aesKey, sizeof(aesKey)));
   m_storage->addRequest(certRequest);
   Data result;
   result.setName(request.getName());
@@ -379,7 +382,7 @@ CaModule::onChallenge(const Interest& request)
   // decrypt the parameters
   Buffer paramTLVPayload;
   try {
-    paramTLVPayload = decodeBlockWithAesGcm128(request.getApplicationParameters(), m_aesKey,
+    paramTLVPayload = decodeBlockWithAesGcm128(request.getApplicationParameters(), certRequest.m_encryptionKey.value(),
                                                (uint8_t*)"test", strlen("test"));
   }
   catch (const std::exception& e) {
@@ -450,7 +453,7 @@ CaModule::onChallenge(const Interest& request)
   Data result;
   result.setName(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  auto contentBlock = encodeBlockWithAesGcm128(tlv::Content, m_aesKey, payload.value(),
+  auto contentBlock = encodeBlockWithAesGcm128(tlv::Content, certRequest.m_encryptionKey.value(), payload.value(),
                                                payload.value_size(), (uint8_t*)"test", strlen("test"));
   result.setContent(contentBlock);
   m_keyChain.sign(result, signingByIdentity(m_config.m_caPrefix));

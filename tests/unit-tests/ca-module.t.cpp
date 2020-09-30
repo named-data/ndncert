@@ -202,8 +202,9 @@ BOOST_AUTO_TEST_CASE(HandleNew)
     BOOST_CHECK(challengeBlockCount != 0);
 
     client.onNewRenewRevokeResponse(response);
+    auto ca_encryption_key = ca.getCaStorage()->getRequest(readString(contentBlock.get(tlv_request_id))).m_encryptionKey;
     BOOST_CHECK_EQUAL_COLLECTIONS(client.m_aesKey, client.m_aesKey + sizeof(client.m_aesKey),
-                                  ca.m_aesKey, ca.m_aesKey + sizeof(ca.m_aesKey));
+                                  ca_encryption_key.value(), ca_encryption_key.value() + ca_encryption_key.value_size());
   });
   face.receive(*interest);
 
@@ -427,7 +428,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
   signatureInfo.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
                                                            time::system_clock::now() + time::hours(10)));
   m_keyChain.sign(clientCert, signingByKey(clientKey.getName()).setSignatureInfo(signatureInfo));
-  RequestState certRequest(Name("/ndn"), "122", RequestType::NEW, Status::SUCCESS, clientCert);
+  RequestState certRequest(Name("/ndn"), "122", RequestType::NEW, Status::SUCCESS, clientCert, makeEmptyBlock(tlv::ContentType_Key));
   auto issuedCert = ca.issueCertificate(certRequest);
 
   ClientModule client(m_keyChain);
@@ -459,8 +460,9 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
     BOOST_CHECK(challengeBlockCount != 0);
 
     client.onNewRenewRevokeResponse(response);
+    auto ca_encryption_key = ca.getCaStorage()->getRequest(readString(contentBlock.get(tlv_request_id))).m_encryptionKey;
     BOOST_CHECK_EQUAL_COLLECTIONS(client.m_aesKey, client.m_aesKey + sizeof(client.m_aesKey),
-                                  ca.m_aesKey, ca.m_aesKey + sizeof(ca.m_aesKey));
+                                  ca_encryption_key.value(), ca_encryption_key.value() + ca_encryption_key.value_size());
   });
   face.receive(*interest);
 
