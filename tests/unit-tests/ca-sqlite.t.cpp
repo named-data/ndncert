@@ -121,6 +121,21 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   BOOST_CHECK_EQUAL(allRequests.size(), 0);
 }
 
+BOOST_AUTO_TEST_CASE(DuplicateAdd)
+{
+    CaSqlite storage(dbDir.string());
+
+    auto identity1 = addIdentity(Name("/ndn/site1"));
+    auto key1 = identity1.getDefaultKey();
+    auto cert1 = key1.getDefaultCertificate();
+
+    // add operation
+    RequestState request1(Name("/ndn/site1"), "123", RequestType::NEW, Status::BEFORE_CHALLENGE, cert1, makeEmptyBlock(tlv::ContentType_Key));
+    BOOST_CHECK_NO_THROW(storage.addRequest(request1));
+    // add again
+    BOOST_CHECK_THROW(storage.addRequest(request1), std::exception);
+}
+
 BOOST_AUTO_TEST_SUITE_END() // TestCaModule
 
 } // namespace tests

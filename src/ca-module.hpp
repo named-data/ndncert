@@ -96,7 +96,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   getCertificateRequest(const Interest& request);
 
   security::v2::Certificate
-  issueCertificate(const RequestState& certRequest);
+  issueCertificate(const RequestState& requestState);
 
   void
   registerPrefix();

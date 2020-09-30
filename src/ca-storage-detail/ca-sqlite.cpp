@@ -37,7 +37,7 @@ using namespace ndn::util;
 
 static const std::string INITIALIZATION = R"_DBTEXT_(
 CREATE TABLE IF NOT EXISTS
-  CertRequests(
+  RequestStates(
     id INTEGER PRIMARY KEY,
     request_id TEXT NOT NULL,
     ca_name BLOB NOT NULL,
@@ -54,9 +54,9 @@ CREATE TABLE IF NOT EXISTS
     encryption_key BLOB NOT NULL
   );
 CREATE UNIQUE INDEX IF NOT EXISTS
-  CertRequestIdIndex ON CertRequests(request_id);
+  RequestStateIdIndex ON RequestStates(request_id);
 CREATE UNIQUE INDEX IF NOT EXISTS
-  CertRequestKeyNameIndex ON CertRequests(cert_key_name);
+  RequestStateKeyNameIndex ON RequestStates(cert_key_name);
 
 CREATE TABLE IF NOT EXISTS
   IssuedCerts(
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS
     cert BLOB NOT NULL
   );
 CREATE UNIQUE INDEX IF NOT EXISTS
-  IssuedCertRequestIdIndex ON IssuedCerts(cert_id);
+  IssuedCertIdIndex ON IssuedCerts(cert_id);
 CREATE UNIQUE INDEX IF NOT EXISTS
   IssuedCertKeyNameIndex ON IssuedCerts(cert_key_name);
 )_DBTEXT_";
@@ -122,7 +122,7 @@ CaSqlite::getRequest(const std::string& requestId)
                              challenge_status, cert_request,
                              challenge_type, challenge_secrets,
                              challenge_tp, remaining_tries, remaining_time, request_type, encryption_key
-                             FROM CertRequests where request_id = ?)_SQLTEXT_");
+                             FROM RequestStates where request_id = ?)_SQLTEXT_");
   statement.bind(1, requestId, SQLITE_TRANSIENT);
 
   if (statement.step() == SQLITE_ROW) {
@@ -155,10 +155,11 @@ CaSqlite::getRequest(const std::string& requestId)
 void
 CaSqlite::addRequest(const RequestState& request)
 {
+
   // check whether request is there already
   auto keyNameTlv = request.m_cert.getKeyName().wireEncode();
   Sqlite3Statement statement1(m_database,
-                              R"_SQLTEXT_(SELECT * FROM CertRequests where cert_key_name = ?)_SQLTEXT_");
+          R"_SQLTEXT_(SELECT 1 FROM RequestStates where cert_key_name = ?)_SQLTEXT_");
   statement1.bind(1, keyNameTlv, SQLITE_TRANSIENT);
   if (statement1.step() == SQLITE_ROW) {
     BOOST_THROW_EXCEPTION(Error("Request for " + request.m_cert.getKeyName().toUri() + " already exists"));
@@ -166,7 +167,7 @@ CaSqlite::addRequest(const RequestState& request)
 
   // check whether certificate is already issued
   Sqlite3Statement statement2(m_database,
-                              R"_SQLTEXT_(SELECT * FROM IssuedCerts where cert_key_name = ?)_SQLTEXT_");
+                              R"_SQLTEXT_(SELECT 1 FROM IssuedCerts where cert_key_name = ?)_SQLTEXT_");
   statement2.bind(1, keyNameTlv, SQLITE_TRANSIENT);
   if (statement2.step() == SQLITE_ROW) {
     BOOST_THROW_EXCEPTION(Error("Cert for " + request.m_cert.getKeyName().toUri() + " already exists"));
@@ -174,7 +175,7 @@ CaSqlite::addRequest(const RequestState& request)
 
   Sqlite3Statement statement(
       m_database,
-      R"_SQLTEXT_(INSERT INTO CertRequests (request_id, ca_name, status, request_type,
+      R"_SQLTEXT_(INSERT OR ABORT INTO RequestStates (request_id, ca_name, status, request_type,
                   cert_key_name, cert_request, challenge_type, challenge_status, challenge_secrets,
                   challenge_tp, remaining_tries, remaining_time, encryption_key)
                   values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
@@ -203,7 +204,7 @@ void
 CaSqlite::updateRequest(const RequestState& request)
 {
   Sqlite3Statement statement(m_database,
-                             R"_SQLTEXT_(UPDATE CertRequests
+                             R"_SQLTEXT_(UPDATE RequestStates
                              SET status = ?, challenge_type = ?, challenge_status = ?, challenge_secrets = ?,
                              challenge_tp = ?, remaining_tries = ?, remaining_time = ?
                              WHERE request_id = ?)_SQLTEXT_");
@@ -238,7 +239,7 @@ CaSqlite::listAllRequests()
   Sqlite3Statement statement(m_database, R"_SQLTEXT_(SELECT id, request_id, ca_name, status,
                              challenge_status, cert_key_name, cert_request, challenge_type, challenge_secrets,
                              challenge_tp, remaining_tries, remaining_time, request_type, encryption_key
-                             FROM CertRequests)_SQLTEXT_");
+                             FROM RequestStates)_SQLTEXT_");
   while (statement.step() == SQLITE_ROW) {
     auto requestId = statement.getString(1);
     Name caName(statement.getBlock(2));
@@ -273,7 +274,7 @@ CaSqlite::listAllRequests(const Name& caName)
                              R"_SQLTEXT_(SELECT id, request_id, ca_name, status,
                              challenge_status, cert_key_name, cert_request, challenge_type, challenge_secrets,
                              challenge_tp, remaining_tries, remaining_time, request_type, encryption_key
-                             FROM CertRequests WHERE ca_name = ?)_SQLTEXT_");
+                             FROM RequestStates WHERE ca_name = ?)_SQLTEXT_");
   statement.bind(1, caName.wireEncode(), SQLITE_TRANSIENT);
 
   while (statement.step() == SQLITE_ROW) {
@@ -306,7 +307,7 @@ void
 CaSqlite::deleteRequest(const std::string& requestId)
 {
   Sqlite3Statement statement(m_database,
-                             R"_SQLTEXT_(DELETE FROM CertRequests WHERE request_id = ?)_SQLTEXT_");
+                             R"_SQLTEXT_(DELETE FROM RequestStates WHERE request_id = ?)_SQLTEXT_");
   statement.bind(1, requestId, SQLITE_TRANSIENT);
   statement.step();
 }
