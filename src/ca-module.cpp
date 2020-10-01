@@ -282,6 +282,25 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
                                         "Unrecognized self-signed certificate."));
     return;
   }
+
+  // verify identity name
+  if (!m_config.m_caItem.m_caPrefix.isPrefixOf(clientCert->getIdentity())
+      || !security::v2::Certificate::isValidName(clientCert->getName())
+      || clientCert->getIdentity().size() <= m_config.m_caItem.m_caPrefix.size()) {
+      _LOG_ERROR("An invalid certificate name is being requested " << clientCert->getName());
+      m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
+                                         "An invalid certificate name is being requested."));
+      return;
+  }
+  if (m_config.m_caItem.m_maxSuffixLength) {
+    if (clientCert->getIdentity().size() > m_config.m_caItem.m_caPrefix.size() + *m_config.m_caItem.m_maxSuffixLength) {
+      _LOG_ERROR("An invalid certificate name is being requested " << clientCert->getName());
+      m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
+                                         "An invalid certificate name is being requested."));
+      return;
+    }
+  }
+
   if (requestType == RequestType::NEW) {
     // check the validity period
     auto expectedPeriod = clientCert->getValidityPeriod().getPeriod();
@@ -294,23 +313,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
                                          "An invalid validity period is being requested."));
       return;
     }
-    // verify identity name
-    if (!m_config.m_caItem.m_caPrefix.isPrefixOf(clientCert->getIdentity())
-        || !security::v2::Certificate::isValidName(clientCert->getName())
-        || clientCert->getIdentity().size() <= m_config.m_caItem.m_caPrefix.size()) {
-      _LOG_ERROR("An invalid certificate name is being requested " << clientCert->getName());
-      m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
-                                         "An invalid certificate name is being requested."));
-      return;
-    }
-    if (m_config.m_caItem.m_maxSuffixLength) {
-      if (clientCert->getIdentity().size() > m_config.m_caItem.m_caPrefix.size() + *m_config.m_caItem.m_maxSuffixLength) {
-        _LOG_ERROR("An invalid certificate name is being requested " << clientCert->getName());
-        m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
-                                           "An invalid certificate name is being requested."));
-        return;
-      }
-    }
+
     // verify signature
     if (!security::verifySignature(*clientCert, *clientCert)) {
       _LOG_ERROR("Invalid signature in the self-signed certificate.");
@@ -326,23 +329,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
     }
   }
   else if (requestType == RequestType::REVOKE) {
-    // verify identity name
-    if (!m_config.m_caItem.m_caPrefix.isPrefixOf(clientCert->getIdentity())
-        || !security::v2::Certificate::isValidName(clientCert->getName())
-        || clientCert->getIdentity().size() <= m_config.m_caItem.m_caPrefix.size()) {
-      _LOG_ERROR("An invalid certificate name is being requested " << clientCert->getName());
-      m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
-                                         "An invalid certificate name is being requested."));
-      return;
-    }
-    if (m_config.m_caItem.m_maxSuffixLength) {
-      if (clientCert->getIdentity().size() > m_config.m_caItem.m_caPrefix.size() + *m_config.m_caItem.m_maxSuffixLength) {
-        _LOG_ERROR("An invalid certificate name is being requested " << clientCert->getName());
-        m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
-                                           "An invalid certificate name is being requested."));
-        return;
-      }
-    }
+    //verify cert is from this CA
     const auto& cert = m_keyChain.getPib().getIdentity(m_config.m_caItem.m_caPrefix).getDefaultKey().getDefaultCertificate();
     if (!security::verifySignature(*clientCert, cert)) {
       _LOG_ERROR("Invalid signature in the certificate to revoke.");
