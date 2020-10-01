@@ -71,7 +71,7 @@ CaConfigItem::parse(const JsonSection& configJson)
   }
   // anchor certificate
   m_cert = nullptr;
-  auto certificateStr = configJson.get("certificate", "");
+  auto certificateStr = configJson.get(CONFIG_CERTIFICATE, "");
   if (certificateStr != "") {
     std::istringstream ss(certificateStr);
     m_cert = io::load<security::v2::Certificate>(ss);
@@ -129,17 +129,24 @@ CaConfig::load(const std::string& fileName)
   if (m_caItem.m_supportedChallenges.size() == 0) {
     BOOST_THROW_EXCEPTION(std::runtime_error("At least one challenge should be specified."));
   }
-}
-
-void
-CaConfig::save(const std::string& fileName) const
-{
-  std::stringstream ss;
-  boost::property_tree::write_json(ss, m_caItem.toJson());
-  std::ofstream configFile;
-  configFile.open(fileName);
-  configFile << ss.str();
-  configFile.close();
+  // parse redirection section if appears
+  m_redirection = boost::none;
+  auto redirectionItems = configJson.get_child_optional(CONFIG_REDIRECTION);
+  if (redirectionItems) {
+    for (const auto item : *redirectionItems) {
+      auto caPrefixStr = item.second.get(CONFIG_CA_PREFIX, "");
+      auto caCertStr = item.second.get(CONFIG_CERTIFICATE, "");
+      if (caPrefixStr == "" || caCertStr == "") {
+        BOOST_THROW_EXCEPTION(std::runtime_error("Redirect-to item's ca-prefix or certificate cannot be empty."));
+      }
+      std::istringstream ss(caCertStr);
+      auto caCert = io::load<security::v2::Certificate>(ss);
+      if (!m_redirection) {
+        m_redirection = RedirectionItems();
+      }
+      m_redirection->push_back(std::make_tuple(Name(caPrefixStr), caCert));
+    }
+  }
 }
 
 void

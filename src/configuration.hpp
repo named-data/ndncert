@@ -131,10 +131,13 @@ public:
   void
   load(const std::string& fileName);
 
-  void
-  save(const std::string& fileName) const;
-
   CaConfigItem m_caItem;
+  /**
+   * Used for CA redirection as specified in
+   * https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3-PROBE-Extensions#probe-extension-for-redirection
+   */
+  using RedirectionItems = std::vector<std::tuple<Name, std::shared_ptr<security::v2::Certificate>>>;
+  boost::optional<RedirectionItems> m_redirection;
   /**
    * NameAssignmentFunc Callback function
    */

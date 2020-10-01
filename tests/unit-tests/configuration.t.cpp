@@ -50,6 +50,12 @@ BOOST_AUTO_TEST_CASE(CAConfigFile)
   BOOST_CHECK_EQUAL(config.m_caItem.m_supportedChallenges.size(), 2);
   BOOST_CHECK_EQUAL(config.m_caItem.m_supportedChallenges.front(), "pin");
   BOOST_CHECK_EQUAL(config.m_caItem.m_supportedChallenges.back(), "email");
+
+  config.load("tests/unit-tests/config-files/config-ca-5");
+  BOOST_CHECK_EQUAL(config.m_redirection->size(), 1);
+  BOOST_CHECK_EQUAL(std::get<0>(config.m_redirection->at(0)), Name("/ndn/edu/ucla"));
+  BOOST_CHECK_EQUAL(std::get<1>(config.m_redirection->at(0))->getName(),
+                    "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
 }
 
 BOOST_AUTO_TEST_CASE(CAConfigFileWithErrors)
