@@ -28,11 +28,19 @@ namespace ndncert {
 
 class PROBE {
 public:
+  // For CA use
   static Block
   encodeApplicationParameters(std::vector<std::tuple<std::string, std::string>>&& parameters);
 
+  static std::vector<Name>
+  decodeDataContent(const Block& block);
+
+  // For client use
   static Block
   encodeDataContent(const std::vector<Name>& identifiers, boost::optional<size_t> maxSuffixLength);
+
+  static std::vector<std::tuple<std::string, std::string>>
+  decodeApplicationParameters(const Block& block);
 };
 
 }  // namespace ndncert

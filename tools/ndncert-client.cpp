@@ -201,7 +201,7 @@ InfoCb(const Data& reply)
     std::cerr << "The fetched CA information cannot be trusted because its integrity is broken" << std::endl;
     return;
   }
-  auto caItem = INFO::decodeDataContentToCaProfile(contentBlock);
+  auto caItem = INFO::decodeDataContent(contentBlock);
 
   std::cerr << "Will use a new trust anchor, please double check the identity info: \n"
             << "This trust anchor information is signed by " << reply.getSignature().getKeyLocator()

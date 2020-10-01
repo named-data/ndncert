@@ -38,7 +38,7 @@ public:
    * Decode CA configuration from the TLV block of INFO Data packet content.
    */
   static CaConfigItem
-  decodeDataContentToCaProfile(const Block& block);
+  decodeDataContent(const Block& block);
 };
 
 }  // namespace ndncert

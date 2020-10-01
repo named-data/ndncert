@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE(InfoEncodingDecoding)
   const auto& identity = addIdentity("/test");
   const auto& cert = identity.getDefaultKey().getDefaultCertificate();
   auto encoded = INFO::encodeDataContent(config.m_caItem, cert);
-  auto decoded = INFO::decodeDataContentToCaProfile(encoded);
+  auto decoded = INFO::decodeDataContent(encoded);
   BOOST_CHECK_EQUAL(config.m_caItem.m_caPrefix, decoded.m_caPrefix);
   BOOST_CHECK_EQUAL(config.m_caItem.m_caInfo, decoded.m_caInfo);
   BOOST_CHECK_EQUAL(config.m_caItem.m_maxValidityPeriod, decoded.m_maxValidityPeriod);

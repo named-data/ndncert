@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE(HandleInfo)
     BOOST_CHECK(security::verifySignature(response, cert));
     auto contentBlock = response.getContent();
     contentBlock.parse();
-    auto caItem = INFO::decodeDataContentToCaProfile(contentBlock);
+    auto caItem = INFO::decodeDataContent(contentBlock);
     BOOST_CHECK_EQUAL(caItem.m_caPrefix, "/ndn");
     BOOST_CHECK_EQUAL(caItem.m_probeParameterKeys.size(), 1);
     BOOST_CHECK_EQUAL(caItem.m_cert->wireEncode(), cert.wireEncode());
@@ -480,7 +480,7 @@ BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
-  //generate a certificate
+  // generate a certificate
   auto clientIdentity = m_keyChain.createIdentity("/ndn/qwerty");
   auto clientKey = clientIdentity.getDefaultKey();
   security::v2::Certificate clientCert;
@@ -501,14 +501,17 @@ BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
 
   auto interest = client.generateRevokeInterest(clientCert);
 
-  int count = 0;
+  bool receiveData = false;
   face.onSendData.connect([&](const Data& response) {
-    count++;
+    receiveData = true;
+    auto contentTlv = response.getContent();
+    contentTlv.parse();
+    BOOST_CHECK(static_cast<ErrorCode>(readNonNegativeInteger(contentTlv.get(tlv_error_code))) != ErrorCode::NO_ERROR);
   });
   face.receive(*interest);
 
   advanceClocks(time::milliseconds(20), 60);
-  BOOST_CHECK_EQUAL(count, 0);
+  BOOST_CHECK_EQUAL(receiveData, true);
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // TestCaModule

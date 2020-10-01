@@ -184,41 +184,38 @@ CaModule::onProbe(const Interest& request)
   // PROBE Naming Convention: /<CA-Prefix>/CA/PROBE/[ParametersSha256DigestComponent]
   _LOG_TRACE("Received PROBE request");
 
-  // process PROBE requests: find an available name
-  std::string availableId = "";
-  const auto& parameterTLV = request.getApplicationParameters();
-  parameterTLV.parse();
-  if (!parameterTLV.hasValue()) {
-    _LOG_ERROR("Empty TLV obtained from the Interest parameter.");
-    return;
+  // process PROBE requests: collect probe parameters
+  auto parameters = PROBE::decodeApplicationParameters(request.getApplicationParameters());
+  std::vector<std::string> availableComponents;
+  if (m_config.m_nameAssignmentFunc) {
+    try {
+      availableComponents = m_config.m_nameAssignmentFunc(parameters);
+    }
+    catch (const std::exception& e) {
+      _LOG_TRACE("Cannot parse probe parameters: " << e.what());
+      m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
+                                         "Cannot parse probe parameters: " + std::string(e.what())));
+      return;
+    }
+  }
+  else {
+    // if there is no app-specified name lookup, use a random name id
+    availableComponents.push_back(std::to_string(random::generateSecureWord64()));
+  }
+  std::vector<Name> availableNames;
+  for (const auto& component : availableComponents) {
+    Name newIdentityName = m_config.m_caItem.m_caPrefix;
+    newIdentityName.append(component);
+    availableNames.push_back(newIdentityName);
   }
 
-  // if (m_config.m_caItem.m_nameAssignmentFunc) {
-  //   try {
-  //     availableId = m_config.m_caItem.m_nameAssignmentFunc(parameterTLV);
-  //   }
-  //   catch (const std::exception& e) {
-  //     _LOG_TRACE("Cannot find PROBE input from PROBE parameters: " << e.what());
-  //     return;
-  //   }
-  // }
-  // else {
-  //   // if there is no app-specified name lookup, use a random name id
-  //   availableId = std::to_string(random::generateSecureWord64());
-  // }
-  // Name newIdentityName = m_config.m_caItem.m_caPrefix;
-  // newIdentityName.append(availableId);
-  // _LOG_TRACE("Handle PROBE: generate an identity " << newIdentityName);
-
-  // Block contentTLV = PROBE::encodeDataContent(newIdentityName.toUri(), m_config.m_caItem.m_probe, parameterTLV);
-
-  // Data result;
-  // result.setName(request.getName());
-  // result.setContent(contentTLV);
-  // result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  // m_keyChain.sign(result, signingByIdentity(m_config.m_caItem.m_caPrefix));
-  // m_face.put(result);
-  // _LOG_TRACE("Handle PROBE: send out the PROBE response");
+  Data result;
+  result.setName(request.getName());
+  result.setContent(PROBE::encodeDataContent(availableNames, m_config.m_caItem.m_maxSuffixLength));
+  result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
+  m_keyChain.sign(result, signingByIdentity(m_config.m_caItem.m_caPrefix));
+  m_face.put(result);
+  _LOG_TRACE("Handle PROBE: send out the PROBE response");
 }
 
 void

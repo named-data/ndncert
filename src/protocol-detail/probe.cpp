@@ -19,8 +19,9 @@
  */
 
 #include "probe.hpp"
-#include <ndn-cxx/encoding/tlv.hpp>
+
 #include <boost/throw_exception.hpp>
+#include <ndn-cxx/encoding/tlv.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -38,7 +39,19 @@ PROBE::encodeApplicationParameters(std::vector<std::tuple<std::string, std::stri
   return content;
 }
 
-// For CA
+std::vector<std::tuple<std::string, std::string>>
+PROBE::decodeApplicationParameters(const Block& block)
+{
+  std::vector<std::tuple<std::string, std::string>> result;
+  block.parse();
+  for (size_t i = 0; i < block.elements().size() - 1; ++i) {
+    if (block.elements().at(i).type() == tlv_parameter_key && block.elements().at(i + 1).type() == tlv_parameter_value) {
+      result.push_back(std::make_tuple(readString(block.elements().at(i)), readString(block.elements().at(i + 1))));
+    }
+  }
+  return result;
+}
+
 Block
 PROBE::encodeDataContent(const std::vector<Name>& identifiers, boost::optional<size_t> maxSuffixLength)
 {
@@ -51,6 +64,19 @@ PROBE::encodeDataContent(const std::vector<Name>& identifiers, boost::optional<s
   }
   content.encode();
   return content;
+}
+
+std::vector<Name>
+PROBE::decodeDataContent(const Block& block)
+{
+  std::vector<Name> result;
+  block.parse();
+  for (const auto& item : block.elements()) {
+    if (item.type() == tlv_probe_response) {
+      result.push_back(Name(item.blockFromValue()));
+    }
+  }
+  return result;
 }
 
 }  // namespace ndncert

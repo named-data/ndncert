@@ -49,7 +49,7 @@ INFO::encodeDataContent(const CaConfigItem& caConfig, const security::v2::Certif
 }
 
 CaConfigItem
-INFO::decodeDataContentToCaProfile(const Block& block)
+INFO::decodeDataContent(const Block& block)
 {
   CaConfigItem result;
   block.parse();

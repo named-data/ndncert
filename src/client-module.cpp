@@ -68,7 +68,7 @@ bool
 ClientModule::verifyInfoResponse(const Data& reply)
 {
   // parse the ca item
-  auto caItem = INFO::decodeDataContentToCaProfile(reply.getContent());
+  auto caItem = INFO::decodeDataContent(reply.getContent());
 
   // verify the probe Data's sig
   if (!security::verifySignature(reply, *caItem.m_cert)) {
@@ -84,7 +84,7 @@ ClientModule::addCaFromInfoResponse(const Data& reply)
   const Block& contentBlock = reply.getContent();
 
   // parse the ca item
-  auto caItem = INFO::decodeDataContentToCaProfile(contentBlock);
+  auto caItem = INFO::decodeDataContent(contentBlock);
 
   // update the local config
   bool findItem = false;
