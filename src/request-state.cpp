@@ -63,9 +63,9 @@ RequestState::RequestState(const Name& caName, const std::string& requestId, Req
     , m_requestType(requestType)
     , m_status(status)
     , m_cert(cert)
+    , m_encryptionKey(std::move(encryptionKey))
     , m_challengeType(challengeType)
     , m_challengeState(ChallengeState(challengeStatus, challengeTp, remainingTries, remainingTime, std::move(challengeSecrets)))
-    , m_encryptionKey(std::move(encryptionKey))
 {
 }
 
