@@ -88,9 +88,8 @@ enum : uint32_t {
   tlv_parameter_value = 135,
   tlv_ca_certificate = 137,
   tlv_max_validity_period = 139,
-  tlv_max_suffix_length = 177,
   tlv_probe_response = 141,
-  tlv_allow_longer_name = 143,
+  tlv_max_suffix_length = 143,
   tlv_ecdh_pub = 145,
   tlv_cert_request = 147,
   tlv_salt = 149,
@@ -107,7 +106,7 @@ enum : uint32_t {
   tlv_error_code = 171,
   tlv_error_info = 173,
   tlv_authentication_tag = 175,
-  tlv_cert_to_revoke = 179
+  tlv_cert_to_revoke = 177
 };
 
 // Parse CA Configuration file
