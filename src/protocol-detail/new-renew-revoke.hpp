@@ -18,34 +18,26 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_PROTOCOL_DETAIL_NEW_HPP
-#define NDNCERT_PROTOCOL_DETAIL_NEW_HPP
+#ifndef NDNCERT_PROTOCOL_DETAIL_NEW_RENEW_REVOKE_HPP
+#define NDNCERT_PROTOCOL_DETAIL_NEW_RENEW_REVOKE_HPP
 
 #include "../request-state.hpp"
 
 namespace ndn {
 namespace ndncert {
 
-class NEW {
+class NEW_RENEW_REVOKE {
 public:
-  /**
-   * Encode Client's certificate request into a ApplicationParameters TLV for NEW Interest.
-   * For client side use.
-   */
   static Block
-  encodeApplicationParameters(const std::string& ecdhPub, const security::v2::Certificate& certRequest);
+  encodeApplicationParameters(RequestType requestType, const std::string& ecdhPub, const security::v2::Certificate& certRequest);
 
-  /**
-   * Encode CA's response of NEW Interest into a content TLV for NEW Data packet.
-   * For CA side use.
-   */
   static Block
   encodeDataContent(const std::string& ecdhKey, const std::string& salt,
-                    const RequestState& request,
-                    const std::list<std::string>& challenges);
+                             const RequestState& request,
+                             const std::list<std::string>& challenges);
 };
 
 }  // namespace ndncert
 }  // namespace ndn
 
-#endif  // NDNCERT_PROTOCOL_DETAIL_HPP
+#endif // NDNCERT_PROTOCOL_DETAIL_NEW_RENEW_REVOKE_HPP

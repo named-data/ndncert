@@ -32,9 +32,8 @@
 #include "crypto-support/enc-tlv.hpp"
 #include "protocol-detail/challenge.hpp"
 #include "protocol-detail/info.hpp"
-#include "protocol-detail/new.hpp"
+#include "protocol-detail/new-renew-revoke.hpp"
 #include "protocol-detail/probe.hpp"
-#include "protocol-detail/revoke.hpp"
 #include "protocol-detail/error.hpp"
 #include "ndncert-common.hpp"
 
@@ -208,7 +207,7 @@ ClientModule::generateNewInterest(const time::system_clock::TimePoint& notBefore
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
   interest->setApplicationParameters(
-      NEW::encodeApplicationParameters(m_ecdh.getBase64PubKey(), certRequest));
+      NEW_RENEW_REVOKE::encodeApplicationParameters(RequestType::NEW, m_ecdh.getBase64PubKey(), certRequest));
 
   // sign the Interest packet
   m_keyChain.sign(*interest, signingByKey(m_key.getName()));
@@ -274,7 +273,7 @@ ClientModule::generateRevokeInterest(const security::v2::Certificate& certificat
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
   interest->setApplicationParameters(
-      REVOKE::encodeApplicationParameters(m_ecdh.getBase64PubKey(), certificate));
+      NEW_RENEW_REVOKE::encodeApplicationParameters(RequestType::REVOKE, m_ecdh.getBase64PubKey(), certificate));
 
   // return the Interest packet
   return interest;

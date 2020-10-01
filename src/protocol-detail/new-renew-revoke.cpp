@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "revoke.hpp"
+#include "new-renew-revoke.hpp"
 #include "../ndncert-common.hpp"
 #include <ndn-cxx/security/transform/base64-encode.hpp>
 #include <ndn-cxx/security/transform/buffer-source.hpp>
@@ -31,12 +31,12 @@ namespace ndncert {
 _LOG_INIT(ndncert.client);
 
 Block
-REVOKE::encodeApplicationParameters(const std::string& ecdhPub, const security::v2::Certificate& certToRevoke)
+NEW_RENEW_REVOKE::encodeApplicationParameters(RequestType requestType, const std::string& ecdhPub, const security::v2::Certificate& certRequest)
 {
   Block request = makeEmptyBlock(tlv::ApplicationParameters);
   std::stringstream ss;
   try {
-    security::transform::bufferSource(certToRevoke.wireEncode().wire(), certToRevoke.wireEncode().size())
+    security::transform::bufferSource(certRequest.wireEncode().wire(), certRequest.wireEncode().size())
     >> security::transform::base64Encode(false)
     >> security::transform::streamSink(ss);
   }
@@ -46,15 +46,19 @@ REVOKE::encodeApplicationParameters(const std::string& ecdhPub, const security::
   }
 
   request.push_back(makeStringBlock(tlv_ecdh_pub, ecdhPub));
-  request.push_back(makeNestedBlock(tlv_cert_to_revoke, certToRevoke));
+  if (requestType == RequestType::NEW || requestType == RequestType::RENEW) {
+    request.push_back(makeNestedBlock(tlv_cert_request, certRequest));
+  } else if (requestType == RequestType::REVOKE) {
+    request.push_back(makeNestedBlock(tlv_cert_to_revoke, certRequest));
+  }
   request.encode();
   return request;
 }
 
 Block
-REVOKE::encodeDataContent(const std::string& ecdhKey, const std::string& salt,
-                             const RequestState& request,
-                             const std::list<std::string>& challenges)
+NEW_RENEW_REVOKE::encodeDataContent(const std::string& ecdhKey, const std::string& salt,
+                                    const RequestState& request,
+                                    const std::list<std::string>& challenges)
 {
   Block response = makeEmptyBlock(tlv::Content);
   response.push_back(makeStringBlock(tlv_ecdh_pub, ecdhKey));

@@ -24,9 +24,8 @@
 #include "protocol-detail/challenge.hpp"
 #include "protocol-detail/error.hpp"
 #include "protocol-detail/info.hpp"
-#include "protocol-detail/new.hpp"
+#include "protocol-detail/new-renew-revoke.hpp"
 #include "protocol-detail/probe.hpp"
-#include "protocol-detail/revoke.hpp"
 #include <ndn-cxx/metadata-object.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
@@ -347,18 +346,10 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   Data result;
   result.setName(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  if (requestType == RequestType::NEW) {
-    result.setContent(NEW::encodeDataContent(myEcdhPubKeyBase64,
-                                             std::to_string(saltInt),
-                                             requestState,
-                                             m_config.m_caItem.m_supportedChallenges));
-  }
-  else if (requestType == RequestType::REVOKE) {
-    result.setContent(REVOKE::encodeDataContent(myEcdhPubKeyBase64,
+  result.setContent(NEW_RENEW_REVOKE::encodeDataContent(myEcdhPubKeyBase64,
                                                 std::to_string(saltInt),
                                                 requestState,
                                                 m_config.m_caItem.m_supportedChallenges));
-  }
   m_keyChain.sign(result, signingByIdentity(m_config.m_caItem.m_caPrefix));
   m_face.put(result);
   if (m_config.m_statusUpdateCallback) {
