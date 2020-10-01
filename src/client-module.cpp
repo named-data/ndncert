@@ -35,6 +35,8 @@
 #include "protocol-detail/new.hpp"
 #include "protocol-detail/probe.hpp"
 #include "protocol-detail/revoke.hpp"
+#include "protocol-detail/error.hpp"
+#include "ndncert-common.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -122,6 +124,9 @@ ClientModule::onProbeResponse(const Data& reply)
     _LOG_ERROR("Cannot verify data signature from " << m_ca.m_caPrefix.toUri());
     return;
   }
+
+  // error handling
+  processIfError(reply);
 
   auto contentTLV = reply.getContent();
   contentTLV.parse();
@@ -217,6 +222,10 @@ ClientModule::onNewRenewRevokeResponse(const Data& reply)
     _LOG_ERROR("Cannot verify data signature from " << m_ca.m_caPrefix.toUri());
     return std::list<std::string>();
   }
+
+  // error handling
+  processIfError(reply);
+
   auto contentTLV = reply.getContent();
   contentTLV.parse();
 
@@ -300,6 +309,10 @@ ClientModule::onChallengeResponse(const Data& reply)
     _LOG_ERROR("Cannot verify data signature from " << m_ca.m_caPrefix.toUri());
     return;
   }
+
+  // error handling
+  processIfError(reply);
+
   auto result = decodeBlockWithAesGcm128(reply.getContent(), m_aesKey, (const uint8_t*)"test", strlen("test"));
 
   Block contentTLV = makeBinaryBlock(tlv_encrypted_payload, result.data(), result.size());
@@ -371,6 +384,23 @@ ClientModule::endSession()
     m_keyChain.deleteKey(identity, m_key);
   }
   m_status = Status::ENDED;
+}
+
+void
+ClientModule::processIfError(const Data& data)
+{
+  auto contentTLV = data.getContent();
+  if (ErrorTLV::isErrorContent(contentTLV)) {
+  try {
+    auto error = ErrorTLV::decodefromDataContent(contentTLV);
+    _LOG_ERROR("Error data returned for " << data.getName() << ": " << std::endl <<
+               "Code: " << errorCodeToString(std::get<0>(error)) << std::endl <<
+               "Info: " << std::get<1>(error) << std::endl);
+    } catch (const std::exception& e) {
+      _LOG_ERROR("Cannot parse error data content for " << data.getName());
+      return;
+    }
+  }
 }
 
 }  // namespace ndncert

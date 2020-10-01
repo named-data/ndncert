@@ -42,5 +42,12 @@ ErrorTLV::decodefromDataContent(const Block& block)
   return std::make_tuple(error, description);
 }
 
+bool
+ErrorTLV::isErrorContent(const Block& block)
+{
+  block.parse();
+  return block.find(tlv_error_code) != block.elements_end();
+}
+
 }  // namespace ndncert
 }  // namespace ndn

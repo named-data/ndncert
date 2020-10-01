@@ -117,6 +117,9 @@ public:
   void
   endSession();
 
+  static void
+  processIfError(const Data& data);
+
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   ClientConfig m_config;
   security::v2::KeyChain& m_keyChain;

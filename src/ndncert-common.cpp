@@ -62,6 +62,24 @@ std::string requestTypeToString(RequestType type)
   }
 }
 
+std::map<ErrorCode, std::string> errorCodeText = {
+  {ErrorCode::NO_ERROR,             "NO_ERROR"},
+  {ErrorCode::BAD_INTEREST_FORMAT,  "BAD_INTEREST_FORMAT"},
+  {ErrorCode::BAD_PARAMETER_FORMAT, "BAD_PARAMETER_FORMAT"},
+  {ErrorCode::BAD_SIGNATURE,        "BAD_SIGNATURE"},
+  {ErrorCode::INVALID_PARAMETER,    "INVALID_PARAMETER"},
+  {ErrorCode::NAME_NOT_ALLOWED,     "NAME_NOT_ALLOWED"},
+  {ErrorCode::BAD_VALIDITY_PERIOD,  "BAD_VALIDITY_PERIOD"},
+  {ErrorCode::OUT_OF_TRIES,         "OUT_OF_TRIES"},
+  {ErrorCode::OUT_OF_TIME,          "OUT_OF_TIME"},
+  {ErrorCode::NO_AVAILABLE_NAMES,   "NO_AVAILABLE_NAMES"}
+};
+
+std::string errorCodeToString(ErrorCode code)
+{
+  return errorCodeText.at(code);
+}
+
 std::string
 convertJson2String(const JsonSection& json)
 {

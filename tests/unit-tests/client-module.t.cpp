@@ -18,6 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
+#include <protocol-detail/error.hpp>
 #include "client-module.hpp"
 #include "challenge-module.hpp"
 #include "ca-module.hpp"
@@ -63,6 +64,31 @@ BOOST_AUTO_TEST_CASE(Probe)
   BOOST_CHECK_EQUAL(firstInterest->getName().getPrefix(-1), "/site/CA/PROBE");
   BOOST_CHECK_EQUAL(readString(firstInterest->getApplicationParameters().get(tlv_parameter_value)),
                     "zhiyi@cs.ucla.edu");
+}
+
+BOOST_AUTO_TEST_CASE(ErrorHandling)
+{
+  auto identity = addIdentity(Name("/site"));
+  auto key = identity.getDefaultKey();
+  auto cert = key.getDefaultCertificate();
+
+  ClientModule client(m_keyChain);
+  CaConfigItem item;
+  item.m_caPrefix = Name("/site");
+  item.m_cert = std::make_shared<security::v2::Certificate>(cert);
+  client.getClientConf().m_caItems.push_back(item);
+
+  client.generateProbeInterest(item,std::vector<std::tuple<std::string, std::string>>());
+
+  Data errorPacket;
+  errorPacket.setName(Name("/site/pretend/this/is/error/packet"));
+  errorPacket.setFreshnessPeriod(time::seconds(100));
+  errorPacket.setContent(ErrorTLV::encodeDataContent(ErrorCode::NO_ERROR, "This is a test."));
+  m_keyChain.sign(errorPacket, signingByIdentity(identity));
+
+  BOOST_CHECK_THROW(client.onProbeResponse(errorPacket), std::exception);
+  BOOST_CHECK_THROW(client.onNewRenewRevokeResponse(errorPacket), std::exception);
+  BOOST_CHECK_THROW(client.onChallengeResponse(errorPacket), std::exception);
 }
 
 // BOOST_AUTO_TEST_CASE(GenProbeRequestJson)

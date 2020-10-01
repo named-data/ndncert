@@ -155,6 +155,8 @@ enum class RequestType : uint16_t {
 
 std::string requestTypeToString(RequestType type);
 
+std::string errorCodeToString(ErrorCode code);
+
 typedef boost::property_tree::ptree JsonSection;
 
 std::string
