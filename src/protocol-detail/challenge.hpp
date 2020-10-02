@@ -30,6 +30,17 @@ class CHALLENGE {
 public:
   static Block
   encodeDataPayload(const RequestState& request);
+
+  struct DecodedData{
+      Status status;
+      std::string challengeStatus;
+      size_t remainingTries;
+      time::seconds remainingTime;
+      optional<Name> issuedCertName;
+  };
+
+  static DecodedData
+  decodeDataPayload(const Block& data);
 };
 
 }  // namespace ndncert

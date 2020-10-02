@@ -181,28 +181,21 @@ Requester::onNewRenewRevokeResponse(RequesterState& state, const Data& reply)
   processIfError(reply);
 
   auto contentTLV = reply.getContent();
-  contentTLV.parse();
+  const auto content = NEW_RENEW_REVOKE::decodeDataContent(contentTLV);
 
   // ECDH
-  const auto& peerKeyBase64Str = readString(contentTLV.get(tlv_ecdh_pub));
-  const auto& saltStr = readString(contentTLV.get(tlv_salt));
-  uint64_t saltInt = std::stoull(saltStr);
-  state.m_ecdh.deriveSecret(peerKeyBase64Str);
+  uint64_t saltInt = std::stoull(content.salt);
+  state.m_ecdh.deriveSecret(content.ecdhKey);
 
   // HKDF
   hkdf(state.m_ecdh.context->sharedSecret, state.m_ecdh.context->sharedSecretLen,
        (uint8_t*)&saltInt, sizeof(saltInt), state.m_aesKey, sizeof(state.m_aesKey));
 
   // update state
-  state.m_status = static_cast<Status>(readNonNegativeInteger(contentTLV.get(tlv_status)));
-  state.m_requestId = readString(contentTLV.get(tlv_request_id));
-  std::list<std::string> challengeList;
-  for (auto const& element : contentTLV.elements()) {
-    if (element.type() == tlv_challenge) {
-      challengeList.push_back(readString(element));
-    }
-  }
-  return challengeList;
+  state.m_status = content.requestStatus;
+  state.m_requestId = content.requestId;
+
+  return content.challenges;
 }
 
 std::vector<std::tuple<std::string, std::string>>
@@ -254,19 +247,16 @@ Requester::onChallengeResponse(RequesterState& state, const Data& reply)
   processIfError(reply);
   auto result = decodeBlockWithAesGcm128(reply.getContent(), state.m_aesKey, (const uint8_t*)"test", strlen("test"));
   Block contentTLV = makeBinaryBlock(tlv_encrypted_payload, result.data(), result.size());
-  contentTLV.parse();
+  auto decoded = CHALLENGE::decodeDataPayload(contentTLV);
 
   // update state
-  state.m_status = static_cast<Status>(readNonNegativeInteger(contentTLV.get(tlv_status)));
-  state.m_challengeStatus = readString(contentTLV.get(tlv_challenge_status));
-  state.m_remainingTries = readNonNegativeInteger(contentTLV.get(tlv_remaining_tries));
-  state.m_freshBefore = time::system_clock::now() +
-                  time::seconds(readNonNegativeInteger(contentTLV.get(tlv_remaining_time)));
+  state.m_status = decoded.status;
+  state.m_challengeStatus = decoded.challengeStatus;
+  state.m_remainingTries = decoded.remainingTries;
+  state.m_freshBefore = time::system_clock::now() + decoded.remainingTime;
 
-  if (contentTLV.find(tlv_issued_cert_name) != contentTLV.elements_end()) {
-    Block issuedCertNameBlock = contentTLV.get(tlv_issued_cert_name);
-    issuedCertNameBlock.parse();
-    state.m_issuedCertName.wireDecode(issuedCertNameBlock.get(tlv::Name));
+  if (decoded.issuedCertName) {
+    state.m_issuedCertName = *decoded.issuedCertName;
   }
 }
 

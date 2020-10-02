@@ -35,6 +35,23 @@ CHALLENGE::encodeDataPayload(const RequestState& request)
   return response;
 }
 
+CHALLENGE::DecodedData
+CHALLENGE::decodeDataPayload(const Block& data){
+    data.parse();
+    Status status = static_cast<Status>(readNonNegativeInteger(data.get(tlv_status)));
+    std::string challengeStatus = readString(data.get(tlv_challenge_status));
+    size_t remainingTries = readNonNegativeInteger(data.get(tlv_remaining_tries));
+    time::seconds remainingTime = time::seconds(readNonNegativeInteger(data.get(tlv_remaining_time)));
+
+    if (data.find(tlv_issued_cert_name) != data.elements_end()) {
+        Block issuedCertNameBlock = data.get(tlv_issued_cert_name);
+        issuedCertNameBlock.parse();
+        return DecodedData{status, challengeStatus, remainingTries, remainingTime, Name(issuedCertNameBlock.get(tlv::Name))};
+    }
+
+    return DecodedData{status, challengeStatus, remainingTries, remainingTime, nullopt};
+}
+
 } // namespace ndncert
 } // namespace ndn
 

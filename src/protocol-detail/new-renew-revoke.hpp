@@ -31,10 +31,22 @@ public:
   static Block
   encodeApplicationParameters(RequestType requestType, const std::string& ecdhPub, const security::v2::Certificate& certRequest);
 
+  static void
+  decodeApplicationParameters(const Block& block, RequestType requestType, std::string& ecdhPub, shared_ptr<security::v2::Certificate>& certRequest);
+
   static Block
   encodeDataContent(const std::string& ecdhKey, const std::string& salt,
                              const RequestState& request,
                              const std::list<std::string>& challenges);
+  struct DecodedData {
+    std::string ecdhKey;
+    std::string salt;
+    std::string requestId;
+    Status requestStatus;
+    std::list<std::string> challenges;
+  };
+  static DecodedData
+  decodeDataContent(const Block& content);
 };
 
 }  // namespace ndncert

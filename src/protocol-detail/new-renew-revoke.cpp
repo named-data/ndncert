@@ -28,7 +28,7 @@
 namespace ndn {
 namespace ndncert {
 
-_LOG_INIT(ndncert.client);
+_LOG_INIT(ndncert.encoding.new_renew_revoke);
 
 Block
 NEW_RENEW_REVOKE::encodeApplicationParameters(RequestType requestType, const std::string& ecdhPub, const security::v2::Certificate& certRequest)
@@ -55,6 +55,25 @@ NEW_RENEW_REVOKE::encodeApplicationParameters(RequestType requestType, const std
   return request;
 }
 
+void
+NEW_RENEW_REVOKE::decodeApplicationParameters(const Block& payload, RequestType requestType, std::string& ecdhPub,
+                                              shared_ptr<security::v2::Certificate>& clientCert) {
+  payload.parse();
+
+  ecdhPub = readString(payload.get(tlv_ecdh_pub));
+  Block requestPayload;
+  if (requestType == RequestType::NEW) {
+    requestPayload = payload.get(tlv_cert_request);
+  }
+  else if (requestType == RequestType::REVOKE) {
+    requestPayload = payload.get(tlv_cert_to_revoke);
+  }
+  requestPayload.parse();
+
+  security::v2::Certificate cert = security::v2::Certificate(requestPayload.get(tlv::Data));
+  clientCert = make_shared<security::v2::Certificate>(cert);
+}
+
 Block
 NEW_RENEW_REVOKE::encodeDataContent(const std::string& ecdhKey, const std::string& salt,
                                     const RequestState& request,
@@ -70,6 +89,23 @@ NEW_RENEW_REVOKE::encodeDataContent(const std::string& ecdhKey, const std::strin
   }
   response.encode();
   return response;
+}
+
+NEW_RENEW_REVOKE::DecodedData
+NEW_RENEW_REVOKE::decodeDataContent(const Block& content)
+{
+  content.parse();
+  const auto& ecdhKey = readString(content.get(tlv_ecdh_pub));
+  const auto& salt = readString(content.get(tlv_salt));
+  const auto& requestStatus = static_cast<Status>(readNonNegativeInteger(content.get(tlv_status)));
+  const auto& requestId = readString(content.get(tlv_request_id));
+  std::list<std::string> challenges;
+  for (auto const& element : content.elements()) {
+    if (element.type() == tlv_challenge) {
+      challenges.push_back(readString(element));
+    }
+  }
+  return DecodedData{ecdhKey, salt, requestId, requestStatus, challenges};
 }
 
 }  // namespace ndncert

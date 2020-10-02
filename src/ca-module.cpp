@@ -224,18 +224,25 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   // REVOKE Naming Convention: /<CA-prefix>/CA/REVOKE/[SignedInterestParameters_Digest]
   // get ECDH pub key and cert request
   const auto& parameterTLV = request.getApplicationParameters();
-  parameterTLV.parse();
+  std::string ecdhPub;
+  shared_ptr<security::v2::Certificate> clientCert;
+  try {
+      NEW_RENEW_REVOKE::decodeApplicationParameters(parameterTLV, requestType, ecdhPub, clientCert);
+  } catch (const std::exception& e) {
+    if (!parameterTLV.hasValue()) {
+      _LOG_ERROR("Empty TLV obtained from the Interest parameter.");
+      m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
+                                         "Empty TLV obtained from the Interest parameter."));
+      return;
+    }
 
-  if (!parameterTLV.hasValue()) {
-    _LOG_ERROR("Empty TLV obtained from the Interest parameter.");
+    _LOG_ERROR("Unrecognized self-signed certificate: " << e.what());
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
-                                       "Empty TLV obtained from the Interest parameter."));
+                                       "Unrecognized self-signed certificate."));
     return;
   }
 
-  std::string peerKeyBase64 = readString(parameterTLV.get(tlv_ecdh_pub));
-
-  if (peerKeyBase64 == "") {
+  if (ecdhPub == "") {
     _LOG_ERROR("Empty ECDH PUB obtained from the Interest parameter.");
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
                                        "Empty ECDH PUB obtained from the Interest parameter."));
@@ -246,7 +253,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   ECDHState ecdh;
   auto myEcdhPubKeyBase64 = ecdh.getBase64PubKey();
   try {
-    ecdh.deriveSecret(peerKeyBase64);
+    ecdh.deriveSecret(ecdhPub);
   }
   catch (const std::exception& e) {
     _LOG_ERROR("Cannot derive a shared secret using the provided ECDH key: " << e.what());
@@ -260,27 +267,6 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   uint8_t aesKey[AES_128_KEY_LEN];
   hkdf(ecdh.context->sharedSecret, ecdh.context->sharedSecretLen,
        (uint8_t*)&saltInt, sizeof(saltInt), aesKey, sizeof(aesKey));
-
-  shared_ptr<security::v2::Certificate> clientCert = nullptr;
-  // parse certificate request
-  Block requestPayload;
-  if (requestType == RequestType::NEW) {
-    requestPayload = parameterTLV.get(tlv_cert_request);
-  }
-  else if (requestType == RequestType::REVOKE) {
-    requestPayload = parameterTLV.get(tlv_cert_to_revoke);
-  }
-  requestPayload.parse();
-  try {
-    security::v2::Certificate cert = security::v2::Certificate(requestPayload.get(tlv::Data));
-    clientCert = make_shared<security::v2::Certificate>(cert);
-  }
-  catch (const std::exception& e) {
-    _LOG_ERROR("Unrecognized self-signed certificate: " << e.what());
-    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
-                                        "Unrecognized self-signed certificate."));
-    return;
-  }
 
   // verify identity name
   if (!m_config.m_caItem.m_caPrefix.isPrefixOf(clientCert->getIdentity())
