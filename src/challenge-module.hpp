@@ -22,7 +22,6 @@
 #define NDNCERT_CHALLENGE_MODULE_HPP
 
 #include "request-state.hpp"
-#include <tuple>
 
 namespace ndn {
 namespace ndncert {

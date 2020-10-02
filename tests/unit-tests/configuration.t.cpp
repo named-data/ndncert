@@ -52,9 +52,7 @@ BOOST_AUTO_TEST_CASE(CAConfigFile)
   BOOST_CHECK_EQUAL(config.m_caItem.m_supportedChallenges.back(), "email");
 
   config.load("tests/unit-tests/config-files/config-ca-5");
-  BOOST_CHECK_EQUAL(config.m_redirection->size(), 1);
-  BOOST_CHECK_EQUAL(std::get<0>(config.m_redirection->at(0)), Name("/ndn/edu/ucla"));
-  BOOST_CHECK_EQUAL(std::get<1>(config.m_redirection->at(0))->getName(),
+  BOOST_CHECK_EQUAL(config.m_redirection->at(0)->getName(),
                     "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
 }
 
@@ -124,24 +122,6 @@ BOOST_AUTO_TEST_CASE(ClientConfigFileAddAndRemoveCaItem)
   BOOST_CHECK_EQUAL(config.m_caItems.size(), 2);
   lastItem = config.m_caItems.back();
   BOOST_CHECK_EQUAL(lastItem.m_caPrefix, "/ndn/edu/ucla/zhiyi");
-}
-
-BOOST_AUTO_TEST_CASE(InfoEncodingDecoding)
-{
-  CaConfig config;
-  config.load("tests/unit-tests/config-files/config-ca-1");
-
-  const auto& identity = addIdentity("/test");
-  const auto& cert = identity.getDefaultKey().getDefaultCertificate();
-  auto encoded = INFO::encodeDataContent(config.m_caItem, cert);
-  auto decoded = INFO::decodeDataContent(encoded);
-  BOOST_CHECK_EQUAL(config.m_caItem.m_caPrefix, decoded.m_caPrefix);
-  BOOST_CHECK_EQUAL(config.m_caItem.m_caInfo, decoded.m_caInfo);
-  BOOST_CHECK_EQUAL(config.m_caItem.m_maxValidityPeriod, decoded.m_maxValidityPeriod);
-  BOOST_CHECK_EQUAL(*config.m_caItem.m_maxSuffixLength, *decoded.m_maxSuffixLength);
-  BOOST_CHECK_EQUAL(config.m_caItem.m_probeParameterKeys.size(), decoded.m_probeParameterKeys.size());
-  BOOST_CHECK_EQUAL(config.m_caItem.m_probeParameterKeys.front(), decoded.m_probeParameterKeys.front());
-  BOOST_CHECK_EQUAL(cert.wireEncode(), decoded.m_cert->wireEncode());
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // TestCaConfig

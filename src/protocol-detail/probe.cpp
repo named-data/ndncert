@@ -20,13 +20,9 @@
 
 #include "probe.hpp"
 
-#include <boost/throw_exception.hpp>
-#include <ndn-cxx/encoding/tlv.hpp>
-
 namespace ndn {
 namespace ndncert {
 
-// For Client
 Block
 PROBE::encodeApplicationParameters(std::vector<std::tuple<std::string, std::string>>&& parameters)
 {
@@ -53,7 +49,8 @@ PROBE::decodeApplicationParameters(const Block& block)
 }
 
 Block
-PROBE::encodeDataContent(const std::vector<Name>& identifiers, boost::optional<size_t> maxSuffixLength)
+PROBE::encodeDataContent(const std::vector<Name>& identifiers, boost::optional<size_t> maxSuffixLength,
+                         boost::optional<std::vector<std::shared_ptr<security::v2::Certificate>>> redirectionItems)
 {
   Block content = makeEmptyBlock(tlv::Content);
   for (const auto& name : identifiers) {
@@ -62,21 +59,29 @@ PROBE::encodeDataContent(const std::vector<Name>& identifiers, boost::optional<s
   if (maxSuffixLength) {
     content.push_back(makeNonNegativeIntegerBlock(tlv_max_suffix_length, *maxSuffixLength));
   }
+  if (redirectionItems) {
+    for (const auto& item : *redirectionItems) {
+      content.push_back(makeNestedBlock(tlv_probe_redirect, item->getFullName()));
+    }
+  }
   content.encode();
   return content;
 }
 
-std::vector<Name>
-PROBE::decodeDataContent(const Block& block)
+void
+PROBE::decodeDataContent(const Block& block,
+                         std::vector<Name>& availableNames,
+                         std::vector<Name>& availableRedirection)
 {
-  std::vector<Name> result;
   block.parse();
   for (const auto& item : block.elements()) {
     if (item.type() == tlv_probe_response) {
-      result.push_back(Name(item.blockFromValue()));
+      availableNames.push_back(Name(item.blockFromValue()));
+    }
+    if (item.type() == tlv_probe_redirect) {
+      availableRedirection.push_back(Name(item.blockFromValue()));
     }
   }
-  return result;
 }
 
 }  // namespace ndncert

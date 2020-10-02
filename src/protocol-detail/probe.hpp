@@ -28,16 +28,19 @@ namespace ndncert {
 
 class PROBE {
 public:
-  // For CA use
+  // For Client use
   static Block
   encodeApplicationParameters(std::vector<std::tuple<std::string, std::string>>&& parameters);
 
-  static std::vector<Name>
-  decodeDataContent(const Block& block);
+  static void
+  decodeDataContent(const Block& block, std::vector<Name>& availableNames,
+                    std::vector<Name>& availableRedirection);
 
-  // For client use
+  // For CA use
   static Block
-  encodeDataContent(const std::vector<Name>& identifiers, boost::optional<size_t> maxSuffixLength);
+  encodeDataContent(const std::vector<Name>& identifiers,
+                    boost::optional<size_t> maxSuffixLength = boost::none,
+                    boost::optional<std::vector<std::shared_ptr<security::v2::Certificate>>> redirectionItems = boost::none);
 
   static std::vector<std::tuple<std::string, std::string>>
   decodeApplicationParameters(const Block& block);

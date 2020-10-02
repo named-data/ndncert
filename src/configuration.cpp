@@ -136,15 +136,15 @@ CaConfig::load(const std::string& fileName)
     for (const auto item : *redirectionItems) {
       auto caPrefixStr = item.second.get(CONFIG_CA_PREFIX, "");
       auto caCertStr = item.second.get(CONFIG_CERTIFICATE, "");
-      if (caPrefixStr == "" || caCertStr == "") {
+      if (caCertStr == "") {
         BOOST_THROW_EXCEPTION(std::runtime_error("Redirect-to item's ca-prefix or certificate cannot be empty."));
       }
       std::istringstream ss(caCertStr);
       auto caCert = io::load<security::v2::Certificate>(ss);
       if (!m_redirection) {
-        m_redirection = RedirectionItems();
+        m_redirection = std::vector<std::shared_ptr<security::v2::Certificate>>();
       }
-      m_redirection->push_back(std::make_tuple(Name(caPrefixStr), caCert));
+      m_redirection->push_back(caCert);
     }
   }
 }

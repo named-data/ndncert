@@ -37,6 +37,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <tuple>
+#include <ndn-cxx/encoding/tlv.hpp>
 #include <ndn-cxx/data.hpp>
 #include <ndn-cxx/encoding/block.hpp>
 #include <ndn-cxx/face.hpp>
@@ -106,7 +108,8 @@ enum : uint32_t {
   tlv_error_code = 171,
   tlv_error_info = 173,
   tlv_authentication_tag = 175,
-  tlv_cert_to_revoke = 177
+  tlv_cert_to_revoke = 177,
+  tlv_probe_redirect = 179
 };
 
 // Parse CA Configuration file
