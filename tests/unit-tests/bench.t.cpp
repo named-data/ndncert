@@ -19,7 +19,7 @@
  */
 
 #include "ca-module.hpp"
-#include "client-module.hpp"
+#include "requester.hpp"
 #include "challenge-modules/challenge-pin.hpp"
 #include "protocol-detail/info.hpp"
 #include "test-common.hpp"
@@ -90,18 +90,17 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
   advanceClocks(time::milliseconds(20), 60);
 
   // generate NEW Interest
-  ClientModule client(m_keyChain);
-  CaConfigItem item;
+  CaProfile item;
   item.m_caPrefix = Name("/ndn");
   item.m_cert = std::make_shared<security::v2::Certificate>(cert);
-  client.getClientConf().m_caItems.push_back(item);
-  auto newInterest = client.generateNewInterest(time::system_clock::now(),
-                                                time::system_clock::now() + time::days(1), Name("/ndn/alice"));
+  RequesterState state(m_keyChain, item, RequestType::NEW);
+  auto newInterest = Requester::genNewInterest(state, Name("/ndn/alice"),
+                                               time::system_clock::now(),
+                                               time::system_clock::now() + time::days(1));
 
   std::cout << "New Interest Size: " << newInterest->wireEncode().size() << std::endl;
 
   // generate CHALLENGE Interest
-  ChallengePin pinChallenge;
   shared_ptr<Interest> challengeInterest = nullptr;
   shared_ptr<Interest> challengeInterest2 = nullptr;
   shared_ptr<Interest> challengeInterest3 = nullptr;
@@ -110,49 +109,41 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
   face.onSendData.connect([&](const Data& response) {
     if (Name("/ndn/CA/NEW").isPrefixOf(response.getName())) {
       std::cout << "NEW Data Size: " << response.wireEncode().size() << std::endl;
-      client.onNewRenewRevokeResponse(response);
-      auto paramList = pinChallenge.getRequestedParameterList(client.m_status, client.m_challengeStatus);
-      challengeInterest = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
-                                                                                               client.m_challengeStatus,
-                                                                                               std::move(paramList)));
+      auto challengeList = Requester::onNewRenewRevokeResponse(state, response);
+      auto paramList = Requester::selectOrContinueChallenge(state, "pin");
+      challengeInterest = Requester::genChallengeInterest(state, std::move(paramList));
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 0) {
       count++;
       BOOST_CHECK(security::verifySignature(response, cert));
 
-      client.onChallengeResponse(response);
-      BOOST_CHECK(client.m_status == Status::CHALLENGE);
-      BOOST_CHECK_EQUAL(client.m_challengeStatus, ChallengePin::NEED_CODE);
-
-      auto paramList = pinChallenge.getRequestedParameterList(client.m_status, client.m_challengeStatus);
-      challengeInterest2 = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
-                                                                                                client.m_challengeStatus,
-                                                                                                std::move(paramList)));
+      Requester::onChallengeResponse(state, response);
+      BOOST_CHECK(state.m_status == Status::CHALLENGE);
+      BOOST_CHECK_EQUAL(state.m_challengeStatus, ChallengePin::NEED_CODE);
+      auto paramList = Requester::selectOrContinueChallenge(state, "pin");
+      challengeInterest2 = Requester::genChallengeInterest(state, std::move(paramList));
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 1) {
       count++;
       BOOST_CHECK(security::verifySignature(response, cert));
 
-      client.onChallengeResponse(response);
-      BOOST_CHECK(client.m_status == Status::CHALLENGE);
-      BOOST_CHECK_EQUAL(client.m_challengeStatus, ChallengePin::WRONG_CODE);
+      Requester::onChallengeResponse(state, response);
+      BOOST_CHECK(state.m_status == Status::CHALLENGE);
+      BOOST_CHECK_EQUAL(state.m_challengeStatus, ChallengePin::WRONG_CODE);
 
-      auto paramList = pinChallenge.getRequestedParameterList(client.m_status, client.m_challengeStatus);
+      auto paramList = Requester::selectOrContinueChallenge(state, "pin");
       auto request = ca.getCertificateRequest(*challengeInterest2);
       auto secret = request.m_challengeState->m_secrets.get(ChallengePin::PARAMETER_KEY_CODE, "");
       std::get<1>(paramList[0]) = secret;
-      challengeInterest3 = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
-                                                                                                client.m_challengeStatus,
-                                                                                                std::move(paramList)));
+      challengeInterest3 = Requester::genChallengeInterest(state, std::move(paramList));
       std::cout << "CHALLENGE Interest Size: " << challengeInterest3->wireEncode().size() << std::endl;
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 2) {
       std::cout << "CHALLENGE Data Size: " << response.wireEncode().size() << std::endl;
       count++;
       BOOST_CHECK(security::verifySignature(response, cert));
-
-      client.onChallengeResponse(response);
-      BOOST_CHECK(client.m_status == Status::SUCCESS);
+      Requester::onChallengeResponse(state, response);
+      BOOST_CHECK(state.m_status == Status::SUCCESS);
     }
   });
 

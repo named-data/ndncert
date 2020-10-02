@@ -19,7 +19,6 @@
  */
 
 #include "challenge-pin.hpp"
-
 #include <ndn-cxx/util/random.hpp>
 
 namespace ndn {

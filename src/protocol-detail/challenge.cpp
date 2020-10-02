@@ -19,8 +19,6 @@
  */
 
 #include "challenge.hpp"
-#include "../ndncert-common.hpp"
-#include "../request-state.hpp"
 
 namespace ndn {
 namespace ndncert {

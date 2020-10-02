@@ -22,8 +22,8 @@
 #include "challenge-module.hpp"
 #include "challenge-modules/challenge-email.hpp"
 #include "challenge-modules/challenge-pin.hpp"
-#include "client-module.hpp"
 #include "protocol-detail/info.hpp"
+#include "requester.hpp"
 #include "test-common.hpp"
 
 namespace ndn {
@@ -171,15 +171,13 @@ BOOST_AUTO_TEST_CASE(HandleNew)
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
-  ClientModule client(m_keyChain);
-  CaConfigItem item;
+  CaProfile item;
   item.m_caPrefix = Name("/ndn");
   item.m_cert = std::make_shared<security::v2::Certificate>(cert);
-  client.getClientConf().m_caItems.push_back(item);
-
-  auto interest = client.generateNewInterest(time::system_clock::now(),
-                                             time::system_clock::now() + time::days(1),
-                                             Name("/ndn/zhiyi"));
+  RequesterState state(m_keyChain, item, RequestType::NEW);
+  auto interest = Requester::genNewInterest(state, Name("/ndn/zhiyi"),
+                                            time::system_clock::now(),
+                                            time::system_clock::now() + time::days(1));
 
   int count = 0;
   face.onSendData.connect([&](const Data& response) {
@@ -201,9 +199,9 @@ BOOST_AUTO_TEST_CASE(HandleNew)
 
     BOOST_CHECK(challengeBlockCount != 0);
 
-    client.onNewRenewRevokeResponse(response);
+    auto challengeList = Requester::onNewRenewRevokeResponse(state, response);
     auto ca_encryption_key = ca.getCaStorage()->getRequest(readString(contentBlock.get(tlv_request_id))).m_encryptionKey;
-    BOOST_CHECK_EQUAL_COLLECTIONS(client.m_aesKey, client.m_aesKey + sizeof(client.m_aesKey),
+    BOOST_CHECK_EQUAL_COLLECTIONS(state.m_aesKey, state.m_aesKey + sizeof(state.m_aesKey),
                                   ca_encryption_key.value(), ca_encryption_key.value() + ca_encryption_key.value_size());
   });
   face.receive(*interest);
@@ -222,19 +220,14 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidValidityPeriod1)
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1");
   advanceClocks(time::milliseconds(20), 60);
 
-  ClientModule client(m_keyChain);
-  CaConfigItem item;
+  CaProfile item;
   item.m_caPrefix = Name("/ndn");
   item.m_cert = std::make_shared<security::v2::Certificate>(cert);
-  client.getClientConf().m_caItems.push_back(item);
+  RequesterState state(m_keyChain, item, RequestType::NEW);
   auto current_tp = time::system_clock::now();
-  auto interest1 = client.generateNewInterest(current_tp, current_tp - time::hours(1),
-                                              Name("/ndn/zhiyi"));
-  auto interest2 = client.generateNewInterest(current_tp, current_tp + time::days(361),
-                                              Name("/ndn/zhiyi"));
-  auto interest3 = client.generateNewInterest(current_tp - time::hours(1),
-                                              current_tp + time::hours(2),
-                                              Name("/ndn/zhiyi"));
+  auto interest1 = Requester::genNewInterest(state, Name("/ndn/zhiyi"), current_tp, current_tp - time::hours(1));
+  auto interest2 = Requester::genNewInterest(state, Name("/ndn/zhiyi"), current_tp, current_tp + time::days(361));
+  auto interest3 = Requester::genNewInterest(state, Name("/ndn/zhiyi"), current_tp - time::hours(1), current_tp + time::hours(2));
   face.onSendData.connect([&](const Data& response) {
     auto contentTlv = response.getContent();
     contentTlv.parse();
@@ -258,21 +251,17 @@ BOOST_AUTO_TEST_CASE(HandleNewWithLongSuffix)
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
-  ClientModule client(m_keyChain);
-  CaConfigItem item;
+  CaProfile item;
   item.m_caPrefix = Name("/ndn");
   item.m_cert = std::make_shared<security::v2::Certificate>(cert);
-  client.getClientConf().m_caItems.push_back(item);
+  RequesterState state(m_keyChain, item, RequestType::NEW);
 
-  auto interest1 = client.generateNewInterest(time::system_clock::now(),
-                                              time::system_clock::now() + time::days(1),
-                                              Name("/ndn/a"));
-  auto interest2 = client.generateNewInterest(time::system_clock::now(),
-                                              time::system_clock::now() + time::days(1),
-                                              Name("/ndn/a/b"));
-  auto interest3 = client.generateNewInterest(time::system_clock::now(),
-                                              time::system_clock::now() + time::days(1),
-                                              Name("/ndn/a/b/c/d"));
+  auto interest1 = Requester::genNewInterest(state, Name("/ndn/a"), time::system_clock::now(),
+                                              time::system_clock::now() + time::days(1));
+  auto interest2 = Requester::genNewInterest(state, Name("/ndn/a/b"), time::system_clock::now(),
+                                              time::system_clock::now() + time::days(1));
+  auto interest3 = Requester::genNewInterest(state, Name("/ndn/a/b/c/d"), time::system_clock::now(),
+                                              time::system_clock::now() + time::days(1));
 
   face.onSendData.connect([&](const Data& response) {
     auto contentTlv = response.getContent();
@@ -303,14 +292,14 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidLength1)
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1");
   advanceClocks(time::milliseconds(20), 60);
 
-  ClientModule client(m_keyChain);
-  CaConfigItem item;
+  CaProfile item;
   item.m_caPrefix = Name("/ndn");
   item.m_cert = std::make_shared<security::v2::Certificate>(cert);
-  client.getClientConf().m_caItems.push_back(item);
+  RequesterState state(m_keyChain, item, RequestType::NEW);
+
   auto current_tp = time::system_clock::now();
-  auto interest1 = client.generateNewInterest(current_tp, current_tp + time::days(1), Name("/ndn"));
-  auto interest2 = client.generateNewInterest(current_tp, current_tp + time::days(1), Name("/ndn/a/b/c/d"));
+  auto interest1 = Requester::genNewInterest(state, Name("/ndn"), current_tp, current_tp + time::days(1));
+  auto interest2 = Requester::genNewInterest(state, Name("/ndn/a/b/c/d"), current_tp, current_tp + time::days(1));
   face.onSendData.connect([&](const Data& response) {
     auto contentTlv = response.getContent();
     contentTlv.parse();
@@ -334,16 +323,15 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
   advanceClocks(time::milliseconds(20), 60);
 
   // generate NEW Interest
-  ClientModule client(m_keyChain);
-  CaConfigItem item;
+  CaProfile item;
   item.m_caPrefix = Name("/ndn");
   item.m_cert = std::make_shared<security::v2::Certificate>(cert);
-  client.getClientConf().m_caItems.push_back(item);
-  auto newInterest = client.generateNewInterest(time::system_clock::now(),
-                                                time::system_clock::now() + time::days(1), Name("/ndn/zhiyi"));
+  RequesterState state(m_keyChain, item, RequestType::NEW);
+
+  auto newInterest = Requester::genNewInterest(state, Name("/ndn/zhiyi"), time::system_clock::now(),
+                                                time::system_clock::now() + time::days(1));
 
   // generate CHALLENGE Interest
-  ChallengePin pinChallenge;
   shared_ptr<Interest> challengeInterest = nullptr;
   shared_ptr<Interest> challengeInterest2 = nullptr;
   shared_ptr<Interest> challengeInterest3 = nullptr;
@@ -351,47 +339,40 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
   int count = 0;
   face.onSendData.connect([&](const Data& response) {
     if (Name("/ndn/CA/NEW").isPrefixOf(response.getName())) {
-      client.onNewRenewRevokeResponse(response);
-      auto paramList = pinChallenge.getRequestedParameterList(client.m_status, client.m_challengeStatus);
-      challengeInterest = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
-                                                                                               client.m_challengeStatus,
-                                                                                               std::move(paramList)));
+      auto challengeList = Requester::onNewRenewRevokeResponse(state, response);
+      auto paramList = Requester::selectOrContinueChallenge(state, "pin");
+      challengeInterest = Requester::genChallengeInterest(state, std::move(paramList));
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 0) {
       count++;
       BOOST_CHECK(security::verifySignature(response, cert));
 
-      client.onChallengeResponse(response);
-      BOOST_CHECK(client.m_status == Status::CHALLENGE);
-      BOOST_CHECK_EQUAL(client.m_challengeStatus, ChallengePin::NEED_CODE);
-
-      auto paramList = pinChallenge.getRequestedParameterList(client.m_status, client.m_challengeStatus);
-      challengeInterest2 = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
-                                                                                                client.m_challengeStatus,
-                                                                                                std::move(paramList)));
+      Requester::onChallengeResponse(state, response);
+      BOOST_CHECK(state.m_status == Status::CHALLENGE);
+      BOOST_CHECK_EQUAL(state.m_challengeStatus, ChallengePin::NEED_CODE);
+      auto paramList = Requester::selectOrContinueChallenge(state, "pin");
+      challengeInterest2 = Requester::genChallengeInterest(state, std::move(paramList));
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 1) {
       count++;
       BOOST_CHECK(security::verifySignature(response, cert));
 
-      client.onChallengeResponse(response);
-      BOOST_CHECK(client.m_status == Status::CHALLENGE);
-      BOOST_CHECK_EQUAL(client.m_challengeStatus, ChallengePin::WRONG_CODE);
+      Requester::onChallengeResponse(state, response);
+      BOOST_CHECK(state.m_status == Status::CHALLENGE);
+      BOOST_CHECK_EQUAL(state.m_challengeStatus, ChallengePin::WRONG_CODE);
 
-      auto paramList = pinChallenge.getRequestedParameterList(client.m_status, client.m_challengeStatus);
+      auto paramList = Requester::selectOrContinueChallenge(state, "pin");
       auto request = ca.getCertificateRequest(*challengeInterest2);
       auto secret = request.m_challengeState->m_secrets.get(ChallengePin::PARAMETER_KEY_CODE, "");
       std::get<1>(paramList[0]) = secret;
-      challengeInterest3 = client.generateChallengeInterest(pinChallenge.genChallengeRequestTLV(client.m_status,
-                                                                                                client.m_challengeStatus,
-                                                                                                std::move(paramList)));
+      challengeInterest3 = Requester::genChallengeInterest(state, std::move(paramList));
+      std::cout << "CHALLENGE Interest Size: " << challengeInterest3->wireEncode().size() << std::endl;
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 2) {
       count++;
       BOOST_CHECK(security::verifySignature(response, cert));
-
-      client.onChallengeResponse(response);
-      BOOST_CHECK(client.m_status == Status::SUCCESS);
+      Requester::onChallengeResponse(state, response);
+      BOOST_CHECK(state.m_status == Status::SUCCESS);
     }
   });
 
@@ -431,13 +412,12 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
   RequestState certRequest(Name("/ndn"), "122", RequestType::NEW, Status::SUCCESS, clientCert, makeEmptyBlock(tlv::ContentType_Key));
   auto issuedCert = ca.issueCertificate(certRequest);
 
-  ClientModule client(m_keyChain);
-  CaConfigItem item;
+  CaProfile item;
   item.m_caPrefix = Name("/ndn");
   item.m_cert = std::make_shared<security::v2::Certificate>(cert);
-  client.getClientConf().m_caItems.push_back(item);
+  RequesterState state(m_keyChain, item, RequestType::REVOKE);
 
-  auto interest = client.generateRevokeInterest(issuedCert);
+  auto interest = Requester::genRevokeInterest(state, issuedCert);
 
   int count = 0;
   face.onSendData.connect([&](const Data& response) {
@@ -459,9 +439,9 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
 
     BOOST_CHECK(challengeBlockCount != 0);
 
-    client.onNewRenewRevokeResponse(response);
+    auto challengeList = Requester::onNewRenewRevokeResponse(state, response);
     auto ca_encryption_key = ca.getCaStorage()->getRequest(readString(contentBlock.get(tlv_request_id))).m_encryptionKey;
-    BOOST_CHECK_EQUAL_COLLECTIONS(client.m_aesKey, client.m_aesKey + sizeof(client.m_aesKey),
+    BOOST_CHECK_EQUAL_COLLECTIONS(state.m_aesKey, state.m_aesKey + sizeof(state.m_aesKey),
                                   ca_encryption_key.value(), ca_encryption_key.value() + ca_encryption_key.value_size());
   });
   face.receive(*interest);
@@ -493,13 +473,12 @@ BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
                                                            time::system_clock::now() + time::hours(10)));
   m_keyChain.sign(clientCert, signingByKey(clientKey.getName()).setSignatureInfo(signatureInfo));
 
-  ClientModule client(m_keyChain);
-  CaConfigItem item;
+  CaProfile item;
   item.m_caPrefix = Name("/ndn");
   item.m_cert = std::make_shared<security::v2::Certificate>(cert);
-  client.getClientConf().m_caItems.push_back(item);
+  RequesterState state(m_keyChain, item, RequestType::NEW);
 
-  auto interest = client.generateRevokeInterest(clientCert);
+  auto interest = Requester::genRevokeInterest(state, clientCert);
 
   bool receiveData = false;
   face.onSendData.connect([&](const Data& response) {

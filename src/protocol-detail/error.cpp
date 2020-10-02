@@ -37,16 +37,11 @@ std::tuple<ErrorCode, std::string>
 ErrorTLV::decodefromDataContent(const Block& block)
 {
   block.parse();
+  if (block.find(tlv_error_code) == block.elements_end()) {
+    return std::make_tuple(ErrorCode::NO_ERROR, "");
+  }
   ErrorCode error = static_cast<ErrorCode>(readNonNegativeInteger(block.get(tlv_error_code)));
-  auto description = readString(block.get(tlv_error_info));
-  return std::make_tuple(error, description);
-}
-
-bool
-ErrorTLV::isErrorContent(const Block& block)
-{
-  block.parse();
-  return block.find(tlv_error_code) != block.elements_end();
+  return std::make_tuple(error, readString(block.get(tlv_error_info)));
 }
 
 }  // namespace ndncert

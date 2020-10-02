@@ -27,7 +27,7 @@ namespace ndn {
 namespace ndncert {
 
 void
-CaConfigItem::parse(const JsonSection& configJson)
+CaProfile::parse(const JsonSection& configJson)
 {
   // CA prefix
   m_caPrefix = Name(configJson.get(CONFIG_CA_PREFIX, ""));
@@ -79,7 +79,7 @@ CaConfigItem::parse(const JsonSection& configJson)
 }
 
 JsonSection
-CaConfigItem::toJson() const
+CaProfile::toJson() const
 {
   JsonSection caItem;
   caItem.put(CONFIG_CA_PREFIX, m_caPrefix.toUri());
@@ -150,7 +150,7 @@ CaConfig::load(const std::string& fileName)
 }
 
 void
-ClientConfig::load(const std::string& fileName)
+RequesterCaCache::load(const std::string& fileName)
 {
   JsonSection configJson;
   try {
@@ -166,12 +166,12 @@ ClientConfig::load(const std::string& fileName)
 }
 
 void
-ClientConfig::load(const JsonSection& configSection)
+RequesterCaCache::load(const JsonSection& configSection)
 {
   m_caItems.clear();
   auto caList = configSection.get_child("ca-list");
   for (auto item : caList) {
-    CaConfigItem caItem;
+    CaProfile caItem;
     caItem.parse(item.second);
     if (caItem.m_cert == nullptr) {
       BOOST_THROW_EXCEPTION(std::runtime_error("No CA certificate is loaded from JSON configuration."));
@@ -181,7 +181,7 @@ ClientConfig::load(const JsonSection& configSection)
 }
 
 void
-ClientConfig::save(const std::string& fileName) const
+RequesterCaCache::save(const std::string& fileName) const
 {
   JsonSection configJson;
   for (const auto& caItem : m_caItems) {
@@ -196,9 +196,21 @@ ClientConfig::save(const std::string& fileName) const
 }
 
 void
-ClientConfig::removeCaItem(const Name& caName)
+RequesterCaCache::removeCaProfile(const Name& caName)
 {
-  m_caItems.remove_if([&](const CaConfigItem& item) { return item.m_caPrefix == caName; });
+  m_caItems.remove_if([&](const CaProfile& item) { return item.m_caPrefix == caName; });
+}
+
+void
+RequesterCaCache::addCaProfile(const CaProfile& profile)
+{
+  for (auto& item : m_caItems) {
+    if (item.m_caPrefix == profile.m_caPrefix) {
+      item = profile;
+      return;
+    }
+  }
+  m_caItems.push_back(profile);
 }
 
 }  // namespace ndncert

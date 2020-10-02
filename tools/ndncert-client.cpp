@@ -19,7 +19,7 @@
  */
 
 #include "challenge-module.hpp"
-#include "client-module.hpp"
+#include "requester.hpp"
 #include "protocol-detail/info.hpp"
 #include <ndn-cxx/security/verification-helpers.hpp>
 #include <boost/asio.hpp>
@@ -40,7 +40,7 @@ Face face;
 security::v2::KeyChain keyChain;
 std::string challengeType;
 int validityPeriod = -1;
-ClientModule client(keyChain);
+Requester client(keyChain);
 
 static void
 captureParams(std::vector<std::tuple<std::string, std::string>>& requirement)
@@ -257,7 +257,7 @@ startApplication()
               << "Introduction: " << item.m_caInfo << "\n"
               << "***************************************\n";
   }
-  std::vector<CaConfigItem> caVector{std::begin(caList), std::end(caList)};
+  std::vector<CaProfile> caVector{std::begin(caList), std::end(caList)};
   std::cerr << "Step "
             << nStep++ << ": Please type in the CA INDEX that you want to apply"
             << " or type in NONE if your expected CA is not in the list\n";

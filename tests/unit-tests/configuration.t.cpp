@@ -67,9 +67,9 @@ BOOST_AUTO_TEST_CASE(CAConfigFileWithErrors)
   BOOST_CHECK_THROW(config.load("tests/unit-tests/config-files/config-ca-4"), std::runtime_error);
 }
 
-BOOST_AUTO_TEST_CASE(ClientConfigFile)
+BOOST_AUTO_TEST_CASE(RequesterCaCacheFile)
 {
-  ClientConfig config;
+  RequesterCaCache config;
   config.load("tests/unit-tests/config-files/config-client-1");
   BOOST_CHECK_EQUAL(config.m_caItems.size(), 2);
 
@@ -93,9 +93,9 @@ BOOST_AUTO_TEST_CASE(ClientConfigFile)
                     "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
 }
 
-BOOST_AUTO_TEST_CASE(ClientConfigFileWithErrors)
+BOOST_AUTO_TEST_CASE(RequesterCaCacheFileWithErrors)
 {
-  ClientConfig config;
+  RequesterCaCache config;
   // nonexistent file
   BOOST_CHECK_THROW(config.load("tests/unit-tests/config-files/Nonexist"), std::runtime_error);
   // missing certificate
@@ -104,12 +104,12 @@ BOOST_AUTO_TEST_CASE(ClientConfigFileWithErrors)
   BOOST_CHECK_THROW(config.load("tests/unit-tests/config-files/config-client-3"), std::runtime_error);
 }
 
-BOOST_AUTO_TEST_CASE(ClientConfigFileAddAndRemoveCaItem)
+BOOST_AUTO_TEST_CASE(RequesterCaCacheFileAddAndremoveCaProfile)
 {
-  ClientConfig config;
+  RequesterCaCache config;
   config.load("tests/unit-tests/config-files/config-client-1");
 
-  CaConfigItem item;
+  CaProfile item;
   item.m_caPrefix = Name("/test");
   item.m_caInfo = "test";
 
@@ -118,7 +118,7 @@ BOOST_AUTO_TEST_CASE(ClientConfigFileAddAndRemoveCaItem)
   auto lastItem = config.m_caItems.back();
   BOOST_CHECK_EQUAL(lastItem.m_caPrefix, "/test");
 
-  config.removeCaItem(Name("/test"));
+  config.removeCaProfile(Name("/test"));
   BOOST_CHECK_EQUAL(config.m_caItems.size(), 2);
   lastItem = config.m_caItems.back();
   BOOST_CHECK_EQUAL(lastItem.m_caPrefix, "/ndn/edu/ucla/zhiyi");

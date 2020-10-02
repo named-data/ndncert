@@ -19,7 +19,6 @@
  */
 
 #include "challenge-email.hpp"
-#include "../ca-module.hpp"
 #include <regex>
 
 namespace ndn {

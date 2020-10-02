@@ -39,9 +39,6 @@ public:
    */
   static std::tuple<ErrorCode, std::string>
   decodefromDataContent(const Block& block);
-
-  static bool
-  isErrorContent(const Block& block);
 };
 
 }  // namespace ndncert

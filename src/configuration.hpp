@@ -26,7 +26,7 @@
 namespace ndn {
 namespace ndncert {
 
-struct CaConfigItem {
+struct CaProfile {
   /**
    * CA Name prefix (without /CA suffix).
    */
@@ -131,7 +131,7 @@ public:
   void
   load(const std::string& fileName);
 
-  CaConfigItem m_caItem;
+  CaProfile m_caItem;
   /**
    * Used for CA redirection as specified in
    * https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3-PROBE-Extensions#probe-extension-for-redirection
@@ -153,7 +153,7 @@ public:
  * For Client configuration format, please refer to:
  *   https://github.com/named-data/ndncert/wiki/Client-Configuration-Sample
  */
-class ClientConfig {
+class RequesterCaCache {
 public:
   /**
    * @throw std::runtime_error when config file cannot be correctly parsed.
@@ -171,9 +171,15 @@ public:
   save(const std::string& fileName) const;
 
   void
-  removeCaItem(const Name& caName);
+  removeCaProfile(const Name& caName);
 
-  std::list<CaConfigItem> m_caItems;
+  /**
+   * Be cautious. This will add a new trust anchor for requesters.
+   */
+  void
+  addCaProfile(const CaProfile& profile);
+
+  std::list<CaProfile> m_caItems;
 };
 
 }  // namespace ndncert

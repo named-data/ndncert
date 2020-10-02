@@ -32,12 +32,12 @@ public:
    * Encode CA configuration and its certificate into a TLV block as INFO Data packet content.
    */
   static Block
-  encodeDataContent(const CaConfigItem& caConfig, const security::v2::Certificate& certificate);
+  encodeDataContent(const CaProfile& caConfig, const security::v2::Certificate& certificate);
 
   /**
    * Decode CA configuration from the TLV block of INFO Data packet content.
    */
-  static CaConfigItem
+  static CaProfile
   decodeDataContent(const Block& block);
 };
 
