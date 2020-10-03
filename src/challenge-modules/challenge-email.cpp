@@ -29,16 +29,15 @@ NDNCERT_REGISTER_CHALLENGE(ChallengeEmail, "email");
 
 const std::string ChallengeEmail::NEED_CODE = "need-code";
 const std::string ChallengeEmail::WRONG_CODE = "wrong-code";
+const std::string ChallengeEmail::INVALID_EMAIL = "invalid-email";
 const std::string ChallengeEmail::PARAMETER_KEY_EMAIL = "email";
 const std::string ChallengeEmail::PARAMETER_KEY_CODE = "code";
 
 ChallengeEmail::ChallengeEmail(const std::string& scriptPath,
                                const size_t& maxAttemptTimes,
                                const time::seconds secretLifetime)
-    : ChallengeModule("email")
+    : ChallengeModule("email", maxAttemptTimes, secretLifetime)
     , m_sendEmailScript(scriptPath)
-    , m_maxAttemptTimes(maxAttemptTimes)
-    , m_secretLifetime(secretLifetime)
 {
 }
 
@@ -52,7 +51,7 @@ ChallengeEmail::handleChallengeRequest(const Block& params, RequestState& reques
     // for the first time, init the challenge
     std::string emailAddress = readString(params.get(tlv_parameter_value));
     if (!isValidEmailAddress(emailAddress)) {
-      return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Invalid email address format.");
+      return returnWithNewChallengeStatus(request, INVALID_EMAIL, JsonSection(), m_maxAttemptTimes - 1, m_secretLifetime);
     }
     auto lastComponentRequested = readString(request.m_cert.getIdentity().get(-1));
     if (lastComponentRequested != emailAddress) {

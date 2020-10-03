@@ -103,7 +103,9 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithInvalidEmail)
   ChallengeEmail challenge;
   challenge.handleChallengeRequest(paramTLV, request);
 
-  BOOST_CHECK(request.m_status == Status::FAILURE);
+  BOOST_CHECK_EQUAL(request.m_challengeType, "email");
+  BOOST_CHECK_EQUAL(request.m_challengeState->m_challengeStatus, ChallengeEmail::INVALID_EMAIL);
+  BOOST_CHECK_EQUAL(request.m_challengeState->m_remainingTries, 2);
 }
 
 BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)

@@ -29,12 +29,10 @@ NDNCERT_REGISTER_CHALLENGE(ChallengePin, "pin");
 
 const std::string ChallengePin::NEED_CODE = "need-code";
 const std::string ChallengePin::WRONG_CODE = "wrong-code";
-const std::string ChallengePin::PARAMETER_KEY_CODE = "pin-code";
+const std::string ChallengePin::PARAMETER_KEY_CODE = "code";
 
 ChallengePin::ChallengePin(const size_t& maxAttemptTimes, const time::seconds& secretLifetime)
-    : ChallengeModule("pin")
-    , m_secretLifetime(secretLifetime)
-    , m_maxAttemptTimes(maxAttemptTimes)
+    : ChallengeModule("pin", maxAttemptTimes, secretLifetime)
 {
 }
 

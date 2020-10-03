@@ -63,15 +63,19 @@ public:
   genChallengeRequestTLV(Status status, const std::string& challengeStatus,
                          std::vector<std::tuple<std::string, std::string>>&& params) override;
 
+  static void
+  fulfillParameters(std::vector<std::tuple<std::string, std::string>>& params,
+                    KeyChain& keyChain, const Name& issuedCertName, const std::string& requestId);
+
+  // challenge parameters
+  static const std::string PARAMETER_KEY_CREDENTIAL_CERT;
+  static const std::string PARAMETER_KEY_PROOF_OF_PRIVATE_KEY;
+
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
   parseConfigFile();
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  // parameters
-  static const std::string PARAMETER_KEY_CREDENTIAL_CERT;
-  static const std::string PARAMETER_KEY_PROOF_OF_PRIVATE_KEY;
-
   std::list<security::v2::Certificate> m_trustAnchors;
   std::string m_configFile;
 };

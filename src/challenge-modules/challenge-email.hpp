@@ -53,7 +53,7 @@ class ChallengeEmail : public ChallengeModule
 public:
   ChallengeEmail(const std::string& scriptPath = "ndncert-send-email-challenge",
                  const size_t& maxAttemptTimes = 3,
-                 const time::seconds secretLifetime = time::minutes(20));
+                 const time::seconds secretLifetime = time::seconds(300));
 
   // For CA
   std::tuple<ErrorCode, std::string>
@@ -67,6 +67,14 @@ public:
   genChallengeRequestTLV(Status status, const std::string& challengeStatus,
                          std::vector<std::tuple<std::string, std::string>>&& params) override;
 
+  // challenge status
+  static const std::string NEED_CODE;
+  static const std::string WRONG_CODE;
+  static const std::string INVALID_EMAIL;
+  // challenge parameters
+  static const std::string PARAMETER_KEY_EMAIL;
+  static const std::string PARAMETER_KEY_CODE;
+
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   static bool
   isValidEmailAddress(const std::string& emailAddress);
@@ -75,18 +83,8 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   sendEmail(const std::string& emailAddress, const std::string& secret,
             const RequestState& request) const;
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  // challenge status
-  static const std::string NEED_CODE;
-  static const std::string WRONG_CODE;
-  // parameters
-  static const std::string PARAMETER_KEY_EMAIL;
-  static const std::string PARAMETER_KEY_CODE;
-
 private:
   std::string m_sendEmailScript;
-  int m_maxAttemptTimes;
-  time::seconds m_secretLifetime;
 };
 
 } // namespace ndncert

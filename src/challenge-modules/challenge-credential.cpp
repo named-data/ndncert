@@ -20,6 +20,8 @@
 #include "challenge-credential.hpp"
 #include <iostream>
 #include <ndn-cxx/security/verification-helpers.hpp>
+#include <ndn-cxx/security/signing-helpers.hpp>
+#include <ndn-cxx/security/transform/public-key.hpp>
 #include <ndn-cxx/util/io.hpp>
 
 namespace ndn {
@@ -32,7 +34,7 @@ const std::string ChallengeCredential::PARAMETER_KEY_CREDENTIAL_CERT = "issued-c
 const std::string ChallengeCredential::PARAMETER_KEY_PROOF_OF_PRIVATE_KEY = "proof-of-private-key";
 
 ChallengeCredential::ChallengeCredential(const std::string& configPath)
-    : ChallengeModule("Credential")
+    : ChallengeModule("Credential", 1, time::seconds(1))
 {
   if (configPath.empty()) {
     m_configFile = std::string(SYSCONFDIR) + "/ndncert/challenge-credential.conf";
@@ -80,12 +82,14 @@ ChallengeCredential::handleChallengeRequest(const Block& params, RequestState& r
   if (m_trustAnchors.empty()) {
     parseConfigFile();
   }
-  shared_ptr<security::v2::Certificate> selfSigned, credential;
-  auto& elements = params.elements();
+  shared_ptr<security::v2::Certificate> credential;
+  const uint8_t* signature;
+  size_t signatureLen;
+  const auto& elements = params.elements();
   for (size_t i = 0; i < elements.size(); i++) {
     if (elements[i].type() == tlv_parameter_key) {
       if (readString(elements[i]) == PARAMETER_KEY_CREDENTIAL_CERT) {
-        std::istringstream ss(readString(params.elements()[i + 1]));
+        std::istringstream ss(readString(elements[i + 1]));
         credential = io::load<security::v2::Certificate>(ss);
         if (credential == nullptr) {
           _LOG_ERROR("Cannot load challenge parameter: credential");
@@ -93,26 +97,21 @@ ChallengeCredential::handleChallengeRequest(const Block& params, RequestState& r
         }
       }
       else if (readString(elements[i]) == PARAMETER_KEY_PROOF_OF_PRIVATE_KEY) {
-        std::istringstream ss(readString(params.elements()[i + 1]));
-        selfSigned = io::load<security::v2::Certificate>(ss);
-        if (selfSigned == nullptr) {
-          _LOG_ERROR("Cannot load challenge parameter: proof of private key");
-          return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Cannot load challenge parameter: proof of private key.");
-        }
-      }
-      else {
-        continue;
+        signature = elements[i + 1].value();
+        signatureLen = elements[i + 1].value_size();
       }
     }
   }
 
   // verify the credential and the self-signed cert
   Name signingKeyName = credential->getSignature().getKeyLocator().getName();
+  security::transform::PublicKey key;
+  const auto& pubKeyBuffer = credential->getPublicKey();
+  key.loadPkcs8(pubKeyBuffer.data(), pubKeyBuffer.size());
   for (auto anchor : m_trustAnchors) {
     if (anchor.getKeyName() == signingKeyName) {
       if (security::verifySignature(*credential, anchor) &&
-          security::verifySignature(*selfSigned, *credential) &&
-          readString(selfSigned->getContent()) == request.m_requestId) {
+          security::verifySignature((uint8_t*)request.m_requestId.c_str(), request.m_requestId.size(), signature, signatureLen, key)) {
         return returnWithSuccess(request);
       }
     }
@@ -130,11 +129,9 @@ ChallengeCredential::getRequestedParameterList(Status status, const std::string&
   if (status == Status::BEFORE_CHALLENGE) {
     result.push_back(std::make_tuple(PARAMETER_KEY_CREDENTIAL_CERT, "Please provide the certificate issued by a trusted CA."));
     result.push_back(std::make_tuple(PARAMETER_KEY_PROOF_OF_PRIVATE_KEY, "Please sign a Data packet with request ID as the content."));
+    return result;
   }
-  else {
-    BOOST_THROW_EXCEPTION(std::runtime_error("Unexpected status or challenge status."));
-  }
-  return result;
+  BOOST_THROW_EXCEPTION(std::runtime_error("Unexpected status or challenge status."));
 }
 
 Block
@@ -150,11 +147,16 @@ ChallengeCredential::genChallengeRequestTLV(Status status, const std::string& ch
     for (const auto& item : params) {
       if (std::get<0>(item) == PARAMETER_KEY_CREDENTIAL_CERT) {
         request.push_back(makeStringBlock(tlv_parameter_key, PARAMETER_KEY_CREDENTIAL_CERT));
-        request.push_back(makeStringBlock(tlv_parameter_value, std::get<1>(item)));
+        Block valueBlock = makeEmptyBlock(tlv_parameter_value);
+        auto& certTlvStr = std::get<1>(item);
+        valueBlock.push_back(Block((uint8_t*)certTlvStr.c_str(), certTlvStr.size()));
+        request.push_back(valueBlock);
       }
       else if (std::get<0>(item) == PARAMETER_KEY_PROOF_OF_PRIVATE_KEY) {
         request.push_back(makeStringBlock(tlv_parameter_key, PARAMETER_KEY_PROOF_OF_PRIVATE_KEY));
-        request.push_back(makeStringBlock(tlv_parameter_value, std::get<1>(item)));
+        auto& sigTlvStr = std::get<1>(item);
+        Block valueBlock = makeBinaryBlock(tlv_parameter_value, (uint8_t*)sigTlvStr.c_str(), sigTlvStr.size());
+        request.push_back(valueBlock);
       }
       else {
         BOOST_THROW_EXCEPTION(std::runtime_error("Wrong parameter provided."));
@@ -167,5 +169,26 @@ ChallengeCredential::genChallengeRequestTLV(Status status, const std::string& ch
   request.encode();
   return request;
 }
+
+void
+ChallengeCredential::fulfillParameters(std::vector<std::tuple<std::string, std::string>>& params,
+                                       KeyChain& keyChain, const Name& issuedCertName, const std::string& requestId)
+{
+  auto& pib = keyChain.getPib();
+  auto id = pib.getIdentity(security::v2::extractIdentityFromCertName(issuedCertName));
+  auto issuedCert = id.getKey(security::v2::extractKeyNameFromCertName(issuedCertName)).getCertificate(issuedCertName);
+  auto issuedCertTlv = issuedCert.wireEncode();
+  auto signatureTlv = keyChain.sign((uint8_t*)requestId.c_str(), requestId.length(), security::signingByCertificate(issuedCertName));
+  for (auto& item : params) {
+    if (std::get<0>(item) == PARAMETER_KEY_CREDENTIAL_CERT) {
+      std::get<1>(item) = std::string((char*)issuedCertTlv.wire(), issuedCertTlv.size());
+    }
+    else if (std::get<0>(item) == PARAMETER_KEY_PROOF_OF_PRIVATE_KEY) {
+      std::get<1>(item) = std::string((char*)signatureTlv.value(), signatureTlv.value_size());
+    }
+  }
+  return;
+}
+
 }  // namespace ndncert
 }  // namespace ndn

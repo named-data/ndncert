@@ -28,9 +28,10 @@ namespace ndncert {
 
 class ChallengeModule : noncopyable {
 public:
-  explicit ChallengeModule(const std::string& uniqueType);
+  explicit
+  ChallengeModule(const std::string& challengeType, size_t maxAttemptTimes, time::seconds secretLifetime);
 
-  virtual ~ChallengeModule();
+  virtual ~ChallengeModule() = default;
 
   template <class ChallengeType>
   static void
@@ -77,6 +78,8 @@ protected:
 
 public:
   const std::string CHALLENGE_TYPE;
+  const size_t m_maxAttemptTimes;
+  const time::seconds m_secretLifetime;
 
 private:
   typedef function<unique_ptr<ChallengeModule>()> ChallengeCreateFunc;

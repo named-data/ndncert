@@ -24,12 +24,14 @@
 namespace ndn {
 namespace ndncert {
 
-ChallengeModule::ChallengeModule(const std::string& uniqueType)
-  : CHALLENGE_TYPE(uniqueType)
+ChallengeModule::ChallengeModule(const std::string& challengeType,
+                                 size_t maxAttemptTimes,
+                                 time::seconds secretLifetime)
+  : CHALLENGE_TYPE(challengeType)
+  , m_maxAttemptTimes(maxAttemptTimes)
+  , m_secretLifetime(secretLifetime)
 {
 }
-
-ChallengeModule::~ChallengeModule() = default;
 
 bool
 ChallengeModule::isChallengeSupported(const std::string& challengeType)

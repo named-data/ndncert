@@ -62,17 +62,11 @@ public:
   genChallengeRequestTLV(Status status, const std::string& challengeStatus,
                          std::vector<std::tuple<std::string, std::string>>&& params) override;
 
-
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   // challenge status
   static const std::string NEED_CODE;
   static const std::string WRONG_CODE;
   // parameters
   static const std::string PARAMETER_KEY_CODE;
-
-private:
-  time::seconds m_secretLifetime;
-  int m_maxAttemptTimes;
 };
 
 } // namespace ndncert
