@@ -33,14 +33,20 @@ namespace ndn {
 namespace ndncert {
 
 static void
-startApplication();
+selectCaProfile(std::string configFilePath);
+static void
+runProbe(CaProfile profile);
+static void
+runNew(CaProfile profile, Name identityName);
+static void
+runChallenge(const std::string& challengeType);
+static void
+startApplication(std::string configFilePath);
 
 int nStep;
 Face face;
 security::v2::KeyChain keyChain;
-std::string challengeType;
-int validityPeriod = -1;
-Requester client(keyChain);
+shared_ptr<RequesterState> requesterState = nullptr;
 
 static void
 captureParams(std::vector<std::tuple<std::string, std::string>>& requirement)
@@ -62,36 +68,33 @@ static std::vector<std::tuple<std::string, std::string>>
 captureParams(const std::list<std::string>& requirement)
 {
   std::vector<std::tuple<std::string, std::string>> results;
-  for (const auto& item : requirement) {
-    std::cerr << "Please provide the argument: " << item << " : " << std::endl;
-    std::string captured;
-    getline(std::cin, captured);
-    results.push_back(std::make_tuple(item, captured));
+  for (const auto& r : requirement) {
+      results.emplace_back(r, "Please input: " + r);
   }
-  std::cerr << "Got it. This is what you've provided:" << std::endl;
-  for (const auto& item : results) {
-    std::cerr << std::get<0>(item) << " : " << std::get<1>(item) << std::endl;
-  }
+  captureParams(results);
   return results;
 }
 
-static void
+static int
 captureValidityPeriod()
 {
-  if (validityPeriod > 0) {
-    return;
-  }
   std::cerr << "Step " << nStep++
             << ": Please type in your expected validity period of your certificate."
             << " Type the number of hours (168 for week, 730 for month, 8760 for year)."
             << " The CA may reject your application if your expected period is too long." << std::endl;
-  std::string periodStr = "";
-  getline(std::cin, periodStr);
-  try {
-    validityPeriod = std::stoi(periodStr);
-  }
-  catch (const std::exception& e) {
-    validityPeriod = -1;
+  while (true) {
+    std::string periodStr = "";
+    getline(std::cin, periodStr);
+    try {
+      int validityPeriod = std::stoi(periodStr);
+      if (validityPeriod < 0) {
+          BOOST_THROW_EXCEPTION(std::runtime_error(""));
+      }
+      return validityPeriod;
+    }
+    catch (const std::exception &e) {
+      std::cerr << "Your input is invalid. Try again: " << std::endl;
+    }
   }
 }
 
@@ -110,7 +113,10 @@ timeoutCb()
 static void
 certFetchCb(const Data& reply)
 {
-  client.onCertFetchResponse(reply);
+  auto item = Requester::onCertFetchResponse(reply);
+  if (item) {
+      keyChain.addCertificate(keyChain.getPib().getIdentity(item->getIdentity()).getKey(item->getKeyName()), *item);
+  }
   std::cerr << "Step " << nStep++
             << ": DONE! Certificate has already been installed to local keychain\n"
             << "Certificate Name: " << reply.getName().toUri() << std::endl;
@@ -119,35 +125,37 @@ certFetchCb(const Data& reply)
 static void
 challengeCb(const Data& reply)
 {
-  client.onChallengeResponse(reply);
-  if (client.getApplicationStatus() == Status::SUCCESS) {
-    std::cerr << "DONE! Certificate has already been issued \n";
-    face.expressInterest(*client.generateCertFetchInterest(), bind(&certFetchCb, _2),
+  try {
+    Requester::onChallengeResponse(*requesterState, reply);
+  } catch (const std::exception& e) {
+    std::cerr << "Error when decoding challenge step: " << e.what() << std::endl;
+    exit(1);
+  }
+  if (requesterState->m_status == Status::SUCCESS) {
+    std::cerr << "Certificate has already been issued, downloading certificate... \n";
+    face.expressInterest(*Requester::genCertFetchInterest(*requesterState), bind(&certFetchCb, _2),
                          bind(&onNackCb), bind(&timeoutCb));
     return;
   }
 
-  auto challenge = ChallengeModule::createChallengeModule(challengeType);
-  auto requirement = challenge->getRequestedParameterList(client.getApplicationStatus(),
-                                                          client.getChallengeStatus());
-  if (requirement.size() > 0) {
-    std::cerr << "Step " << nStep++ << ": Please satisfy following instruction(s)\n";
-    captureParams(requirement);
-  }
-  face.expressInterest(*client.generateChallengeInterest(challenge->genChallengeRequestTLV(client.getApplicationStatus(),
-                                                                                           client.getChallengeStatus(),
-                                                                                           std::move(requirement))),
-                       bind(&challengeCb, _2), bind(&onNackCb), bind(&timeoutCb));
+  runChallenge(requesterState->m_challengeType);
 }
 
 static void
 newCb(const Data& reply)
 {
+  std::list<std::string> challengeList;
+  try {
+      challengeList = Requester::onNewRenewRevokeResponse(*requesterState, reply);
+  } catch (const std::exception& e) {
+    std::cerr << "Error on decoding NEW step reply because: " << e.what() << std::endl;
+    exit(1);
+  }
+
   int challengeIndex = 0;
-  auto challengeList = client.onNewRenewRevokeResponse(reply);
   if (challengeList.size() < 1) {
     std::cerr << "There is no available challenge provided by the CA. Exit" << std::endl;
-    return;
+    exit(1);
   }
   else if (challengeList.size() > 1) {
     int count = 0;
@@ -157,56 +165,54 @@ newCb(const Data& reply)
     for (auto item : challengeList) {
       std::cerr << "\t" << count++ << " : " << item << std::endl;
     }
-    getline(std::cin, choice);
-    try {
-      challengeIndex = std::stoi(choice);
-    }
-    catch (const std::exception& e) {
-      challengeIndex = -1;
-    }
-    if (challengeIndex < 0 || challengeIndex >= count) {
-      std::cerr << "Your input index is out of range. Exit." << std::endl;
-      return;
+    while (true) {
+        getline(std::cin, choice);
+        try {
+            challengeIndex = std::stoi(choice);
+        }
+        catch (const std::exception &e) {
+            std::cerr << "Your input is not valid. Try again:" << std::endl;
+            continue;
+        }
+        if (challengeIndex < 0 || challengeIndex >= count) {
+            std::cerr << "Your input index is out of range. Try again:" << std::endl;
+            continue;
+        }
+        break;
     }
   }
   auto it = challengeList.begin();
   std::advance(it, challengeIndex);
   unique_ptr<ChallengeModule> challenge = ChallengeModule::createChallengeModule(*it);
   if (challenge != nullptr) {
-    challengeType = *it;
-    std::cerr << "The challenge has been selected: " << challengeType << std::endl;
+    std::cerr << "The challenge has been selected: " << *it << std::endl;
+    runChallenge(*it);
   }
   else {
     std::cerr << "Error. Cannot load selected Challenge Module. Exit." << std::endl;
-    return;
+    exit(1);
   }
-  auto requirement = challenge->getRequestedParameterList(client.getApplicationStatus(),
-                                                          client.getChallengeStatus());
-  if (requirement.size() > 0) {
-    std::cerr << "Step " << nStep++ << ": Please provide parameters used for Identity Verification Challenge\n";
-    captureParams(requirement);
-  }
-  face.expressInterest(*client.generateChallengeInterest(challenge->genChallengeRequestTLV(client.getApplicationStatus(),
-                                                                                           client.getChallengeStatus(),
-                                                                                           std::move(requirement))),
-                       bind(&challengeCb, _2), bind(&onNackCb), bind(&timeoutCb));
 }
 
 static void
 InfoCb(const Data& reply)
 {
-  const Block& contentBlock = reply.getContent();
-
-  if (!client.verifyInfoResponse(reply)) {
-    std::cerr << "The fetched CA information cannot be trusted because its integrity is broken" << std::endl;
-    return;
+  CaProfile profile;
+  try {
+    auto profileOpt = Requester::onCaProfileResponse(reply);
+    if (!profileOpt) {
+        BOOST_THROW_EXCEPTION(std::runtime_error("Invalid reply"));
+    }
+    profile = *profileOpt;
+  } catch(const std::exception& e) {
+      std::cerr << "The fetched CA information cannot be used because: "<< e.what() << std::endl;
+      return;
   }
-  auto caItem = INFO::decodeDataContent(contentBlock);
 
   std::cerr << "Will use a new trust anchor, please double check the identity info: \n"
             << "This trust anchor information is signed by " << reply.getSignature().getKeyLocator()
             << std::endl
-            << "The certificate is " << *caItem.m_cert << std::endl
+            << "The certificate is " << profile.m_cert << std::endl
             << "Do you trust the information? Type in YES or NO" << std::endl;
 
   std::string answer;
@@ -214,50 +220,75 @@ InfoCb(const Data& reply)
   boost::algorithm::to_lower(answer);
   if (answer == "yes") {
     std::cerr << "You answered YES: new CA will be used" << std::endl;
-    client.addCaFromInfoResponse(reply);
+    runProbe(profile);
     // client.getClientConf().save(std::string(SYSCONFDIR) + "/ndncert/client.conf");
-    startApplication();
   }
   else {
     std::cerr << "You answered NO: new CA will not be used" << std::endl;
-    return;
+    exit(0);
   }
 }
 
 static void
-probeCb(const Data& reply)
+probeCb(const Data& reply, CaProfile profile)
 {
-  client.onProbeResponse(reply);
-  captureValidityPeriod();
-  if (validityPeriod <= 0) {
-    std::cerr << "Invalid period time. Exit." << std::endl;
-    return;
-  }
-  auto now = time::system_clock::now();
-  std::cerr << "The validity period of your certificate will be: " << validityPeriod << " hours" << std::endl;
-  auto interest = client.generateNewInterest(now, now + time::hours(validityPeriod), Name());
-  if (interest != nullptr) {
-    face.expressInterest(*interest, bind(&newCb, _2), bind(&onNackCb), bind(&timeoutCb));
-  }
-  else {
-    std::cerr << "Cannot generate the Interest for NEW step. Exit" << std::endl;
-  }
-}
-
-static void
-startApplication()
-{
-  nStep = 0;
-  auto caList = client.getClientConf().m_caItems;
+  std::vector<Name> names;
+  std::vector<Name> redirects;
+  Requester::onProbeResponse(reply, profile, names, redirects);
   int count = 0;
-  for (auto item : caList) {
+  std::cerr << "Here is CA's suggested names: " << std::endl;
+  for (const auto& name : names) {
+      std::cerr << count ++ << ": " << name.toUri() << std::endl;
+  }
+  std::cerr << "Here is CA's suggested redirects to other CAs: " << std::endl;
+  for (const auto& redirect : redirects) {
+      std::cerr << count ++ << ": " << redirect.toUri() << std::endl;
+  }
+  int index;
+  try {
+    std::string input;
+    getline(std::cin, input);
+    index = std::stoi(input);
+  }
+  catch (const std::exception& e) {
+    std::cerr << "Your input is Invalid. Exit" << std::endl;
+    exit(0);
+  }
+  if (index < 0 || index >= names.size() + redirects.size()) {
+    std::cerr << "Your input is not an existing index. Exit" << std::endl;
+    return;
+  }
+  if (index < names.size()) {
+      //names
+      std::cerr << "You selected name: " << names[index].toUri() << std::endl;
+      runNew(profile, names[index]);
+  } else {
+      //redirects
+      std::cerr << "You selected redirects with certificate: " << redirects[index - names.size()].toUri() << std::endl;
+      face.expressInterest(*Requester::genCaProfileInterest(redirects[index - names.size()]),
+                           bind(&InfoCb, _2), bind(&onNackCb), bind(&timeoutCb));
+  }
+}
+
+static void
+selectCaProfile(std::string configFilePath)
+{
+  RequesterCaCache caCache;
+  try {
+      caCache.load(configFilePath);
+  }
+  catch (const std::exception& e) {
+    std::cerr << "Cannot load the configuration file: " << e.what() << std::endl;
+    exit(1);
+  }
+  int count = 0;
+  for (auto item : caCache.m_caItems) {
     std::cerr << "***************************************\n"
               << "Index: " << count++ << "\n"
               << "CA prefix:" << item.m_caPrefix << "\n"
               << "Introduction: " << item.m_caInfo << "\n"
               << "***************************************\n";
   }
-  std::vector<CaProfile> caVector{std::begin(caList), std::end(caList)};
   std::cerr << "Step "
             << nStep++ << ": Please type in the CA INDEX that you want to apply"
             << " or type in NONE if your expected CA is not in the list\n";
@@ -270,7 +301,7 @@ startApplication()
     std::cerr << "Step " << nStep << ": Please type in the CA Name\n";
     std::string expectedCAName;
     getline(std::cin, expectedCAName);
-    face.expressInterest(*client.generateInfoInterest(Name(expectedCAName)),
+    face.expressInterest(*Requester::genCaProfileInterest(Name(expectedCAName)),
                          bind(&InfoCb, _2), bind(&onNackCb), bind(&timeoutCb));
   }
   else {
@@ -286,35 +317,75 @@ startApplication()
       std::cerr << "Your input is not an existing index. Exit" << std::endl;
       return;
     }
-    auto targetCaItem = caVector[caIndex];
+    auto itemIterator = caCache.m_caItems.cbegin();
+    std::advance(itemIterator, caIndex);
+    auto targetCaItem = *itemIterator;
+    runProbe(targetCaItem);
+  }
+}
 
-    if (!targetCaItem.m_probeParameterKeys.empty()) {
-      std::cerr << "Step " << nStep++ << ": Please provide information for name assignment" << std::endl;
-      auto capturedParams = captureParams(targetCaItem.m_probeParameterKeys);
-      face.expressInterest(*client.generateProbeInterest(targetCaItem, std::move(capturedParams)),
-                           bind(&probeCb, _2), bind(&onNackCb), bind(&timeoutCb));
+static void runProbe(CaProfile profile)
+{
+    std::cerr << "Do you have the identity name already? Type in YES or NO" << std::endl;
+    bool validAnswer = false;
+    while (!validAnswer) {
+        std::string answer;
+        getline(std::cin, answer);
+        boost::algorithm::to_lower(answer);
+        if (answer == "yes") {
+            validAnswer = true;
+            std::cerr << "You answered YES: " << std::endl;
+            std::cerr << "Step " << nStep++ << ": Please type in the full identity name you want to get (with CA prefix)\n";
+            std::string identityNameStr;
+            getline(std::cin, identityNameStr);
+            runNew(profile, Name(identityNameStr));
+        } else if (answer == "no") {
+            validAnswer = true;
+            std::cerr << "You answered NO: new CA will not be used" << std::endl;
+            std::cerr << "Step " << nStep++ << ": Please provide information for name assignment" << std::endl;
+            auto capturedParams = captureParams(profile.m_probeParameterKeys);
+            face.expressInterest(*Requester::genProbeInterest(profile, std::move(capturedParams)),
+                                 bind(&probeCb, _2, profile), bind(&onNackCb), bind(&timeoutCb));
+        } else {
+            std::cerr << "Invalid answer. Type in YES or NO" << std::endl;
+        }
+    }
+}
+
+static void
+runNew(CaProfile profile, Name identityName)
+{
+    int validityPeriod = captureValidityPeriod();
+    auto now = time::system_clock::now();
+    std::cerr << "The validity period of your certificate will be: " << validityPeriod << " hours" << std::endl;
+    requesterState = make_shared<RequesterState>(keyChain, profile, RequestType::NEW);
+    auto interest = Requester::genNewInterest(*requesterState, identityName, now, now + time::hours(validityPeriod));
+    if (interest != nullptr) {
+        face.expressInterest(*interest, bind(&newCb, _2), bind(&onNackCb), bind(&timeoutCb));
     }
     else {
-      std::cerr << "Step " << nStep++ << ": Please type in the full identity name you want to get (with CA prefix)\n";
-      std::string identityNameStr;
-      getline(std::cin, identityNameStr);
-      captureValidityPeriod();
-      if (validityPeriod <= 0) {
-        std::cerr << "Invalid period time. Exit." << std::endl;
-        return;
-      }
-      Name idName(identityNameStr);
-      std::cerr << "The validity period of your certificate will be: " << validityPeriod << " hours" << std::endl;
-      auto now = time::system_clock::now();
-      auto interest = client.generateNewInterest(now, now + time::hours(validityPeriod), idName);
-      if (interest != nullptr) {
-        face.expressInterest(*interest, bind(&newCb, _2), bind(&onNackCb), bind(&timeoutCb));
-      }
-      else {
         std::cerr << "Cannot generate the Interest for NEW step. Exit" << std::endl;
-      }
     }
+}
+
+static void
+runChallenge(const std::string& challengeType)
+{
+  auto requirement = Requester::selectOrContinueChallenge(*requesterState, challengeType);
+  if (requirement.size() > 0) {
+      std::cerr << "Step " << nStep++ << ": Please provide parameters used for Identity Verification Challenge\n";
+      captureParams(requirement);
   }
+  face.expressInterest(*Requester::genChallengeInterest(*requesterState, std::move(requirement)),
+                         bind(&challengeCb, _2), bind(&onNackCb), bind(&timeoutCb));
+
+}
+
+
+static void
+startApplication(std::string configFilePath)
+{
+  selectCaProfile(configFilePath);
 }
 
 static void
@@ -332,8 +403,11 @@ handleSignal(const boost::system::error_code& error, int signalNum)
     std::cerr << signalName;
   }
   std::cerr << std::endl;
-  client.endSession();
+  if (requesterState) {
+    Requester::endSession(*requesterState);
+  }
   face.getIoService().stop();
+  exit(1);
 }
 
 int
@@ -347,8 +421,9 @@ main(int argc, char* argv[])
   namespace po = boost::program_options;
   std::string configFilePath = std::string(SYSCONFDIR) + "/ndncert/client.conf";
   po::options_description description("General Usage\n ndncert-client [-h] [-c] [-v]\n");
-  description.add_options()("help,h", "produce help message")("config-file,c", po::value<std::string>(&configFilePath), "configuration file name")("validity-period,v", po::value<int>(&validityPeriod)->default_value(-1),
-                                                                                                                                                   "desired validity period (hours) of the certificate being requested");
+  description.add_options()
+      ("help,h", "produce help message")
+      ("config-file,c", po::value<std::string>(&configFilePath), "configuration file name");
   po::positional_options_description p;
 
   po::variables_map vm;
@@ -364,14 +439,7 @@ main(int argc, char* argv[])
     std::cerr << description << std::endl;
     return 0;
   }
-  try {
-    client.getClientConf().load(configFilePath);
-  }
-  catch (const std::exception& e) {
-    std::cerr << "Cannot load the configuration file: " << e.what() << std::endl;
-    return 1;
-  }
-  startApplication();
+  startApplication(configFilePath);
   face.processEvents();
   return 0;
 }

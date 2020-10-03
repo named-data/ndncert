@@ -106,10 +106,10 @@ public:
   static shared_ptr<Interest>
   genCertFetchInterest(const RequesterState& state);
 
-  shared_ptr<security::v2::Certificate>
+  static shared_ptr<security::v2::Certificate>
   onCertFetchResponse(const Data& reply);
 
-  void
+  static void
   endSession(RequesterState& state);
 
 private:
