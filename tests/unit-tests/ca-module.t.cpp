@@ -161,6 +161,56 @@ BOOST_AUTO_TEST_CASE(HandleProbeUsingDefaultHandler)
   BOOST_CHECK_EQUAL(count, 1);
 }
 
+BOOST_AUTO_TEST_CASE(HandleProbeRedirection)
+{
+  auto identity = addIdentity(Name("/ndn"));
+  auto key = identity.getDefaultKey();
+  auto cert = key.getDefaultCertificate();
+
+  util::DummyClientFace face(io, m_keyChain, {true, true});
+  CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-5", "ca-storage-memory");
+  ca.setNameAssignmentFunction([&](const std::vector<std::tuple<std::string, std::string>>) -> std::vector<std::string> {
+    std::vector<std::string> result;
+    result.push_back("example");
+    return result;
+  });
+  advanceClocks(time::milliseconds(20), 60);
+
+  Interest interest("/ndn/CA/PROBE");
+  interest.setCanBePrefix(false);
+
+  Block paramTLV = makeEmptyBlock(tlv::ApplicationParameters);
+  paramTLV.push_back(makeStringBlock(tlv_parameter_key, "name"));
+  paramTLV.push_back(makeStringBlock(tlv_parameter_value, "zhiyi"));
+  paramTLV.encode();
+
+  interest.setApplicationParameters(paramTLV);
+
+  int count = 0;
+  face.onSendData.connect([&](const Data& response) {
+    count++;
+    BOOST_CHECK(security::verifySignature(response, cert));
+    Block contentBlock = response.getContent();
+    contentBlock.parse();
+
+    // Test CA sent redirections
+    BOOST_CHECK_EQUAL(true, contentBlock.get(tlv_probe_redirect).hasValue());
+    Block probeRedirect = contentBlock.get(tlv_probe_redirect);
+    probeRedirect.parse();
+    // Test the case where we have multiple probeRedirects
+    BOOST_CHECK_EQUAL(probeRedirect.elements().size(), 2)
+    for (const auto& item : probeRedirect.elements()) {
+        Name caName;
+        caName.wireDecode(item.get(tlv::Name));
+        // TODO: Checkout the format of the name
+        BOOST_CHECK_EQUAL(caName, "/ndn/example");
+    }
+  });
+  face.receive(interest);
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK_EQUAL(count, 1);
+}
+
 BOOST_AUTO_TEST_CASE(HandleNew)
 {
   auto identity = addIdentity(Name("/ndn"));

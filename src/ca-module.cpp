@@ -210,7 +210,7 @@ CaModule::onProbe(const Interest& request)
 
   Data result;
   result.setName(request.getName());
-  result.setContent(PROBE::encodeDataContent(availableNames, m_config.m_caItem.m_maxSuffixLength));
+  result.setContent(PROBE::encodeDataContent(availableNames, m_config.m_caItem.m_maxSuffixLength, m_config.m_redirection));
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
   m_keyChain.sign(result, signingByIdentity(m_config.m_caItem.m_caPrefix));
   m_face.put(result);
