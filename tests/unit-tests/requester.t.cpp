@@ -30,6 +30,36 @@ namespace tests {
 
 BOOST_FIXTURE_TEST_SUITE(TestRequester, IdentityManagementTimeFixture)
 
+/* PROBE */
+BOOST_AUTO_TEST_CASE(GenProbeInterest)
+{
+  auto identity = addIdentity(Name("/site"));
+  auto key = identity.getDefaultKey();
+  auto cert = key.getDefaultCertificate();
+
+  CaProfile ca_profile;
+  ca_profile.m_probeParameterKeys.push_back("email");
+  ca_profile.m_probeParameterKeys.push_back("uid");	
+  ca_profile.m_probeParameterKeys.push_back("name");
+  ca_profile.m_caPrefix = Name("/site");
+  ca_profile.m_cert = std::make_shared<security::v2::Certificate>(cert);
+
+  std::vector<std::tuple<std::string, std::string>> probeParams;
+  probeParams.push_back(std::make_tuple("email", "zhiyi@cs.ucla.edu"));
+  probeParams.push_back(std::make_tuple("uid", "987654321"));
+  probeParams.push_back(std::make_tuple("name", "Zhiyi Zhang"));
+  auto firstInterest = Requester::genProbeInterest(ca_profile, probeParams);
+
+  BOOST_CHECK(firstInterest->getName().at(-1).isParametersSha256Digest());
+  // ignore the last name component (ParametersSha256Digest)
+  BOOST_CHECK_EQUAL(firstInterest->getName().getPrefix(-1), "/site/CA/PROBE");		
+  BOOST_CHECK_EQUAL(readString(firstInterest->getApplicationParameters().get(tlv_parameter_value)), "zhiyi@cs.ucla.edu");
+}
+
+BOOST_AUTO_TEST_CASE(OnProbeResponse){}
+
+BOOST_AUTO_TEST_CASE(OnProbeResponseProbeRedirection){}
+
 BOOST_AUTO_TEST_CASE(ErrorHandling)
 {
   auto identity = addIdentity(Name("/site"));
