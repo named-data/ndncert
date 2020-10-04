@@ -39,7 +39,7 @@ BOOST_AUTO_TEST_CASE(GenProbeInterest)
 
   CaProfile ca_profile;
   ca_profile.m_probeParameterKeys.push_back("email");
-  ca_profile.m_probeParameterKeys.push_back("uid");	
+  ca_profile.m_probeParameterKeys.push_back("uid");
   ca_profile.m_probeParameterKeys.push_back("name");
   ca_profile.m_caPrefix = Name("/site");
   ca_profile.m_cert = std::make_shared<security::v2::Certificate>(cert);
@@ -48,7 +48,7 @@ BOOST_AUTO_TEST_CASE(GenProbeInterest)
   probeParams.push_back(std::make_tuple("email", "zhiyi@cs.ucla.edu"));
   probeParams.push_back(std::make_tuple("uid", "987654321"));
   probeParams.push_back(std::make_tuple("name", "Zhiyi Zhang"));
-  auto firstInterest = Requester::genProbeInterest(ca_profile, probeParams);
+  auto firstInterest = Requester::genProbeInterest(ca_profile, std::move(probeParams));
 
   BOOST_CHECK(firstInterest->getName().at(-1).isParametersSha256Digest());
   // ignore the last name component (ParametersSha256Digest)

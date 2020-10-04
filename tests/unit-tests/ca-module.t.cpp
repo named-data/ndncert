@@ -198,7 +198,7 @@ BOOST_AUTO_TEST_CASE(HandleProbeRedirection)
     Block probeRedirect = contentBlock.get(tlv_probe_redirect);
     probeRedirect.parse();
     // Test the case where we have multiple probeRedirects
-    BOOST_CHECK_EQUAL(probeRedirect.elements().size(), 2)
+    BOOST_CHECK_EQUAL(probeRedirect.elements().size(), 2);
     for (const auto& item : probeRedirect.elements()) {
         Name caName;
         caName.wireDecode(item.get(tlv::Name));
