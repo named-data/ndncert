@@ -73,6 +73,8 @@ public:
 private:
   std::map<std::string, CaState> m_requests;
   std::map<std::string, security::v2::Certificate> m_issuedCerts;
+  std::map<Name, std::set<std::string>> m_requestKeyIndex;
+  std::map<Name, std::string> m_certsKeyIndex;
 };
 
 } // namespace ndncert

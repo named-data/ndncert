@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS
   );
 CREATE UNIQUE INDEX IF NOT EXISTS
   CaStateIdIndex ON CaStates(request_id);
-CREATE UNIQUE INDEX IF NOT EXISTS
+CREATE INDEX IF NOT EXISTS
   CaStateKeyNameIndex ON CaStates(cert_key_name);
 
 CREATE TABLE IF NOT EXISTS
@@ -158,19 +158,21 @@ CaSqlite::addRequest(const CaState& request)
 
   // check whether request is there already
   auto keyNameTlv = request.m_cert.getKeyName().wireEncode();
-  Sqlite3Statement statement1(m_database,
-          R"_SQLTEXT_(SELECT 1 FROM CaStates where cert_key_name = ?)_SQLTEXT_");
-  statement1.bind(1, keyNameTlv, SQLITE_TRANSIENT);
-  if (statement1.step() == SQLITE_ROW) {
-    BOOST_THROW_EXCEPTION(Error("Request for " + request.m_cert.getKeyName().toUri() + " already exists"));
-  }
+  if (request.m_requestType == RequestType::NEW) {
+    Sqlite3Statement statement1(m_database,
+                                R"_SQLTEXT_(SELECT 1 FROM CaStates where cert_key_name = ?)_SQLTEXT_");
+    statement1.bind(1, keyNameTlv, SQLITE_TRANSIENT);
+    if (statement1.step() == SQLITE_ROW) {
+      BOOST_THROW_EXCEPTION(Error("Request for " + request.m_cert.getKeyName().toUri() + " already exists"));
+    }
 
-  // check whether certificate is already issued
-  Sqlite3Statement statement2(m_database,
-                              R"_SQLTEXT_(SELECT 1 FROM IssuedCerts where cert_key_name = ?)_SQLTEXT_");
-  statement2.bind(1, keyNameTlv, SQLITE_TRANSIENT);
-  if (statement2.step() == SQLITE_ROW) {
-    BOOST_THROW_EXCEPTION(Error("Cert for " + request.m_cert.getKeyName().toUri() + " already exists"));
+    // check whether certificate is already issued
+    Sqlite3Statement statement2(m_database,
+                                R"_SQLTEXT_(SELECT 1 FROM IssuedCerts where cert_key_name = ?)_SQLTEXT_");
+    statement2.bind(1, keyNameTlv, SQLITE_TRANSIENT);
+    if (statement2.step() == SQLITE_ROW) {
+      BOOST_THROW_EXCEPTION(Error("Cert for " + request.m_cert.getKeyName().toUri() + " already exists"));
+    }
   }
 
   Sqlite3Statement statement(
