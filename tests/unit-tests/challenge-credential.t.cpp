@@ -67,13 +67,14 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
   SignatureInfo signatureInfo;
   signatureInfo.setValidityPeriod(security::ValidityPeriod(system_clock::now(), system_clock::now() + time::minutes(1)));
   m_keyChain.sign(credential, signingByCertificate(trustAnchor).setSignatureInfo(signatureInfo));
+  m_keyChain.addCertificate(keyB, credential);
 
   // using private key to sign cert request
-  std::vector<std::tuple<std::string, std::string>> params;
+  auto params = challenge.getRequestedParameterList(state.m_status, "");
   ChallengeCredential::fulfillParameters(params, m_keyChain, credential.getName(), "123");
-  Block paramsTlv = challenge.genChallengeRequestTLV(Status::BEFORE_CHALLENGE, "", std::move(params));
+  Block paramsTlv = challenge.genChallengeRequestTLV(state.m_status, "", std::move(params));
   challenge.handleChallengeRequest(paramsTlv, state);
-  BOOST_CHECK(state.m_status == Status::PENDING);
+  BOOST_CHECK_EQUAL(statusToString(state.m_status), statusToString(Status::PENDING));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

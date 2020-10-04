@@ -194,17 +194,15 @@ BOOST_AUTO_TEST_CASE(HandleProbeRedirection)
     contentBlock.parse();
 
     // Test CA sent redirections
-    BOOST_CHECK_EQUAL(true, contentBlock.get(tlv_probe_redirect).hasValue());
-    Block probeRedirect = contentBlock.get(tlv_probe_redirect);
-    probeRedirect.parse();
-    // Test the case where we have multiple probeRedirects
-    BOOST_CHECK_EQUAL(probeRedirect.elements().size(), 2);
-    for (const auto& item : probeRedirect.elements()) {
-        Name caName;
-        caName.wireDecode(item.get(tlv::Name));
-        // TODO: Checkout the format of the name
-        BOOST_CHECK_EQUAL(caName, "/ndn/example");
+    std::vector<Name> redirectionItems;
+    for (auto item : contentBlock.elements()) {
+      if (item.type() == tlv_probe_redirect) {
+        redirectionItems.push_back(Name(item.blockFromValue()));
+      }
     }
+    BOOST_CHECK_EQUAL(redirectionItems.size(), 2);
+    BOOST_CHECK_EQUAL(security::v2::extractIdentityFromCertName(redirectionItems[0].getPrefix(-1)), "/ndn/site1");
+    BOOST_CHECK_EQUAL(security::v2::extractIdentityFromCertName(redirectionItems[1].getPrefix(-1)), "/ndn/site1");
   });
   face.receive(interest);
   advanceClocks(time::milliseconds(20), 60);

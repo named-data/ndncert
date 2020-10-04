@@ -82,18 +82,19 @@ ChallengeCredential::handleChallengeRequest(const Block& params, RequestState& r
   if (m_trustAnchors.empty()) {
     parseConfigFile();
   }
-  shared_ptr<security::v2::Certificate> credential;
+  security::v2::Certificate credential;
   const uint8_t* signature;
   size_t signatureLen;
   const auto& elements = params.elements();
   for (size_t i = 0; i < elements.size(); i++) {
     if (elements[i].type() == tlv_parameter_key) {
       if (readString(elements[i]) == PARAMETER_KEY_CREDENTIAL_CERT) {
-        std::istringstream ss(readString(elements[i + 1]));
-        credential = io::load<security::v2::Certificate>(ss);
-        if (credential == nullptr) {
-          _LOG_ERROR("Cannot load challenge parameter: credential");
-          return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Cannot challenge credential: credential.");
+        try {
+          credential.wireDecode(elements[i + 1].blockFromValue());
+        }
+        catch (const std::exception& e) {
+          _LOG_ERROR("Cannot load challenge parameter: credential " << e.what());
+          return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Cannot challenge credential: credential." + std::string(e.what()));
         }
       }
       else if (readString(elements[i]) == PARAMETER_KEY_PROOF_OF_PRIVATE_KEY) {
@@ -104,13 +105,13 @@ ChallengeCredential::handleChallengeRequest(const Block& params, RequestState& r
   }
 
   // verify the credential and the self-signed cert
-  Name signingKeyName = credential->getSignature().getKeyLocator().getName();
+  Name signingKeyName = credential.getSignature().getKeyLocator().getName();
   security::transform::PublicKey key;
-  const auto& pubKeyBuffer = credential->getPublicKey();
+  const auto& pubKeyBuffer = credential.getPublicKey();
   key.loadPkcs8(pubKeyBuffer.data(), pubKeyBuffer.size());
   for (auto anchor : m_trustAnchors) {
     if (anchor.getKeyName() == signingKeyName) {
-      if (security::verifySignature(*credential, anchor) &&
+      if (security::verifySignature(credential, anchor) &&
           security::verifySignature((uint8_t*)request.m_requestId.c_str(), request.m_requestId.size(), signature, signatureLen, key)) {
         return returnWithSuccess(request);
       }
