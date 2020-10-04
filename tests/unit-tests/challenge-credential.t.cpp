@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
   auto identityA = addIdentity(Name("/example"));
   auto keyA = identityA.getDefaultKey();
   auto certA = key.getDefaultCertificate();
-  RequestState request(Name("/example"), "123", RequestType::NEW, Status::BEFORE_CHALLENGE, certA, makeEmptyBlock(tlv::ContentType_Key));
+  RequestState state(Name("/example"), "123", RequestType::NEW, Status::BEFORE_CHALLENGE, certA, makeEmptyBlock(tlv::ContentType_Key));
 
   // create requester's credential
   auto identityB = addIdentity(Name("/trust/cert"));
@@ -69,40 +69,11 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
   m_keyChain.sign(credential, signingByCertificate(trustAnchor).setSignatureInfo(signatureInfo));
 
   // using private key to sign cert request
-  Name idSignatureName = credential.getKeyName();
-  idSignatureName.append("request-id-signature").appendVersion();
-  security::v2::Certificate idSignature;
-  idSignature.setName(idSignatureName);
-  idSignature.setContent(makeStringBlock(tlv::Content, "123"));
-  m_keyChain.sign(idSignature, signingByCertificate(credential));
-
-  std::stringstream ss;
-  io::save<security::v2::Certificate>(idSignature, ss);
-  auto checkCert = *(io::load<security::v2::Certificate>(ss));
-  BOOST_CHECK_EQUAL(checkCert, idSignature);
-  ss.str("");
-  ss.clear();
-
-  io::save<security::v2::Certificate>(idSignature, ss);
-  std::string idSignatureStr = ss.str();
-  ss.str("");
-  ss.clear();
-
-  io::save<security::v2::Certificate>(credential, ss);
-  std::string credentialStr = ss.str();
-  ss.str("");
-  ss.clear();
-
-  Block params = makeEmptyBlock(tlv_encrypted_payload);
-  params.push_back(makeStringBlock(tlv_selected_challenge, "Credential"));
-  params.push_back(makeStringBlock(tlv_parameter_key, ChallengeCredential::PARAMETER_KEY_CREDENTIAL_CERT));
-  params.push_back(makeStringBlock(tlv_parameter_value, credentialStr));
-  params.push_back(makeStringBlock(tlv_parameter_key, ChallengeCredential::PARAMETER_KEY_PROOF_OF_PRIVATE_KEY));
-  params.push_back(makeStringBlock(tlv_parameter_value, idSignatureStr));
-  params.encode();
-
-  challenge.handleChallengeRequest(params, request);
-  BOOST_CHECK(request.m_status == Status::PENDING);
+  std::vector<std::tuple<std::string, std::string>> params;
+  ChallengeCredential::fulfillParameters(params, m_keyChain, credential.getName(), "123");
+  Block paramsTlv = challenge.genChallengeRequestTLV(Status::BEFORE_CHALLENGE, "", std::move(params));
+  challenge.handleChallengeRequest(paramsTlv, state);
+  BOOST_CHECK(state.m_status == Status::PENDING);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
