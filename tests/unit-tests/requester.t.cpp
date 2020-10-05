@@ -19,6 +19,8 @@
  */
 
 #include <protocol-detail/error.hpp>
+#include <protocol-detail/probe.hpp>
+#include <ndn-cxx/util/io.hpp>
 #include "requester.hpp"
 #include "challenge-module.hpp"
 #include "ca-module.hpp"
@@ -56,9 +58,43 @@ BOOST_AUTO_TEST_CASE(GenProbeInterest)
   BOOST_CHECK_EQUAL(readString(firstInterest->getApplicationParameters().get(tlv_parameter_value)), "zhiyi@cs.ucla.edu");
 }
 
-BOOST_AUTO_TEST_CASE(OnProbeResponse){}
+BOOST_AUTO_TEST_CASE(OnProbeResponse){
+  auto identity = addIdentity(Name("/site"));
+  auto key = identity.getDefaultKey();
+  auto cert = key.getDefaultCertificate();
 
-BOOST_AUTO_TEST_CASE(OnProbeResponseProbeRedirection){}
+  CaProfile ca_profile;
+  ca_profile.m_probeParameterKeys.push_back("email");
+  ca_profile.m_probeParameterKeys.push_back("uid");
+  ca_profile.m_probeParameterKeys.push_back("name");
+  ca_profile.m_caPrefix = Name("/site");
+  ca_profile.m_cert = std::make_shared<security::v2::Certificate>(cert);
+
+  std::vector<Name> availableNames;
+  availableNames.push_back(Name("/site1"));
+  availableNames.push_back(Name("/site2"));
+
+  util::DummyClientFace face(io, m_keyChain, {true, true});
+  CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-5", "ca-storage-memory");
+
+  Data reply;
+  reply.setName(Name("/site/CA/PROBE"));
+  reply.setFreshnessPeriod(time::seconds(100));
+  reply.setContent(PROBE::encodeDataContent(availableNames, 3, ca.m_config.m_redirection));
+  m_keyChain.sign(reply, signingByIdentity(identity));
+
+  std::vector<Name> names, redirects;
+  Requester::onProbeResponse(reply, ca_profile, names, redirects);
+
+  // Test names and redirects are properly stored
+  BOOST_CHECK_EQUAL(names.size(), 2);
+  BOOST_CHECK_EQUAL(names[0].toUri(), "/site1");
+  BOOST_CHECK_EQUAL(names[1].toUri(), "/site2");
+
+  BOOST_CHECK_EQUAL(redirects.size(), 2);
+  BOOST_CHECK_EQUAL(security::v2::extractIdentityFromCertName(redirects[0].getPrefix(-1)), "/ndn/site1");
+  BOOST_CHECK_EQUAL(security::v2::extractIdentityFromCertName(redirects[1].getPrefix(-1)), "/ndn/site1");
+}
 
 BOOST_AUTO_TEST_CASE(ErrorHandling)
 {
