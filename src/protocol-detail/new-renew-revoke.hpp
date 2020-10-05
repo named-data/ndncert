@@ -40,7 +40,7 @@ public:
                              const std::list<std::string>& challenges);
   struct DecodedData {
     std::string ecdhKey;
-    std::string salt;
+    uint64_t salt;
     std::string requestId;
     Status requestStatus;
     std::list<std::string> challenges;

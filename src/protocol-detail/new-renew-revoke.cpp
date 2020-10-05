@@ -97,6 +97,7 @@ NEW_RENEW_REVOKE::decodeDataContent(const Block& content)
   content.parse();
   const auto& ecdhKey = readString(content.get(tlv_ecdh_pub));
   const auto& salt = readString(content.get(tlv_salt));
+  uint64_t saltInt = std::stoull(salt);
   const auto& requestStatus = static_cast<Status>(readNonNegativeInteger(content.get(tlv_status)));
   const auto& requestId = readString(content.get(tlv_request_id));
   std::list<std::string> challenges;
@@ -105,7 +106,7 @@ NEW_RENEW_REVOKE::decodeDataContent(const Block& content)
       challenges.push_back(readString(element));
     }
   }
-  return DecodedData{ecdhKey, salt, requestId, requestStatus, challenges};
+  return DecodedData{ecdhKey, saltInt, requestId, requestStatus, challenges};
 }
 
 }  // namespace ndncert

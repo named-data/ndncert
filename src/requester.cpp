@@ -179,25 +179,20 @@ Requester::onNewRenewRevokeResponse(RequesterState& state, const Data& reply)
   if (!security::verifySignature(reply, *state.m_caItem.m_cert)) {
     _LOG_ERROR("Cannot verify replied Data packet signature.");
     BOOST_THROW_EXCEPTION(std::runtime_error("Cannot verify replied Data packet signature."));
-    return std::list<std::string>();
   }
   processIfError(reply);
 
   auto contentTLV = reply.getContent();
-  const auto content = NEW_RENEW_REVOKE::decodeDataContent(contentTLV);
+  const auto& content = NEW_RENEW_REVOKE::decodeDataContent(contentTLV);
 
-  // ECDH
-  uint64_t saltInt = std::stoull(content.salt);
+  // ECDH and HKDF
   state.m_ecdh.deriveSecret(content.ecdhKey);
-
-  // HKDF
   hkdf(state.m_ecdh.context->sharedSecret, state.m_ecdh.context->sharedSecretLen,
-       (uint8_t*)&saltInt, sizeof(saltInt), state.m_aesKey, sizeof(state.m_aesKey));
+       (uint8_t*)&content.salt, sizeof(content.salt), state.m_aesKey, sizeof(state.m_aesKey));
 
   // update state
   state.m_status = content.requestStatus;
   state.m_requestId = content.requestId;
-
   return content.challenges;
 }
 
@@ -246,7 +241,6 @@ Requester::onChallengeResponse(RequesterState& state, const Data& reply)
   if (!security::verifySignature(reply, *state.m_caItem.m_cert)) {
     _LOG_ERROR("Cannot verify replied Data packet signature.");
     BOOST_THROW_EXCEPTION(std::runtime_error("Cannot verify replied Data packet signature."));
-    return;
   }
   processIfError(reply);
   auto result = decodeBlockWithAesGcm128(reply.getContent(), state.m_aesKey, (const uint8_t*)"test", strlen("test"));
