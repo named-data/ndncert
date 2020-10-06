@@ -82,9 +82,9 @@ BOOST_AUTO_TEST_CASE(HandleProbe)
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
-  ca.setNameAssignmentFunction([&](const std::vector<std::tuple<std::string, std::string>>) -> std::vector<std::string> {
-    std::vector<std::string> result;
-    result.push_back("example");
+  ca.setNameAssignmentFunction([&](const std::vector<std::tuple<std::string, std::string>>) -> std::vector<PartialName> {
+    std::vector<PartialName> result;
+    result.push_back(Name("/example"));
     return result;
   });
   advanceClocks(time::milliseconds(20), 60);
@@ -163,9 +163,9 @@ BOOST_AUTO_TEST_CASE(HandleProbeRedirection)
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-5", "ca-storage-memory");
-  ca.setNameAssignmentFunction([&](const std::vector<std::tuple<std::string, std::string>>) -> std::vector<std::string> {
-    std::vector<std::string> result;
-    result.push_back("example");
+  ca.setNameAssignmentFunction([&](const std::vector<std::tuple<std::string, std::string>>) -> std::vector<PartialName> {
+    std::vector<PartialName> result;
+    result.push_back(Name("/example"));
     return result;
   });
   advanceClocks(time::milliseconds(20), 60);

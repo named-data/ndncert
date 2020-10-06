@@ -186,7 +186,7 @@ CaModule::onProbe(const Interest& request)
 
   // process PROBE requests: collect probe parameters
   auto parameters = PROBE::decodeApplicationParameters(request.getApplicationParameters());
-  std::vector<std::string> availableComponents;
+  std::vector<PartialName> availableComponents;
   if (m_config.m_nameAssignmentFunc) {
     try {
       availableComponents = m_config.m_nameAssignmentFunc(parameters);

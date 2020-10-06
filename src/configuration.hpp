@@ -87,7 +87,7 @@ private:
  * @p vector, input, a list of parameter key-value pair used for name assignment.
  * @return a vector containing the possible namespaces derived from the parameters.
  */
-using NameAssignmentFunc = function<std::vector<std::string>(const std::vector<std::tuple<std::string, std::string>>)>;
+using NameAssignmentFunc = function<std::vector<PartialName>(const std::vector<std::tuple<std::string, std::string>>)>;
 
 /**
  * @brief The function would be invoked whenever the certificate request status is updated.
