@@ -29,7 +29,7 @@ BOOST_FIXTURE_TEST_SUITE(TestCaSqlite, DatabaseFixture)
 
 BOOST_AUTO_TEST_CASE(RequestOperations)
 {
-  CaSqlite storage(Name(), dbDir.string() + "test.db");
+  CaSqlite storage(Name(), dbDir.string() + "TestCaSqlite_RequestOperations.db");
 
   auto identity1 = addIdentity(Name("/ndn/site1"));
   auto key1 = identity1.getDefaultKey();
@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
 
   // add operation
   CaState request1(Name("/ndn/site1"), "123", RequestType::NEW, Status::BEFORE_CHALLENGE, cert1, makeStringBlock(tlv::ContentType_Key, "PretendItIsAKey"));
-  BOOST_CHECK_NO_THROW(storage.addRequest(request1));
+  storage.addRequest(request1);
 
   // get operation
   auto result = storage.getRequest("123");
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
 
 BOOST_AUTO_TEST_CASE(DuplicateAdd)
 {
-    CaSqlite storage(Name(), dbDir.string() + "test.db");
+    CaSqlite storage(Name(), dbDir.string() + "TestCaSqlite_DuplicateAdd.db");
 
     auto identity1 = addIdentity(Name("/ndn/site1"));
     auto key1 = identity1.getDefaultKey();
