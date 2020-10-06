@@ -170,6 +170,9 @@ convertJson2String(const JsonSection& json);
 JsonSection
 convertString2Json(const std::string& jsonContent);
 
+std::string
+hexlify(const uint8_t* bytes, size_t byteLen);
+
 }  // namespace ndncert
 }  // namespace ndn
 

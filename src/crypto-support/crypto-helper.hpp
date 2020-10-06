@@ -69,10 +69,19 @@ hkdf(const uint8_t* secret, int secretLen, const uint8_t* salt,
      int saltLen, uint8_t* okm, int okm_len,
      const uint8_t* info = INFO, int info_len = INFO_LEN);
 
+/**
+ * HMAC SHA 256 keyed hash function
+ * @param key the key for the function
+ * @param key_len the length of the key
+ * @param data the array to hmac
+ * @param data_length the length of the array
+ * @param result result. Enough memory (32 Bytes) must be allocated beforehand
+ * @return 0 if successful, -1 if failed
+ */
 int
 ndn_compute_hmac_sha256(const uint8_t* data, const unsigned data_length,
                         const uint8_t* key, const unsigned key_length,
-                        uint8_t* prk);
+                        uint8_t* result);
 
 /**
  * Authentication GCM 128 Encryption

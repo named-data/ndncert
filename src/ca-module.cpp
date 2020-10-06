@@ -48,8 +48,7 @@ CaModule::CaModule(Face& face, security::v2::KeyChain& keyChain,
   // load the config and create storage
   m_config.load(configPath);
   m_storage = CaStorage::createCaStorage(storageType, m_config.m_caItem.m_caPrefix, "");
-  random::generateSecureBytes(m_requestIdGenKey, 16);
-
+  random::generateSecureBytes(m_requestIdGenKey, 32);
   registerPrefix();
 }
 
@@ -326,23 +325,20 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   }
 
   // create new request instance
-  uint64_t requestIdData[2];
-  size_t idDataLen = 16;
-  Block certNameData = clientCert->getName().wireEncode();
-  hmac_sha_256(m_requestIdGenKey, 16, certNameData.value(), certNameData.value_size(), reinterpret_cast<uint8_t *>(requestIdData), &idDataLen);
-  std::stringstream ss;
-  ss << std::hex << std::noshowbase<< requestIdData[0] << requestIdData[1];
-
-  std::string requestId = ss.str();
-
-  CaState requestState(m_config.m_caItem.m_caPrefix, requestId, requestType, Status::BEFORE_CHALLENGE, *clientCert,
-                       makeBinaryBlock(tlv::ContentType_Key, aesKey, sizeof(aesKey)));
+  uint8_t requestIdData[32];
+  Block certNameTlv = clientCert->getName().wireEncode();
+  ndn_compute_hmac_sha256(certNameTlv.wire(), certNameTlv.size(), m_requestIdGenKey, 32, requestIdData);
+  CaState requestState(m_config.m_caItem.m_caPrefix, hexlify(requestIdData, 32),
+                      requestType, Status::BEFORE_CHALLENGE, *clientCert,
+                      makeBinaryBlock(tlv::ContentType_Key, aesKey, sizeof(aesKey)));
   try {
     m_storage->addRequest(requestState);
   }
   catch (const std::runtime_error& e) {
-    requestId = std::to_string(random::generateWord64());
-    m_storage->addRequest(requestState);
+    _LOG_ERROR("Duplicate Request ID: The same request has been seen before.");
+    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
+                                       "Duplicate Request ID: The same request has been seen before.."));
+    return;
   }
   Data result;
   result.setName(request.getName());
