@@ -23,14 +23,12 @@
 namespace ndn {
 namespace ndncert {
 
-CaStorage::~CaStorage() = default;
-
 unique_ptr<CaStorage>
-CaStorage::createCaStorage(const std::string& caStorageType)
+CaStorage::createCaStorage(const std::string& caStorageType, const Name& caName, const std::string& path)
 {
   CaStorageFactory& factory = getFactory();
   auto i = factory.find(caStorageType);
-  return i == factory.end() ? nullptr : i->second();
+  return i == factory.end() ? nullptr : i->second(caName, path);
 }
 
 CaStorage::CaStorageFactory&

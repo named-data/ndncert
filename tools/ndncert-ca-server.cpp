@@ -25,9 +25,6 @@
 #include <ndn-cxx/security/key-chain.hpp>
 
 #include <boost/asio/ip/tcp.hpp>
-#if BOOST_VERSION < 106700
-#include <boost/date_time/posix_time/posix_time_duration.hpp>
-#endif
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
@@ -97,6 +94,9 @@ main(int argc, char* argv[])
                                 issuedCert.wireEncode().size());
           }
       });
+  }
+  else {
+    
   }
 
   face.processEvents();

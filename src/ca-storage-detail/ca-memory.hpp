@@ -29,6 +29,7 @@ namespace ndncert {
 class CaMemory : public CaStorage
 {
 public:
+  CaMemory(const Name& caName = Name(), const std::string& path = "");
   const static std::string STORAGE_TYPE;
 
 public:
@@ -51,30 +52,8 @@ public:
   std::list<CaState>
   listAllRequests(const Name& caName) override;
 
-  // certificate related
-  security::v2::Certificate
-  getCertificate(const std::string& certId) override;
-
-  void
-  addCertificate(const std::string& certId, const security::v2::Certificate& cert) override;
-
-  void
-  updateCertificate(const std::string& certId, const security::v2::Certificate& cert) override;
-
-  void
-  deleteCertificate(const std::string& certId) override;
-
-  std::list<security::v2::Certificate>
-  listAllIssuedCertificates() override;
-
-  std::list<security::v2::Certificate>
-  listAllIssuedCertificates(const Name& caName) override;
-
 private:
-  std::map<std::string, CaState> m_requests;
-  std::map<std::string, security::v2::Certificate> m_issuedCerts;
-  std::map<Name, std::set<std::string>> m_requestKeyIndex;
-  std::map<Name, std::string> m_certsKeyIndex;
+  std::map<Name, CaState> m_requests;
 };
 
 } // namespace ndncert

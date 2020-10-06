@@ -28,51 +28,6 @@ namespace tests {
 
 BOOST_FIXTURE_TEST_SUITE(TestCaMemory, IdentityManagementFixture)
 
-BOOST_AUTO_TEST_CASE(Initialization)
-{
-  BOOST_CHECK_NO_THROW(CaMemory storage);
-}
-
-BOOST_AUTO_TEST_CASE(CertificateOperations)
-{
-  CaMemory storage;
-
-  auto identity1 = addIdentity(Name("/ndn/site1"));
-  auto key1 = identity1.getDefaultKey();
-  auto cert1 = key1.getDefaultCertificate();
-
-  // add operation
-  BOOST_CHECK_NO_THROW(storage.addCertificate("123", cert1));
-
-  // get operation
-  BOOST_CHECK_EQUAL(storage.getCertificate("123"), cert1);
-
-  // list operation
-  auto allCerts = storage.listAllIssuedCertificates();
-  BOOST_CHECK_EQUAL(allCerts.size(), 1);
-
-  auto identity2 = addIdentity(Name("/ndn/site2"));
-  auto key2 = identity2.getDefaultKey();
-  auto cert2 = key2.getDefaultCertificate();
-  storage.addCertificate("456", cert2);
-
-  allCerts = storage.listAllIssuedCertificates();
-  BOOST_CHECK_EQUAL(allCerts.size(), 2);
-
-  BOOST_CHECK_NO_THROW(storage.deleteCertificate("123"));
-
-  allCerts = storage.listAllIssuedCertificates();
-  BOOST_CHECK_EQUAL(allCerts.size(), 1);
-
-  auto identity3 = addIdentity(Name("/ndn/site3"));
-  auto key3 = identity3.getDefaultKey();
-  auto cert3 = key3.getDefaultCertificate();
-
-  // update operation
-  BOOST_CHECK_NO_THROW(storage.updateCertificate("456", cert3));
-  BOOST_CHECK_EQUAL(storage.getCertificate("456"), cert3);
-}
-
 BOOST_AUTO_TEST_CASE(RequestOperations)
 {
   CaMemory storage;

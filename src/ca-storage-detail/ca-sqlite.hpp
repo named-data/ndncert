@@ -35,12 +35,12 @@ public:
   const static std::string STORAGE_TYPE;
 
   explicit
-  CaSqlite(const std::string& location = "");
+  CaSqlite(const Name& caName, const std::string& path = "");
 
   ~CaSqlite();
 
 public:
-  // certificate request related
+  // request related
   CaState
   getRequest(const std::string& requestId) override;
 
@@ -58,25 +58,6 @@ public:
 
   std::list<CaState>
   listAllRequests(const Name& caName) override;
-
-  // certificate related
-  security::v2::Certificate
-  getCertificate(const std::string& certId) override;
-
-  void
-  addCertificate(const std::string& certId, const security::v2::Certificate& cert) override;
-
-  void
-  updateCertificate(const std::string& certId, const security::v2::Certificate& cert) override;
-
-  void
-  deleteCertificate(const std::string& certId) override;
-
-  std::list<security::v2::Certificate>
-  listAllIssuedCertificates() override;
-
-  std::list<security::v2::Certificate>
-  listAllIssuedCertificates(const Name& caName) override;
 
 private:
   sqlite3* m_database;

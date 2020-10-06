@@ -43,7 +43,6 @@ CREATE TABLE IF NOT EXISTS
     ca_name BLOB NOT NULL,
     request_type INTEGER NOT NULL,
     status INTEGER NOT NULL,
-    cert_key_name BLOB NOT NULL,
     cert_request BLOB NOT NULL,
     challenge_type TEXT,
     challenge_status TEXT,
@@ -55,40 +54,32 @@ CREATE TABLE IF NOT EXISTS
   );
 CREATE UNIQUE INDEX IF NOT EXISTS
   CaStateIdIndex ON CaStates(request_id);
-CREATE INDEX IF NOT EXISTS
-  CaStateKeyNameIndex ON CaStates(cert_key_name);
-
-CREATE TABLE IF NOT EXISTS
-  IssuedCerts(
-    id INTEGER PRIMARY KEY,
-    cert_id TEXT NOT NULL,
-    cert_key_name BLOB NOT NULL,
-    cert BLOB NOT NULL
-  );
-CREATE UNIQUE INDEX IF NOT EXISTS
-  IssuedCertIdIndex ON IssuedCerts(cert_id);
-CREATE UNIQUE INDEX IF NOT EXISTS
-  IssuedCertKeyNameIndex ON IssuedCerts(cert_key_name);
 )_DBTEXT_";
 
-CaSqlite::CaSqlite(const std::string& location)
+CaSqlite::CaSqlite(const Name& caName, const std::string& path)
     : CaStorage()
 {
   // Determine the path of sqlite db
   boost::filesystem::path dbDir;
-  if (!location.empty()) {
-    dbDir = boost::filesystem::path(location);
-  }
-  else if (getenv("HOME") != nullptr) {
-    dbDir = boost::filesystem::path(getenv("HOME")) / ".ndn";
+  if (!path.empty()) {
+    dbDir = boost::filesystem::path(path);
   }
   else {
-    dbDir = boost::filesystem::current_path() / ".ndn";
+    std::string dbName = caName.toUri();
+    std::replace(dbName.begin(), dbName.end(), '/', '_');
+    dbName += ".db";
+    if (getenv("HOME") != nullptr) {
+      dbDir = boost::filesystem::path(getenv("HOME")) / ".ndncert";
+    }
+    else {
+      dbDir = boost::filesystem::current_path() / ".ndncert";
+    }
+    boost::filesystem::create_directories(dbDir);
+    dbDir /= dbName;
   }
-  boost::filesystem::create_directories(dbDir);
 
   // open and initialize database
-  int result = sqlite3_open_v2((dbDir / "ndncert-ca.db").c_str(), &m_database,
+  int result = sqlite3_open_v2(dbDir.c_str(), &m_database,
                                SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,
 #ifdef NDN_CXX_DISABLE_SQLITE3_FS_LOCKING
                                "unix-dotfile"
@@ -97,7 +88,7 @@ CaSqlite::CaSqlite(const std::string& location)
 #endif
   );
   if (result != SQLITE_OK)
-    BOOST_THROW_EXCEPTION(Error("CaSqlite DB cannot be opened/created: " + dbDir.string()));
+    BOOST_THROW_EXCEPTION(std::runtime_error("CaSqlite DB cannot be opened/created: " + dbDir.string()));
 
   // initialize database specific tables
   char* errorMessage = nullptr;
@@ -105,7 +96,7 @@ CaSqlite::CaSqlite(const std::string& location)
                         nullptr, nullptr, &errorMessage);
   if (result != SQLITE_OK && errorMessage != nullptr) {
     sqlite3_free(errorMessage);
-    BOOST_THROW_EXCEPTION(Error("CaSqlite DB cannot be initialized"));
+    BOOST_THROW_EXCEPTION(std::runtime_error("CaSqlite DB cannot be initialized"));
   }
 }
 
@@ -148,57 +139,36 @@ CaSqlite::getRequest(const std::string& requestId)
     }
   }
   else {
-    BOOST_THROW_EXCEPTION(Error("Request " + requestId + " cannot be fetched from database"));
+    BOOST_THROW_EXCEPTION(std::runtime_error("Request " + requestId + " cannot be fetched from database"));
   }
 }
 
 void
 CaSqlite::addRequest(const CaState& request)
 {
-
-  // check whether request is there already
-  auto keyNameTlv = request.m_cert.getKeyName().wireEncode();
-  if (request.m_requestType == RequestType::NEW) {
-    Sqlite3Statement statement1(m_database,
-                                R"_SQLTEXT_(SELECT 1 FROM CaStates where cert_key_name = ?)_SQLTEXT_");
-    statement1.bind(1, keyNameTlv, SQLITE_TRANSIENT);
-    if (statement1.step() == SQLITE_ROW) {
-      BOOST_THROW_EXCEPTION(Error("Request for " + request.m_cert.getKeyName().toUri() + " already exists"));
-    }
-
-    // check whether certificate is already issued
-    Sqlite3Statement statement2(m_database,
-                                R"_SQLTEXT_(SELECT 1 FROM IssuedCerts where cert_key_name = ?)_SQLTEXT_");
-    statement2.bind(1, keyNameTlv, SQLITE_TRANSIENT);
-    if (statement2.step() == SQLITE_ROW) {
-      BOOST_THROW_EXCEPTION(Error("Cert for " + request.m_cert.getKeyName().toUri() + " already exists"));
-    }
-  }
-
   Sqlite3Statement statement(
       m_database,
       R"_SQLTEXT_(INSERT OR ABORT INTO CaStates (request_id, ca_name, status, request_type,
-                  cert_key_name, cert_request, challenge_type, challenge_status, challenge_secrets,
+                  cert_request, challenge_type, challenge_status, challenge_secrets,
                   challenge_tp, remaining_tries, remaining_time, encryption_key)
-                  values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
+                  values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
   statement.bind(1, request.m_requestId, SQLITE_TRANSIENT);
   statement.bind(2, request.m_caPrefix.wireEncode(), SQLITE_TRANSIENT);
   statement.bind(3, static_cast<int>(request.m_status));
   statement.bind(4, static_cast<int>(request.m_requestType));
-  statement.bind(5, keyNameTlv, SQLITE_TRANSIENT);
-  statement.bind(6, request.m_cert.wireEncode(), SQLITE_TRANSIENT);
-  statement.bind(13, request.m_encryptionKey, SQLITE_TRANSIENT);
+  statement.bind(5, request.m_cert.wireEncode(), SQLITE_TRANSIENT);
+  statement.bind(12, request.m_encryptionKey, SQLITE_TRANSIENT);
   if (request.m_challengeState) {
-    statement.bind(7, request.m_challengeType, SQLITE_TRANSIENT);
-    statement.bind(8, request.m_challengeState->m_challengeStatus, SQLITE_TRANSIENT);
-    statement.bind(9, convertJson2String(request.m_challengeState->m_secrets),
+    statement.bind(6, request.m_challengeType, SQLITE_TRANSIENT);
+    statement.bind(7, request.m_challengeState->m_challengeStatus, SQLITE_TRANSIENT);
+    statement.bind(8, convertJson2String(request.m_challengeState->m_secrets),
                    SQLITE_TRANSIENT);
-    statement.bind(10, time::toIsoString(request.m_challengeState->m_timestamp), SQLITE_TRANSIENT);
-    statement.bind(11, request.m_challengeState->m_remainingTries);
-    statement.bind(12, request.m_challengeState->m_remainingTime.count());
+    statement.bind(9, time::toIsoString(request.m_challengeState->m_timestamp), SQLITE_TRANSIENT);
+    statement.bind(10, request.m_challengeState->m_remainingTries);
+    statement.bind(11, request.m_challengeState->m_remainingTime.count());
   }
   if (statement.step() != SQLITE_DONE) {
-    BOOST_THROW_EXCEPTION(Error("Request " + request.m_requestId + " cannot be added to database"));
+    BOOST_THROW_EXCEPTION(std::runtime_error("Request " + request.m_requestId + " cannot be added to database"));
   }
 }
 
@@ -239,7 +209,7 @@ CaSqlite::listAllRequests()
 {
   std::list<CaState> result;
   Sqlite3Statement statement(m_database, R"_SQLTEXT_(SELECT id, request_id, ca_name, status,
-                             challenge_status, cert_key_name, cert_request, challenge_type, challenge_secrets,
+                             challenge_status, cert_request, challenge_type, challenge_secrets,
                              challenge_tp, remaining_tries, remaining_time, request_type, encryption_key
                              FROM CaStates)_SQLTEXT_");
   while (statement.step() == SQLITE_ROW) {
@@ -247,14 +217,14 @@ CaSqlite::listAllRequests()
     Name caName(statement.getBlock(2));
     auto status = static_cast<Status>(statement.getInt(3));
     auto challengeStatus = statement.getString(4);
-    security::v2::Certificate cert(statement.getBlock(6));
-    auto challengeType = statement.getString(7);
-    auto challengeSecrets = statement.getString(8);
-    auto challengeTp = statement.getString(9);
-    auto remainingTries = statement.getInt(10);
-    auto remainingTime = statement.getInt(11);
-    auto requestType = static_cast<RequestType>(statement.getInt(12));
-    auto encryptionKey = statement.getBlock(13);
+    security::v2::Certificate cert(statement.getBlock(5));
+    auto challengeType = statement.getString(6);
+    auto challengeSecrets = statement.getString(7);
+    auto challengeTp = statement.getString(8);
+    auto remainingTries = statement.getInt(9);
+    auto remainingTime = statement.getInt(10);
+    auto requestType = static_cast<RequestType>(statement.getInt(11));
+    auto encryptionKey = statement.getBlock(12);
     if (challengeType != "") {
       result.push_back(CaState(caName, requestId, requestType, status, cert,
                                challengeType, challengeStatus, time::fromIsoString(challengeTp),
@@ -274,7 +244,7 @@ CaSqlite::listAllRequests(const Name& caName)
   std::list<CaState> result;
   Sqlite3Statement statement(m_database,
                              R"_SQLTEXT_(SELECT id, request_id, ca_name, status,
-                             challenge_status, cert_key_name, cert_request, challenge_type, challenge_secrets,
+                             challenge_status, cert_request, challenge_type, challenge_secrets,
                              challenge_tp, remaining_tries, remaining_time, request_type, encryption_key
                              FROM CaStates WHERE ca_name = ?)_SQLTEXT_");
   statement.bind(1, caName.wireEncode(), SQLITE_TRANSIENT);
@@ -284,14 +254,14 @@ CaSqlite::listAllRequests(const Name& caName)
     Name caName(statement.getBlock(2));
     auto status = static_cast<Status>(statement.getInt(3));
     auto challengeStatus = statement.getString(4);
-    security::v2::Certificate cert(statement.getBlock(6));
-    auto challengeType = statement.getString(7);
-    auto challengeSecrets = statement.getString(8);
-    auto challengeTp = statement.getString(9);
-    auto remainingTries = statement.getInt(10);
-    auto remainingTime = statement.getInt(11);
-    auto requestType = static_cast<RequestType>(statement.getInt(12));
-    auto encryptionKey = statement.getBlock(13);
+    security::v2::Certificate cert(statement.getBlock(5));
+    auto challengeType = statement.getString(6);
+    auto challengeSecrets = statement.getString(7);
+    auto challengeTp = statement.getString(8);
+    auto remainingTries = statement.getInt(9);
+    auto remainingTime = statement.getInt(10);
+    auto requestType = static_cast<RequestType>(statement.getInt(11));
+    auto encryptionKey = statement.getBlock(12);
     if (challengeType != "") {
       result.push_back(CaState(caName, requestId, requestType, status, cert,
                                challengeType, challengeStatus, time::fromIsoString(challengeTp),
@@ -312,84 +282,6 @@ CaSqlite::deleteRequest(const std::string& requestId)
                              R"_SQLTEXT_(DELETE FROM CaStates WHERE request_id = ?)_SQLTEXT_");
   statement.bind(1, requestId, SQLITE_TRANSIENT);
   statement.step();
-}
-
-security::v2::Certificate
-CaSqlite::getCertificate(const std::string& certId)
-{
-  Sqlite3Statement statement(m_database,
-                             R"_SQLTEXT_(SELECT cert FROM IssuedCerts where cert_id = ?)_SQLTEXT_");
-  statement.bind(1, certId, SQLITE_TRANSIENT);
-
-  if (statement.step() == SQLITE_ROW) {
-    return security::v2::Certificate(statement.getBlock(0));
-  }
-  else {
-    BOOST_THROW_EXCEPTION(Error("Certificate with ID " + certId + " cannot be fetched from database"));
-  }
-}
-
-void
-CaSqlite::addCertificate(const std::string& certId, const security::v2::Certificate& cert)
-{
-  Sqlite3Statement statement(m_database,
-                             R"_SQLTEXT_(INSERT INTO IssuedCerts (cert_id, cert_key_name, cert)
-                             values (?, ?, ?))_SQLTEXT_");
-  statement.bind(1, certId, SQLITE_TRANSIENT);
-  statement.bind(2, cert.getKeyName().wireEncode(), SQLITE_TRANSIENT);
-  statement.bind(3, cert.wireEncode(), SQLITE_TRANSIENT);
-
-  if (statement.step() != SQLITE_DONE) {
-    BOOST_THROW_EXCEPTION(Error("Certificate " + cert.getName().toUri() + " cannot be added to database"));
-  }
-}
-
-void
-CaSqlite::updateCertificate(const std::string& certId, const security::v2::Certificate& cert)
-{
-  Sqlite3Statement statement(m_database,
-                             R"_SQLTEXT_(UPDATE IssuedCerts SET cert = ? WHERE cert_id = ?)_SQLTEXT_");
-  statement.bind(1, cert.wireEncode(), SQLITE_TRANSIENT);
-  statement.bind(2, certId, SQLITE_TRANSIENT);
-
-  if (statement.step() != SQLITE_DONE) {
-    addCertificate(certId, cert);
-  }
-}
-
-void
-CaSqlite::deleteCertificate(const std::string& certId)
-{
-  Sqlite3Statement statement(m_database,
-                             R"_SQLTEXT_(DELETE FROM IssuedCerts WHERE cert_id = ?)_SQLTEXT_");
-  statement.bind(1, certId, SQLITE_TRANSIENT);
-  statement.step();
-}
-
-std::list<security::v2::Certificate>
-CaSqlite::listAllIssuedCertificates()
-{
-  std::list<security::v2::Certificate> result;
-  Sqlite3Statement statement(m_database, R"_SQLTEXT_(SELECT * FROM IssuedCerts)_SQLTEXT_");
-
-  while (statement.step() == SQLITE_ROW) {
-    result.emplace_back(statement.getBlock(3));
-  }
-  return result;
-}
-
-std::list<security::v2::Certificate>
-CaSqlite::listAllIssuedCertificates(const Name& caName)
-{
-  auto allCerts = listAllIssuedCertificates();
-  std::list<security::v2::Certificate> result;
-  for (const auto& entry : allCerts) {
-    const auto& klName = entry.getSignature().getKeyLocator().getName();
-    if (security::v2::extractIdentityFromKeyName(klName) == caName) {
-      result.push_back(entry);
-    }
-  }
-  return result;
 }
 
 }  // namespace ndncert

@@ -38,12 +38,6 @@ BOOST_AUTO_TEST_CASE(Initialization)
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   BOOST_CHECK_EQUAL(ca.getCaConf().m_caItem.m_caPrefix, "/ndn");
 
-  auto identity = addIdentity(Name("/ndn/site2"));
-  auto key = identity.getDefaultKey();
-  auto cert = key.getDefaultCertificate();
-  ca.getCaStorage()->addCertificate("111", cert);
-  BOOST_CHECK_EQUAL(ca.getCaStorage()->getCertificate("111").getIdentity(), Name("/ndn/site2"));
-
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK_EQUAL(ca.m_registeredPrefixHandles.size(), 2);
   BOOST_CHECK_EQUAL(ca.m_interestFilterHandles.size(), 5);  // onInfo, onProbe, onNew, onChallenge, onRevoke

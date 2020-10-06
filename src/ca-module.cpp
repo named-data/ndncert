@@ -47,7 +47,7 @@ CaModule::CaModule(Face& face, security::v2::KeyChain& keyChain,
 {
   // load the config and create storage
   m_config.load(configPath);
-  m_storage = CaStorage::createCaStorage(storageType);
+  m_storage = CaStorage::createCaStorage(storageType, m_config.m_caItem.m_caPrefix, "");
 
   registerPrefix();
 }
@@ -409,7 +409,6 @@ CaModule::onChallenge(const Interest& request)
       auto issuedCert = issueCertificate(requestState);
         requestState.m_cert = issuedCert;
         requestState.m_status = Status::SUCCESS;
-      m_storage->addCertificate(requestState.m_requestId, issuedCert);
       m_storage->deleteRequest(requestState.m_requestId);
 
       payload = CHALLENGE::encodeDataPayload(requestState);

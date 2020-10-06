@@ -27,54 +27,9 @@ namespace tests {
 
 BOOST_FIXTURE_TEST_SUITE(TestCaSqlite, DatabaseFixture)
 
-BOOST_AUTO_TEST_CASE(Initialization)
-{
-  BOOST_CHECK_NO_THROW(CaSqlite storage(dbDir.string()));
-}
-
-BOOST_AUTO_TEST_CASE(CertificateOperations)
-{
-  CaSqlite storage(dbDir.string());
-
-  auto identity1 = addIdentity(Name("/ndn/site1"));
-  auto key1 = identity1.getDefaultKey();
-  auto cert1 = key1.getDefaultCertificate();
-
-  // add operation
-  BOOST_CHECK_NO_THROW(storage.addCertificate("123", cert1));
-
-  // get operation
-  BOOST_CHECK_EQUAL(storage.getCertificate("123"), cert1);
-
-  // list operation
-  auto allCerts = storage.listAllIssuedCertificates();
-  BOOST_CHECK_EQUAL(allCerts.size(), 1);
-
-  auto identity2 = addIdentity(Name("/ndn/site2"));
-  auto key2 = identity2.getDefaultKey();
-  auto cert2 = key2.getDefaultCertificate();
-  storage.addCertificate("456", cert2);
-
-  allCerts = storage.listAllIssuedCertificates();
-  BOOST_CHECK_EQUAL(allCerts.size(), 2);
-
-  BOOST_CHECK_NO_THROW(storage.deleteCertificate("123"));
-
-  allCerts = storage.listAllIssuedCertificates();
-  BOOST_CHECK_EQUAL(allCerts.size(), 1);
-
-  auto identity3 = addIdentity(Name("/ndn/site3"));
-  auto key3 = identity3.getDefaultKey();
-  auto cert3 = key3.getDefaultCertificate();
-
-  // update operation
-  BOOST_CHECK_NO_THROW(storage.updateCertificate("456", cert3));
-  BOOST_CHECK_EQUAL(storage.getCertificate("456"), cert3);
-}
-
 BOOST_AUTO_TEST_CASE(RequestOperations)
 {
-  CaSqlite storage(dbDir.string());
+  CaSqlite storage(Name(), dbDir.string() + "test.db");
 
   auto identity1 = addIdentity(Name("/ndn/site1"));
   auto key1 = identity1.getDefaultKey();
@@ -123,7 +78,7 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
 
 BOOST_AUTO_TEST_CASE(DuplicateAdd)
 {
-    CaSqlite storage(dbDir.string());
+    CaSqlite storage(Name(), dbDir.string() + "test.db");
 
     auto identity1 = addIdentity(Name("/ndn/site1"));
     auto key1 = identity1.getDefaultKey();
@@ -133,7 +88,7 @@ BOOST_AUTO_TEST_CASE(DuplicateAdd)
     CaState request1(Name("/ndn/site1"), "123", RequestType::NEW, Status::BEFORE_CHALLENGE, cert1, makeEmptyBlock(tlv::ContentType_Key));
     BOOST_CHECK_NO_THROW(storage.addRequest(request1));
     // add again
-    BOOST_CHECK_THROW(storage.addRequest(request1), std::exception);
+    BOOST_CHECK_THROW(storage.addRequest(request1), std::runtime_error);
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TestCaModule

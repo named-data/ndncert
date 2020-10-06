@@ -33,10 +33,10 @@ main(int argc, char* argv[])
 {
   namespace po = boost::program_options;
   std::string caNameString = "";
-  po::options_description description("General Usage\n  ndncert-ca [-h] [-f] configFilePath-file\n");
+  po::options_description description("General Usage\n  ndncert-ca-status [-h] CA_NAME\n");
   description.add_options()
     ("help,h", "produce help message")
-    ("CAName,c", po::value<std::string>(&caNameString), "ca name");
+    ("CA_NAME", po::value<std::string>(&caNameString), "ca name");
   po::positional_options_description p;
   po::variables_map vm;
   try {
@@ -51,25 +51,17 @@ main(int argc, char* argv[])
     std::cerr << description << std::endl;
     return 0;
   }
+  if (vm.count("CA_NAME") == 0) {
+    std::cerr << "ERROR: you must specify a CA identity." << std::endl;
+    return 2;
+  }
 
-  CaSqlite storage;
+  CaSqlite storage(Name(caNameString), "");
   std::list<CaState> requestList;
-  std::list<security::v2::Certificate> certList;
-  if (caNameString != "") {
-    requestList = storage.listAllRequests(Name(caNameString));
-    certList = storage.listAllIssuedCertificates(Name(caNameString));
-  }
-  else {
-    requestList = storage.listAllRequests();
-    certList = storage.listAllIssuedCertificates();
-  }
-  std::cerr << "The pending requests :" << std::endl;
+  requestList = storage.listAllRequests();
+  std::cerr << "The pending requests are :" << std::endl;
   for (const auto& entry : requestList) {
     std::cerr << entry;
-  }
-  std::cerr << "\n\nThe issued certs :" << std::endl;
-  for (const auto& entry : certList) {
-    std::cerr << entry.getName().toUri() << std::endl;
   }
   return 0;
 }

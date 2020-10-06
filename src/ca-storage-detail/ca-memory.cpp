@@ -30,12 +30,17 @@ CaMemory::STORAGE_TYPE = "ca-storage-memory";
 
 NDNCERT_REGISTER_CA_STORAGE(CaMemory);
 
+CaMemory::CaMemory(const Name& caName, const std::string& path)
+  : CaStorage()
+{
+}
+
 CaState
 CaMemory::getRequest(const std::string& requestId)
 {
   auto search = m_requests.find(requestId);
   if (search == m_requests.end()) {
-    BOOST_THROW_EXCEPTION(Error("Request " + requestId + " doest not exists"));
+    BOOST_THROW_EXCEPTION(std::runtime_error("Request " + requestId + " doest not exists"));
   }
   return search->second;
 }
@@ -43,26 +48,12 @@ CaMemory::getRequest(const std::string& requestId)
 void
 CaMemory::addRequest(const CaState& request)
 {
-    auto keyNameTLV = request.m_cert.getKeyName();
-    if (request.m_requestType == RequestType::NEW) {
-      if (m_requestKeyIndex.find(keyNameTLV) != m_requestKeyIndex.end()
-            && !m_requestKeyIndex.find(keyNameTLV)->second.empty()){
-        BOOST_THROW_EXCEPTION(Error("Request for " + keyNameTLV.toUri() + " already exists"));
-        return;
-      }
-      if (m_certsKeyIndex.find(keyNameTLV) != m_certsKeyIndex.end()) {
-        BOOST_THROW_EXCEPTION(Error("Cert for " + keyNameTLV.toUri() + " already exists"));
-        return;
-      }
-    }
-
   auto search = m_requests.find(request.m_requestId);
   if (search == m_requests.end()) {
     m_requests[request.m_requestId] = request;
-    m_requestKeyIndex[keyNameTLV].insert(request.m_requestId);
   }
   else {
-    BOOST_THROW_EXCEPTION(Error("Request " + request.m_requestId + " already exists"));
+    BOOST_THROW_EXCEPTION(std::runtime_error("Request " + request.m_requestId + " already exists"));
   }
 }
 
@@ -79,8 +70,6 @@ CaMemory::deleteRequest(const std::string& requestId)
   auto search = m_requests.find(requestId);
   auto keyName = search->second.m_cert.getKeyName();
   if (search != m_requests.end()) {
-    m_requestKeyIndex.find(keyName)->second.erase(requestId);
-    if (m_requestKeyIndex.find(keyName)->second.empty()) m_requestKeyIndex.erase(keyName);
     m_requests.erase(search);
   }
 }
@@ -101,69 +90,6 @@ CaMemory::listAllRequests(const Name& caName)
   std::list<CaState> result;
   for (const auto& entry : m_requests) {
     if (entry.second.m_caPrefix == caName) {
-      result.push_back(entry.second);
-    }
-  }
-  return result;
-}
-
-// certificate related
-security::v2::Certificate
-CaMemory::getCertificate(const std::string& certId)
-{
-  auto search = m_issuedCerts.find(certId);
-  if (search != m_issuedCerts.end()) {
-    return search->second;
-  }
-  BOOST_THROW_EXCEPTION(Error("Certificate with ID " + certId + " does not exists"));
-}
-
-void
-CaMemory::addCertificate(const std::string& certId, const security::v2::Certificate& cert)
-{
-  auto search = m_issuedCerts.find(certId);
-  if (search == m_issuedCerts.end()) {
-    m_issuedCerts[certId] = cert;
-    m_certsKeyIndex[cert.getKeyName()] = certId;
-  }
-  else {
-    BOOST_THROW_EXCEPTION(Error("Certificate " + cert.getName().toUri() + " already exists"));
-  }
-}
-
-void
-CaMemory::updateCertificate(const std::string& certId, const security::v2::Certificate& cert)
-{
-  m_issuedCerts[certId] = cert;
-}
-
-void
-CaMemory::deleteCertificate(const std::string& certId)
-{
-  auto search = m_issuedCerts.find(certId);
-  if (search != m_issuedCerts.end()) {
-    m_certsKeyIndex.erase(search->second.getKeyName());
-    m_issuedCerts.erase(search);
-  }
-}
-
-std::list<security::v2::Certificate>
-CaMemory::listAllIssuedCertificates()
-{
-  std::list<security::v2::Certificate> result;
-  for (const auto& entry : m_issuedCerts) {
-    result.push_back(entry.second);
-  }
-  return result;
-}
-
-std::list<security::v2::Certificate>
-CaMemory::listAllIssuedCertificates(const Name& caName)
-{
-  std::list<security::v2::Certificate> result;
-  for (const auto& entry : m_issuedCerts) {
-    const auto& klName = entry.second.getSignature().getKeyLocator().getName();
-    if (security::v2::extractIdentityFromKeyName(klName) == caName) {
       result.push_back(entry.second);
     }
   }

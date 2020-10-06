@@ -28,20 +28,7 @@ namespace ndncert {
 
 class CaStorage : noncopyable
 {
-public:
-  /**
-   * @brief Error that can be thrown from CaStorage
-   */
-  class Error : public std::runtime_error
-  {
-  public:
-    using std::runtime_error::runtime_error;
-  };
-
-  virtual
-  ~CaStorage();
-
-public: // certificate request related
+public: // request related
   virtual CaState
   getRequest(const std::string& requestId) = 0;
 
@@ -60,25 +47,6 @@ public: // certificate request related
   virtual std::list<CaState>
   listAllRequests(const Name& caName) = 0;
 
-public: // certificate related
-  virtual security::v2::Certificate
-  getCertificate(const std::string& certId) = 0;
-
-  virtual void
-  addCertificate(const std::string& certId, const security::v2::Certificate& cert) = 0;
-
-  virtual void
-  updateCertificate(const std::string& certId, const security::v2::Certificate& cert) = 0;
-
-  virtual void
-  deleteCertificate(const std::string& certId) = 0;
-
-  virtual std::list<security::v2::Certificate>
-  listAllIssuedCertificates() = 0;
-
-  virtual std::list<security::v2::Certificate>
-  listAllIssuedCertificates(const Name& caName) = 0;
-
 public: // factory
   template<class CaStorageType>
   static void
@@ -86,16 +54,19 @@ public: // factory
   {
     CaStorageFactory& factory = getFactory();
     BOOST_ASSERT(factory.count(caStorageType) == 0);
-    factory[caStorageType] = [] {
-      return make_unique<CaStorageType>();
+    factory[caStorageType] = [] (const Name& caName, const std::string& path) {
+      return make_unique<CaStorageType>(caName, path);
     };
   }
 
   static unique_ptr<CaStorage>
-  createCaStorage(const std::string& caStorageType);
+  createCaStorage(const std::string& caStorageType, const Name& caName, const std::string& path);
+
+  virtual
+  ~CaStorage() = default;
 
 private:
-  using CaStorageCreateFunc = function<unique_ptr<CaStorage> ()>;
+  using CaStorageCreateFunc = function<unique_ptr<CaStorage> (const Name&, const std::string&)>;
   using CaStorageFactory = std::map<std::string, CaStorageCreateFunc>;
 
   static CaStorageFactory&
