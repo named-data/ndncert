@@ -374,6 +374,48 @@ aes_gcm_128_decrypt(const uint8_t* ciphertext, size_t ciphertext_len, const uint
   }
 }
 
+int
+hmac_sha_256(const uint8_t* key, size_t key_len,
+             const uint8_t* cleartext, size_t cleartext_len,
+             uint8_t* output, size_t* output_len)
+{
+    if (!key || !cleartext || !output) {
+        return -1;
+    }
+
+    auto private_key = EVP_PKEY_new_mac_key(EVP_PKEY_HMAC, nullptr, key, key_len);
+    auto hmac_context = EVP_MD_CTX_new();
+    if (!private_key || !hmac_context) {
+        handleErrors("Cannot create and initialise the context when calling HMAC_CTX_new()");
+        return -1;
+    }
+
+    if (EVP_DigestSignInit(hmac_context, nullptr, EVP_sha256(), nullptr, private_key) != 1) {
+        handleErrors("Cannot initialize DigestSign when calling EVP_DigestSignInit()");
+        EVP_MD_CTX_free(hmac_context);
+        EVP_PKEY_free(private_key);
+        return -1;
+    }
+
+    if (EVP_DigestSignUpdate(hmac_context, cleartext, cleartext_len) != 1) {
+        handleErrors("Cannot update DigestSign when calling EVP_DigestSignUpdate()");
+        EVP_MD_CTX_free(hmac_context);
+        EVP_PKEY_free(private_key);
+        return -1;
+    }
+
+    if (EVP_DigestSignFinal(hmac_context, output, output_len) != 1) {
+        handleErrors("Cannot finish DigestSign when calling EVP_DigestSignFinal()");
+        EVP_MD_CTX_free(hmac_context);
+        EVP_PKEY_free(private_key);
+        return -1;
+    }
+
+    EVP_MD_CTX_free(hmac_context);
+    EVP_PKEY_free(private_key);
+    return 0;
+}
+
 void
 handleErrors(const std::string& errorInfo)
 {

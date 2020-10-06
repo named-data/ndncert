@@ -108,6 +108,21 @@ int
 aes_gcm_128_decrypt(const uint8_t* ciphertext, size_t ciphertext_len, const uint8_t* associated, size_t associated_len,
                     const uint8_t* tag, const uint8_t* key, const uint8_t* iv, uint8_t* plaintext);
 
+/**
+ * HMAC SHA 256 keyed hash function
+ * @param key the key for the function
+ * @param key_len the length of the key
+ * @param cleartext the cleartext array to be hashed
+ * @param cleartext_len the length of the array
+ * @param output the output array
+ * @param output_len the longest output len possible (changed to actual on return).
+ * @return 0 if successful, -1 if failed
+ */
+int
+hmac_sha_256(const uint8_t* key, size_t key_len,
+             const uint8_t* cleartext, size_t cleartext_len,
+             uint8_t* output, size_t* output_len);
+
 void
 handleErrors(const std::string& errorInfo);
 

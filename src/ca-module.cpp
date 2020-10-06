@@ -48,6 +48,7 @@ CaModule::CaModule(Face& face, security::v2::KeyChain& keyChain,
   // load the config and create storage
   m_config.load(configPath);
   m_storage = CaStorage::createCaStorage(storageType, m_config.m_caItem.m_caPrefix, "");
+  random::generateSecureBytes(m_requestIdGenKey, 16);
 
   registerPrefix();
 }
@@ -325,7 +326,15 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   }
 
   // create new request instance
-  std::string requestId = std::to_string(random::generateWord64());
+  uint64_t requestIdData[2];
+  size_t idDataLen = 16;
+  Block certNameData = clientCert->getName().wireEncode();
+  hmac_sha_256(m_requestIdGenKey, 16, certNameData.value(), certNameData.value_size(), reinterpret_cast<uint8_t *>(requestIdData), &idDataLen);
+  std::stringstream ss;
+  ss << std::hex << std::noshowbase<< requestIdData[0] << requestIdData[1];
+
+  std::string requestId = ss.str();
+
   CaState requestState(m_config.m_caItem.m_caPrefix, requestId, requestType, Status::BEFORE_CHALLENGE, *clientCert,
                        makeBinaryBlock(tlv::ContentType_Key, aesKey, sizeof(aesKey)));
   try {

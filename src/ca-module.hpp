@@ -109,6 +109,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   CaConfig m_config;
   unique_ptr<CaStorage> m_storage;
   security::v2::KeyChain& m_keyChain;
+  uint8_t m_requestIdGenKey[16];
 
   std::list<RegisteredPrefixHandle> m_registeredPrefixHandles;
   std::list<InterestFilterHandle> m_interestFilterHandles;
