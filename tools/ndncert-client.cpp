@@ -21,12 +21,12 @@
 #include "challenge-module.hpp"
 #include "protocol-detail/info.hpp"
 #include "requester.hpp"
+#include <ndn-cxx/security/verification-helpers.hpp>
 #include <boost/asio.hpp>
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <iostream>
-#include <ndn-cxx/security/verification-helpers.hpp>
 #include <string>
 
 namespace ndn {

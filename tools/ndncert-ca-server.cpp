@@ -20,23 +20,48 @@
 
 #include "ca-module.hpp"
 #include "challenge-module.hpp"
-
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
-
+#include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
-
 #include <iostream>
 
 namespace ndn {
 namespace ndncert {
 
+Face face;
+security::v2::KeyChain keyChain;
+
+static void
+handleSignal(const boost::system::error_code& error, int signalNum)
+{
+  if (error) {
+    return;
+  }
+  const char* signalName = ::strsignal(signalNum);
+  std::cerr << "Exiting on signal ";
+  if (signalName == nullptr) {
+    std::cerr << signalNum;
+  }
+  else {
+    std::cerr << signalName;
+  }
+  std::cerr << std::endl;
+  face.getIoService().stop();
+  exit(1);
+}
+
 static int
 main(int argc, char* argv[])
 {
+  boost::asio::signal_set terminateSignals(face.getIoService());
+  terminateSignals.add(SIGINT);
+  terminateSignals.add(SIGTERM);
+  terminateSignals.async_wait(handleSignal);
+
   std::string configFilePath(SYSCONFDIR "/ndncert/ca.conf");
   std::string repoHost("localhost");
   std::string repoPort("7376");
@@ -74,8 +99,6 @@ main(int argc, char* argv[])
     return 0;
   }
 
-  Face face;
-  security::v2::KeyChain keyChain;
   CaModule ca(face, keyChain, configFilePath);
   std::map<Name, security::v2::Certificate> cachedCertificates;
 
