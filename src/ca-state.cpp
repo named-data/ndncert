@@ -72,25 +72,16 @@ CaState::CaState(const Name& caName, const std::string& requestId, RequestType r
 std::ostream&
 operator<<(std::ostream& os, const CaState& request)
 {
-  os << "Request's CA name:\n";
-  os << "  " << request.m_caPrefix << "\n";
-  os << "Request's request ID:\n";
-  os << "  " << request.m_requestId << "\n";
-  os << "Request's status:\n";
-  os << "  " << statusToString(request.m_status) << "\n";
-  os << "Request's challenge type:\n";
-  os << "  " << request.m_challengeType << "\n";
+  os << "Request's CA name: " << request.m_caPrefix << "\n";
+  os << "Request's request ID: " << request.m_requestId << "\n";
+  os << "Request's status: " << statusToString(request.m_status) << "\n";
+  os << "Request's challenge type: " << request.m_challengeType << "\n";
   if (request.m_challengeState) {
-    os << "Challenge Status:\n";
-    os << "  " << request.m_challengeState->m_challengeStatus << "\n";
-    os << "Challenge remaining tries:\n";
-    os << "  " << request.m_challengeState->m_remainingTries << " times\n";
-    os << "Challenge remaining time:\n";
-    os << "  " << request.m_challengeState->m_remainingTime.count() << " seconds\n";
-    os << "Challenge last update:\n";
-    os << "  " << time::toIsoString(request.m_challengeState->m_timestamp) << "\n";
-    os << "Challenge secret:\n";
-    os << "  " << convertJson2String(request.m_challengeState->m_secrets) << "\n";
+    os << "Challenge Status: " << request.m_challengeState->m_challengeStatus << "\n";
+    os << "Challenge remaining tries:" << request.m_challengeState->m_remainingTries << " times\n";
+    os << "Challenge remaining time: " << request.m_challengeState->m_remainingTime.count() << " seconds\n";
+    os << "Challenge last update: " << time::toIsoString(request.m_challengeState->m_timestamp) << "\n";
+    os << "Challenge secret:\n" << convertJson2String(request.m_challengeState->m_secrets) << "\n";
   }
   os << "Certificate:\n";
   util::IndentedStream os2(os, "  ");

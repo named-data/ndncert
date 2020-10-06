@@ -65,7 +65,9 @@ main(int argc, char* argv[])
   requestList = storage.listAllRequests();
   std::cerr << "The pending requests are :" << std::endl;
   for (const auto& entry : requestList) {
-    std::cerr << entry;
+    std::cerr << "***************************************\n"
+              << entry
+              << "***************************************\n";
   }
   return 0;
 }
