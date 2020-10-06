@@ -33,11 +33,15 @@ main(int argc, char* argv[])
 {
   namespace po = boost::program_options;
   std::string caNameString = "";
-  po::options_description description("General Usage\n  ndncert-ca-status [-h] CA_NAME\n");
+  po::options_description description(
+    "Usage: ndncert-ca-status [-h] caName\n"
+    "\n"
+    "Options");
   description.add_options()
     ("help,h", "produce help message")
-    ("CA_NAME", po::value<std::string>(&caNameString), "ca name");
+    ("caName", po::value<std::string>(&caNameString), "CA Identity Name, e.g., /example");
   po::positional_options_description p;
+  p.add("caName", 1);
   po::variables_map vm;
   try {
     po::store(po::command_line_parser(argc, argv).options(description).positional(p).run(), vm);
@@ -51,7 +55,7 @@ main(int argc, char* argv[])
     std::cerr << description << std::endl;
     return 0;
   }
-  if (vm.count("CA_NAME") == 0) {
+  if (vm.count("caName") == 0) {
     std::cerr << "ERROR: you must specify a CA identity." << std::endl;
     return 2;
   }

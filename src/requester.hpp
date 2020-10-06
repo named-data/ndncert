@@ -117,6 +117,9 @@ public:
   static boost::optional<CaProfile>
   onCaProfileResponse(const Data& reply);
 
+  static boost::optional<CaProfile>
+  onCaProfileResponseAfterRedirection(const Data& reply, const Name& caCertFullName);
+
   /**
    * Generates a PROBE interest to the CA (for suggested name assignments).
    * @param ca the CA that interest is send to

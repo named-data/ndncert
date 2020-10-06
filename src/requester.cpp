@@ -66,9 +66,22 @@ Requester::onCaProfileResponse(const Data& reply)
   if (!security::verifySignature(reply, *caItem.m_cert)) {
     _LOG_ERROR("Cannot verify replied Data packet signature.");
     BOOST_THROW_EXCEPTION(std::runtime_error("Cannot verify replied Data packet signature."));
-    return boost::none;
   }
   return caItem;
+}
+
+
+boost::optional<CaProfile>
+Requester::onCaProfileResponseAfterRedirection(const Data& reply, const Name& caCertFullName)
+{
+  auto caItem = INFO::decodeDataContent(reply.getContent());
+  auto certBlock = caItem.m_cert->wireEncode();
+  caItem.m_cert = std::make_shared<security::v2::Certificate>(certBlock);
+  if (caItem.m_cert->getFullName() != caCertFullName) {
+    _LOG_ERROR("Ca profile does not match the certificate information offered by the original CA.");
+    BOOST_THROW_EXCEPTION(std::runtime_error("Cannot verify replied Data packet signature."));
+  }
+  return onCaProfileResponse(reply);
 }
 
 shared_ptr<Interest>
@@ -272,7 +285,7 @@ shared_ptr<security::v2::Certificate>
 Requester::onCertFetchResponse(const Data& reply)
 {
   try {
-    return std::make_shared<security::v2::Certificate>(reply.getContent().blockFromValue());
+    return std::make_shared<security::v2::Certificate>(reply);
   }
   catch (const std::exception& e) {
     _LOG_ERROR("Cannot parse replied certificate ");
