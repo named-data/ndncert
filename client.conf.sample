@@ -8,21 +8,9 @@
       "max-suffix-length": "2",
       "probe-parameters":
       [
-        {"probe-parameter-key": "email"},
-        {"probe-parameter-key": "uid"}
+        {"probe-parameter-key": "email"}
       ],
-      "certificate": "Bv0CJAcsCANuZG4IBXNpdGUxCANLRVkICBG8IvRjFf8XCARzZWxmCAn9AAABWcgU2aUUCRgBAhkEADbugBX9AU8wggFLMIIBAwYHKoZIzj0CATCB9wIBATAsBgcqhkjOPQEBAiEA/////wAAAAEAAAAAAAAAAAAAAAD///////////////8wWwQg/////wAAAAEAAAAAAAAAAAAAAAD///////////////wEIFrGNdiqOpPns+u9VXaYhrxlHQawzFOw9jvOPD4n0mBLAxUAxJ02CIbnBJNqZnjhE50mt4GffpAEQQRrF9Hy4SxCR/i85uVjpEDydwN9gS3rM6D0oTlF2JjClk/jQuL+Gn+bjufrSnwPnhYrzjNXazFezsu2QGg3v1H1AiEA/////wAAAAD//////////7zm+q2nF56E87nKwvxjJVECAQEDQgAES9Cb9iANUNYmwt5bjwNW1mZgjzIkDJb6FTCdiYWnkMMIVxh2YDllphoWDEAPS6kqJczzCuhnGYpZCp9tTaYKGxZMGwEDHB0HGwgDbmRuCAVzaXRlMQgDS0VZCAgRvCL0YxX/F/0A/Sb9AP4PMTk3MDAxMDFUMDAwMDAw/QD/DzIwMzcwMTE3VDIxMjg0NhdIMEYCIQDXkR1hF3GiP7yLXq+0JBJfi9QC+hhAu/1Bykx+MWz6RAIhANwelBTxxZr2C5bD15mjfhWudK4I1tOb4b/9xWCHyM7F"
-    },
-    {
-      "ca-prefix": "/example2",
-      "ca-info": "An example NDNCERT CA 2",
-      "max-validity-period": "1296000",
-      "max-suffix-length": "1",
-      "probe-parameters":
-      [
-        {"probe-parameter-key": "email"},
-      ],
-      "certificate": "Bv0CJAcsCANuZG4IBXNpdGUxCANLRVkICBG8IvRjFf8XCARzZWxmCAn9AAABWcgU2aUUCRgBAhkEADbugBX9AU8wggFLMIIBAwYHKoZIzj0CATCB9wIBATAsBgcqhkjOPQEBAiEA/////wAAAAEAAAAAAAAAAAAAAAD///////////////8wWwQg/////wAAAAEAAAAAAAAAAAAAAAD///////////////wEIFrGNdiqOpPns+u9VXaYhrxlHQawzFOw9jvOPD4n0mBLAxUAxJ02CIbnBJNqZnjhE50mt4GffpAEQQRrF9Hy4SxCR/i85uVjpEDydwN9gS3rM6D0oTlF2JjClk/jQuL+Gn+bjufrSnwPnhYrzjNXazFezsu2QGg3v1H1AiEA/////wAAAAD//////////7zm+q2nF56E87nKwvxjJVECAQEDQgAES9Cb9iANUNYmwt5bjwNW1mZgjzIkDJb6FTCdiYWnkMMIVxh2YDllphoWDEAPS6kqJczzCuhnGYpZCp9tTaYKGxZMGwEDHB0HGwgDbmRuCAVzaXRlMQgDS0VZCAgRvCL0YxX/F/0A/Sb9AP4PMTk3MDAxMDFUMDAwMDAw/QD/DzIwMzcwMTE3VDIxMjg0NhdIMEYCIQDXkR1hF3GiP7yLXq+0JBJfi9QC+hhAu/1Bykx+MWz6RAIhANwelBTxxZr2C5bD15mjfhWudK4I1tOb4b/9xWCHyM7F"
-    },
+      "certificate": "Bv0CrwcpCAdleGFtcGxlCANLRVkICJev38tR696CCARzZWxmCAn9AAABdPr4U3cUCRgBAhkEADbugBX9ASYwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDLjjKYDiimVlQD2vOAOYvu3iCsfS5mzQYOjw1cVS7+EDzC0T841FrmLEtrYe1USBGTSYUKNePspBTDMeAh2WlG+UmnzHyTJEcpv3Dtp/37pYIFlR8vW6TvBkBmCKVR7IDOW0DmBEY2iHbWOCCTyTd9NVyH4XiHqFx+cL9uGRyhVeXcZ5pl335SrnW58Q6tvZeOHS8YXuiAZ8E10Mdhzdmponl2+yRlc1kzkcAX1DQZt7eYXjlSsa5FSphLzw5LNqJuESLcrPRctN+4vs8xTIvWGex8n3+6wAhfXD9DLsO01mJorUxms+mwIKnV7KNLXtwDNsAZYT2BPPnO0H5Zk+tRAgMBAAEWSRsBARwaBxgIB2V4YW1wbGUIA0tFWQgIl6/fy1Hr3oL9AP0m/QD+DzE5NzAwMTAxVDAwMDAwMP0A/w8yMDQwMDkzMFQyMjUzMzIX/QEAZLgyhRsOERTgy5Q2X4FLXQV+r6emud472za0CVT20XHLXofkgybvLvY0UJ80CtuLcNRt/WKTDIKd01SoCnonx1VydKjXsO23RV95pBt/BqZVWakYEJEgbO5KzekpBHbKJmTOWBa/Tmgd9Pd5KFhQm9Ny2ZK1nlyyV37EKqR9jADkDVgRs+Sgr+Z4v14+WePROk7LR11P4NxYfgy2L0CHjpIxiFxnU+CpQL+BoGRQDTFgGq4gxUR45rpt/Y/vl5ImMdmIFDOI5W34AjVIhSLrYH3EDhWgjo9cDqvS+KT45i+t87SBQjtcQbrLl8osQcG+HgRldBv7HEEDVoPL8qL0yg=="
+    }
   ]
 }

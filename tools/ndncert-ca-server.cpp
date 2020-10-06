@@ -77,10 +77,11 @@ main(int argc, char* argv[])
   Face face;
   security::v2::KeyChain keyChain;
   CaModule ca(face, keyChain, configFilePath);
+  std::map<Name, security::v2::Certificate> cachedCertificates;
 
   if (wantRepoOut) {
       ca.setStatusUpdateCallback([&] (const CaState& request) {
-          if (request.m_status == Status::SUCCESS && request.m_requestType == RequestType::NEW) {
+          if (request.m_status == Status::SUCCESS) {
             auto issuedCert = request.m_cert;
             boost::asio::ip::tcp::iostream requestStream;
             requestStream.expires_after(std::chrono::seconds(3));
@@ -96,7 +97,22 @@ main(int argc, char* argv[])
       });
   }
   else {
-    
+    ca.setStatusUpdateCallback([&](const CaState& request) {
+      if (request.m_status == Status::SUCCESS) {
+        cachedCertificates[request.m_cert.getName()] = request.m_cert;
+      }
+    });
+    face.setInterestFilter(
+        InterestFilter(ca.getCaConf().m_caItem.m_caPrefix),
+        [&](const InterestFilter&, const Interest& interest) {
+          auto search = cachedCertificates.find(interest.getName());
+          if (search != cachedCertificates.end()) {
+            face.put(search->second);
+          }
+        },
+        [](const Name&, const std::string& errorInfo) {
+          std::cerr << "ERROR: " << errorInfo << std::endl;
+        });
   }
 
   face.processEvents();
