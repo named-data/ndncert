@@ -40,10 +40,15 @@ public:
   ~CaSqlite();
 
 public:
-  // request related
+  /**
+   * @throw if request cannot be fetched from underlying data storage
+   */
   CaState
   getRequest(const std::string& requestId) override;
 
+  /**
+   * @throw if there is an existing request with the same request ID
+   */
   void
   addRequest(const CaState& request) override;
 

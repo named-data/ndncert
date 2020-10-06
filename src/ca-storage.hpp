@@ -29,9 +29,15 @@ namespace ndncert {
 class CaStorage : noncopyable
 {
 public: // request related
+  /**
+   * @throw if request cannot be fetched from underlying data storage
+   */
   virtual CaState
   getRequest(const std::string& requestId) = 0;
 
+  /**
+   * @throw if there is an existing request with the same request ID
+   */
   virtual void
   addRequest(const CaState& request) = 0;
 

@@ -328,7 +328,13 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   std::string requestId = std::to_string(random::generateWord64());
   CaState requestState(m_config.m_caItem.m_caPrefix, requestId, requestType, Status::BEFORE_CHALLENGE, *clientCert,
                        makeBinaryBlock(tlv::ContentType_Key, aesKey, sizeof(aesKey)));
-  m_storage->addRequest(requestState);
+  try {
+    m_storage->addRequest(requestState);
+  }
+  catch (const std::runtime_error& e) {
+    requestId = std::to_string(random::generateWord64());
+    m_storage->addRequest(requestState);
+  }
   Data result;
   result.setName(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
