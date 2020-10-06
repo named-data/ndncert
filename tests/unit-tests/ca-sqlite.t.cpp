@@ -29,7 +29,7 @@ BOOST_FIXTURE_TEST_SUITE(TestCaSqlite, DatabaseFixture)
 
 BOOST_AUTO_TEST_CASE(RequestOperations)
 {
-  CaSqlite storage(Name(), dbDir.string() + "TestCaSqlite_RequestOperations.db");
+  CaSqlite storage(Name(), dbDir.string() + "/TestCaSqlite_RequestOperations.db");
 
   auto identity1 = addIdentity(Name("/ndn/site1"));
   auto key1 = identity1.getDefaultKey();
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
 
 BOOST_AUTO_TEST_CASE(DuplicateAdd)
 {
-    CaSqlite storage(Name(), dbDir.string() + "TestCaSqlite_DuplicateAdd.db");
+    CaSqlite storage(Name(), dbDir.string() + "/TestCaSqlite_DuplicateAdd.db");
 
     auto identity1 = addIdentity(Name("/ndn/site1"));
     auto key1 = identity1.getDefaultKey();
