@@ -21,8 +21,11 @@ NameAssignmentFunc
 AssignmentHash::getFunction(const std::string &factoryParam) {
     std::list<std::string> paramList;
     size_t index = 0, startIndex = 0;
-    while ((index = factoryParam.find(":", startIndex)) != factoryParam.npos) {
-        paramList.push_back(factoryParam.substr(startIndex, index));
+    while ((index = factoryParam.find("/", startIndex)) != std::string::npos) {
+        auto component = factoryParam.substr(startIndex, index - startIndex);
+        if (!component.empty()) {
+            paramList.push_back(component);
+        }
         startIndex = index + 1;
     }
     if (startIndex != factoryParam.size()) {

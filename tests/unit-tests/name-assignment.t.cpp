@@ -39,7 +39,7 @@ BOOST_AUTO_TEST_CASE(NameAssignmentRandom)
 BOOST_AUTO_TEST_CASE(NameAssignmentParam)
 {
   AssignmentParam paramAssignment;
-  auto func = paramAssignment.getFunction("abc:xyz");
+  auto func = paramAssignment.getFunction("/abc/xyz/");
   std::vector<std::tuple<std::string, std::string>> requirements;
   requirements.emplace_back("abc", "123");
   BOOST_CHECK_EQUAL(func(requirements).size(), 0);
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(NameAssignmentParam)
 BOOST_AUTO_TEST_CASE(NameAssignmentHash)
 {
   AssignmentHash hashAssignment;
-  auto func = hashAssignment.getFunction("abc:xyz");
+  auto func = hashAssignment.getFunction("/abc/xyz");
   std::vector<std::tuple<std::string, std::string>> requirements;
   requirements.emplace_back("abc", "123");
   BOOST_CHECK_EQUAL(func(requirements).size(), 0);
