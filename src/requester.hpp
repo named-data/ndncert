@@ -99,31 +99,49 @@ class Requester : noncopyable
 {
 public:
   /**
-   * Generates a INFO interest corresponds to the CA for given prefix.
-   * @param caName the name prefix of the CA.
-   * @return A shared pointer to an interest ready to be sent.
+   * Generates a CA profile discovery Interest following RDR protocol.
+   * @param caName, the name prefix of the CA.
+   * @return A shared pointer to an Interest ready to be sent.
    */
   static shared_ptr<Interest>
-  genCaProfileInterest(const Name& caName);
+  genCaProfileDiscoveryInterest(const Name& caName);
 
   /**
-   * Decodes the replied data for the configuration of the CA.
+   * Generates a CA profile fetching Interest following RDR protocol.
+   * @param reply, the Data packet replied from discovery Interest.
+   * @return A shared pointer to an Interest ready to be sent.
+   */
+  static shared_ptr<Interest>
+  genCaProfileInterestFromDiscoveryResponse(const Data& reply);
+
+  /**
+   * Decodes the CA profile from the replied CA profile Data packet.
    * Will first verify the signature of the packet using the key provided inside the profile.
    * The application should be cautious whether to add CaProfile into the RequesterCaCache.
-   * @param reply
+   * @param reply, the Data packet replied from CA profile fetching Interest.
    * @return the CaProfile if decoding is successful
    * @throw std::runtime_error if the decoding fails or receiving an error packet.
    */
   static boost::optional<CaProfile>
   onCaProfileResponse(const Data& reply);
 
+  /**
+   * Decodes the CA profile from the replied CA profile Data packet after the redirection.
+   * Will first verify the signature of the packet using the key provided inside the profile and
+   * verify the certificate's digest matches the one obtained from the original CA.
+   * The application should be cautious whether to add CaProfile into the RequesterCaCache.
+   * @param reply, the Data packet replied from CA profile fetching Interest.
+   * @param caCertFullName, the full name obtained from original CA's probe response.
+   * @return the CaProfile if decoding is successful
+   * @throw std::runtime_error if the decoding fails or receiving an error packet.
+   */
   static boost::optional<CaProfile>
   onCaProfileResponseAfterRedirection(const Data& reply, const Name& caCertFullName);
 
   /**
    * Generates a PROBE interest to the CA (for suggested name assignments).
-   * @param ca the CA that interest is send to
-   * @param probeInfo the requester information to carry to the CA
+   * @param ca, the CA that interest is send to
+   * @param probeInfo, the requester information to carry to the CA
    * @return A shared pointer of to the encoded interest, ready to be sent.
    */
   static shared_ptr<Interest>
@@ -132,10 +150,10 @@ public:
   /**
    * Decodes the replied data for PROBE process from the CA.
    * Will first verify the signature of the packet using the key provided inside the profile.
-   * @param reply The replied data packet
-   * @param ca the profile of the CA that replies the packet
-   * @param identityNames The vector to load the decoded identity names from the data.
-   * @param otherCas The vector to load the decoded redirection CA prefixes from the data.
+   * @param reply, The replied data packet
+   * @param ca, the profile of the CA that replies the packet
+   * @param identityNames, The vector to load the decoded identity names from the data.
+   * @param otherCas, The vector to load the decoded redirection CA prefixes from the data.
    * @throw std::runtime_error if the decoding fails or receiving an error packet.
    */
   static void
@@ -145,10 +163,10 @@ public:
   // NEW/REVOKE/RENEW related helpers
   /**
    * Generates a NEW interest to the CA.
-   * @param state The current requester state for this request. Will be modified in the function.
-   * @param identityName The identity name to be requested.
-   * @param notBefore The expected notBefore field for the certificate (starting time)
-   * @param notAfter The expected notAfter field for the certificate (expiration time)
+   * @param state, The current requester state for this request. Will be modified in the function.
+   * @param identityName, The identity name to be requested.
+   * @param notBefore, The expected notBefore field for the certificate (starting time)
+   * @param notAfter, The expected notAfter field for the certificate (expiration time)
    * @return The shared pointer to the encoded interest.
    */
   static shared_ptr<Interest>
@@ -158,8 +176,8 @@ public:
 
   /**
    * Generates a REVOKE interest to the CA.
-   * @param state The current requester state for this request. Will be modified in the function.
-   * @param certificate the certificate to the revoked.
+   * @param state, The current requester state for this request. Will be modified in the function.
+   * @param certificate, the certificate to the revoked.
    * @return The shared pointer to the encoded interest.
    */
   static shared_ptr<Interest>
@@ -167,8 +185,8 @@ public:
 
   /**
    * Decodes the replied data of NEW, RENEW, or REVOKE interest from the CA.
-   * @param state the current requester state for the request. Will be updated in the function.
-   * @param reply the replied data from the network
+   * @param state, the current requester state for the request. Will be updated in the function.
+   * @param reply, the replied data from the network
    * @return the list of challenge accepted by the CA, for CHALLENGE step.
    * @throw std::runtime_error if the decoding fails or receiving an error packet.
    */
@@ -178,8 +196,8 @@ public:
   // CHALLENGE helpers
   /**
    * Generates the required parameter for the selected challenge for the request
-   * @param state The requester state of the request.Will be updated in the function.
-   * @param challengeSelected The selected challenge for the request.
+   * @param state, The requester state of the request.Will be updated in the function.
+   * @param challengeSelected, The selected challenge for the request.
    *            Can use state.m_challengeType to continue.
    * @return The requirement list for the current stage of the challenge, in name, prompt mapping.
    */
@@ -188,8 +206,8 @@ public:
 
   /**
    * Generates the CHALLENGE interest for the request.
-   * @param state The requester state of the request.
-   * @param parameters The requirement list, in name, value mapping.
+   * @param state, The requester state of the request.
+   * @param parameters, The requirement list, in name, value mapping.
    * @return The shared pointer to the encoded interest
    */
   static shared_ptr<Interest>
@@ -197,9 +215,9 @@ public:
                        std::vector<std::tuple<std::string, std::string>>&& parameters);
 
   /**
-   * Decodes the responsed data from the CHALLENGE interest.
-   * @param state the corresponding requester state of the request. Will be modified.
-   * @param reply the response data.
+   * Decodes the responded data from the CHALLENGE interest.
+   * @param state, the corresponding requester state of the request. Will be modified.
+   * @param reply, the response data.
    * @throw std::runtime_error if the decoding fails or receiving an error packet.
    */
   static void
@@ -207,7 +225,7 @@ public:
 
   /**
    * Generate the interest to fetch the issued certificate
-   * @param state the state of the request.
+   * @param state, the state of the request.
    * @return The shared pointer to the encoded interest
    */
   static shared_ptr<Interest>
@@ -215,7 +233,7 @@ public:
 
   /**
    * Decoded and installs the response certificate from the certificate fetch.
-   * @param reply the data replied from the certificate fetch interest.
+   * @param reply, the data replied from the certificate fetch interest.
    * @return The shared pointer to the certificate being fetched.
    */
   static shared_ptr<security::v2::Certificate>
@@ -223,7 +241,7 @@ public:
 
   /**
    * End the current request session and performs cleanup if necessary.
-   * @param state the requester state for the request.
+   * @param state, the requester state for the request.
    */
   static void
   endSession(RequesterState& state);

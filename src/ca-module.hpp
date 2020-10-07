@@ -31,16 +31,6 @@ namespace ndncert {
 class CaModule : noncopyable
 {
 public:
-  /**
-   * @brief Error that can be thrown from CaModule
-   */
-  class Error : public std::runtime_error
-  {
-  public:
-    using std::runtime_error::runtime_error;
-  };
-
-public:
   CaModule(Face& face, security::v2::KeyChain& keyChain, const std::string& configPath,
            const std::string& storageType = "ca-storage-sqlite3");
 
@@ -63,12 +53,6 @@ public:
 
   void
   setStatusUpdateCallback(const StatusUpdateCallback& onUpdateCallback);
-
-  static JsonSection
-  jsonFromBlock(const Block& block);
-
-  static Block
-  dataContentFromJson(const JsonSection& jsonSection);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   shared_ptr<Data>
@@ -113,7 +97,6 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 
   std::list<RegisteredPrefixHandle> m_registeredPrefixHandles;
   std::list<InterestFilterHandle> m_interestFilterHandles;
-
 };
 
 } // namespace ndncert

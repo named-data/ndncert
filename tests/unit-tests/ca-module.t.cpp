@@ -39,11 +39,11 @@ BOOST_AUTO_TEST_CASE(Initialization)
   BOOST_CHECK_EQUAL(ca.getCaConf().m_caItem.m_caPrefix, "/ndn");
 
   advanceClocks(time::milliseconds(20), 60);
-  BOOST_CHECK_EQUAL(ca.m_registeredPrefixHandles.size(), 2);
-  BOOST_CHECK_EQUAL(ca.m_interestFilterHandles.size(), 5);  // onInfo, onProbe, onNew, onChallenge, onRevoke
+  BOOST_CHECK_EQUAL(ca.m_registeredPrefixHandles.size(), 1); // removed local discovery registration
+  BOOST_CHECK_EQUAL(ca.m_interestFilterHandles.size(), 4);  // onProbe, onNew, onChallenge, onRevoke
 }
 
-BOOST_AUTO_TEST_CASE(HandleInfo)
+BOOST_AUTO_TEST_CASE(HandleProfileFetching)
 {
   auto identity = addIdentity(Name("/ndn"));
   auto key = identity.getDefaultKey();
@@ -51,27 +51,53 @@ BOOST_AUTO_TEST_CASE(HandleInfo)
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
+  auto metaData = ca.generateCaConfigMetaData();
+  auto profileData = ca.generateCaConfigData();
   advanceClocks(time::milliseconds(20), 60);
 
-  Interest interest("/ndn/CA/INFO");
-  interest.setCanBePrefix(false);
+  Interest interest = MetadataObject::makeDiscoveryInterest(Name("/ndn/CA/INFO"));
+  shared_ptr<Interest> infoInterest = nullptr;
+
+  face.setInterestFilter(InterestFilter("/ndn/CA/INFO"),
+                         [&](const auto&, const Interest& interest) {
+                           if (interest.matchesData(*metaData)) {
+                             face.put(*metaData);
+                           }
+                           else {
+                             BOOST_CHECK(interest.matchesData(*profileData));
+                             face.put(*profileData);
+                           }
+                         }, nullptr, nullptr);
+  advanceClocks(time::milliseconds(20), 60);
 
   int count = 0;
   face.onSendData.connect([&](const Data& response) {
-    count++;
-    BOOST_CHECK(security::verifySignature(response, cert));
-    auto contentBlock = response.getContent();
-    contentBlock.parse();
-    auto caItem = INFO::decodeDataContent(contentBlock);
-    BOOST_CHECK_EQUAL(caItem.m_caPrefix, "/ndn");
-    BOOST_CHECK_EQUAL(caItem.m_probeParameterKeys.size(), 1);
-    BOOST_CHECK_EQUAL(caItem.m_cert->wireEncode(), cert.wireEncode());
-    BOOST_CHECK_EQUAL(caItem.m_caInfo, "ndn testbed ca");
+    if (count == 0) {
+      count++;
+      auto block = response.getContent();
+      block.parse();
+      Interest interest(Name(block.get(tlv::Name)));
+      interest.setCanBePrefix(true);
+      infoInterest = make_shared<Interest>(interest);
+    }
+    else {
+      count++;
+      BOOST_CHECK(security::verifySignature(response, cert));
+      auto contentBlock = response.getContent();
+      contentBlock.parse();
+      auto caItem = INFO::decodeDataContent(contentBlock);
+      BOOST_CHECK_EQUAL(caItem.m_caPrefix, "/ndn");
+      BOOST_CHECK_EQUAL(caItem.m_probeParameterKeys.size(), 1);
+      BOOST_CHECK_EQUAL(caItem.m_probeParameterKeys.front(), "full name");
+      BOOST_CHECK_EQUAL(caItem.m_cert->wireEncode(), cert.wireEncode());
+      BOOST_CHECK_EQUAL(caItem.m_caInfo, "ndn testbed ca");
+    }
   });
   face.receive(interest);
-
   advanceClocks(time::milliseconds(20), 60);
-  BOOST_CHECK_EQUAL(count, 1);
+  face.receive(*infoInterest);
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK_EQUAL(count, 2);
 }
 
 BOOST_AUTO_TEST_CASE(HandleProbe)

@@ -275,10 +275,19 @@ probeCb(const Data& reply, CaProfile profile)
   }
   else {
     //redirects
-    auto redirectedCaName = redirects[index - names.size()];
-    std::cerr << "You selected redirects with certificate: " << redirectedCaName.getPrefix(-1).toUri() << std::endl;
-    face.expressInterest(*Requester::genCaProfileInterest(redirects[index - names.size()]),
-                         bind(&InfoCb, _2, redirectedCaName), bind(&onNackCb), bind(&timeoutCb));
+    auto redirectedCaFullName = redirects[index - names.size()];
+    std::cerr << "You selected redirects with certificate: " << redirectedCaFullName.getPrefix(-1).toUri() << std::endl;
+    face.expressInterest(
+        *Requester::genCaProfileDiscoveryInterest(redirectedCaFullName.getPrefix(-1)),
+        [&](const Interest&, const Data& data) {
+          auto fetchingInterest = Requester::genCaProfileInterestFromDiscoveryResponse(data);
+          face.expressInterest(*fetchingInterest,
+                               bind(&InfoCb, _2, redirectedCaFullName),
+                               bind(&onNackCb),
+                               bind(&timeoutCb));
+        },
+        bind(&onNackCb),
+        bind(&timeoutCb));
   }
 }
 
@@ -312,8 +321,17 @@ selectCaProfile(std::string configFilePath)
               << "Step " << nStep << ": ADD NEW CA\nPlease type in the CA's Name:" << std::endl;
     std::string expectedCAName;
     getline(std::cin, expectedCAName);
-    face.expressInterest(*Requester::genCaProfileInterest(Name(expectedCAName)),
-                         bind(&InfoCb, _2, Name()), bind(&onNackCb), bind(&timeoutCb));
+    face.expressInterest(
+        *Requester::genCaProfileDiscoveryInterest(Name(expectedCAName)),
+        [&](const Interest&, const Data& data) {
+          auto fetchingInterest = Requester::genCaProfileInterestFromDiscoveryResponse(data);
+          face.expressInterest(*fetchingInterest,
+                               bind(&InfoCb, _2, Name()),
+                               bind(&onNackCb),
+                               bind(&timeoutCb));
+        },
+        bind(&onNackCb),
+        bind(&timeoutCb));
   }
   else {
     size_t caIndex;

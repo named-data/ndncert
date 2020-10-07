@@ -33,6 +33,7 @@
 #include <ndn-cxx/security/verification-helpers.hpp>
 #include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/util/random.hpp>
+#include <ndn-cxx/metadata-object.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -47,14 +48,22 @@ RequesterState::RequesterState(security::v2::KeyChain& keyChain, const CaProfile
 }
 
 shared_ptr<Interest>
-Requester::genCaProfileInterest(const Name& caName)
+Requester::genCaProfileDiscoveryInterest(const Name& caName)
 {
-  Name interestName = caName;
+  Name contentName = caName;
   if (readString(caName.at(-1)) != "CA")
-    interestName.append("CA");
-  interestName.append("INFO");
-  auto interest = make_shared<Interest>(interestName);
-  interest->setMustBeFresh(true);
+    contentName.append("CA");
+  contentName.append("INFO");
+  return std::make_shared<Interest>(MetadataObject::makeDiscoveryInterest(contentName));
+}
+
+shared_ptr<Interest>
+Requester::genCaProfileInterestFromDiscoveryResponse(const Data& reply)
+{
+  auto metaData = MetadataObject(reply);
+  auto interestName= metaData.getVersionedName();
+  interestName.appendSegment(0);
+  auto interest = std::make_shared<Interest>(interestName);
   interest->setCanBePrefix(false);
   return interest;
 }

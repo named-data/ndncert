@@ -66,29 +66,16 @@ CaModule::~CaModule()
 void
 CaModule::registerPrefix()
 {
-  // register localhop discovery prefix
-  Name localhopInfoPrefix("/localhop/CA/INFO");
-  auto prefixId = m_face.setInterestFilter(InterestFilter(localhopInfoPrefix),
-                                           bind(&CaModule::onInfo, this, _2),
-                                           bind(&CaModule::onRegisterFailed, this, _2));
-  m_registeredPrefixHandles.push_back(prefixId);
-  _LOG_TRACE("Prefix " << localhopInfoPrefix << " got registered");
-
   // register prefixes
   Name prefix = m_config.m_caItem.m_caPrefix;
   prefix.append("CA");
 
-  prefixId = m_face.registerPrefix(
+  auto prefixId = m_face.registerPrefix(
       prefix,
       [&](const Name& name) {
-        // register INFO prefix
-        auto filterId = m_face.setInterestFilter(Name(name).append("INFO"),
-                                                 bind(&CaModule::onInfo, this, _2));
-        m_interestFilterHandles.push_back(filterId);
-
         // register PROBE prefix
-        filterId = m_face.setInterestFilter(Name(name).append("PROBE"),
-                                            bind(&CaModule::onProbe, this, _2));
+        auto filterId = m_face.setInterestFilter(Name(name).append("PROBE"),
+                                                 bind(&CaModule::onProbe, this, _2));
         m_interestFilterHandles.push_back(filterId);
 
         // register NEW prefix
@@ -161,21 +148,6 @@ CaModule::generateCaConfigData()
   infoData.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
   m_keyChain.sign(infoData, signingByIdentity(m_config.m_caItem.m_caPrefix));
   return make_shared<Data>(infoData);
-}
-
-void
-CaModule::onInfo(const Interest& request)
-{
-  _LOG_TRACE("Received INFO request");
-
-  if (request.getName().get(-1).type() == 32) {
-    m_face.put(*generateCaConfigMetaData());
-  }
-  else {
-    m_face.put(*generateCaConfigData());
-  }
-
-  _LOG_TRACE("Handle INFO: send out the INFO response");
 }
 
 void
@@ -500,31 +472,6 @@ void
 CaModule::onRegisterFailed(const std::string& reason)
 {
   _LOG_ERROR("Failed to register prefix in local hub's daemon, REASON: " << reason);
-}
-
-Block
-CaModule::dataContentFromJson(const JsonSection& jsonSection)
-{
-  std::stringstream ss;
-  boost::property_tree::write_json(ss, jsonSection);
-  return makeStringBlock(ndn::tlv::Content, ss.str());
-}
-
-JsonSection
-CaModule::jsonFromBlock(const Block& block)
-{
-  std::string jsonString;
-  try {
-    jsonString = encoding::readString(block);
-    std::istringstream ss(jsonString);
-    JsonSection json;
-    boost::property_tree::json_parser::read_json(ss, json);
-    return json;
-  }
-  catch (const std::exception& e) {
-    _LOG_ERROR("Cannot read JSON string from TLV Value: " << e.what());
-    return JsonSection();
-  }
 }
 
 Data
