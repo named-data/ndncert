@@ -21,16 +21,6 @@ public:
 
   NameAssignmentFunc getFunction(const std::string &factoryParam) override;
 
-  class OrAssignmentFunc {
-  public:
-    OrAssignmentFunc(std::list<NameAssignmentFunc> funcList);
-
-    std::vector<PartialName>
-    operator() (const std::vector<std::tuple<std::string, std::string>> params);
-  private:
-    std::list<NameAssignmentFunc> m_funcList;
-  };
-
 };
 }
 }

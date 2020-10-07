@@ -30,40 +30,32 @@ AssignmentParam::getFunction(const std::string &factoryParam) {
     if (startIndex != factoryParam.size()) {
         paramList.push_back(factoryParam.substr(startIndex));
     }
-    return ParamAssignmentFunc(paramList);
-}
+    return [paramList](const std::vector<std::tuple<std::string, std::string>> params){
+        if (params.size() > paramList.size() * 8) { // might be attack
+            BOOST_THROW_EXCEPTION(std::runtime_error("Too many extra parameters given"));
+        }
+        std::map<std::string, std::string> paramMap;
+        for (const auto& param : params) {
+            paramMap[std::get<0>(param)] = std::get<1>(param);
+            if (std::get<1>(param).size() == 0) { // empty parameter!
+                return std::vector<PartialName>();
+            }
+        }
 
-AssignmentParam::ParamAssignmentFunc::ParamAssignmentFunc(std::list<std::string> paramList)
-    : m_paramList(std::move(paramList))
-{}
-
-std::vector<PartialName>
-AssignmentParam::ParamAssignmentFunc::operator() (const std::vector<std::tuple<std::string, std::string>> params)
-{
-  if (params.size() > m_paramList.size() * 8) { // might be attack
-      BOOST_THROW_EXCEPTION(std::runtime_error("Too many extra parameters given"));
-  }
-  std::map<std::string, std::string> paramMap;
-  for (const auto& param : params) {
-      paramMap[std::get<0>(param)] = std::get<1>(param);
-      if (std::get<1>(param).size() == 0) { // empty parameter!
-          return std::vector<PartialName>();
-      }
-  }
-
-  //construct name
-  PartialName name;
-  for (const auto& field : m_paramList) {
-      auto it = paramMap.find(field);
-      if (it == paramMap.end()) {
-          return std::vector<PartialName>();
-      } else {
-          name.append(it->second);
-      }
-  }
-  std::vector<PartialName> nameList;
-  nameList.push_back(name);
-  return nameList;
+        //construct name
+        PartialName name;
+        for (const auto& field : paramList) {
+            auto it = paramMap.find(field);
+            if (it == paramMap.end()) {
+                return std::vector<PartialName>();
+            } else {
+                name.append(it->second);
+            }
+        }
+        std::vector<PartialName> nameList;
+        nameList.push_back(name);
+        return nameList;
+    };
 }
 
 }

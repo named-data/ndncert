@@ -19,16 +19,6 @@ public:
 
   NameAssignmentFunc getFunction(const std::string &factoryParam) override;
 
-  class HashAssignmentFunc {
-  public:
-    HashAssignmentFunc(std::list<std::string> paramList);
-
-    std::vector<PartialName>
-    operator() (const std::vector<std::tuple<std::string, std::string>> params);
-  private:
-    std::list<std::string> m_paramList;
-  };
-
 };
 }
 }

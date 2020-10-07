@@ -18,7 +18,15 @@ AssignmentOr::AssignmentOr()
 NameAssignmentFunc
 AssignmentOr::getFunction(std::list<NameAssignmentFunc> funcs){
     if (funcs.size() == 1) return *funcs.begin();
-    return OrAssignmentFunc(funcs);
+    return [funcs](const std::vector<std::tuple<std::string, std::string>> params){
+        std::vector<PartialName> nameList;
+        for (const auto& func : funcs) {
+            auto result = func(params);
+            nameList.insert(nameList.end(), result.begin(), result.end());
+        }
+
+        return nameList;
+    };
 }
 
 NameAssignmentFunc
@@ -49,22 +57,6 @@ AssignmentOr::getFunction(const std::string &factoryParam) {
     }
 
     return getFunction(paramList);
-}
-
-AssignmentOr::OrAssignmentFunc::OrAssignmentFunc(std::list<NameAssignmentFunc> funcList)
-    : m_funcList(std::move(funcList))
-{}
-
-std::vector<PartialName>
-AssignmentOr::OrAssignmentFunc::operator() (const std::vector<std::tuple<std::string, std::string>> params)
-{
-  std::vector<PartialName> nameList;
-  for (const auto& func : m_funcList) {
-      auto result = func(params);
-      nameList.insert(nameList.end(), result.begin(), result.end());
-  }
-
-  return nameList;
 }
 
 }
