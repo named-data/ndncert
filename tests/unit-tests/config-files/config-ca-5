@@ -24,6 +24,8 @@
   ],
   "name-assignment":
   {
-     "param": "/group/email"
+     "param": "/group/email",
+     "param": "/group/name",
+     "random": ""
   }
 }

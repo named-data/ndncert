@@ -23,6 +23,7 @@
 #include <ndn-cxx/util/io.hpp>
 #include <boost/filesystem.hpp>
 #include <name-assignments/assignment-funcs.hpp>
+#include <name-assignments/assignment-or.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -152,7 +153,7 @@ CaConfig::load(const std::string& fileName)
   m_nameAssignmentFunc = nullptr;
   auto nameAssignmentItems = configJson.get_child_optional(CONFIG_NAME_ASSIGNMENT);
   if (nameAssignmentItems) {
-    std::vector<NameAssignmentFunc> funcs;
+    std::list<NameAssignmentFunc> funcs;
     for (const auto item : *nameAssignmentItems) {
         auto factory = NameAssignmentFuncFactory::createNameAssignmentFuncFactory(item.first);
         if (!factory) {
@@ -167,10 +168,10 @@ CaConfig::load(const std::string& fileName)
     if (funcs.size() < 1) {
         BOOST_THROW_EXCEPTION(std::runtime_error("Empty assignment body supplied"));
     } else if (funcs.size() == 1) {
-        m_nameAssignmentFunc = funcs[0];
+        m_nameAssignmentFunc = *funcs.begin();
     } else {
-        //TODO "or" all the name function together as all suggestions
-        m_nameAssignmentFunc = funcs[0];
+        AssignmentOr orFunction;
+        m_nameAssignmentFunc = orFunction.getFunction(funcs);
     }
   }
 }

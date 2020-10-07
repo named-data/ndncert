@@ -58,8 +58,10 @@ BOOST_AUTO_TEST_CASE(CAConfigFile)
   std::vector<std::tuple<std::string, std::string>> params;
   params.emplace_back("email", "1@1.edu");
   params.emplace_back("group", "irl");
-  BOOST_CHECK_EQUAL(config.m_nameAssignmentFunc(params).size(), 1);
+  params.emplace_back("name", "ndncert");
+  BOOST_CHECK_EQUAL(config.m_nameAssignmentFunc(params).size(), 3);
   BOOST_CHECK_EQUAL(config.m_nameAssignmentFunc(params)[0], Name("/irl/1@1.edu"));
+  BOOST_CHECK_EQUAL(config.m_nameAssignmentFunc(params)[1], Name("/irl/ndncert"));
 }
 
 BOOST_AUTO_TEST_CASE(CAConfigFileWithErrors)

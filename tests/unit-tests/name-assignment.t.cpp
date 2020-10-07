@@ -21,6 +21,7 @@
 #include <name-assignments/assignment-random.hpp>
 #include <name-assignments/assignment-param.hpp>
 #include <name-assignments/assignment-hash.hpp>
+#include <name-assignments/assignment-or.hpp>
 #include "test-common.hpp"
 
 namespace ndn {
@@ -69,6 +70,40 @@ BOOST_AUTO_TEST_CASE(NameAssignmentHash)
   requirements[1] = std::tuple<std::string, std::string>("xyz", "");
   BOOST_CHECK_EQUAL(func(requirements).size(), 1);
   BOOST_CHECK_EQUAL(func(requirements).begin()->size(), 1);
+}
+
+BOOST_AUTO_TEST_CASE(NameAssignmentOr)
+{
+  AssignmentParam paramAssignment;
+  AssignmentOr orAssignment;
+  std::list<NameAssignmentFunc> func2Subfuncs;
+  auto func1 = orAssignment.getFunction(func2Subfuncs);
+  BOOST_CHECK_EQUAL(func1(std::vector<std::tuple<std::string, std::string>>()).size(), 0);
+
+  auto funcUnit = paramAssignment.getFunction("/abc/xyz/");
+  func2Subfuncs.push_back(funcUnit);
+  func2Subfuncs.push_back(funcUnit);
+  auto func2 = orAssignment.getFunction(func2Subfuncs);
+  std::list<NameAssignmentFunc> func3Subfuncs;
+  func3Subfuncs.push_back(func2);
+  func3Subfuncs.push_back(funcUnit);
+  auto func3 = orAssignment.getFunction(func3Subfuncs);
+  std::vector<std::tuple<std::string, std::string>> requirements;
+  requirements.emplace_back("abc", "123");
+  BOOST_CHECK_EQUAL(func3(requirements).size(), 0);
+  requirements.emplace_back("xyz", "789");
+  BOOST_CHECK_EQUAL(func3(requirements).size(), 3);
+}
+
+BOOST_AUTO_TEST_CASE(NameAssignmentOrOperatorString)
+{
+  AssignmentOr orAssignment;
+  auto func = orAssignment.getFunction(R"({"param": "/abc/xyz/", "param": "/abc/xyz"})");
+  std::vector<std::tuple<std::string, std::string>> requirements;
+  requirements.emplace_back("abc", "123");
+  BOOST_CHECK_EQUAL(func(requirements).size(), 0);
+  requirements.emplace_back("xyz", "789");
+  BOOST_CHECK_EQUAL(func(requirements).size(), 2);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
