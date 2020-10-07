@@ -38,7 +38,7 @@ NameAssignmentFuncFactory::isChallengeSupported(const std::string& challengeType
 }
 
 unique_ptr<NameAssignmentFuncFactory>
-NameAssignmentFuncFactory::createNameAssignmentFuncFactories(const std::string& challengeType)
+NameAssignmentFuncFactory::createNameAssignmentFuncFactory(const std::string& challengeType)
 {
   FuncFactoryFactory& factory = getFactory();
   auto i = factory.find(challengeType);

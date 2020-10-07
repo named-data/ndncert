@@ -22,6 +22,7 @@
 #include "challenge-module.hpp"
 #include <ndn-cxx/util/io.hpp>
 #include <boost/filesystem.hpp>
+#include <name-assignments/assignment-funcs.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -145,6 +146,31 @@ CaConfig::load(const std::string& fileName)
         m_redirection = std::vector<std::shared_ptr<security::v2::Certificate>>();
       }
       m_redirection->push_back(caCert);
+    }
+  }
+  //parse name assignment if appears
+  m_nameAssignmentFunc = nullptr;
+  auto nameAssignmentItems = configJson.get_child_optional(CONFIG_NAME_ASSIGNMENT);
+  if (nameAssignmentItems) {
+    std::vector<NameAssignmentFunc> funcs;
+    for (const auto item : *nameAssignmentItems) {
+        auto factory = NameAssignmentFuncFactory::createNameAssignmentFuncFactory(item.first);
+        if (!factory) {
+            BOOST_THROW_EXCEPTION(std::runtime_error("Invalid assignment factory type"));
+        }
+        try {
+            funcs.push_back(factory->getFunction(item.second.data()));
+        } catch (const std::exception& e) {
+            BOOST_THROW_EXCEPTION(std::runtime_error("Error on creating function"));
+        }
+    }
+    if (funcs.size() < 1) {
+        BOOST_THROW_EXCEPTION(std::runtime_error("Empty assignment body supplied"));
+    } else if (funcs.size() == 1) {
+        m_nameAssignmentFunc = funcs[0];
+    } else {
+        //TODO "or" all the name function together as all suggestions
+        m_nameAssignmentFunc = funcs[0];
     }
   }
 }

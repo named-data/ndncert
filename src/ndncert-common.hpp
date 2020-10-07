@@ -123,6 +123,7 @@ const std::string CONFIG_SUPPORTED_CHALLENGES = "supported-challenges";
 const std::string CONFIG_CHALLENGE = "challenge";
 const std::string CONFIG_CERTIFICATE = "certificate";
 const std::string CONFIG_REDIRECTION = "redirect-to";
+const std::string CONFIG_NAME_ASSIGNMENT = "name-assignment";
 
 
 // NDNCERT Status Enum

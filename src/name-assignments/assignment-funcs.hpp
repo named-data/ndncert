@@ -47,7 +47,7 @@ public:
   isChallengeSupported(const std::string& challengeType);
 
   static unique_ptr<NameAssignmentFuncFactory>
-  createNameAssignmentFuncFactories(const std::string& challengeType);
+  createNameAssignmentFuncFactory(const std::string& challengeType);
 
   virtual NameAssignmentFunc
   getFunction(const std::string& factoryParam) = 0;
