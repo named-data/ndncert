@@ -51,10 +51,6 @@ CaModule::CaModule(Face& face, security::v2::KeyChain& keyChain,
   m_storage = CaStorage::createCaStorage(storageType, m_config.m_caItem.m_caPrefix, "");
   random::generateSecureBytes(m_requestIdGenKey, 32);
   registerPrefix();
-  if (!m_config.m_nameAssignmentFunc) {
-      m_config.m_nameAssignmentFunc =
-              NameAssignmentFuncFactory::createNameAssignmentFuncFactory("random")->getFunction("");
-  }
 }
 
 CaModule::~CaModule()
@@ -191,14 +187,16 @@ CaModule::onProbe(const Interest& request)
   // process PROBE requests: collect probe parameters
   auto parameters = PROBE::decodeApplicationParameters(request.getApplicationParameters());
   std::vector<PartialName> availableComponents;
-  try {
-    availableComponents = m_config.m_nameAssignmentFunc(parameters);
-  }
-  catch (const std::exception& e) {
-    _LOG_TRACE("Cannot parse probe parameters: " << e.what());
-    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
-            "Cannot parse probe parameters: " + std::string(e.what())));
-    return;
+  if (m_config.m_nameAssignmentFunc) {
+    try {
+      availableComponents = m_config.m_nameAssignmentFunc(parameters);
+    }
+    catch (const std::exception &e) {
+      _LOG_TRACE("Cannot parse probe parameters: " << e.what());
+      m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
+              "Cannot parse probe parameters: " + std::string(e.what())));
+      return;
+    }
   }
   std::vector<Name> availableNames;
   for (const auto& component : availableComponents) {
