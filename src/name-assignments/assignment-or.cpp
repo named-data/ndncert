@@ -8,8 +8,6 @@
 namespace ndn {
 namespace ndncert {
 
-_LOG_INIT(ndncert.assignment.or);
-
 NDNCERT_REGISTER_FUNCFACTORY(AssignmentOr, "or");
 
 AssignmentOr::AssignmentOr()

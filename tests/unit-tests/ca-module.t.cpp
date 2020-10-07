@@ -51,8 +51,8 @@ BOOST_AUTO_TEST_CASE(HandleProfileFetching)
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
-  auto metaData = ca.generateCaConfigMetaData();
-  auto profileData = ca.generateCaConfigData();
+  auto metaData = ca.generateCaProfileMetaData();
+  auto profileData = ca.generateCaProfileData();
   advanceClocks(time::milliseconds(20), 60);
 
   Interest interest = MetadataObject::makeDiscoveryInterest(Name("/ndn/CA/INFO"));

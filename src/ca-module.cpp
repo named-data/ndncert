@@ -111,14 +111,14 @@ CaModule::setStatusUpdateCallback(const StatusUpdateCallback& onUpdateCallback)
 }
 
 shared_ptr<Data>
-CaModule::generateCaConfigMetaData()
+CaModule::generateCaProfileMetaData()
 {
   // @TODO
   // make metadata a class member variable m_infoMetadata
   // check whether the m_infoMetadata has the latest versioned name, if not, then generate a new one
   // otherwise, directly reply m_infoMetadata.makeData
 
-  auto infoPacket = generateCaConfigData();
+  auto infoPacket = generateCaProfileData();
   MetadataObject metadata;
   metadata.setVersionedName(infoPacket->getName().getPrefix(-1));
   Name discoveryInterestName(infoPacket->getName().getPrefix(-2));
@@ -129,7 +129,7 @@ CaModule::generateCaConfigMetaData()
 }
 
 shared_ptr<Data>
-CaModule::generateCaConfigData()
+CaModule::generateCaProfileData()
 {
   // @TODO
   // make CaInfo Data packet a class member variable m_infoData

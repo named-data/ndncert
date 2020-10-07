@@ -56,13 +56,10 @@ public:
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   shared_ptr<Data>
-  generateCaConfigMetaData();
+  generateCaProfileMetaData();
 
   shared_ptr<Data>
-  generateCaConfigData();
-
-  void
-  onInfo(const Interest& request);
+  generateCaProfileData();
 
   void
   onProbe(const Interest& request);
