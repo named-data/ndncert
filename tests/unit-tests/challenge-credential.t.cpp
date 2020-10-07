@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "challenge-modules/challenge-credential.hpp"
+#include "identity-challenge/challenge-credential.hpp"
 #include "test-common.hpp"
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/util/io.hpp>

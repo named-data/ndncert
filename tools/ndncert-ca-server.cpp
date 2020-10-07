@@ -19,7 +19,7 @@
  */
 
 #include "ca-module.hpp"
-#include "challenge-module.hpp"
+#include "identity-challenge/challenge-module.hpp"
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
 #include <boost/asio.hpp>

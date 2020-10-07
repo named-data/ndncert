@@ -19,7 +19,7 @@
  */
 
 #include "ca-module.hpp"
-#include "challenge-module.hpp"
+#include "identity-challenge/challenge-module.hpp"
 #include "crypto-support/enc-tlv.hpp"
 #include "protocol-detail/challenge.hpp"
 #include "protocol-detail/error.hpp"

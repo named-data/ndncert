@@ -18,37 +18,42 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_CHALLENGE_PIN_HPP
-#define NDNCERT_CHALLENGE_PIN_HPP
+#ifndef NDNCERT_CHALLENGE_EMAIL_HPP
+#define NDNCERT_CHALLENGE_EMAIL_HPP
 
-#include "../challenge-module.hpp"
+#include "challenge-module.hpp"
 
 namespace ndn {
 namespace ndncert {
 
 /**
- * @brief Provide PIN code based challenge
+ * @brief Provide Email based challenge
  *
+ * For challenge design
  * @sa https://github.com/named-data/ndncert/wiki/NDN-Certificate-Management-Protocol
+ * For deployment instructions:
+ * @sa https://github.com/named-data/ndncert/wiki/Deploy-Email-Challenge
  *
  * The main process of this challenge module is:
- *   1. End entity provides empty string. The first POLL is only for selection.
- *   2. The challenge module will generate a PIN code in ChallengeDefinedField.
- *   3. End entity provides the verification code from some way to challenge module.
+ *   1. Requester provides its email address.
+ *   2. The challenge module will send a verification code to this email address.
+ *   3. Requester provides the verification code to challenge module.
  *
- * There are four specific status defined in this challenge:
- *   NEED_CODE: When selection is made.
- *   WRONG_CODE: Get wrong verification code but still with secret lifetime and max retry times.
+ * There are several challenge status in EMAIL challenge:
+ *   NEED_CODE: When email address is provided and the verification code has been sent out.
+ *   WRONG_CODE: Wrong code but still within secret lifetime and within max try times.
  *
  * Failure info when application fails:
- *   FAILURE_TIMEOUT: When secret is out-dated.
- *   FAILURE_MAXRETRY: When requester tries too many times.
+ *   FAILURE_MAXRETRY: When run out retry times.
+ *   FAILURE_INVALID_EMAIL: When the email is invalid.
+ *   FAILURE_TIMEOUT: When the secret lifetime expires.
  */
-class ChallengePin : public ChallengeModule
+class ChallengeEmail : public ChallengeModule
 {
 public:
-  ChallengePin(const size_t& maxAttemptTimes = 3,
-               const time::seconds& secretLifetime = time::seconds(3600));
+  ChallengeEmail(const std::string& scriptPath = "ndncert-send-email-challenge",
+                 const size_t& maxAttemptTimes = 3,
+                 const time::seconds secretLifetime = time::seconds(300));
 
   // For CA
   std::tuple<ErrorCode, std::string>
@@ -65,11 +70,24 @@ public:
   // challenge status
   static const std::string NEED_CODE;
   static const std::string WRONG_CODE;
-  // parameters
+  static const std::string INVALID_EMAIL;
+  // challenge parameters
+  static const std::string PARAMETER_KEY_EMAIL;
   static const std::string PARAMETER_KEY_CODE;
+
+PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+  static bool
+  isValidEmailAddress(const std::string& emailAddress);
+
+  void
+  sendEmail(const std::string& emailAddress, const std::string& secret,
+            const CaState& request) const;
+
+private:
+  std::string m_sendEmailScript;
 };
 
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_CHALLENGE_PIN_HPP
+#endif // NDNCERT_CHALLENGE_EMAIL_HPP

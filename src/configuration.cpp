@@ -19,7 +19,7 @@
  */
 
 #include "configuration.hpp"
-#include "challenge-module.hpp"
+#include "identity-challenge/challenge-module.hpp"
 #include <ndn-cxx/util/io.hpp>
 #include <boost/filesystem.hpp>
 #include <name-assignments/assignment-funcs.hpp>

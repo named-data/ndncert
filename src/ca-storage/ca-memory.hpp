@@ -21,7 +21,7 @@
 #ifndef NDNCERT_CA_DETAIL_CA_MEMORY_HPP
 #define NDNCERT_CA_DETAIL_CA_MEMORY_HPP
 
-#include "../ca-storage.hpp"
+#include "ca-storage.hpp"
 
 namespace ndn {
 namespace ndncert {

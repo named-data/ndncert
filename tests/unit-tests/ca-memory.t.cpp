@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "ca-storage-detail/ca-memory.hpp"
-#include "ca-storage-detail/ca-sqlite.hpp"
+#include "ca-storage/ca-memory.hpp"
+#include "ca-storage/ca-sqlite.hpp"
 #include "test-common.hpp"
 
 namespace ndn {

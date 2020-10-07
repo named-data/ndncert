@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2019, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -18,25 +18,56 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
+#ifndef NDNCERT_CA_DETAIL_CA_SQLITE_HPP
+#define NDNCERT_CA_DETAIL_CA_SQLITE_HPP
+
 #include "ca-storage.hpp"
+
+struct sqlite3;
 
 namespace ndn {
 namespace ndncert {
 
-unique_ptr<CaStorage>
-CaStorage::createCaStorage(const std::string& caStorageType, const Name& caName, const std::string& path)
+class CaSqlite : public CaStorage
 {
-  CaStorageFactory& factory = getFactory();
-  auto i = factory.find(caStorageType);
-  return i == factory.end() ? nullptr : i->second(caName, path);
-}
+public:
+  const static std::string STORAGE_TYPE;
 
-CaStorage::CaStorageFactory&
-CaStorage::getFactory()
-{
-  static CaStorage::CaStorageFactory factory;
-  return factory;
-}
+  explicit
+  CaSqlite(const Name& caName, const std::string& path = "");
+
+  ~CaSqlite();
+
+public:
+  /**
+   * @throw if request cannot be fetched from underlying data storage
+   */
+  CaState
+  getRequest(const std::string& requestId) override;
+
+  /**
+   * @throw if there is an existing request with the same request ID
+   */
+  void
+  addRequest(const CaState& request) override;
+
+  void
+  updateRequest(const CaState& request) override;
+
+  void
+  deleteRequest(const std::string& requestId) override;
+
+  std::list<CaState>
+  listAllRequests() override;
+
+  std::list<CaState>
+  listAllRequests(const Name& caName) override;
+
+private:
+  sqlite3* m_database;
+};
 
 } // namespace ndncert
 } // namespace ndn
+
+#endif // NDNCERT_CA_DETAIL_CA_SQLITE_HPP

@@ -20,7 +20,7 @@
 #ifndef NDNCERT_CHALLENGE_CREDENTIAL_HPP
 #define NDNCERT_CHALLENGE_CREDENTIAL_HPP
 
-#include "../challenge-module.hpp"
+#include "challenge-module.hpp"
 
 namespace ndn {
 namespace ndncert {

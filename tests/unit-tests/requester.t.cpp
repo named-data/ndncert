@@ -22,7 +22,7 @@
 #include <protocol-detail/probe.hpp>
 #include <ndn-cxx/util/io.hpp>
 #include "requester.hpp"
-#include "challenge-module.hpp"
+#include "identity-challenge/challenge-module.hpp"
 #include "ca-module.hpp"
 #include "test-common.hpp"
 

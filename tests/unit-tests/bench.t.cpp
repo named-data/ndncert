@@ -19,7 +19,7 @@
  */
 
 #include "ca-module.hpp"
-#include "challenge-modules/challenge-pin.hpp"
+#include "identity-challenge/challenge-pin.hpp"
 #include "protocol-detail/info.hpp"
 #include "requester.hpp"
 #include "test-common.hpp"

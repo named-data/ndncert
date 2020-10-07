@@ -23,7 +23,7 @@
 
 #include "configuration.hpp"
 #include "crypto-support/crypto-helper.hpp"
-#include "ca-storage.hpp"
+#include "ca-storage/ca-storage.hpp"
 
 namespace ndn {
 namespace ndncert {
