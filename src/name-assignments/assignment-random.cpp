@@ -9,6 +9,7 @@ namespace ndn {
 namespace ndncert {
 
 _LOG_INIT(ndncert.assignment.random);
+
 NDNCERT_REGISTER_FUNCFACTORY(AssignmentRandom, "random");
 
 AssignmentRandom::AssignmentRandom()

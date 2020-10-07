@@ -9,6 +9,7 @@ namespace ndn {
 namespace ndncert {
 
 _LOG_INIT(ndncert.assignment.hash);
+
 NDNCERT_REGISTER_FUNCFACTORY(AssignmentHash, "hash");
 
 AssignmentHash::AssignmentHash()

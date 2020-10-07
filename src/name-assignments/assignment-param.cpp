@@ -8,6 +8,7 @@ namespace ndn {
 namespace ndncert {
 
 _LOG_INIT(ndncert.assignment.param);
+
 NDNCERT_REGISTER_FUNCFACTORY(AssignmentParam, "param");
 
 AssignmentParam::AssignmentParam()
@@ -42,6 +43,9 @@ AssignmentParam::ParamAssignmentFunc::operator() (const std::vector<std::tuple<s
   std::map<std::string, std::string> paramMap;
   for (const auto& param : params) {
       paramMap[std::get<0>(param)] = std::get<1>(param);
+      if (std::get<1>(param).size() == 0) { // empty parameter!
+          return std::vector<PartialName>();
+      }
   }
 
   //construct name

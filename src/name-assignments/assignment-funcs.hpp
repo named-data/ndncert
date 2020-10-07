@@ -36,7 +36,7 @@ public:
 
   template <class ChallengeType>
   static void
-  registerNameAssignmentFuncFactorys(const std::string& typeName)
+  registerNameAssignmentFuncFactories(const std::string& typeName)
   {
     FuncFactoryFactory& factory = getFactory();
     BOOST_ASSERT(factory.count(typeName) == 0);
@@ -47,7 +47,7 @@ public:
   isChallengeSupported(const std::string& challengeType);
 
   static unique_ptr<NameAssignmentFuncFactory>
-  createNameAssignmentConfigFuncs(const std::string& challengeType);
+  createNameAssignmentFuncFactories(const std::string& challengeType);
 
   virtual NameAssignmentFunc
   getFunction(const std::string& factoryParam) = 0;
@@ -63,13 +63,13 @@ private:
   getFactory();
 };
 
-#define NDNCERT_REGISTER_FUNCFACTORY(C, T)                              \
-  static class NdnCert##C##FuncFactoryRegistrationClass {               \
-  public:                                                             \
-    NdnCert##C##FuncFactoryRegistrationClass()                          \
-    {                                                                 \
-      ::ndn::ndncert::NameAssignmentFuncFactory::registerNameAssignmentFuncFactorys<C>(T); \
-    }                                                                 \
+#define NDNCERT_REGISTER_FUNCFACTORY(C, T)                               \
+  static class NdnCert##C##FuncFactoryRegistrationClass {                \
+  public:                                                                \
+    NdnCert##C##FuncFactoryRegistrationClass()                           \
+    {                                                                    \
+      ::ndn::ndncert::NameAssignmentFuncFactory::registerNameAssignmentFuncFactories<C>(T); \
+    }                                                                    \
   } g_NdnCert##C##ChallengeRegistrationVariable
 
 }  // namespace ndncert
