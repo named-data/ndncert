@@ -54,6 +54,11 @@ BOOST_AUTO_TEST_CASE(CAConfigFile)
   config.load("tests/unit-tests/config-files/config-ca-5");
   BOOST_CHECK_EQUAL(config.m_redirection->at(0)->getName(),
                     "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
+
+  std::vector<std::tuple<std::string, std::string>> params;
+  params.emplace_back("email", "1@1.edu");
+  BOOST_CHECK_EQUAL(config.m_nameAssignmentFunc(params).size(), 1);
+  BOOST_CHECK_EQUAL(config.m_nameAssignmentFunc(params)[0], Name("1@1.edu"));
 }
 
 BOOST_AUTO_TEST_CASE(CAConfigFileWithErrors)
@@ -65,6 +70,8 @@ BOOST_AUTO_TEST_CASE(CAConfigFileWithErrors)
   BOOST_CHECK_THROW(config.load("tests/unit-tests/config-files/config-ca-3"), std::runtime_error);
   // unsupported challenge
   BOOST_CHECK_THROW(config.load("tests/unit-tests/config-files/config-ca-4"), std::runtime_error);
+  // unsupported name assignment
+  BOOST_CHECK_THROW(config.load("tests/unit-tests/config-files/config-ca-6"), std::runtime_error);
 }
 
 BOOST_AUTO_TEST_CASE(RequesterCaCacheFile)

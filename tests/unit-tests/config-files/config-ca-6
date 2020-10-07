@@ -1,0 +1,18 @@
+{
+  "ca-prefix": "/ndn",
+  "ca-info": "ndn testbed ca",
+  "max-validity-period": "864000",
+  "max-suffix-length": 3,
+  "probe-parameters":
+  [
+      { "probe-parameter-key": "full name" }
+  ],
+  "supported-challenges":
+  [
+      { "challenge": "PIN" }
+  ],
+  "name-assignment":
+  {
+    "nonexistent": ""
+  }
+}
