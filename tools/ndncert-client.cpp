@@ -213,23 +213,24 @@ InfoCb(const Data& reply, const Name& certFullName)
     std::cerr << "The fetched CA information cannot be used because: " << e.what() << std::endl;
     return;
   }
-
-  std::cerr << "Will use a new trust anchor, please double check the identity info:" << std::endl
-            << "This trust anchor information is signed by " << reply.getSignature().getKeyLocator()
-            << std::endl
-            << "The certificate is " << profile->m_cert << std::endl
+  std::cerr << "\n***************************************\n"
+            << "Step " << nStep++
+            << ": Will use a new trust anchor, please double check the identity info:" << std::endl
+            << "> New CA name: " << profile->m_caPrefix.toUri() << std::endl
+            << "> This trust anchor information is signed by: " << reply.getSignature().getKeyLocator() << std::endl
+            << "> The certificate: " << profile->m_cert << std::endl
             << "Do you trust the information? Type in YES or NO" << std::endl;
 
   std::string answer;
   getline(std::cin, answer);
   boost::algorithm::to_lower(answer);
   if (answer == "yes") {
-    std::cerr << "You answered YES: new CA will be used" << std::endl;
+    std::cerr << "You answered YES: new CA " << profile->m_caPrefix.toUri() << " will be used" << std::endl;
     runProbe(*profile);
     // client.getClientConf().save(std::string(SYSCONFDIR) + "/ndncert/client.conf");
   }
   else {
-    std::cerr << "You answered NO: new CA will not be used" << std::endl;
+    std::cerr << "You answered NO: new CA " << profile->m_caPrefix.toUri() << " will not be used" << std::endl;
     exit(0);
   }
 }
@@ -358,7 +359,10 @@ static void
 runProbe(CaProfile profile)
 {
   std::cerr << "\n***************************************\n"
-            << "Step " << nStep++ << ": Do you have the identity name already? Type in YES or NO" << std::endl;
+            << "Step " << nStep++
+            << ": Do you know your identity name to be certified by CA "
+            << profile.m_caPrefix.toUri()
+            << " already? Type in YES or NO" << std::endl;
   bool validAnswer = false;
   while (!validAnswer) {
     std::string answer;
@@ -369,7 +373,9 @@ runProbe(CaProfile profile)
       std::cerr << "You answered YES" << std::endl;
       std::cerr << "\n***************************************\n"
                 << "Step " << nStep++
-                << ": Please type in the full identity name you want to get (with CA prefix):" << std::endl;
+                << ": Please type in the full identity name you want to get (with CA prefix "
+                << profile.m_caPrefix.toUri()
+                << "):" << std::endl;
       std::string identityNameStr;
       getline(std::cin, identityNameStr);
       runNew(profile, Name(identityNameStr));
