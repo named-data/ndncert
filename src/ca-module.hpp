@@ -51,12 +51,12 @@ public:
   void
   setStatusUpdateCallback(const StatusUpdateCallback& onUpdateCallback);
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  shared_ptr<Data>
-  generateCaProfileMetaData();
+  Data
+  getCaProfileData();
 
-  shared_ptr<Data>
-  generateCaProfileData();
+PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+  void
+  onCaProfileDiscovery(const Interest& request);
 
   void
   onProbe(const Interest& request);
@@ -88,6 +88,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   unique_ptr<CaStorage> m_storage;
   security::v2::KeyChain& m_keyChain;
   uint8_t m_requestIdGenKey[32];
+  std::unique_ptr<Data> m_profileData;
 
   std::list<RegisteredPrefixHandle> m_registeredPrefixHandles;
   std::list<InterestFilterHandle> m_interestFilterHandles;

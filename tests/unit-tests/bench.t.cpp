@@ -38,24 +38,20 @@ BOOST_AUTO_TEST_CASE(PacketSize0)
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
-  auto metaData = ca.generateCaProfileMetaData();
-  auto profileData = ca.generateCaProfileData();
+  auto profileData = ca.getCaProfileData();
   advanceClocks(time::milliseconds(20), 60);
 
   Interest interest = MetadataObject::makeDiscoveryInterest(Name("/ndn/CA/INFO"));
   std::cout << "CA Config discovery Interest Size: " << interest.wireEncode().size() << std::endl;
   shared_ptr<Interest> infoInterest = nullptr;
 
-  face.setInterestFilter(InterestFilter("/ndn/CA/INFO"),
-                         [&](const auto&, const Interest& interest) {
-                           if (interest.matchesData(*metaData)) {
-                             face.put(*metaData);
-                           }
-                           else {
-                             BOOST_CHECK(interest.matchesData(*profileData));
-                             face.put(*profileData);
-                           }
-                         }, nullptr, nullptr);
+  face.setInterestFilter(
+      InterestFilter("/ndn/CA/INFO"),
+      [&](const auto&, const Interest& interest) {
+        BOOST_CHECK(interest.matchesData(profileData));
+        face.put(profileData);
+      },
+      nullptr, nullptr);
   advanceClocks(time::milliseconds(20), 60);
 
   int count = 0;

@@ -77,8 +77,14 @@ CaModule::registerPrefix()
   auto prefixId = m_face.registerPrefix(
       prefix,
       [&](const Name& name) {
+        // register INFO RDR metadata prefix
+        name::Component metaDataComp(32, reinterpret_cast<const uint8_t*>("metadata"), std::strlen("metadata"));
+        auto filterId = m_face.setInterestFilter(Name(name).append("INFO").append(metaDataComp),
+                                                 bind(&CaModule::onCaProfileDiscovery, this, _2));
+        m_interestFilterHandles.push_back(filterId);
+
         // register PROBE prefix
-        auto filterId = m_face.setInterestFilter(Name(name).append("PROBE"),
+        filterId = m_face.setInterestFilter(Name(name).append("PROBE"),
                                                  bind(&CaModule::onProbe, this, _2));
         m_interestFilterHandles.push_back(filterId);
 
@@ -108,32 +114,12 @@ CaModule::setStatusUpdateCallback(const StatusUpdateCallback& onUpdateCallback)
   m_config.m_statusUpdateCallback = onUpdateCallback;
 }
 
-shared_ptr<Data>
-CaModule::generateCaProfileMetaData()
+Data
+CaModule::getCaProfileData()
 {
-  // @TODO
-  // make metadata a class member variable m_infoMetadata
-  // check whether the m_infoMetadata has the latest versioned name, if not, then generate a new one
-  // otherwise, directly reply m_infoMetadata.makeData
-
-  auto infoPacket = generateCaProfileData();
-  MetadataObject metadata;
-  metadata.setVersionedName(infoPacket->getName().getPrefix(-1));
-  Name discoveryInterestName(infoPacket->getName().getPrefix(-2));
-  name::Component metadataComponent(32, reinterpret_cast<const uint8_t*>("metadata"), std::strlen("metadata"));
-  discoveryInterestName.append(metadataComponent);
-  auto metadataData = metadata.makeData(discoveryInterestName, m_keyChain, signingByIdentity(m_config.m_caItem.m_caPrefix));
-  return make_shared<Data>(metadataData);
-}
-
-shared_ptr<Data>
-CaModule::generateCaProfileData()
-{
-  // @TODO
-  // make CaInfo Data packet a class member variable m_infoData
-  // check whether the m_infoData is still valid, if not, then generate a new one
-  // otherwise, directly reply m_infoData
-
+  if (m_profileData) {
+    return *m_profileData;
+  }
   const auto& pib = m_keyChain.getPib();
   const auto& identity = pib.getIdentity(m_config.m_caItem.m_caPrefix);
   const auto& cert = identity.getDefaultKey().getDefaultCertificate();
@@ -141,11 +127,26 @@ CaModule::generateCaProfileData()
 
   Name infoPacketName(m_config.m_caItem.m_caPrefix);
   infoPacketName.append("CA").append("INFO").appendVersion().appendSegment(0);
-  Data infoData(infoPacketName);
-  infoData.setContent(contentTLV);
-  infoData.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  m_keyChain.sign(infoData, signingByIdentity(m_config.m_caItem.m_caPrefix));
-  return make_shared<Data>(infoData);
+  m_profileData = std::make_unique<Data>(infoPacketName);
+  m_profileData->setContent(contentTLV);
+  m_profileData->setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
+  m_keyChain.sign(*m_profileData, signingByIdentity(m_config.m_caItem.m_caPrefix));
+  return *m_profileData;
+}
+
+void
+CaModule::onCaProfileDiscovery(const Interest& request)
+{
+  _LOG_TRACE("Received CA Profile MetaData discovery Interest");
+  if (m_profileData == nullptr) {
+    m_profileData = std::make_unique<Data>(getCaProfileData());
+  }
+  MetadataObject metadata;
+  metadata.setVersionedName(m_profileData->getName().getPrefix(-1));
+  Name discoveryInterestName(m_profileData->getName().getPrefix(-2));
+  name::Component metadataComponent(32, reinterpret_cast<const uint8_t*>("metadata"), std::strlen("metadata"));
+  discoveryInterestName.append(metadataComponent);
+  m_face.put(metadata.makeData(discoveryInterestName, m_keyChain, signingByIdentity(m_config.m_caItem.m_caPrefix)));
 }
 
 void

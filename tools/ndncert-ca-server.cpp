@@ -114,12 +114,10 @@ main(int argc, char* argv[])
 
   CaModule ca(face, keyChain, configFilePath);
   std::map<Name, Data> cachedCertificates;
-  auto profileMetaData = ca.generateCaProfileMetaData();
-  auto profileData = ca.generateCaProfileData();
+  auto profileData = ca.getCaProfileData();
 
   if (wantRepoOut) {
-    writeDataToRepo(*profileMetaData);
-    writeDataToRepo(*profileData);
+    writeDataToRepo(profileData);
     ca.setStatusUpdateCallback([&](const CaState& request) {
       if (request.m_status == Status::SUCCESS) {
         writeDataToRepo(request.m_cert);
@@ -132,8 +130,7 @@ main(int argc, char* argv[])
         cachedCertificates[request.m_cert.getName()] = request.m_cert;
       }
     });
-    cachedCertificates[profileMetaData->getName()] = *profileMetaData;
-    cachedCertificates[profileData->getName()] = *profileData;
+    cachedCertificates[profileData.getName()] = profileData;
     face.setInterestFilter(
         InterestFilter(ca.getCaConf().m_caItem.m_caPrefix),
         [&](const InterestFilter&, const Interest& interest) {

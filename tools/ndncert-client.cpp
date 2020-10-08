@@ -276,9 +276,10 @@ probeCb(const Data& reply, CaProfile profile)
   else {
     //redirects
     auto redirectedCaFullName = redirects[index - names.size()];
-    std::cerr << "You selected redirects with certificate: " << redirectedCaFullName.getPrefix(-1).toUri() << std::endl;
+    auto redirectedCaName = security::v2::extractIdentityFromCertName(redirectedCaFullName.getPrefix(-1));
+    std::cerr << "You selected to be redirected to CA: " << redirectedCaName.toUri() << std::endl;
     face.expressInterest(
-        *Requester::genCaProfileDiscoveryInterest(redirectedCaFullName.getPrefix(-1)),
+        *Requester::genCaProfileDiscoveryInterest(redirectedCaName),
         [&](const Interest&, const Data& data) {
           auto fetchingInterest = Requester::genCaProfileInterestFromDiscoveryResponse(data);
           face.expressInterest(*fetchingInterest,

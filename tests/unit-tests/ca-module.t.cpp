@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE(Initialization)
 
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK_EQUAL(ca.m_registeredPrefixHandles.size(), 1); // removed local discovery registration
-  BOOST_CHECK_EQUAL(ca.m_interestFilterHandles.size(), 4);  // onProbe, onNew, onChallenge, onRevoke
+  BOOST_CHECK_EQUAL(ca.m_interestFilterHandles.size(), 5);  // infoMeta, onProbe, onNew, onChallenge, onRevoke
 }
 
 BOOST_AUTO_TEST_CASE(HandleProfileFetching)
@@ -51,23 +51,18 @@ BOOST_AUTO_TEST_CASE(HandleProfileFetching)
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
-  auto metaData = ca.generateCaProfileMetaData();
-  auto profileData = ca.generateCaProfileData();
+  auto profileData = ca.getCaProfileData();
   advanceClocks(time::milliseconds(20), 60);
 
   Interest interest = MetadataObject::makeDiscoveryInterest(Name("/ndn/CA/INFO"));
   shared_ptr<Interest> infoInterest = nullptr;
 
-  face.setInterestFilter(InterestFilter("/ndn/CA/INFO"),
-                         [&](const auto&, const Interest& interest) {
-                           if (interest.matchesData(*metaData)) {
-                             face.put(*metaData);
-                           }
-                           else {
-                             BOOST_CHECK(interest.matchesData(*profileData));
-                             face.put(*profileData);
-                           }
-                         }, nullptr, nullptr);
+  face.setInterestFilter(
+      InterestFilter("/ndn/CA/INFO"),
+      [&](const auto&, const Interest& interest) {
+        BOOST_CHECK(interest.matchesData(profileData));
+        face.put(profileData);
+      }, nullptr, nullptr);
   advanceClocks(time::milliseconds(20), 60);
 
   int count = 0;
