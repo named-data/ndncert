@@ -20,20 +20,37 @@
 
 #include "ca-module.hpp"
 #include "identity-challenge/challenge-module.hpp"
-#include <ndn-cxx/face.hpp>
-#include <ndn-cxx/security/key-chain.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <iostream>
+#include <ndn-cxx/face.hpp>
+#include <ndn-cxx/security/key-chain.hpp>
 
 namespace ndn {
 namespace ndncert {
 
 Face face;
 security::v2::KeyChain keyChain;
+std::string repoHost = "localhost";
+std::string repoPort = "7376";
+
+static bool
+writeDataToRepo(const Data& data) {
+  boost::asio::ip::tcp::iostream requestStream;
+  requestStream.expires_after(std::chrono::seconds(3));
+  requestStream.connect(repoHost, repoPort);
+  if (!requestStream) {
+    std::cerr << "ERROR: Cannot publish certificate to repo-ng"
+              << " (" << requestStream.error().message() << ")" << std::endl;
+    return false;
+  }
+  requestStream.write(reinterpret_cast<const char*>(data.wireEncode().wire()),
+                      data.wireEncode().size());
+  return true;
+}
 
 static void
 handleSignal(const boost::system::error_code& error, int signalNum)
@@ -63,20 +80,16 @@ main(int argc, char* argv[])
   terminateSignals.async_wait(handleSignal);
 
   std::string configFilePath(SYSCONFDIR "/ndncert/ca.conf");
-  std::string repoHost("localhost");
-  std::string repoPort("7376");
   bool wantRepoOut = false;
 
   namespace po = boost::program_options;
   po::options_description optsDesc("Options");
   optsDesc.add_options()
-    ("help,h",        "print this help message and exit")
-    ("config-file,c", po::value<std::string>(&configFilePath)->default_value(configFilePath),
-                      "path to configuration file")
-    ("repo-output,r", po::bool_switch(&wantRepoOut),
-                      "when enabled, all issued certificates will be published to repo-ng")
-    ("repo-host,H",   po::value<std::string>(&repoHost)->default_value(repoHost), "repo-ng host")
-    ("repo-port,P",   po::value<std::string>(&repoPort)->default_value(repoPort), "repo-ng port");
+  ("help,h", "print this help message and exit")
+  ("config-file,c", po::value<std::string>(&configFilePath)->default_value(configFilePath), "path to configuration file")
+  ("repo-output,r", po::bool_switch(&wantRepoOut), "when enabled, all issued certificates will be published to repo-ng")
+  ("repo-host,H", po::value<std::string>(&repoHost)->default_value(repoHost), "repo-ng host")
+  ("repo-port,P", po::value<std::string>(&repoPort)->default_value(repoPort), "repo-ng port");
 
   po::variables_map vm;
   try {
@@ -100,24 +113,18 @@ main(int argc, char* argv[])
   }
 
   CaModule ca(face, keyChain, configFilePath);
-  std::map<Name, security::v2::Certificate> cachedCertificates;
+  std::map<Name, Data> cachedCertificates;
+  auto profileMetaData = ca.generateCaProfileMetaData();
+  auto profileData = ca.generateCaProfileData();
 
   if (wantRepoOut) {
-      ca.setStatusUpdateCallback([&] (const CaState& request) {
-          if (request.m_status == Status::SUCCESS) {
-            auto issuedCert = request.m_cert;
-            boost::asio::ip::tcp::iostream requestStream;
-            requestStream.expires_after(std::chrono::seconds(3));
-            requestStream.connect(repoHost, repoPort);
-            if (!requestStream) {
-              std::cerr << "ERROR: Cannot publish certificate to repo-ng"
-                        << " (" << requestStream.error().message() << ")" << std::endl;
-              return;
-            }
-            requestStream.write(reinterpret_cast<const char*>(issuedCert.wireEncode().wire()),
-                                issuedCert.wireEncode().size());
-          }
-      });
+    writeDataToRepo(*profileMetaData);
+    writeDataToRepo(*profileData);
+    ca.setStatusUpdateCallback([&](const CaState& request) {
+      if (request.m_status == Status::SUCCESS) {
+        writeDataToRepo(request.m_cert);
+      }
+    });
   }
   else {
     ca.setStatusUpdateCallback([&](const CaState& request) {
@@ -125,6 +132,8 @@ main(int argc, char* argv[])
         cachedCertificates[request.m_cert.getName()] = request.m_cert;
       }
     });
+    cachedCertificates[profileMetaData->getName()] = *profileMetaData;
+    cachedCertificates[profileData->getName()] = *profileData;
     face.setInterestFilter(
         InterestFilter(ca.getCaConf().m_caItem.m_caPrefix),
         [&](const InterestFilter&, const Interest& interest) {
@@ -142,8 +151,8 @@ main(int argc, char* argv[])
   return 0;
 }
 
-} // namespace ndncert
-} // namespace ndn
+}  // namespace ndncert
+}  // namespace ndn
 
 int
 main(int argc, char* argv[])

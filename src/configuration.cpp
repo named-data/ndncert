@@ -149,15 +149,15 @@ CaConfig::load(const std::string& fileName)
     }
   }
   //parse name assignment if appears
-  m_nameAssignmentFunc = nullptr;
+  m_nameAssignmentFuncs.clear();
   auto nameAssignmentItems = configJson.get_child_optional(CONFIG_NAME_ASSIGNMENT);
   if (nameAssignmentItems) {
     for (const auto item : *nameAssignmentItems) {
-      auto func = NameAssignmentFuncFactory::createNameAssignmentFuncFactory(item.first, item.second.data());
+      auto func = NameAssignmentFunc::createNameAssignmentFunc(item.first, item.second.data());
       if (func == nullptr) {
         BOOST_THROW_EXCEPTION(std::runtime_error("Error on creating name assignment function"));
       }
-      m_heuristic.push_back(std::move(func));
+      m_nameAssignmentFuncs.push_back(std::move(func));
     }
   }
 }

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2019, Regents of the University of California.
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -26,58 +26,55 @@
 namespace ndn {
 namespace ndncert {
 
-/**
- * @brief The name assignment function provided by the CA operator to generate available
- * namecomponents.
- * The function does not guarantee that all the returned names are available. Therefore the
- * CA should further check the availability of each returned name and remove unavailable results.
- *
- * @p vector, input, a list of parameter key-value pair used for name assignment.
- * @return a vector containing the possible namespaces derived from the parameters.
- */
-using NameAssignmentFunc = function<std::vector<PartialName>(const std::vector<std::tuple<std::string, std::string>>&)>;
-
-class NameAssignmentFuncFactory : noncopyable {
+class NameAssignmentFunc : noncopyable {
 public:
-  explicit
-  NameAssignmentFuncFactory(const std::string& factoryType, const std::string& format = "");
+  explicit NameAssignmentFunc(const std::string& factoryType, const std::string& format = "");
 
-  virtual ~NameAssignmentFuncFactory() = default;
+  virtual ~NameAssignmentFunc() = default;
 
+  /**
+   * @brief The name assignment function provided by the CA operator to generate available
+   * namecomponents.
+   * The function does not guarantee that all the returned names are available. Therefore the
+   * CA should further check the availability of each returned name and remove unavailable results.
+   *
+   * @p vector, input, a list of parameter key-value pair used for name assignment.
+   * @return a vector containing the possible namespaces derived from the parameters.
+   */
+  virtual std::vector<PartialName>
+  assignName(const std::vector<std::tuple<std::string, std::string>>& params) = 0;
+
+  const std::string FACTORY_TYPE;
+  std::vector<std::string> m_nameFormat;
+
+public:
   template <class ChallengeType>
   static void
-  registerNameAssignmentFuncFactories(const std::string& typeName)
+  registerNameAssignmentFunc(const std::string& typeName)
   {
     FuncFactoryFactory& factory = getFactory();
     BOOST_ASSERT(factory.count(typeName) == 0);
     factory[typeName] = [](const std::string& format) { return make_unique<ChallengeType>(format); };
   }
 
-  static unique_ptr<NameAssignmentFuncFactory>
-  createNameAssignmentFuncFactory(const std::string& challengeType, const std::string& format = "");
-
-  virtual std::vector<PartialName>
-  assignName(const std::vector<std::tuple<std::string, std::string>>& params) = 0;
-
-public:
-  const std::string FACTORY_TYPE;
-  std::vector<std::string> m_nameFormat;
+  static unique_ptr<NameAssignmentFunc>
+  createNameAssignmentFunc(const std::string& challengeType, const std::string& format = "");
 
 private:
-  typedef function<unique_ptr<NameAssignmentFuncFactory>(const std::string&)> FactoryCreateFunc;
+  typedef function<unique_ptr<NameAssignmentFunc>(const std::string&)> FactoryCreateFunc;
   typedef std::map<std::string, FactoryCreateFunc> FuncFactoryFactory;
 
   static FuncFactoryFactory&
   getFactory();
 };
 
-#define NDNCERT_REGISTER_FUNCFACTORY(C, T)                               \
-  static class NdnCert##C##FuncFactoryRegistrationClass {                \
-  public:                                                                \
-    NdnCert##C##FuncFactoryRegistrationClass()                           \
-    {                                                                    \
-      ::ndn::ndncert::NameAssignmentFuncFactory::registerNameAssignmentFuncFactories<C>(T); \
-    }                                                                    \
+#define NDNCERT_REGISTER_FUNCFACTORY(C, T)                                        \
+  static class NdnCert##C##FuncFactoryRegistrationClass {                         \
+  public:                                                                         \
+    NdnCert##C##FuncFactoryRegistrationClass()                                    \
+    {                                                                             \
+      ::ndn::ndncert::NameAssignmentFunc::registerNameAssignmentFunc<C>(T);       \
+    }                                                                             \
   } g_NdnCert##C##ChallengeRegistrationVariable
 
 }  // namespace ndncert

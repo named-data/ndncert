@@ -51,8 +51,8 @@ CaModule::CaModule(Face& face, security::v2::KeyChain& keyChain,
   m_config.load(configPath);
   m_storage = CaStorage::createCaStorage(storageType, m_config.m_caItem.m_caPrefix, "");
   random::generateSecureBytes(m_requestIdGenKey, 32);
-  if (m_config.m_heuristic.size() == 0) {
-    m_config.m_heuristic.push_back(NameAssignmentFuncFactory::createNameAssignmentFuncFactory("random"));
+  if (m_config.m_nameAssignmentFuncs.size() == 0) {
+    m_config.m_nameAssignmentFuncs.push_back(NameAssignmentFunc::createNameAssignmentFunc("random"));
   }
   registerPrefix();
 }
@@ -100,12 +100,6 @@ CaModule::registerPrefix()
       },
       bind(&CaModule::onRegisterFailed, this, _2));
   m_registeredPrefixHandles.push_back(prefixId);
-}
-
-void
-CaModule::setNameAssignmentFunction(const NameAssignmentFunc& handler)
-{
-  m_config.m_nameAssignmentFunc = handler;
 }
 
 void
@@ -163,7 +157,7 @@ CaModule::onProbe(const Interest& request)
   // process PROBE requests: collect probe parameters
   auto parameters = PROBE::decodeApplicationParameters(request.getApplicationParameters());
   std::vector<PartialName> availableComponents;
-    for (auto& item : m_config.m_heuristic) {
+    for (auto& item : m_config.m_nameAssignmentFuncs) {
       auto names = item->assignName(parameters);
       availableComponents.insert(availableComponents.end(), names.begin(), names.end());
     }

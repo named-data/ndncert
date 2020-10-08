@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2017-2019, Regents of the University of California.
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -24,7 +24,7 @@
 namespace ndn {
 namespace ndncert {
 
-NameAssignmentFuncFactory::NameAssignmentFuncFactory(const std::string& factoryType, const std::string& format)
+NameAssignmentFunc::NameAssignmentFunc(const std::string& factoryType, const std::string& format)
   : FACTORY_TYPE(factoryType)
 {
   size_t index = 0, startIndex = 0;
@@ -40,18 +40,18 @@ NameAssignmentFuncFactory::NameAssignmentFuncFactory(const std::string& factoryT
   }
 }
 
-unique_ptr<NameAssignmentFuncFactory>
-NameAssignmentFuncFactory::createNameAssignmentFuncFactory(const std::string& challengeType, const std::string& format)
+unique_ptr<NameAssignmentFunc>
+NameAssignmentFunc::createNameAssignmentFunc(const std::string& challengeType, const std::string& format)
 {
   FuncFactoryFactory& factory = getFactory();
   auto i = factory.find(challengeType);
   return i == factory.end() ? nullptr : i->second(format);
 }
 
-NameAssignmentFuncFactory::FuncFactoryFactory&
-NameAssignmentFuncFactory::getFactory()
+NameAssignmentFunc::FuncFactoryFactory&
+NameAssignmentFunc::getFactory()
 {
-  static NameAssignmentFuncFactory::FuncFactoryFactory factory;
+  static NameAssignmentFunc::FuncFactoryFactory factory;
   return factory;
 }
 

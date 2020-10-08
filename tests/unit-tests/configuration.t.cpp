@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2019, Regents of the University of California.
+ * Copyright (c) 2017-2020, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -54,18 +54,18 @@ BOOST_AUTO_TEST_CASE(CAConfigFile)
   config.load("tests/unit-tests/config-files/config-ca-5");
   BOOST_CHECK_EQUAL(config.m_redirection->at(0)->getName(),
                     "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
-  BOOST_CHECK_EQUAL(config.m_heuristic.size(), 3);
-  BOOST_CHECK_EQUAL(config.m_heuristic[0]->FACTORY_TYPE, "param");
-  BOOST_CHECK_EQUAL(config.m_heuristic[1]->FACTORY_TYPE, "param");
-  BOOST_CHECK_EQUAL(config.m_heuristic[2]->FACTORY_TYPE, "random");
-  BOOST_CHECK_EQUAL(config.m_heuristic[0]->m_nameFormat[0], "group");
-  BOOST_CHECK_EQUAL(config.m_heuristic[0]->m_nameFormat[1], "email");
+  BOOST_CHECK_EQUAL(config.m_nameAssignmentFuncs.size(), 3);
+  BOOST_CHECK_EQUAL(config.m_nameAssignmentFuncs[0]->FACTORY_TYPE, "param");
+  BOOST_CHECK_EQUAL(config.m_nameAssignmentFuncs[1]->FACTORY_TYPE, "param");
+  BOOST_CHECK_EQUAL(config.m_nameAssignmentFuncs[2]->FACTORY_TYPE, "random");
+  BOOST_CHECK_EQUAL(config.m_nameAssignmentFuncs[0]->m_nameFormat[0], "group");
+  BOOST_CHECK_EQUAL(config.m_nameAssignmentFuncs[0]->m_nameFormat[1], "email");
   std::vector<std::tuple<std::string, std::string>> params;
   params.emplace_back("email", "1@1.edu");
   params.emplace_back("group", "irl");
   params.emplace_back("name", "ndncert");
   std::vector<Name> names;
-  for (auto& assignment : config.m_heuristic) {
+  for (auto& assignment : config.m_nameAssignmentFuncs) {
     auto results = assignment->assignName(params);
     BOOST_CHECK_EQUAL(results.size(), 1);
     names.insert(names.end(), results.begin(), results.end());

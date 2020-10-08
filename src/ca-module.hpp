@@ -49,9 +49,6 @@ public:
   }
 
   void
-  setNameAssignmentFunction(const NameAssignmentFunc& handler);
-
-  void
   setStatusUpdateCallback(const StatusUpdateCallback& onUpdateCallback);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:

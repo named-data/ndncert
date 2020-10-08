@@ -128,15 +128,13 @@ public:
    */
   boost::optional<std::vector<std::shared_ptr<security::v2::Certificate>>> m_redirection;
   /**
-   * NameAssignmentFunc Callback function
-   */
-  NameAssignmentFunc m_nameAssignmentFunc;
-  /**
    * StatusUpdate Callback function
    */
   StatusUpdateCallback m_statusUpdateCallback;
-
-  std::vector<std::unique_ptr<NameAssignmentFuncFactory>> m_heuristic;
+  /**
+   * Name Assignment Functions
+   */
+  std::vector<std::unique_ptr<NameAssignmentFunc>> m_nameAssignmentFuncs;
 };
 
 /**
