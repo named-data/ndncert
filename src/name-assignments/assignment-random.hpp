@@ -13,12 +13,12 @@ namespace ndncert {
 /**
  * assign names base on client probe parameter
  */
-class AssignmentRandom: public NameAssignmentFuncFactory{
+class AssignmentRandom: public NameAssignmentFuncFactory {
 public:
-  AssignmentRandom();
+  AssignmentRandom(const std::string& format = "");
 
-  NameAssignmentFunc getFunction(const std::string &factoryParam) override;
-
+  std::vector<PartialName>
+  assignName(const std::vector<std::tuple<std::string, std::string>>& params) override;
 };
 
 }

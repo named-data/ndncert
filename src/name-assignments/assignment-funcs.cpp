@@ -24,25 +24,24 @@
 namespace ndn {
 namespace ndncert {
 
-NameAssignmentFuncFactory::NameAssignmentFuncFactory(const std::string& factoryType)
+NameAssignmentFuncFactory::NameAssignmentFuncFactory(const std::string& factoryType, const std::string& format)
   : FACTORY_TYPE(factoryType)
 {
-}
-
-bool
-NameAssignmentFuncFactory::isChallengeSupported(const std::string& challengeType)
-{
-  FuncFactoryFactory& factory = getFactory();
-  auto i = factory.find(challengeType);
-  return i != factory.end();
+  auto s = format;
+  size_t pos = 0;
+  while ((pos = s.find("/")) != std::string::npos) {
+    m_nameFormat.push_back(s.substr(0, pos));
+    s.erase(0, pos + 1);
+  }
+  m_nameFormat.push_back(s);
 }
 
 unique_ptr<NameAssignmentFuncFactory>
-NameAssignmentFuncFactory::createNameAssignmentFuncFactory(const std::string& challengeType)
+NameAssignmentFuncFactory::createNameAssignmentFuncFactory(const std::string& challengeType, const std::string& format)
 {
   FuncFactoryFactory& factory = getFactory();
   auto i = factory.find(challengeType);
-  return i == factory.end() ? nullptr : i->second();
+  return i == factory.end() ? nullptr : i->second(format);
 }
 
 NameAssignmentFuncFactory::FuncFactoryFactory&

@@ -54,14 +54,19 @@ BOOST_AUTO_TEST_CASE(CAConfigFile)
   config.load("tests/unit-tests/config-files/config-ca-5");
   BOOST_CHECK_EQUAL(config.m_redirection->at(0)->getName(),
                     "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
-
+  BOOST_CHECK_EQUAL(config.m_heuristic.size(), 3);
   std::vector<std::tuple<std::string, std::string>> params;
   params.emplace_back("email", "1@1.edu");
   params.emplace_back("group", "irl");
   params.emplace_back("name", "ndncert");
-  BOOST_CHECK_EQUAL(config.m_nameAssignmentFunc(params).size(), 3);
-  BOOST_CHECK_EQUAL(config.m_nameAssignmentFunc(params)[0], Name("/irl/1@1.edu"));
-  BOOST_CHECK_EQUAL(config.m_nameAssignmentFunc(params)[1], Name("/irl/ndncert"));
+  std::vector<Name> names;
+  for (auto& assignment : config.m_heuristic) {
+    auto results = assignment->assignName(params);
+    names.insert(names.end(), results.begin(), results.end());
+  }
+  BOOST_CHECK_EQUAL(names[0], Name("/irl/1@1.edu"));
+  BOOST_CHECK_EQUAL(names[1], Name("/irl/ndncert"));
+  BOOST_CHECK_EQUAL(names[2].size(), 2);
 }
 
 BOOST_AUTO_TEST_CASE(CAConfigFileWithErrors)

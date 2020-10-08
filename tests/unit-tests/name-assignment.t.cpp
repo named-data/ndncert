@@ -18,10 +18,9 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include <name-assignments/assignment-random.hpp>
-#include <name-assignments/assignment-param.hpp>
-#include <name-assignments/assignment-hash.hpp>
-#include <name-assignments/assignment-or.hpp>
+#include "name-assignments/assignment-random.hpp"
+#include "name-assignments/assignment-param.hpp"
+#include "name-assignments/assignment-hash.hpp"
 #include "test-common.hpp"
 
 namespace ndn {
@@ -31,79 +30,42 @@ namespace tests {
 BOOST_AUTO_TEST_SUITE(TestNameAssignment)
 BOOST_AUTO_TEST_CASE(NameAssignmentRandom)
 {
-  AssignmentRandom randomAssignment;
-  auto func = randomAssignment.getFunction("");
-  BOOST_CHECK_EQUAL(func(std::vector<std::tuple<std::string, std::string>>()).size(), 1);
-  BOOST_CHECK_EQUAL(func(std::vector<std::tuple<std::string, std::string>>()).begin()->size(), 1);
+  AssignmentRandom assignment;
+  BOOST_CHECK_EQUAL(assignment.assignName(std::vector<std::tuple<std::string, std::string>>()).size(), 1);
+  BOOST_CHECK_EQUAL(assignment.assignName(std::vector<std::tuple<std::string, std::string>>()).begin()->size(), 1);
 }
 
 BOOST_AUTO_TEST_CASE(NameAssignmentParam)
 {
-  AssignmentParam paramAssignment;
-  auto func = paramAssignment.getFunction("/abc/xyz/");
+  AssignmentParam assignment("/abc/xyz");
   std::vector<std::tuple<std::string, std::string>> requirements;
   requirements.emplace_back("abc", "123");
-  BOOST_CHECK_EQUAL(func(requirements).size(), 0);
+  BOOST_CHECK_EQUAL(assignment.assignName(requirements).size(), 0);
   requirements.emplace_back("xyz", "789");
-  BOOST_CHECK_EQUAL(func(requirements).size(), 1);
-  BOOST_CHECK_EQUAL(*func(requirements).begin(), Name("/123/789"));
+  BOOST_CHECK_EQUAL(assignment.assignName(requirements).size(), 1);
+  BOOST_CHECK_EQUAL(*assignment.assignName(requirements).begin(), Name("/123/789"));
   requirements.emplace_back("fake", "456");
-  BOOST_CHECK_EQUAL(func(requirements).size(), 1);
-  BOOST_CHECK_EQUAL(*func(requirements).begin(), Name("/123/789"));
+  BOOST_CHECK_EQUAL(assignment.assignName(requirements).size(), 1);
+  BOOST_CHECK_EQUAL(*assignment.assignName(requirements).begin(), Name("/123/789"));
   requirements[1] = std::tuple<std::string, std::string>("xyz", "");
-  BOOST_CHECK_EQUAL(func(requirements).size(), 0);
+  BOOST_CHECK_EQUAL(assignment.assignName(requirements).size(), 0);
 }
 
 BOOST_AUTO_TEST_CASE(NameAssignmentHash)
 {
-  AssignmentHash hashAssignment;
-  auto func = hashAssignment.getFunction("/abc/xyz");
+  AssignmentHash assignment("/abe/xyz");
   std::vector<std::tuple<std::string, std::string>> requirements;
   requirements.emplace_back("abc", "123");
-  BOOST_CHECK_EQUAL(func(requirements).size(), 0);
+  BOOST_CHECK_EQUAL(assignment.assignName(requirements).size(), 0);
   requirements.emplace_back("xyz", "789");
-  BOOST_CHECK_EQUAL(func(requirements).size(), 1);
-  BOOST_CHECK_EQUAL(func(requirements).begin()->size(), 1);
+  BOOST_CHECK_EQUAL(assignment.assignName(requirements).size(), 1);
+  BOOST_CHECK_EQUAL(assignment.assignName(requirements).begin()->size(), 1);
   requirements.emplace_back("fake", "456");
-  BOOST_CHECK_EQUAL(func(requirements).size(), 1);
-  BOOST_CHECK_EQUAL(func(requirements).begin()->size(), 1);
+  BOOST_CHECK_EQUAL(assignment.assignName(requirements).size(), 1);
+  BOOST_CHECK_EQUAL(assignment.assignName(requirements).begin()->size(), 1);
   requirements[1] = std::tuple<std::string, std::string>("xyz", "");
-  BOOST_CHECK_EQUAL(func(requirements).size(), 1);
-  BOOST_CHECK_EQUAL(func(requirements).begin()->size(), 1);
-}
-
-BOOST_AUTO_TEST_CASE(NameAssignmentOr)
-{
-  AssignmentParam paramAssignment;
-  AssignmentOr orAssignment;
-  std::list<NameAssignmentFunc> func2Subfuncs;
-  auto func1 = orAssignment.getFunction(func2Subfuncs);
-  BOOST_CHECK_EQUAL(func1(std::vector<std::tuple<std::string, std::string>>()).size(), 0);
-
-  auto funcUnit = paramAssignment.getFunction("/abc/xyz/");
-  func2Subfuncs.push_back(funcUnit);
-  func2Subfuncs.push_back(funcUnit);
-  auto func2 = orAssignment.getFunction(func2Subfuncs);
-  std::list<NameAssignmentFunc> func3Subfuncs;
-  func3Subfuncs.push_back(func2);
-  func3Subfuncs.push_back(funcUnit);
-  auto func3 = orAssignment.getFunction(func3Subfuncs);
-  std::vector<std::tuple<std::string, std::string>> requirements;
-  requirements.emplace_back("abc", "123");
-  BOOST_CHECK_EQUAL(func3(requirements).size(), 0);
-  requirements.emplace_back("xyz", "789");
-  BOOST_CHECK_EQUAL(func3(requirements).size(), 3);
-}
-
-BOOST_AUTO_TEST_CASE(NameAssignmentOrOperatorString)
-{
-  AssignmentOr orAssignment;
-  auto func = orAssignment.getFunction(R"({"param": "/abc/xyz/", "param": "/abc/xyz"})");
-  std::vector<std::tuple<std::string, std::string>> requirements;
-  requirements.emplace_back("abc", "123");
-  BOOST_CHECK_EQUAL(func(requirements).size(), 0);
-  requirements.emplace_back("xyz", "789");
-  BOOST_CHECK_EQUAL(func(requirements).size(), 2);
+  BOOST_CHECK_EQUAL(assignment.assignName(requirements).size(), 1);
+  BOOST_CHECK_EQUAL(assignment.assignName(requirements).begin()->size(), 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

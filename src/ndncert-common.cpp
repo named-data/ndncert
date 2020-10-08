@@ -97,16 +97,5 @@ convertString2Json(const std::string& jsonContent)
   return json;
 }
 
-std::string
-hexlify(const uint8_t* bytes, size_t byteLen)
-{
-  std::stringstream ss;
-  ss << std::hex;
-  for (size_t i = 0; i < byteLen; i++) {
-    ss << std::setw(2) << std::setfill('0') << (int)bytes[i];
-  }
-  return ss.str();
-}
-
 }  // namespace ndncert
 }  // namespace ndn

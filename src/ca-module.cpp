@@ -31,7 +31,8 @@
 #include <ndn-cxx/security/verification-helpers.hpp>
 #include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/util/random.hpp>
-#include <name-assignments/assignment-funcs.hpp>
+#include <ndn-cxx/util/string-helper.hpp>
+#include "name-assignments/assignment-funcs.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -50,6 +51,9 @@ CaModule::CaModule(Face& face, security::v2::KeyChain& keyChain,
   m_config.load(configPath);
   m_storage = CaStorage::createCaStorage(storageType, m_config.m_caItem.m_caPrefix, "");
   random::generateSecureBytes(m_requestIdGenKey, 32);
+  if (m_config.m_heuristic.size() == 0) {
+    m_config.m_heuristic.push_back(NameAssignmentFuncFactory::createNameAssignmentFuncFactory("random"));
+  }
   registerPrefix();
 }
 
@@ -159,16 +163,17 @@ CaModule::onProbe(const Interest& request)
   // process PROBE requests: collect probe parameters
   auto parameters = PROBE::decodeApplicationParameters(request.getApplicationParameters());
   std::vector<PartialName> availableComponents;
-  if (m_config.m_nameAssignmentFunc) {
-    try {
-      availableComponents = m_config.m_nameAssignmentFunc(parameters);
+  try {
+    for (auto& item : m_config.m_heuristic) {
+      auto names = item->assignName(parameters);
+      availableComponents.insert(availableComponents.end(), names.begin(), names.end());
     }
-    catch (const std::exception &e) {
-      _LOG_TRACE("Cannot parse probe parameters: " << e.what());
-      m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
-              "Cannot parse probe parameters: " + std::string(e.what())));
-      return;
-    }
+  }
+  catch (const std::exception& e) {
+    _LOG_TRACE("Cannot parse probe parameters: " << e.what());
+    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
+                                       "Cannot parse probe parameters: " + std::string(e.what())));
+    return;
   }
   std::vector<Name> availableNames;
   for (const auto& component : availableComponents) {
@@ -297,7 +302,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   uint8_t requestIdData[32];
   Block certNameTlv = clientCert->getName().wireEncode();
   ndn_compute_hmac_sha256(certNameTlv.wire(), certNameTlv.size(), m_requestIdGenKey, 32, requestIdData);
-  CaState requestState(m_config.m_caItem.m_caPrefix, hexlify(requestIdData, 32),
+  CaState requestState(m_config.m_caItem.m_caPrefix, toHex(requestIdData, 32),
                       requestType, Status::BEFORE_CHALLENGE, *clientCert,
                       makeBinaryBlock(tlv::ContentType_Key, aesKey, sizeof(aesKey)));
   try {

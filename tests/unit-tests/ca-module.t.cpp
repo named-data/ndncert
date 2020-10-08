@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE(HandleProbe)
     probeResponse.parse();
     Name caName;
     caName.wireDecode(probeResponse.get(tlv::Name));
-    BOOST_CHECK_EQUAL(caName, "/ndn/example");
+    BOOST_CHECK_EQUAL(caName.size(), 2);
   });
   face.receive(interest);
 

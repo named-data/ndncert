@@ -21,16 +21,26 @@
 #ifndef NDNCERT_ASSIGNMENT_FUNCS_HPP
 #define NDNCERT_ASSIGNMENT_FUNCS_HPP
 
-#include <configuration.hpp>
-#include "ca-state.hpp"
+#include "../ca-state.hpp"
 
 namespace ndn {
 namespace ndncert {
 
+/**
+ * @brief The name assignment function provided by the CA operator to generate available
+ * namecomponents.
+ * The function does not guarantee that all the returned names are available. Therefore the
+ * CA should further check the availability of each returned name and remove unavailable results.
+ *
+ * @p vector, input, a list of parameter key-value pair used for name assignment.
+ * @return a vector containing the possible namespaces derived from the parameters.
+ */
+using NameAssignmentFunc = function<std::vector<PartialName>(const std::vector<std::tuple<std::string, std::string>>&)>;
+
 class NameAssignmentFuncFactory : noncopyable {
 public:
   explicit
-  NameAssignmentFuncFactory(const std::string& factoryType);
+  NameAssignmentFuncFactory(const std::string& factoryType, const std::string& format = "");
 
   virtual ~NameAssignmentFuncFactory() = default;
 
@@ -40,23 +50,21 @@ public:
   {
     FuncFactoryFactory& factory = getFactory();
     BOOST_ASSERT(factory.count(typeName) == 0);
-    factory[typeName] = [] { return make_unique<ChallengeType>(); };
+    factory[typeName] = [](const std::string& format) { return make_unique<ChallengeType>(format); };
   }
 
-  static bool
-  isChallengeSupported(const std::string& challengeType);
-
   static unique_ptr<NameAssignmentFuncFactory>
-  createNameAssignmentFuncFactory(const std::string& challengeType);
+  createNameAssignmentFuncFactory(const std::string& challengeType, const std::string& format = "");
 
-  virtual NameAssignmentFunc
-  getFunction(const std::string& factoryParam) = 0;
+  virtual std::vector<PartialName>
+  assignName(const std::vector<std::tuple<std::string, std::string>>& params) = 0;
 
 public:
   const std::string FACTORY_TYPE;
+  std::vector<std::string> m_nameFormat;
 
 private:
-  typedef function<unique_ptr<NameAssignmentFuncFactory>()> FactoryCreateFunc;
+  typedef function<unique_ptr<NameAssignmentFuncFactory>(const std::string&)> FactoryCreateFunc;
   typedef std::map<std::string, FactoryCreateFunc> FuncFactoryFactory;
 
   static FuncFactoryFactory&

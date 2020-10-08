@@ -15,10 +15,10 @@ namespace ndncert {
  */
 class AssignmentParam: public NameAssignmentFuncFactory{
 public:
-  AssignmentParam();
+  AssignmentParam(const std::string& format = "");
 
-  NameAssignmentFunc getFunction(const std::string &factoryParam) override;
-
+  std::vector<PartialName>
+  assignName(const std::vector<std::tuple<std::string, std::string>>& params) override;
 };
 }
 }

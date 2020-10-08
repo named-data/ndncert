@@ -22,6 +22,7 @@
 #define NDNCERT_CONFIGURATION_HPP
 
 #include "ca-state.hpp"
+#include "name-assignments/assignment-funcs.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -79,17 +80,6 @@ private:
 };
 
 /**
- * @brief The name assignment function provided by the CA operator to generate available
- * namecomponents.
- * The function does not guarantee that all the returned names are available. Therefore the
- * CA should further check the availability of each returned name and remove unavailable results.
- *
- * @p vector, input, a list of parameter key-value pair used for name assignment.
- * @return a vector containing the possible namespaces derived from the parameters.
- */
-using NameAssignmentFunc = function<std::vector<PartialName>(const std::vector<std::tuple<std::string, std::string>>)>;
-
-/**
  * @brief The function would be invoked whenever the certificate request status is updated.
  * The callback is used to notice the CA application or CA command line tool. The callback is
  * fired whenever a request instance is created, challenge status is updated, and when certificate
@@ -145,6 +135,8 @@ public:
    * StatusUpdate Callback function
    */
   StatusUpdateCallback m_statusUpdateCallback;
+
+  std::vector<std::unique_ptr<NameAssignmentFuncFactory>> m_heuristic;
 };
 
 /**
