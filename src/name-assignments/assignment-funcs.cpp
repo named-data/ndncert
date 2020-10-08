@@ -27,13 +27,17 @@ namespace ndncert {
 NameAssignmentFuncFactory::NameAssignmentFuncFactory(const std::string& factoryType, const std::string& format)
   : FACTORY_TYPE(factoryType)
 {
-  auto s = format;
-  size_t pos = 0;
-  while ((pos = s.find("/")) != std::string::npos) {
-    m_nameFormat.push_back(s.substr(0, pos));
-    s.erase(0, pos + 1);
+  size_t index = 0, startIndex = 0;
+  while ((index = format.find("/", startIndex)) != std::string::npos) {
+    auto component = format.substr(startIndex, index - startIndex);
+    if (!component.empty()) {
+      m_nameFormat.push_back(component);
+    }
+    startIndex = index + 1;
   }
-  m_nameFormat.push_back(s);
+  if (startIndex != format.size()) {
+    m_nameFormat.push_back(format.substr(startIndex));
+  }
 }
 
 unique_ptr<NameAssignmentFuncFactory>

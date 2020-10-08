@@ -153,12 +153,11 @@ CaConfig::load(const std::string& fileName)
   auto nameAssignmentItems = configJson.get_child_optional(CONFIG_NAME_ASSIGNMENT);
   if (nameAssignmentItems) {
     for (const auto item : *nameAssignmentItems) {
-      try {
-        m_heuristic.push_back(NameAssignmentFuncFactory::createNameAssignmentFuncFactory(item.first));
-      }
-      catch (const std::exception& e) {
+      auto func = NameAssignmentFuncFactory::createNameAssignmentFuncFactory(item.first, item.second.data());
+      if (func == nullptr) {
         BOOST_THROW_EXCEPTION(std::runtime_error("Error on creating name assignment function"));
       }
+      m_heuristic.push_back(std::move(func));
     }
   }
 }

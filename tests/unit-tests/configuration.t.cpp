@@ -55,6 +55,11 @@ BOOST_AUTO_TEST_CASE(CAConfigFile)
   BOOST_CHECK_EQUAL(config.m_redirection->at(0)->getName(),
                     "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
   BOOST_CHECK_EQUAL(config.m_heuristic.size(), 3);
+  BOOST_CHECK_EQUAL(config.m_heuristic[0]->FACTORY_TYPE, "param");
+  BOOST_CHECK_EQUAL(config.m_heuristic[1]->FACTORY_TYPE, "param");
+  BOOST_CHECK_EQUAL(config.m_heuristic[2]->FACTORY_TYPE, "random");
+  BOOST_CHECK_EQUAL(config.m_heuristic[0]->m_nameFormat[0], "group");
+  BOOST_CHECK_EQUAL(config.m_heuristic[0]->m_nameFormat[1], "email");
   std::vector<std::tuple<std::string, std::string>> params;
   params.emplace_back("email", "1@1.edu");
   params.emplace_back("group", "irl");
@@ -62,11 +67,13 @@ BOOST_AUTO_TEST_CASE(CAConfigFile)
   std::vector<Name> names;
   for (auto& assignment : config.m_heuristic) {
     auto results = assignment->assignName(params);
+    BOOST_CHECK_EQUAL(results.size(), 1);
     names.insert(names.end(), results.begin(), results.end());
   }
+  BOOST_CHECK_EQUAL(names.size(), 3);
   BOOST_CHECK_EQUAL(names[0], Name("/irl/1@1.edu"));
   BOOST_CHECK_EQUAL(names[1], Name("/irl/ndncert"));
-  BOOST_CHECK_EQUAL(names[2].size(), 2);
+  BOOST_CHECK_EQUAL(names[2].size(), 1);
 }
 
 BOOST_AUTO_TEST_CASE(CAConfigFileWithErrors)
