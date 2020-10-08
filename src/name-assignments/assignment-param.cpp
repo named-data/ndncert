@@ -21,7 +21,7 @@ AssignmentParam::assignName(const std::vector<std::tuple<std::string, std::strin
   for (const auto& item : m_nameFormat) {
     auto it = std::find_if(params.begin(), params.end(),
                            [&](const std::tuple<std::string, std::string>& e) { return std::get<0>(e) == item; });
-    if (it != params.end()) {
+    if (it != params.end() && !std::get<1>(*it).empty()) {
       result.append(std::get<1>(*it));
     }
     else {

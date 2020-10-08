@@ -38,34 +38,34 @@ BOOST_AUTO_TEST_CASE(NameAssignmentRandom)
 BOOST_AUTO_TEST_CASE(NameAssignmentParam)
 {
   AssignmentParam assignment("/abc/xyz");
-  std::vector<std::tuple<std::string, std::string>> requirements;
-  requirements.emplace_back("abc", "123");
-  BOOST_CHECK_EQUAL(assignment.assignName(requirements).size(), 0);
-  requirements.emplace_back("xyz", "789");
-  BOOST_CHECK_EQUAL(assignment.assignName(requirements).size(), 1);
-  BOOST_CHECK_EQUAL(*assignment.assignName(requirements).begin(), Name("/123/789"));
-  requirements.emplace_back("fake", "456");
-  BOOST_CHECK_EQUAL(assignment.assignName(requirements).size(), 1);
-  BOOST_CHECK_EQUAL(*assignment.assignName(requirements).begin(), Name("/123/789"));
-  requirements[1] = std::tuple<std::string, std::string>("xyz", "");
-  BOOST_CHECK_EQUAL(assignment.assignName(requirements).size(), 0);
+  std::vector<std::tuple<std::string, std::string>> params;
+  params.emplace_back("abc", "123");
+  BOOST_CHECK_EQUAL(assignment.assignName(params).size(), 0);
+  params.emplace_back("xyz", "789");
+  BOOST_CHECK_EQUAL(assignment.assignName(params).size(), 1);
+  BOOST_CHECK_EQUAL(*assignment.assignName(params).begin(), Name("/123/789"));
+  params.emplace_back("fake", "456");
+  BOOST_CHECK_EQUAL(assignment.assignName(params).size(), 1);
+  BOOST_CHECK_EQUAL(*assignment.assignName(params).begin(), Name("/123/789"));
+  params[1] = std::tuple<std::string, std::string>("xyz", "");
+  BOOST_CHECK_EQUAL(assignment.assignName(params).size(), 0);
 }
 
 BOOST_AUTO_TEST_CASE(NameAssignmentHash)
 {
-  AssignmentHash assignment("/abe/xyz");
-  std::vector<std::tuple<std::string, std::string>> requirements;
-  requirements.emplace_back("abc", "123");
-  BOOST_CHECK_EQUAL(assignment.assignName(requirements).size(), 0);
-  requirements.emplace_back("xyz", "789");
-  BOOST_CHECK_EQUAL(assignment.assignName(requirements).size(), 1);
-  BOOST_CHECK_EQUAL(assignment.assignName(requirements).begin()->size(), 1);
-  requirements.emplace_back("fake", "456");
-  BOOST_CHECK_EQUAL(assignment.assignName(requirements).size(), 1);
-  BOOST_CHECK_EQUAL(assignment.assignName(requirements).begin()->size(), 1);
-  requirements[1] = std::tuple<std::string, std::string>("xyz", "");
-  BOOST_CHECK_EQUAL(assignment.assignName(requirements).size(), 1);
-  BOOST_CHECK_EQUAL(assignment.assignName(requirements).begin()->size(), 1);
+  AssignmentHash assignment("/abc/xyz");
+  std::vector<std::tuple<std::string, std::string>> params;
+  params.emplace_back("abc", "123");
+  BOOST_CHECK_EQUAL(assignment.assignName(params).size(), 0);
+  params.emplace_back("xyz", "789");
+  BOOST_CHECK_EQUAL(assignment.assignName(params).size(), 1);
+  BOOST_CHECK_EQUAL(assignment.assignName(params).begin()->size(), 2);
+  params.emplace_back("fake", "456");
+  BOOST_CHECK_EQUAL(assignment.assignName(params).size(), 1);
+  BOOST_CHECK_EQUAL(assignment.assignName(params).begin()->size(), 2);
+  params[1] = std::tuple<std::string, std::string>("xyz", "");
+  BOOST_CHECK_EQUAL(assignment.assignName(params).size(), 1);
+  BOOST_CHECK_EQUAL(assignment.assignName(params).begin()->size(), 2);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

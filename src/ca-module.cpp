@@ -163,16 +163,13 @@ CaModule::onProbe(const Interest& request)
   // process PROBE requests: collect probe parameters
   auto parameters = PROBE::decodeApplicationParameters(request.getApplicationParameters());
   std::vector<PartialName> availableComponents;
-  try {
     for (auto& item : m_config.m_heuristic) {
       auto names = item->assignName(parameters);
       availableComponents.insert(availableComponents.end(), names.begin(), names.end());
     }
-  }
-  catch (const std::exception& e) {
-    _LOG_TRACE("Cannot parse probe parameters: " << e.what());
+  if (availableComponents.size() == 0) {
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
-                                       "Cannot parse probe parameters: " + std::string(e.what())));
+                                       "Cannot generate available names from parameters provided."));
     return;
   }
   std::vector<Name> availableNames;
