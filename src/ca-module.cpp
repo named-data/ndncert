@@ -235,7 +235,6 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
        (uint8_t*)&saltInt, sizeof(saltInt), aesKey, sizeof(aesKey));
 
   // verify identity name
-<<<<<<< HEAD
   if (!m_config.m_caItem.m_caPrefix.isPrefixOf(clientCert->getIdentity())
       || !security::Certificate::isValidName(clientCert->getName())
       || clientCert->getIdentity().size() <= m_config.m_caItem.m_caPrefix.size()) {
@@ -243,13 +242,6 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
       m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
                                          "An invalid certificate name is being requested."));
       return;
-=======
-  if (!m_config.m_caItem.m_caPrefix.isPrefixOf(clientCert->getIdentity()) || !security::v2::Certificate::isValidName(clientCert->getName()) || clientCert->getIdentity().size() <= m_config.m_caItem.m_caPrefix.size()) {
-    _LOG_ERROR("An invalid certificate name is being requested " << clientCert->getName());
-    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
-                                       "An invalid certificate name is being requested."));
-    return;
->>>>>>> fix test errors
   }
   if (m_config.m_caItem.m_maxSuffixLength) {
     if (clientCert->getIdentity().size() > m_config.m_caItem.m_caPrefix.size() + *m_config.m_caItem.m_maxSuffixLength) {
