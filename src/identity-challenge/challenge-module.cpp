@@ -24,6 +24,8 @@
 namespace ndn {
 namespace ndncert {
 
+const std::string ChallengeModule::SUCCESS = "success";
+
 ChallengeModule::ChallengeModule(const std::string& challengeType,
                                  size_t maxAttemptTimes,
                                  time::seconds secretLifetime)

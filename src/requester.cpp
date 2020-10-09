@@ -271,9 +271,11 @@ Requester::onChallengeResponse(RequesterState& state, const Data& reply)
 
   // update state
   state.m_status = decoded.status;
-  state.m_challengeStatus = decoded.challengeStatus;
-  state.m_remainingTries = decoded.remainingTries;
-  state.m_freshBefore = time::system_clock::now() + decoded.remainingTime;
+  if (decoded.status != Status::SUCCESS && decoded.status != Status::FAILURE) {
+    state.m_challengeStatus = *decoded.challengeStatus;
+    state.m_remainingTries = *decoded.remainingTries;
+    state.m_freshBefore = time::system_clock::now() + *decoded.remainingTime;
+  }
 
   if (decoded.issuedCertName) {
     state.m_issuedCertName = *decoded.issuedCertName;

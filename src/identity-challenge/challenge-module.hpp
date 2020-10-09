@@ -81,6 +81,8 @@ public:
   const size_t m_maxAttemptTimes;
   const time::seconds m_secretLifetime;
 
+  static const std::string SUCCESS;
+
 private:
   typedef function<unique_ptr<ChallengeModule>()> ChallengeCreateFunc;
   typedef std::map<std::string, ChallengeCreateFunc> ChallengeFactory;

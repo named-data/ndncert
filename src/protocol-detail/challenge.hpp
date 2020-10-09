@@ -33,9 +33,9 @@ public:
 
   struct DecodedData{
       Status status;
-      std::string challengeStatus;
-      size_t remainingTries;
-      time::seconds remainingTime;
+      optional<std::string> challengeStatus;
+      optional<size_t> remainingTries;
+      optional<time::seconds> remainingTime;
       optional<Name> issuedCertName;
   };
 
