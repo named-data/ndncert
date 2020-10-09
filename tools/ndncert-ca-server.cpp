@@ -119,14 +119,14 @@ main(int argc, char* argv[])
   if (wantRepoOut) {
     writeDataToRepo(profileData);
     ca.setStatusUpdateCallback([&](const CaState& request) {
-      if (request.m_status == Status::SUCCESS) {
+      if (request.m_status == Status::SUCCESS && request.m_requestType == RequestType::NEW) {
         writeDataToRepo(request.m_cert);
       }
     });
   }
   else {
     ca.setStatusUpdateCallback([&](const CaState& request) {
-      if (request.m_status == Status::SUCCESS) {
+      if (request.m_status == Status::SUCCESS && request.m_requestType == RequestType::NEW) {
         cachedCertificates[request.m_cert.getName()] = request.m_cert;
       }
     });
