@@ -45,7 +45,7 @@ CaProfile::parse(const JsonSection& configJson)
   m_probeParameterKeys.clear();
   auto probeParametersJson = configJson.get_child_optional(CONFIG_PROBE_PARAMETERS);
   if (probeParametersJson) {
-    for (const auto item : *probeParametersJson) {
+    for (const auto& item : *probeParametersJson) {
       auto probeParameter = item.second.get(CONFIG_PROBE_PARAMETER, "");
       probeParameter = boost::algorithm::to_lower_copy(probeParameter);
       if (probeParameter == "") {
@@ -58,7 +58,7 @@ CaProfile::parse(const JsonSection& configJson)
   m_supportedChallenges.clear();
   auto challengeListJson = configJson.get_child_optional(CONFIG_SUPPORTED_CHALLENGES);
   if (challengeListJson) {
-    for (const auto item : *challengeListJson) {
+    for (const auto& item : *challengeListJson) {
       auto challengeType = item.second.get(CONFIG_CHALLENGE, "");
       challengeType = boost::algorithm::to_lower_copy(challengeType);
       if (challengeType == "") {
@@ -134,7 +134,7 @@ CaConfig::load(const std::string& fileName)
   m_redirection = boost::none;
   auto redirectionItems = configJson.get_child_optional(CONFIG_REDIRECTION);
   if (redirectionItems) {
-    for (const auto item : *redirectionItems) {
+    for (const auto& item : *redirectionItems) {
       auto caPrefixStr = item.second.get(CONFIG_CA_PREFIX, "");
       auto caCertStr = item.second.get(CONFIG_CERTIFICATE, "");
       if (caCertStr == "") {
@@ -152,7 +152,7 @@ CaConfig::load(const std::string& fileName)
   m_nameAssignmentFuncs.clear();
   auto nameAssignmentItems = configJson.get_child_optional(CONFIG_NAME_ASSIGNMENT);
   if (nameAssignmentItems) {
-    for (const auto item : *nameAssignmentItems) {
+    for (const auto& item : *nameAssignmentItems) {
       auto func = NameAssignmentFunc::createNameAssignmentFunc(item.first, item.second.data());
       if (func == nullptr) {
         BOOST_THROW_EXCEPTION(std::runtime_error("Error on creating name assignment function"));
