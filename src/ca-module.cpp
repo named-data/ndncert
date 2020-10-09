@@ -19,8 +19,9 @@
  */
 
 #include "ca-module.hpp"
-#include "identity-challenge/challenge-module.hpp"
 #include "crypto-support/enc-tlv.hpp"
+#include "identity-challenge/challenge-module.hpp"
+#include "name-assignments/assignment-funcs.hpp"
 #include "protocol-detail/challenge.hpp"
 #include "protocol-detail/error.hpp"
 #include "protocol-detail/info.hpp"
@@ -32,7 +33,6 @@
 #include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/util/random.hpp>
 #include <ndn-cxx/util/string-helper.hpp>
-#include "name-assignments/assignment-funcs.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -85,7 +85,7 @@ CaModule::registerPrefix()
 
         // register PROBE prefix
         filterId = m_face.setInterestFilter(Name(name).append("PROBE"),
-                                                 bind(&CaModule::onProbe, this, _2));
+                                            bind(&CaModule::onProbe, this, _2));
         m_interestFilterHandles.push_back(filterId);
 
         // register NEW prefix
@@ -117,20 +117,19 @@ CaModule::setStatusUpdateCallback(const StatusUpdateCallback& onUpdateCallback)
 Data
 CaModule::getCaProfileData()
 {
-  if (m_profileData) {
-    return *m_profileData;
-  }
-  const auto& pib = m_keyChain.getPib();
-  const auto& identity = pib.getIdentity(m_config.m_caItem.m_caPrefix);
-  const auto& cert = identity.getDefaultKey().getDefaultCertificate();
-  Block contentTLV = INFO::encodeDataContent(m_config.m_caItem, cert);
+  if (m_profileData == nullptr) {
+    const auto& pib = m_keyChain.getPib();
+    const auto& identity = pib.getIdentity(m_config.m_caItem.m_caPrefix);
+    const auto& cert = identity.getDefaultKey().getDefaultCertificate();
+    Block contentTLV = INFO::encodeDataContent(m_config.m_caItem, cert);
 
-  Name infoPacketName(m_config.m_caItem.m_caPrefix);
-  infoPacketName.append("CA").append("INFO").appendVersion().appendSegment(0);
-  m_profileData = std::make_unique<Data>(infoPacketName);
-  m_profileData->setContent(contentTLV);
-  m_profileData->setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  m_keyChain.sign(*m_profileData, signingByIdentity(m_config.m_caItem.m_caPrefix));
+    Name infoPacketName(m_config.m_caItem.m_caPrefix);
+    infoPacketName.append("CA").append("INFO").appendVersion().appendSegment(0);
+    m_profileData = std::make_unique<Data>(infoPacketName);
+    m_profileData->setContent(contentTLV);
+    m_profileData->setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
+    m_keyChain.sign(*m_profileData, signingByIdentity(m_config.m_caItem.m_caPrefix));
+  }
   return *m_profileData;
 }
 
@@ -158,10 +157,10 @@ CaModule::onProbe(const Interest& request)
   // process PROBE requests: collect probe parameters
   auto parameters = PROBE::decodeApplicationParameters(request.getApplicationParameters());
   std::vector<PartialName> availableComponents;
-    for (auto& item : m_config.m_nameAssignmentFuncs) {
-      auto names = item->assignName(parameters);
-      availableComponents.insert(availableComponents.end(), names.begin(), names.end());
-    }
+  for (auto& item : m_config.m_nameAssignmentFuncs) {
+    auto names = item->assignName(parameters);
+    availableComponents.insert(availableComponents.end(), names.begin(), names.end());
+  }
   if (availableComponents.size() == 0) {
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
                                        "Cannot generate available names from parameters provided."));
@@ -193,8 +192,9 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   std::string ecdhPub;
   shared_ptr<security::Certificate> clientCert;
   try {
-      NEW_RENEW_REVOKE::decodeApplicationParameters(parameterTLV, requestType, ecdhPub, clientCert);
-  } catch (const std::exception& e) {
+    NEW_RENEW_REVOKE::decodeApplicationParameters(parameterTLV, requestType, ecdhPub, clientCert);
+  }
+  catch (const std::exception& e) {
     if (!parameterTLV.hasValue()) {
       _LOG_ERROR("Empty TLV obtained from the Interest parameter.");
       m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
@@ -235,6 +235,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
        (uint8_t*)&saltInt, sizeof(saltInt), aesKey, sizeof(aesKey));
 
   // verify identity name
+<<<<<<< HEAD
   if (!m_config.m_caItem.m_caPrefix.isPrefixOf(clientCert->getIdentity())
       || !security::Certificate::isValidName(clientCert->getName())
       || clientCert->getIdentity().size() <= m_config.m_caItem.m_caPrefix.size()) {
@@ -242,6 +243,13 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
       m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
                                          "An invalid certificate name is being requested."));
       return;
+=======
+  if (!m_config.m_caItem.m_caPrefix.isPrefixOf(clientCert->getIdentity()) || !security::v2::Certificate::isValidName(clientCert->getName()) || clientCert->getIdentity().size() <= m_config.m_caItem.m_caPrefix.size()) {
+    _LOG_ERROR("An invalid certificate name is being requested " << clientCert->getName());
+    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
+                                       "An invalid certificate name is being requested."));
+    return;
+>>>>>>> fix test errors
   }
   if (m_config.m_caItem.m_maxSuffixLength) {
     if (clientCert->getIdentity().size() > m_config.m_caItem.m_caPrefix.size() + *m_config.m_caItem.m_maxSuffixLength) {
@@ -295,8 +303,8 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   Block certNameTlv = clientCert->getName().wireEncode();
   ndn_compute_hmac_sha256(certNameTlv.wire(), certNameTlv.size(), m_requestIdGenKey, 32, requestIdData);
   CaState requestState(m_config.m_caItem.m_caPrefix, toHex(requestIdData, 32),
-                      requestType, Status::BEFORE_CHALLENGE, *clientCert,
-                      makeBinaryBlock(tlv::ContentType_Key, aesKey, sizeof(aesKey)));
+                       requestType, Status::BEFORE_CHALLENGE, *clientCert,
+                       makeBinaryBlock(tlv::ContentType_Key, aesKey, sizeof(aesKey)));
   try {
     m_storage->addRequest(requestState);
   }
@@ -310,9 +318,9 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   result.setName(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
   result.setContent(NEW_RENEW_REVOKE::encodeDataContent(myEcdhPubKeyBase64,
-                                                std::to_string(saltInt),
-                                                requestState,
-                                                m_config.m_caItem.m_supportedChallenges));
+                                                        std::to_string(saltInt),
+                                                        requestState,
+                                                        m_config.m_caItem.m_supportedChallenges));
   m_keyChain.sign(result, signingByIdentity(m_config.m_caItem.m_caPrefix));
   m_face.put(result);
   if (m_config.m_statusUpdateCallback) {
@@ -384,8 +392,8 @@ CaModule::onChallenge(const Interest& request)
     // if challenge succeeded
     if (requestState.m_requestType == RequestType::NEW) {
       auto issuedCert = issueCertificate(requestState);
-        requestState.m_cert = issuedCert;
-        requestState.m_status = Status::SUCCESS;
+      requestState.m_cert = issuedCert;
+      requestState.m_status = Status::SUCCESS;
       m_storage->deleteRequest(requestState.m_requestId);
 
       payload = CHALLENGE::encodeDataPayload(requestState);
@@ -395,7 +403,7 @@ CaModule::onChallenge(const Interest& request)
       _LOG_TRACE("Challenge succeeded. Certificate has been issued: " << issuedCert.getName());
     }
     else if (requestState.m_requestType == RequestType::REVOKE) {
-        requestState.m_status = Status::SUCCESS;
+      requestState.m_status = Status::SUCCESS;
       m_storage->deleteRequest(requestState.m_requestId);
 
       payload = CHALLENGE::encodeDataPayload(requestState);
@@ -457,7 +465,7 @@ CaModule::getCertificateRequest(const Interest& request)
   }
   try {
     _LOG_TRACE("Request Id to query the database " << requestId);
-      requestState = m_storage->getRequest(requestId);
+    requestState = m_storage->getRequest(requestId);
   }
   catch (const std::exception& e) {
     _LOG_ERROR("Cannot get certificate request record from the storage: " << e.what());

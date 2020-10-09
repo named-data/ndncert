@@ -51,8 +51,8 @@ BOOST_AUTO_TEST_CASE(HandleProfileFetching)
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
-  auto profileData = ca.getCaProfileData();
   advanceClocks(time::milliseconds(20), 60);
+  auto profileData = ca.getCaProfileData();
 
   Interest interest = MetadataObject::makeDiscoveryInterest(Name("/ndn/CA/INFO"));
   shared_ptr<Interest> infoInterest = nullptr;
@@ -60,9 +60,11 @@ BOOST_AUTO_TEST_CASE(HandleProfileFetching)
   face.setInterestFilter(
       InterestFilter("/ndn/CA/INFO"),
       [&](const auto&, const Interest& interest) {
-        BOOST_CHECK(interest.matchesData(profileData));
-        face.put(profileData);
-      }, nullptr, nullptr);
+        if (interest.getName() == profileData.getName()) {
+          face.put(profileData);
+        }
+      },
+      nullptr, nullptr);
   advanceClocks(time::milliseconds(20), 60);
 
   int count = 0;
@@ -71,9 +73,8 @@ BOOST_AUTO_TEST_CASE(HandleProfileFetching)
       count++;
       auto block = response.getContent();
       block.parse();
-      Interest interest(Name(block.get(tlv::Name)));
-      interest.setCanBePrefix(true);
-      infoInterest = make_shared<Interest>(interest);
+      infoInterest = make_shared<Interest>(Name(block.get(tlv::Name)).appendSegment(0));
+      infoInterest->setCanBePrefix(false);
     }
     else {
       count++;
@@ -92,6 +93,7 @@ BOOST_AUTO_TEST_CASE(HandleProfileFetching)
   advanceClocks(time::milliseconds(20), 60);
   face.receive(*infoInterest);
   advanceClocks(time::milliseconds(20), 60);
+
   BOOST_CHECK_EQUAL(count, 2);
 }
 
