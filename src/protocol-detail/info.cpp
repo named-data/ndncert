@@ -41,9 +41,6 @@ INFO::encodeDataContent(const CaProfile& caConfig, const security::Certificate& 
   }
   content.push_back(makeNonNegativeIntegerBlock(tlv_max_validity_period, caConfig.m_maxValidityPeriod.count()));
   content.push_back(makeNestedBlock(tlv_ca_certificate, certificate));
-  if (caConfig.m_maxSuffixLength) {
-    content.push_back(makeNonNegativeIntegerBlock(tlv_max_suffix_length, *caConfig.m_maxSuffixLength));
-  }
   content.encode();
   return content;
 }
@@ -67,9 +64,6 @@ INFO::decodeDataContent(const Block& block)
       break;
     case tlv_max_validity_period:
       result.m_maxValidityPeriod = time::seconds(readNonNegativeInteger(item));
-      break;
-    case tlv_max_suffix_length:
-      result.m_maxSuffixLength = readNonNegativeInteger(item);
       break;
     case tlv_ca_certificate:
       item.parse();

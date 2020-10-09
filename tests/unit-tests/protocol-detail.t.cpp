@@ -42,7 +42,6 @@ BOOST_AUTO_TEST_CASE(TestInfo)
   BOOST_CHECK_EQUAL(config.m_caItem.m_caPrefix, decoded.m_caPrefix);
   BOOST_CHECK_EQUAL(config.m_caItem.m_caInfo, decoded.m_caInfo);
   BOOST_CHECK_EQUAL(config.m_caItem.m_maxValidityPeriod, decoded.m_maxValidityPeriod);
-  BOOST_CHECK_EQUAL(*config.m_caItem.m_maxSuffixLength, *decoded.m_maxSuffixLength);
   BOOST_CHECK_EQUAL(config.m_caItem.m_probeParameterKeys.size(), decoded.m_probeParameterKeys.size());
   BOOST_CHECK_EQUAL(config.m_caItem.m_probeParameterKeys.front(), decoded.m_probeParameterKeys.front());
   BOOST_CHECK_EQUAL(cert.wireEncode(), decoded.m_cert->wireEncode());
