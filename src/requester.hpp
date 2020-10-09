@@ -21,9 +21,7 @@
 #ifndef NDNCERT_REQUESTER_HPP
 #define NDNCERT_REQUESTER_HPP
 
-#include "configuration.hpp"
-#include "ca-state.hpp"
-#include "crypto-support/crypto-helper.hpp"
+#include "requester-state.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -31,69 +29,6 @@ namespace ndncert {
 // TODO
 // For each RequesterState, create a validator instance and initialize it with CA's cert
 // The validator instance should be in CaProfile
-
-struct RequesterState {
-  explicit
-  RequesterState(security::KeyChain& keyChain, const CaProfile& caItem, RequestType requestType);
-
-  /**
-   * The CA profile for this request.
-   */
-  CaProfile m_caItem;
-  /**
-   * The local keychain to generate and install identities, keys and certificates
-   */
-  security::KeyChain& m_keyChain;
-  /**
-   * The type of request. Either NEW, RENEW, or REVOKE.
-   */
-  RequestType m_type;
-
-  /**
-   * The identity name for the requesting certificate.
-   */
-  Name m_identityName;
-  /**
-   * The keypair for the request.
-   */
-  security::Key m_keyPair;
-  /**
-   * The CA-generated request ID for the request.
-   */
-  std::string m_requestId;
-  /**
-   * The current status of the request.
-   */
-  Status m_status = Status::NOT_STARTED;
-
-  /**
-   * The type of challenge chosen.
-   */
-  std::string m_challengeType;
-  /**
-   * The status of the current challenge.
-   */
-  std::string m_challengeStatus;
-  /**
-   * The remaining number of tries left for the challenge
-   */
-  int m_remainingTries = 0;
-  /**
-   * The time this challenge will remain fresh
-   */
-  time::system_clock::TimePoint m_freshBefore;
-  /**
-   * the name of the certificate being issued.
-   */
-  Name m_issuedCertName;
-
-  ECDHState m_ecdh;
-  uint8_t m_aesKey[16] = {0};
-
-  bool m_isCertInstalled = false;
-  bool m_isNewlyCreatedIdentity = false;
-  bool m_isNewlyCreatedKey = false;
-};
 
 class Requester : noncopyable
 {

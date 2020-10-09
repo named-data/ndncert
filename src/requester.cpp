@@ -40,13 +40,6 @@ namespace ndncert {
 
 _LOG_INIT(ndncert.client);
 
-RequesterState::RequesterState(security::KeyChain& keyChain, const CaProfile& caItem, RequestType requestType)
-  : m_caItem(caItem)
-  , m_keyChain(keyChain)
-  , m_type(requestType)
-{
-}
-
 shared_ptr<Interest>
 Requester::genCaProfileDiscoveryInterest(const Name& caName)
 {
@@ -267,19 +260,7 @@ Requester::onChallengeResponse(RequesterState& state, const Data& reply)
   processIfError(reply);
   auto result = decodeBlockWithAesGcm128(reply.getContent(), state.m_aesKey, (const uint8_t*)"test", strlen("test"));
   Block contentTLV = makeBinaryBlock(tlv_encrypted_payload, result.data(), result.size());
-  auto decoded = CHALLENGE::decodeDataPayload(contentTLV);
-
-  // update state
-  state.m_status = decoded.status;
-  if (decoded.status != Status::SUCCESS && decoded.status != Status::FAILURE) {
-    state.m_challengeStatus = *decoded.challengeStatus;
-    state.m_remainingTries = *decoded.remainingTries;
-    state.m_freshBefore = time::system_clock::now() + *decoded.remainingTime;
-  }
-
-  if (decoded.issuedCertName) {
-    state.m_issuedCertName = *decoded.issuedCertName;
-  }
+  CHALLENGE::decodeDataContent(contentTLV, state);
 }
 
 shared_ptr<Interest>

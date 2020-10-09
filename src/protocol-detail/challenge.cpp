@@ -23,50 +23,41 @@
 namespace ndn {
 namespace ndncert {
 
-_LOG_INIT(ndncert.encoding.challenge);
-
 Block
-CHALLENGE::encodeDataPayload(const CaState& request)
+CHALLENGE::encodeDataContent(const CaState& request)
 {
   Block response = makeEmptyBlock(tlv_encrypted_payload);
   response.push_back(makeNonNegativeIntegerBlock(tlv_status, static_cast<size_t>(request.m_status)));
   if (request.m_challengeState) {
     response.push_back(makeStringBlock(tlv_challenge_status, request.m_challengeState->m_challengeStatus));
     response.push_back(
-            makeNonNegativeIntegerBlock(tlv_remaining_tries, request.m_challengeState->m_remainingTries));
+        makeNonNegativeIntegerBlock(tlv_remaining_tries, request.m_challengeState->m_remainingTries));
     response.push_back(
-            makeNonNegativeIntegerBlock(tlv_remaining_time, request.m_challengeState->m_remainingTime.count()));
-  } else if (request.m_status != Status::SUCCESS || request.m_status != Status::FAILURE){
-      _LOG_ERROR("Unsuccessful challenge does not have a challenge state");
+        makeNonNegativeIntegerBlock(tlv_remaining_time, request.m_challengeState->m_remainingTime.count()));
   }
   response.encode();
   return response;
 }
 
-CHALLENGE::DecodedData
-CHALLENGE::decodeDataPayload(const Block& data){
-    data.parse();
-    Status status = static_cast<Status>(readNonNegativeInteger(data.get(tlv_status)));
-    DecodedData decodedData{status, nullopt, nullopt, nullopt, nullopt};
-    if (data.find(tlv_challenge_status) != data.elements_end()) {
-      decodedData.challengeStatus = readString(data.get(tlv_challenge_status));
-    }
-    if (data.find(tlv_remaining_tries) != data.elements_end()) {
-      decodedData.remainingTries = readNonNegativeInteger(data.get(tlv_remaining_tries));
-    }
-    if (data.find(tlv_remaining_time) != data.elements_end()) {
-      decodedData.remainingTime = time::seconds(readNonNegativeInteger(data.get(tlv_remaining_time)));
-    }
-    if (data.find(tlv_issued_cert_name) != data.elements_end()) {
-      Block issuedCertNameBlock = data.get(tlv_issued_cert_name);
-      decodedData.issuedCertName = Name(issuedCertNameBlock.blockFromValue());
-    }
-
-    return decodedData;
+void
+CHALLENGE::decodeDataContent(const Block& data, RequesterState& state)
+{
+  data.parse();
+  state.m_status = static_cast<Status>(readNonNegativeInteger(data.get(tlv_status)));
+  if (data.find(tlv_challenge_status) != data.elements_end()) {
+    state.m_challengeStatus = readString(data.get(tlv_challenge_status));
+  }
+  if (data.find(tlv_remaining_tries) != data.elements_end()) {
+    state.m_remainingTries = readNonNegativeInteger(data.get(tlv_remaining_tries));
+  }
+  if (data.find(tlv_remaining_time) != data.elements_end()) {
+    state.m_freshBefore = time::system_clock::now() + time::seconds(readNonNegativeInteger(data.get(tlv_remaining_time)));
+  }
+  if (data.find(tlv_issued_cert_name) != data.elements_end()) {
+    Block issuedCertNameBlock = data.get(tlv_issued_cert_name);
+    state.m_issuedCertName = Name(issuedCertNameBlock.blockFromValue());
+  }
 }
 
-} // namespace ndncert
-} // namespace ndn
-
-
-
+}  // namespace ndncert
+}  // namespace ndn

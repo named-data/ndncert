@@ -18,25 +18,17 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_PROTOCOL_DETAIL_CHALLENGE_HPP
-#define NDNCERT_PROTOCOL_DETAIL_CHALLENGE_HPP
-
-#include "../ca-state.hpp"
-#include "../requester-state.hpp"
+#include "requester-state.hpp"
 
 namespace ndn {
 namespace ndncert {
 
-class CHALLENGE {
-public:
-  static Block
-  encodeDataContent(const CaState& request);
-
-  static void
-  decodeDataContent(const Block& data, RequesterState& state);
-};
+RequesterState::RequesterState(security::KeyChain& keyChain, const CaProfile& caItem, RequestType requestType)
+  : m_caItem(caItem)
+  , m_keyChain(keyChain)
+  , m_type(requestType)
+{
+}
 
 }  // namespace ndncert
 }  // namespace ndn
-
-#endif // NDNCERT_PROTOCOL_DETAIL_HPP

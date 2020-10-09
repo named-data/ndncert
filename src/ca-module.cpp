@@ -388,7 +388,7 @@ CaModule::onChallenge(const Interest& request)
       requestState.m_status = Status::SUCCESS;
       m_storage->deleteRequest(requestState.m_requestId);
 
-      payload = CHALLENGE::encodeDataPayload(requestState);
+      payload = CHALLENGE::encodeDataContent(requestState);
       payload.parse();
       payload.push_back(makeNestedBlock(tlv_issued_cert_name, issuedCert.getName()));
       payload.encode();
@@ -398,13 +398,13 @@ CaModule::onChallenge(const Interest& request)
       requestState.m_status = Status::SUCCESS;
       m_storage->deleteRequest(requestState.m_requestId);
 
-      payload = CHALLENGE::encodeDataPayload(requestState);
+      payload = CHALLENGE::encodeDataContent(requestState);
       _LOG_TRACE("Challenge succeeded. Certificate has been revoked");
     }
   }
   else {
     m_storage->updateRequest(requestState);
-    payload = CHALLENGE::encodeDataPayload(requestState);
+    payload = CHALLENGE::encodeDataContent(requestState);
     _LOG_TRACE("No failure no success. Challenge moves on");
   }
 
