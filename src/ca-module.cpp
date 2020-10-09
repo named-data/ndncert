@@ -42,7 +42,7 @@ static const time::seconds REQUEST_VALIDITY_PERIOD_NOT_BEFORE_GRACE_PERIOD = 120
 
 _LOG_INIT(ndncert.ca);
 
-CaModule::CaModule(Face& face, security::v2::KeyChain& keyChain,
+CaModule::CaModule(Face& face, security::KeyChain& keyChain,
                    const std::string& configPath, const std::string& storageType)
     : m_face(face)
     , m_keyChain(keyChain)
@@ -191,7 +191,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   // get ECDH pub key and cert request
   const auto& parameterTLV = request.getApplicationParameters();
   std::string ecdhPub;
-  shared_ptr<security::v2::Certificate> clientCert;
+  shared_ptr<security::Certificate> clientCert;
   try {
       NEW_RENEW_REVOKE::decodeApplicationParameters(parameterTLV, requestType, ecdhPub, clientCert);
   } catch (const std::exception& e) {
@@ -236,7 +236,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
 
   // verify identity name
   if (!m_config.m_caItem.m_caPrefix.isPrefixOf(clientCert->getIdentity())
-      || !security::v2::Certificate::isValidName(clientCert->getName())
+      || !security::Certificate::isValidName(clientCert->getName())
       || clientCert->getIdentity().size() <= m_config.m_caItem.m_caPrefix.size()) {
       _LOG_ERROR("An invalid certificate name is being requested " << clientCert->getName());
       m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
@@ -421,13 +421,13 @@ CaModule::onChallenge(const Interest& request)
   }
 }
 
-security::v2::Certificate
+security::Certificate
 CaModule::issueCertificate(const CaState& requestState)
 {
   auto expectedPeriod =
       requestState.m_cert.getValidityPeriod().getPeriod();
   security::ValidityPeriod period(expectedPeriod.first, expectedPeriod.second);
-  security::v2::Certificate newCert;
+  security::Certificate newCert;
 
   Name certName = requestState.m_cert.getKeyName();
   certName.append("NDNCERT").append(std::to_string(random::generateSecureWord64()));

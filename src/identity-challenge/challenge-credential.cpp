@@ -65,7 +65,7 @@ ChallengeCredential::parseConfigFile()
   auto it = anchorList.begin();
   for (; it != anchorList.end(); it++) {
     std::istringstream ss(it->second.get("certificate", ""));
-    auto cert = io::load<security::v2::Certificate>(ss);
+    auto cert = io::load<security::Certificate>(ss);
     if (cert == nullptr) {
       _LOG_ERROR("Cannot load the certificate from config file");
       continue;
@@ -82,7 +82,7 @@ ChallengeCredential::handleChallengeRequest(const Block& params, CaState& reques
   if (m_trustAnchors.empty()) {
     parseConfigFile();
   }
-  security::v2::Certificate credential;
+  security::Certificate credential;
   const uint8_t* signature;
   size_t signatureLen;
   const auto& elements = params.elements();
@@ -105,7 +105,7 @@ ChallengeCredential::handleChallengeRequest(const Block& params, CaState& reques
   }
 
   // verify the credential and the self-signed cert
-  Name signingKeyName = credential.getSignature().getKeyLocator().getName();
+  Name signingKeyName = credential.getSignatureInfo().getKeyLocator().getName();
   security::transform::PublicKey key;
   const auto& pubKeyBuffer = credential.getPublicKey();
   key.loadPkcs8(pubKeyBuffer.data(), pubKeyBuffer.size());
@@ -176,8 +176,8 @@ ChallengeCredential::fulfillParameters(std::vector<std::tuple<std::string, std::
                                        KeyChain& keyChain, const Name& issuedCertName, const std::string& requestId)
 {
   auto& pib = keyChain.getPib();
-  auto id = pib.getIdentity(security::v2::extractIdentityFromCertName(issuedCertName));
-  auto issuedCert = id.getKey(security::v2::extractKeyNameFromCertName(issuedCertName)).getCertificate(issuedCertName);
+  auto id = pib.getIdentity(security::extractIdentityFromCertName(issuedCertName));
+  auto issuedCert = id.getKey(security::extractKeyNameFromCertName(issuedCertName)).getCertificate(issuedCertName);
   auto issuedCertTlv = issuedCert.wireEncode();
   auto signatureTlv = keyChain.sign((uint8_t*)requestId.c_str(), requestId.length(), security::signingByCertificate(issuedCertName));
   for (auto& item : params) {

@@ -29,10 +29,10 @@ namespace ndncert {
 class NEW_RENEW_REVOKE {
 public:
   static Block
-  encodeApplicationParameters(RequestType requestType, const std::string& ecdhPub, const security::v2::Certificate& certRequest);
+  encodeApplicationParameters(RequestType requestType, const std::string& ecdhPub, const security::Certificate& certRequest);
 
   static void
-  decodeApplicationParameters(const Block& block, RequestType requestType, std::string& ecdhPub, shared_ptr<security::v2::Certificate>& certRequest);
+  decodeApplicationParameters(const Block& block, RequestType requestType, std::string& ecdhPub, shared_ptr<security::Certificate>& certRequest);
 
   static Block
   encodeDataContent(const std::string& ecdhKey, const std::string& salt,

@@ -31,7 +31,7 @@ namespace ndncert {
 class CaModule : noncopyable
 {
 public:
-  CaModule(Face& face, security::v2::KeyChain& keyChain, const std::string& configPath,
+  CaModule(Face& face, security::KeyChain& keyChain, const std::string& configPath,
            const std::string& storageType = "ca-storage-sqlite3");
 
   ~CaModule();
@@ -73,7 +73,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   CaState
   getCertificateRequest(const Interest& request);
 
-  security::v2::Certificate
+  security::Certificate
   issueCertificate(const CaState& requestState);
 
   void
@@ -86,7 +86,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   Face& m_face;
   CaConfig m_config;
   unique_ptr<CaStorage> m_storage;
-  security::v2::KeyChain& m_keyChain;
+  security::KeyChain& m_keyChain;
   uint8_t m_requestIdGenKey[32];
   std::unique_ptr<Data> m_profileData;
 

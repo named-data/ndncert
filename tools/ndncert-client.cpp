@@ -43,7 +43,7 @@ runChallenge(const std::string& challengeType);
 
 size_t nStep = 1;
 Face face;
-security::v2::KeyChain keyChain;
+security::KeyChain keyChain;
 shared_ptr<RequesterState> requesterState = nullptr;
 
 static void
@@ -217,7 +217,7 @@ InfoCb(const Data& reply, const Name& certFullName)
             << "Step " << nStep++
             << ": Will use a new trust anchor, please double check the identity info:" << std::endl
             << "> New CA name: " << profile->m_caPrefix.toUri() << std::endl
-            << "> This trust anchor information is signed by: " << reply.getSignature().getKeyLocator() << std::endl
+            << "> This trust anchor information is signed by: " << reply.getSignatureInfo().getKeyLocator() << std::endl
             << "> The certificate: " << profile->m_cert << std::endl
             << "Do you trust the information? Type in YES or NO" << std::endl;
 
@@ -252,7 +252,7 @@ probeCb(const Data& reply, CaProfile profile)
   std::cerr << "\nOr choose another trusted CA suggested by the CA: " << std::endl;
   for (const auto& redirect : redirects) {
     std::cerr << "> Index: " << count++ << std::endl
-              << ">> Suggested CA: " << security::v2::extractIdentityFromCertName(redirect.getPrefix(-1)) << std::endl;
+              << ">> Suggested CA: " << security::extractIdentityFromCertName(redirect.getPrefix(-1)) << std::endl;
   }
   std::cerr << "Please type in the index of your choice:" << std::endl;
   size_t index = 0;
@@ -277,7 +277,7 @@ probeCb(const Data& reply, CaProfile profile)
   else {
     //redirects
     auto redirectedCaFullName = redirects[index - names.size()];
-    auto redirectedCaName = security::v2::extractIdentityFromCertName(redirectedCaFullName.getPrefix(-1));
+    auto redirectedCaName = security::extractIdentityFromCertName(redirectedCaFullName.getPrefix(-1));
     std::cerr << "You selected to be redirected to CA: " << redirectedCaName.toUri() << std::endl;
     face.expressInterest(
         *Requester::genCaProfileDiscoveryInterest(redirectedCaName),

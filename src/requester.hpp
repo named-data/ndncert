@@ -34,7 +34,7 @@ namespace ndncert {
 
 struct RequesterState {
   explicit
-  RequesterState(security::v2::KeyChain& keyChain, const CaProfile& caItem, RequestType requestType);
+  RequesterState(security::KeyChain& keyChain, const CaProfile& caItem, RequestType requestType);
 
   /**
    * The CA profile for this request.
@@ -43,7 +43,7 @@ struct RequesterState {
   /**
    * The local keychain to generate and install identities, keys and certificates
    */
-  security::v2::KeyChain& m_keyChain;
+  security::KeyChain& m_keyChain;
   /**
    * The type of request. Either NEW, RENEW, or REVOKE.
    */
@@ -181,7 +181,7 @@ public:
    * @return The shared pointer to the encoded interest.
    */
   static shared_ptr<Interest>
-  genRevokeInterest(RequesterState& state, const security::v2::Certificate& certificate);
+  genRevokeInterest(RequesterState& state, const security::Certificate& certificate);
 
   /**
    * Decodes the replied data of NEW, RENEW, or REVOKE interest from the CA.
@@ -236,7 +236,7 @@ public:
    * @param reply, the data replied from the certificate fetch interest.
    * @return The shared pointer to the certificate being fetched.
    */
-  static shared_ptr<security::v2::Certificate>
+  static shared_ptr<security::Certificate>
   onCertFetchResponse(const Data& reply);
 
   /**

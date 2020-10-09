@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_CASE(GenProbeInterest)
   ca_profile.m_probeParameterKeys.push_back("uid");
   ca_profile.m_probeParameterKeys.push_back("name");
   ca_profile.m_caPrefix = Name("/site");
-  ca_profile.m_cert = std::make_shared<security::v2::Certificate>(cert);
+  ca_profile.m_cert = std::make_shared<security::Certificate>(cert);
 
   std::vector<std::tuple<std::string, std::string>> probeParams;
   probeParams.push_back(std::make_tuple("email", "zhiyi@cs.ucla.edu"));
@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE(OnProbeResponse){
   ca_profile.m_probeParameterKeys.push_back("uid");
   ca_profile.m_probeParameterKeys.push_back("name");
   ca_profile.m_caPrefix = Name("/site");
-  ca_profile.m_cert = std::make_shared<security::v2::Certificate>(cert);
+  ca_profile.m_cert = std::make_shared<security::Certificate>(cert);
 
   std::vector<Name> availableNames;
   availableNames.push_back(Name("/site1"));
@@ -92,8 +92,8 @@ BOOST_AUTO_TEST_CASE(OnProbeResponse){
   BOOST_CHECK_EQUAL(names[1].toUri(), "/site2");
 
   BOOST_CHECK_EQUAL(redirects.size(), 2);
-  BOOST_CHECK_EQUAL(security::v2::extractIdentityFromCertName(redirects[0].getPrefix(-1)), "/ndn/site1");
-  BOOST_CHECK_EQUAL(security::v2::extractIdentityFromCertName(redirects[1].getPrefix(-1)), "/ndn/site1");
+  BOOST_CHECK_EQUAL(security::extractIdentityFromCertName(redirects[0].getPrefix(-1)), "/ndn/site1");
+  BOOST_CHECK_EQUAL(security::extractIdentityFromCertName(redirects[1].getPrefix(-1)), "/ndn/site1");
 }
 
 BOOST_AUTO_TEST_CASE(ErrorHandling)
@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE(ErrorHandling)
 
   CaProfile item;
   item.m_caPrefix = Name("/site");
-  item.m_cert = std::make_shared<security::v2::Certificate>(cert);
+  item.m_cert = std::make_shared<security::Certificate>(cert);
   RequesterState state(m_keyChain, item, RequestType::NEW);
 
   Data errorPacket;

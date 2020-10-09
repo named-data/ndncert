@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
   auto identityB = addIdentity(Name("/trust/cert"));
   auto keyB = identityB.getDefaultKey();
   auto credentialName = Name(keyB.getName()).append("Credential").appendVersion();
-  security::v2::Certificate credential;
+  security::Certificate credential;
   credential.setName(credentialName);
   credential.setContent(keyB.getPublicKey().data(), keyB.getPublicKey().size());
   SignatureInfo signatureInfo;

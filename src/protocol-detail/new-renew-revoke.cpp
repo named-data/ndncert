@@ -31,7 +31,7 @@ namespace ndncert {
 _LOG_INIT(ndncert.encoding.new_renew_revoke);
 
 Block
-NEW_RENEW_REVOKE::encodeApplicationParameters(RequestType requestType, const std::string& ecdhPub, const security::v2::Certificate& certRequest)
+NEW_RENEW_REVOKE::encodeApplicationParameters(RequestType requestType, const std::string& ecdhPub, const security::Certificate& certRequest)
 {
   Block request = makeEmptyBlock(tlv::ApplicationParameters);
   std::stringstream ss;
@@ -57,7 +57,7 @@ NEW_RENEW_REVOKE::encodeApplicationParameters(RequestType requestType, const std
 
 void
 NEW_RENEW_REVOKE::decodeApplicationParameters(const Block& payload, RequestType requestType, std::string& ecdhPub,
-                                              shared_ptr<security::v2::Certificate>& clientCert) {
+                                              shared_ptr<security::Certificate>& clientCert) {
   payload.parse();
 
   ecdhPub = readString(payload.get(tlv_ecdh_pub));
@@ -70,8 +70,8 @@ NEW_RENEW_REVOKE::decodeApplicationParameters(const Block& payload, RequestType 
   }
   requestPayload.parse();
 
-  security::v2::Certificate cert = security::v2::Certificate(requestPayload.get(tlv::Data));
-  clientCert = make_shared<security::v2::Certificate>(cert);
+  security::Certificate cert = security::Certificate(requestPayload.get(tlv::Data));
+  clientCert = make_shared<security::Certificate>(cert);
 }
 
 Block

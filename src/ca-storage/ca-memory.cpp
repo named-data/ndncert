@@ -20,7 +20,7 @@
 
 #include "ca-memory.hpp"
 
-#include <ndn-cxx/security/v2/validation-policy.hpp>
+#include <ndn-cxx/security/validation-policy.hpp>
 
 namespace ndn {
 namespace ndncert {

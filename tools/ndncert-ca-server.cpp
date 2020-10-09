@@ -33,7 +33,7 @@ namespace ndn {
 namespace ndncert {
 
 Face face;
-security::v2::KeyChain keyChain;
+security::KeyChain keyChain;
 std::string repoHost = "localhost";
 std::string repoPort = "7376";
 

@@ -206,8 +206,8 @@ BOOST_AUTO_TEST_CASE(HandleProbeRedirection)
       }
     }
     BOOST_CHECK_EQUAL(redirectionItems.size(), 2);
-    BOOST_CHECK_EQUAL(security::v2::extractIdentityFromCertName(redirectionItems[0].getPrefix(-1)), "/ndn/site1");
-    BOOST_CHECK_EQUAL(security::v2::extractIdentityFromCertName(redirectionItems[1].getPrefix(-1)), "/ndn/site1");
+    BOOST_CHECK_EQUAL(security::extractIdentityFromCertName(redirectionItems[0].getPrefix(-1)), "/ndn/site1");
+    BOOST_CHECK_EQUAL(security::extractIdentityFromCertName(redirectionItems[1].getPrefix(-1)), "/ndn/site1");
   });
   face.receive(interest);
   advanceClocks(time::milliseconds(20), 60);
@@ -226,7 +226,7 @@ BOOST_AUTO_TEST_CASE(HandleNew)
 
   CaProfile item;
   item.m_caPrefix = Name("/ndn");
-  item.m_cert = std::make_shared<security::v2::Certificate>(cert);
+  item.m_cert = std::make_shared<security::Certificate>(cert);
   RequesterState state(m_keyChain, item, RequestType::NEW);
   auto interest = Requester::genNewInterest(state, Name("/ndn/zhiyi"),
                                             time::system_clock::now(),
@@ -275,7 +275,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidValidityPeriod1)
 
   CaProfile item;
   item.m_caPrefix = Name("/ndn");
-  item.m_cert = std::make_shared<security::v2::Certificate>(cert);
+  item.m_cert = std::make_shared<security::Certificate>(cert);
   RequesterState state(m_keyChain, item, RequestType::NEW);
   auto current_tp = time::system_clock::now();
   auto interest1 = Requester::genNewInterest(state, Name("/ndn/zhiyi"), current_tp, current_tp - time::hours(1));
@@ -306,7 +306,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithLongSuffix)
 
   CaProfile item;
   item.m_caPrefix = Name("/ndn");
-  item.m_cert = std::make_shared<security::v2::Certificate>(cert);
+  item.m_cert = std::make_shared<security::Certificate>(cert);
   RequesterState state(m_keyChain, item, RequestType::NEW);
 
   auto interest1 = Requester::genNewInterest(state, Name("/ndn/a"), time::system_clock::now(),
@@ -347,7 +347,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidLength1)
 
   CaProfile item;
   item.m_caPrefix = Name("/ndn");
-  item.m_cert = std::make_shared<security::v2::Certificate>(cert);
+  item.m_cert = std::make_shared<security::Certificate>(cert);
   RequesterState state(m_keyChain, item, RequestType::NEW);
 
   auto current_tp = time::system_clock::now();
@@ -378,7 +378,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
   // generate NEW Interest
   CaProfile item;
   item.m_caPrefix = Name("/ndn");
-  item.m_cert = std::make_shared<security::v2::Certificate>(cert);
+  item.m_cert = std::make_shared<security::Certificate>(cert);
   RequesterState state(m_keyChain, item, RequestType::NEW);
 
   auto newInterest = Requester::genNewInterest(state, Name("/ndn/zhiyi"), time::system_clock::now(),
@@ -453,7 +453,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
   //generate a certificate
   auto clientIdentity = m_keyChain.createIdentity("/ndn/qwerty");
   auto clientKey = clientIdentity.getDefaultKey();
-  security::v2::Certificate clientCert;
+  security::Certificate clientCert;
   clientCert.setName(Name(clientKey.getName()).append("cert-request").appendVersion());
   clientCert.setContentType(tlv::ContentType_Key);
   clientCert.setFreshnessPeriod(time::hours(24));
@@ -467,7 +467,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
 
   CaProfile item;
   item.m_caPrefix = Name("/ndn");
-  item.m_cert = std::make_shared<security::v2::Certificate>(cert);
+  item.m_cert = std::make_shared<security::Certificate>(cert);
   RequesterState state(m_keyChain, item, RequestType::REVOKE);
 
   auto interest = Requester::genRevokeInterest(state, issuedCert);
@@ -516,7 +516,7 @@ BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
   // generate a certificate
   auto clientIdentity = m_keyChain.createIdentity("/ndn/qwerty");
   auto clientKey = clientIdentity.getDefaultKey();
-  security::v2::Certificate clientCert;
+  security::Certificate clientCert;
   clientCert.setName(Name(clientKey.getName()).append("NDNCERT").append(std::to_string(1473283247810732701)));
   clientCert.setContentType(tlv::ContentType_Key);
   clientCert.setFreshnessPeriod(time::hours(24));
@@ -528,7 +528,7 @@ BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
 
   CaProfile item;
   item.m_caPrefix = Name("/ndn");
-  item.m_cert = std::make_shared<security::v2::Certificate>(cert);
+  item.m_cert = std::make_shared<security::Certificate>(cert);
   RequesterState state(m_keyChain, item, RequestType::NEW);
 
   auto interest = Requester::genRevokeInterest(state, clientCert);

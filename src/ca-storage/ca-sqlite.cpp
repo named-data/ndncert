@@ -23,7 +23,7 @@
 #include <sqlite3.h>
 
 #include <boost/filesystem.hpp>
-#include <ndn-cxx/security/v2/validation-policy.hpp>
+#include <ndn-cxx/security/validation-policy.hpp>
 #include <ndn-cxx/util/sqlite3-statement.hpp>
 
 namespace ndn {
@@ -120,7 +120,7 @@ CaSqlite::getRequest(const std::string& requestId)
     Name caName(statement.getBlock(1));
     auto status = static_cast<Status>(statement.getInt(2));
     auto challengeStatus = statement.getString(3);
-    security::v2::Certificate cert(statement.getBlock(4));
+    security::Certificate cert(statement.getBlock(4));
     auto challengeType = statement.getString(5);
     auto challengeSecrets = statement.getString(6);
     auto challengeTp = statement.getString(7);
@@ -217,7 +217,7 @@ CaSqlite::listAllRequests()
     Name caName(statement.getBlock(2));
     auto status = static_cast<Status>(statement.getInt(3));
     auto challengeStatus = statement.getString(4);
-    security::v2::Certificate cert(statement.getBlock(5));
+    security::Certificate cert(statement.getBlock(5));
     auto challengeType = statement.getString(6);
     auto challengeSecrets = statement.getString(7);
     auto challengeTp = statement.getString(8);
@@ -254,7 +254,7 @@ CaSqlite::listAllRequests(const Name& caName)
     Name caName(statement.getBlock(2));
     auto status = static_cast<Status>(statement.getInt(3));
     auto challengeStatus = statement.getString(4);
-    security::v2::Certificate cert(statement.getBlock(5));
+    security::Certificate cert(statement.getBlock(5));
     auto challengeType = statement.getString(6);
     auto challengeSecrets = statement.getString(7);
     auto challengeTp = statement.getString(8);

@@ -40,7 +40,7 @@ public:
   static Block
   encodeDataContent(const std::vector<Name>& identifiers,
                     boost::optional<size_t> maxSuffixLength = boost::none,
-                    boost::optional<std::vector<std::shared_ptr<security::v2::Certificate>>> redirectionItems = boost::none);
+                    boost::optional<std::vector<std::shared_ptr<security::Certificate>>> redirectionItems = boost::none);
 
   static std::vector<std::tuple<std::string, std::string>>
   decodeApplicationParameters(const Block& block);

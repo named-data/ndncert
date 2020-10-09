@@ -24,13 +24,13 @@ namespace ndn {
 namespace ndncert {
 
 Block
-INFO::encodeDataContent(const CaProfile& caConfig, const security::v2::Certificate& certificate)
+INFO::encodeDataContent(const CaProfile& caConfig, const security::Certificate& certificate)
 {
   auto content = makeEmptyBlock(tlv::Content);
   content.push_back(makeNestedBlock(tlv_ca_prefix, caConfig.m_caPrefix));
   std::string caInfo = "";
   if (caConfig.m_caInfo == "") {
-    caInfo = "Issued by " + certificate.getSignature().getKeyLocator().getName().toUri();
+    caInfo = "Issued by " + certificate.getSignatureInfo().getKeyLocator().getName().toUri();
   }
   else {
     caInfo = caConfig.m_caInfo;
@@ -73,7 +73,7 @@ INFO::decodeDataContent(const Block& block)
       break;
     case tlv_ca_certificate:
       item.parse();
-      result.m_cert = std::make_shared<security::v2::Certificate>(item.get(tlv::Data));
+      result.m_cert = std::make_shared<security::Certificate>(item.get(tlv::Data));
       break;
     default:
       continue;

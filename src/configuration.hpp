@@ -63,7 +63,7 @@ struct CaProfile {
    * CA's certificate. Only Client side will have m_cert.
    * Default: nullptr.
    */
-  std::shared_ptr<security::v2::Certificate> m_cert;
+  std::shared_ptr<security::Certificate> m_cert;
 
   void
   parse(const JsonSection& configJson);
@@ -126,7 +126,7 @@ public:
    * Used for CA redirection as specified in
    * https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3-PROBE-Extensions#probe-extension-for-redirection
    */
-  boost::optional<std::vector<std::shared_ptr<security::v2::Certificate>>> m_redirection;
+  boost::optional<std::vector<std::shared_ptr<security::Certificate>>> m_redirection;
   /**
    * StatusUpdate Callback function
    */

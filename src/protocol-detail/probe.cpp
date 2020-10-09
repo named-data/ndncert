@@ -50,7 +50,7 @@ PROBE::decodeApplicationParameters(const Block& block)
 
 Block
 PROBE::encodeDataContent(const std::vector<Name>& identifiers, boost::optional<size_t> maxSuffixLength,
-                         boost::optional<std::vector<std::shared_ptr<security::v2::Certificate>>> redirectionItems)
+                         boost::optional<std::vector<std::shared_ptr<security::Certificate>>> redirectionItems)
 {
   Block content = makeEmptyBlock(tlv::Content);
   for (const auto& name : identifiers) {

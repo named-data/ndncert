@@ -40,7 +40,7 @@ namespace ndncert {
 
 _LOG_INIT(ndncert.client);
 
-RequesterState::RequesterState(security::v2::KeyChain& keyChain, const CaProfile& caItem, RequestType requestType)
+RequesterState::RequesterState(security::KeyChain& keyChain, const CaProfile& caItem, RequestType requestType)
   : m_caItem(caItem)
   , m_keyChain(keyChain)
   , m_type(requestType)
@@ -85,7 +85,7 @@ Requester::onCaProfileResponseAfterRedirection(const Data& reply, const Name& ca
 {
   auto caItem = INFO::decodeDataContent(reply.getContent());
   auto certBlock = caItem.m_cert->wireEncode();
-  caItem.m_cert = std::make_shared<security::v2::Certificate>(certBlock);
+  caItem.m_cert = std::make_shared<security::Certificate>(certBlock);
   if (caItem.m_cert->getFullName() != caCertFullName) {
     _LOG_ERROR("Ca profile does not match the certificate information offered by the original CA.");
     BOOST_THROW_EXCEPTION(std::runtime_error("Cannot verify replied Data packet signature."));
@@ -156,7 +156,7 @@ Requester::genNewInterest(RequesterState& state, const Name& identityName,
   auto& keyName = state.m_keyPair.getName();
 
   // generate certificate request
-  security::v2::Certificate certRequest;
+  security::Certificate certRequest;
   certRequest.setName(Name(keyName).append("cert-request").appendVersion());
   certRequest.setContentType(tlv::ContentType_Key);
   certRequest.setContent(state.m_keyPair.getPublicKey().data(), state.m_keyPair.getPublicKey().size());
@@ -179,7 +179,7 @@ Requester::genNewInterest(RequesterState& state, const Name& identityName,
 }
 
 shared_ptr<Interest>
-Requester::genRevokeInterest(RequesterState& state, const security::v2::Certificate& certificate)
+Requester::genRevokeInterest(RequesterState& state, const security::Certificate& certificate)
 {
   if (!state.m_caItem.m_caPrefix.isPrefixOf(certificate.getName())) {
     return nullptr;
@@ -290,11 +290,11 @@ Requester::genCertFetchInterest(const RequesterState& state)
   return interest;
 }
 
-shared_ptr<security::v2::Certificate>
+shared_ptr<security::Certificate>
 Requester::onCertFetchResponse(const Data& reply)
 {
   try {
-    return std::make_shared<security::v2::Certificate>(reply);
+    return std::make_shared<security::Certificate>(reply);
   }
   catch (const std::exception& e) {
     _LOG_ERROR("Cannot parse replied certificate ");

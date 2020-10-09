@@ -75,7 +75,7 @@ CaProfile::parse(const JsonSection& configJson)
   auto certificateStr = configJson.get(CONFIG_CERTIFICATE, "");
   if (certificateStr != "") {
     std::istringstream ss(certificateStr);
-    m_cert = io::load<security::v2::Certificate>(ss);
+    m_cert = io::load<security::Certificate>(ss);
   }
 }
 
@@ -141,9 +141,9 @@ CaConfig::load(const std::string& fileName)
         BOOST_THROW_EXCEPTION(std::runtime_error("Redirect-to item's ca-prefix or certificate cannot be empty."));
       }
       std::istringstream ss(caCertStr);
-      auto caCert = io::load<security::v2::Certificate>(ss);
+      auto caCert = io::load<security::Certificate>(ss);
       if (!m_redirection) {
-        m_redirection = std::vector<std::shared_ptr<security::v2::Certificate>>();
+        m_redirection = std::vector<std::shared_ptr<security::Certificate>>();
       }
       m_redirection->push_back(caCert);
     }

@@ -43,7 +43,7 @@ CaState::CaState()
 }
 
 CaState::CaState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
-                 const security::v2::Certificate& cert, Block encryptionKey)
+                 const security::Certificate& cert, Block encryptionKey)
     : m_caPrefix(caName)
     , m_requestId(requestId)
     , m_requestType(requestType)
@@ -54,7 +54,7 @@ CaState::CaState(const Name& caName, const std::string& requestId, RequestType r
 }
 
 CaState::CaState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
-                 const security::v2::Certificate& cert, const std::string& challengeType,
+                 const security::Certificate& cert, const std::string& challengeType,
                  const std::string& challengeStatus, const system_clock::TimePoint& challengeTp,
                  size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
                  Block encryptionKey)

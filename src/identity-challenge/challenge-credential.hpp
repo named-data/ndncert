@@ -76,7 +76,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   parseConfigFile();
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  std::list<security::v2::Certificate> m_trustAnchors;
+  std::list<security::Certificate> m_trustAnchors;
   std::string m_configFile;
 };
 

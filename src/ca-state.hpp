@@ -49,9 +49,9 @@ class CaState {
 public:
   CaState();
   CaState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
-          const security::v2::Certificate& cert, Block m_encryptionKey);
+          const security::Certificate& cert, Block m_encryptionKey);
   CaState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
-          const security::v2::Certificate& cert, const std::string& challengeType,
+          const security::Certificate& cert, const std::string& challengeType,
           const std::string& challengeStatus, const system_clock::TimePoint& challengeTp,
           size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
           Block m_encryptionKey);
@@ -61,7 +61,7 @@ public:
   std::string m_requestId;
   RequestType m_requestType;
   Status m_status;
-  security::v2::Certificate m_cert;
+  security::Certificate m_cert;
   Block m_encryptionKey;
 
   std::string m_challengeType;
