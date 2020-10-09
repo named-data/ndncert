@@ -83,13 +83,16 @@ BOOST_AUTO_TEST_CASE(OnProbeResponse){
   reply.setContent(PROBE::encodeDataContent(availableNames, 3, ca.m_config.m_redirection));
   m_keyChain.sign(reply, signingByIdentity(identity));
 
-  std::vector<Name> names, redirects;
+  std::vector<std::pair<Name, int>> names;
+  std::vector<Name> redirects;
   Requester::onProbeResponse(reply, ca_profile, names, redirects);
 
   // Test names and redirects are properly stored
   BOOST_CHECK_EQUAL(names.size(), 2);
-  BOOST_CHECK_EQUAL(names[0].toUri(), "/site1");
-  BOOST_CHECK_EQUAL(names[1].toUri(), "/site2");
+  BOOST_CHECK_EQUAL(names[0].first.toUri(), "/site1");
+  BOOST_CHECK_EQUAL(names[0].second, 3);
+  BOOST_CHECK_EQUAL(names[1].first.toUri(), "/site2");
+  BOOST_CHECK_EQUAL(names[1].second, 3);
 
   BOOST_CHECK_EQUAL(redirects.size(), 2);
   BOOST_CHECK_EQUAL(security::extractIdentityFromCertName(redirects[0].getPrefix(-1)), "/ndn/site1");
@@ -113,7 +116,8 @@ BOOST_AUTO_TEST_CASE(ErrorHandling)
   errorPacket.setContent(ErrorTLV::encodeDataContent(ErrorCode::INVALID_PARAMETER, "This is a test."));
   m_keyChain.sign(errorPacket, signingByIdentity(identity));
 
-  std::vector<Name> ids, cas;
+  std::vector<std::pair<Name, int>> ids;
+  std::vector<Name> cas;
   BOOST_CHECK_THROW(Requester::onProbeResponse(errorPacket, item, ids, cas), std::runtime_error);
   BOOST_CHECK_THROW(Requester::onNewRenewRevokeResponse(state, errorPacket), std::runtime_error);
   BOOST_CHECK_THROW(Requester::onChallengeResponse(state, errorPacket), std::runtime_error);

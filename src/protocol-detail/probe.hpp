@@ -33,7 +33,7 @@ public:
   encodeApplicationParameters(std::vector<std::tuple<std::string, std::string>>&& parameters);
 
   static void
-  decodeDataContent(const Block& block, std::vector<Name>& availableNames,
+  decodeDataContent(const Block& block, std::vector<std::pair<Name, int>>& availableNames,
                     std::vector<Name>& availableRedirection);
 
   // For CA use

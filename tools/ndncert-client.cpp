@@ -238,7 +238,7 @@ InfoCb(const Data& reply, const Name& certFullName)
 static void
 probeCb(const Data& reply, CaProfile profile)
 {
-  std::vector<Name> names;
+  std::vector<std::pair<Name, int>> names;
   std::vector<Name> redirects;
   Requester::onProbeResponse(reply, profile, names, redirects);
   size_t count = 0;
@@ -247,7 +247,8 @@ probeCb(const Data& reply, CaProfile profile)
             << ": You can either select one of the following names suggested by the CA: " << std::endl;
   for (const auto& name : names) {
     std::cerr << "> Index: " << count++ << std::endl
-              << ">> Suggested name: " << name.toUri() << std::endl;
+              << ">> Suggested name: " << name.first.toUri() << std::endl
+              << ">> Corresponding Max sufiix length: " << name.second << std::endl;
   }
   std::cerr << "\nOr choose another trusted CA suggested by the CA: " << std::endl;
   for (const auto& redirect : redirects) {
@@ -271,8 +272,9 @@ probeCb(const Data& reply, CaProfile profile)
   }
   if (index < names.size()) {
     //names
-    std::cerr << "You selected name: " << names[index].toUri() << std::endl;
-    runNew(profile, names[index]);
+    std::cerr << "You selected name: " << names[index].first.toUri() << std::endl;
+    //TODO add prompt to "add suffix"
+    runNew(profile, names[index].first);
   }
   else {
     //redirects

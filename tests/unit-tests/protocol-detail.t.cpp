@@ -63,9 +63,11 @@ BOOST_AUTO_TEST_CASE(TestProbe)
   std::vector<Name> ids;
   ids.push_back(Name("/example"));
   auto contentTlv = PROBE::encodeDataContent(ids, 2, config.m_redirection);
-  std::vector<Name> decodedIds, decodedRedirectionItems;
+  std::vector<Name> decodedRedirectionItems;
+  std::vector<std::pair<Name, int>> decodedIds;
   PROBE::decodeDataContent(contentTlv, decodedIds, decodedRedirectionItems);
-  BOOST_CHECK_EQUAL(decodedIds[0], Name("/example"));
+  BOOST_CHECK_EQUAL(decodedIds[0].first, Name("/example"));
+  BOOST_CHECK_EQUAL(decodedIds[0].second, 2);
   BOOST_CHECK_EQUAL(decodedRedirectionItems[0], config.m_redirection->at(0)->getFullName());
 }
 

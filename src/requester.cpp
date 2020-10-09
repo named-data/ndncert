@@ -107,7 +107,7 @@ Requester::genProbeInterest(const CaProfile& ca, std::vector<std::tuple<std::str
 
 void
 Requester::onProbeResponse(const Data& reply, const CaProfile& ca,
-                           std::vector<Name>& identityNames, std::vector<Name>& otherCas)
+                           std::vector<std::pair<Name, int>>& identityNames, std::vector<Name>& otherCas)
 {
   if (!security::verifySignature(reply, *ca.m_cert)) {
     _LOG_ERROR("Cannot verify replied Data packet signature.");

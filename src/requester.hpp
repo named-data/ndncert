@@ -158,7 +158,7 @@ public:
    */
   static void
   onProbeResponse(const Data& reply, const CaProfile& ca,
-                  std::vector<Name>& identityNames, std::vector<Name>& otherCas);
+                  std::vector<std::pair<Name, int>>& identityNames, std::vector<Name>& otherCas);
 
   // NEW/REVOKE/RENEW related helpers
   /**

@@ -54,10 +54,12 @@ PROBE::encodeDataContent(const std::vector<Name>& identifiers, boost::optional<s
 {
   Block content = makeEmptyBlock(tlv::Content);
   for (const auto& name : identifiers) {
-    content.push_back(makeNestedBlock(tlv_probe_response, name));
-  }
-  if (maxSuffixLength) {
-    content.push_back(makeNonNegativeIntegerBlock(tlv_max_suffix_length, *maxSuffixLength));
+    Block item(tlv_probe_response);
+    item.push_back(name.wireEncode());
+    if (maxSuffixLength) {
+      item.push_back(makeNonNegativeIntegerBlock(tlv_max_suffix_length, *maxSuffixLength));
+    }
+    content.push_back(item);
   }
   if (redirectionItems) {
     for (const auto& item : *redirectionItems) {
@@ -70,16 +72,32 @@ PROBE::encodeDataContent(const std::vector<Name>& identifiers, boost::optional<s
 
 void
 PROBE::decodeDataContent(const Block& block,
-                         std::vector<Name>& availableNames,
+                         std::vector<std::pair<Name, int>>& availableNames,
                          std::vector<Name>& availableRedirection)
 {
   block.parse();
   for (const auto& item : block.elements()) {
     if (item.type() == tlv_probe_response) {
-      availableNames.push_back(Name(item.blockFromValue()));
+      item.parse();
+      Name elementName;
+      int maxSuffixLength = 0;
+      for (const auto& subBlock: item.elements()) {
+          if (subBlock.type() == tlv::Name) {
+              if (!elementName.empty()) {
+                  BOOST_THROW_EXCEPTION(std::runtime_error("Invalid probe format"));
+              }
+              elementName.wireDecode(subBlock);
+          } else if (subBlock.type() == tlv_max_suffix_length) {
+              maxSuffixLength = readNonNegativeInteger(subBlock);
+          }
+      }
+      if (elementName.empty()) {
+          BOOST_THROW_EXCEPTION(std::runtime_error("Invalid probe format"));
+      }
+      availableNames.emplace_back(elementName, maxSuffixLength);
     }
     if (item.type() == tlv_probe_redirect) {
-      availableRedirection.push_back(Name(item.blockFromValue()));
+      availableRedirection.emplace_back(Name(item.blockFromValue()));
     }
   }
 }
