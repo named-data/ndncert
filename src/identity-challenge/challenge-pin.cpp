@@ -98,7 +98,7 @@ ChallengePin::getRequestedParameterList(Status status, const std::string& challe
     result.push_back(std::make_tuple(PARAMETER_KEY_CODE, "Incorrect PIN code, please try again"));
   }
   else {
-    BOOST_THROW_EXCEPTION(std::runtime_error("Unexpected status or challenge status."));
+    NDN_THROW(std::runtime_error("Unexpected status or challenge status."));
   }
   return result;
 }
@@ -112,14 +112,14 @@ ChallengePin::genChallengeRequestTLV(Status status, const std::string& challenge
   }
   else if (status == Status::CHALLENGE && (challengeStatus == NEED_CODE || challengeStatus == WRONG_CODE)) {
     if (params.size() != 1 || std::get<0>(params[0]) != PARAMETER_KEY_CODE) {
-      BOOST_THROW_EXCEPTION(std::runtime_error("Wrong parameter provided."));
+      NDN_THROW(std::runtime_error("Wrong parameter provided."));
     }
     request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
     request.push_back(makeStringBlock(tlv_parameter_key, PARAMETER_KEY_CODE));
     request.push_back(makeStringBlock(tlv_parameter_value, std::get<1>(params[0])));
   }
   else {
-    BOOST_THROW_EXCEPTION(std::runtime_error("Unexpected status or challenge status."));
+    NDN_THROW(std::runtime_error("Unexpected status or challenge status."));
   }
   request.encode();
   return request;

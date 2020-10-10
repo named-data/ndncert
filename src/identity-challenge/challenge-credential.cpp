@@ -52,12 +52,12 @@ ChallengeCredential::parseConfigFile()
     boost::property_tree::read_json(m_configFile, config);
   }
   catch (const boost::property_tree::info_parser_error& error) {
-    BOOST_THROW_EXCEPTION(std::runtime_error("Failed to parse configuration file " + m_configFile +
+    NDN_THROW(std::runtime_error("Failed to parse configuration file " + m_configFile +
                                              " " + error.message() + " line " + std::to_string(error.line())));
   }
 
   if (config.begin() == config.end()) {
-    BOOST_THROW_EXCEPTION(std::runtime_error("Error processing configuration file: " + m_configFile + " no data"));
+    NDN_THROW(std::runtime_error("Error processing configuration file: " + m_configFile + " no data"));
   }
 
   m_trustAnchors.clear();
@@ -132,7 +132,7 @@ ChallengeCredential::getRequestedParameterList(Status status, const std::string&
     result.push_back(std::make_tuple(PARAMETER_KEY_PROOF_OF_PRIVATE_KEY, "Please sign a Data packet with request ID as the content."));
     return result;
   }
-  BOOST_THROW_EXCEPTION(std::runtime_error("Unexpected status or challenge status."));
+  NDN_THROW(std::runtime_error("Unexpected status or challenge status."));
 }
 
 Block
@@ -142,7 +142,7 @@ ChallengeCredential::genChallengeRequestTLV(Status status, const std::string& ch
   Block request = makeEmptyBlock(tlv_encrypted_payload);
   if (status == Status::BEFORE_CHALLENGE) {
     if (params.size() != 2) {
-      BOOST_THROW_EXCEPTION(std::runtime_error("Wrong parameter provided."));
+      NDN_THROW(std::runtime_error("Wrong parameter provided."));
     }
     request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
     for (const auto& item : params) {
@@ -160,12 +160,12 @@ ChallengeCredential::genChallengeRequestTLV(Status status, const std::string& ch
         request.push_back(valueBlock);
       }
       else {
-        BOOST_THROW_EXCEPTION(std::runtime_error("Wrong parameter provided."));
+        NDN_THROW(std::runtime_error("Wrong parameter provided."));
       }
     }
   }
   else {
-    BOOST_THROW_EXCEPTION(std::runtime_error("Unexpected status or challenge status."));
+    NDN_THROW(std::runtime_error("Unexpected status or challenge status."));
   }
   request.encode();
   return request;

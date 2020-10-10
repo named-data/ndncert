@@ -84,7 +84,7 @@ PROBE::decodeDataContent(const Block& block,
       for (const auto& subBlock: item.elements()) {
           if (subBlock.type() == tlv::Name) {
               if (!elementName.empty()) {
-                  BOOST_THROW_EXCEPTION(std::runtime_error("Invalid probe format"));
+                  NDN_THROW(std::runtime_error("Invalid probe format"));
               }
               elementName.wireDecode(subBlock);
           } else if (subBlock.type() == tlv_max_suffix_length) {
@@ -92,7 +92,7 @@ PROBE::decodeDataContent(const Block& block,
           }
       }
       if (elementName.empty()) {
-          BOOST_THROW_EXCEPTION(std::runtime_error("Invalid probe format"));
+          NDN_THROW(std::runtime_error("Invalid probe format"));
       }
       availableNames.emplace_back(elementName, maxSuffixLength);
     }

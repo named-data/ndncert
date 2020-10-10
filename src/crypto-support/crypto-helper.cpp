@@ -378,7 +378,7 @@ void
 handleErrors(const std::string& errorInfo)
 {
   NDN_LOG_DEBUG("Error in CRYPTO SUPPORT " << errorInfo);
-  BOOST_THROW_EXCEPTION(CryptoError("Error in CRYPTO SUPPORT: " + errorInfo));
+  NDN_THROW(CryptoError("Error in CRYPTO SUPPORT: " + errorInfo));
 }
 
 } // namespace ndncert

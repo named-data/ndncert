@@ -88,7 +88,7 @@ CaSqlite::CaSqlite(const Name& caName, const std::string& path)
 #endif
   );
   if (result != SQLITE_OK)
-    BOOST_THROW_EXCEPTION(std::runtime_error("CaSqlite DB cannot be opened/created: " + dbDir.string()));
+    NDN_THROW(std::runtime_error("CaSqlite DB cannot be opened/created: " + dbDir.string()));
 
   // initialize database specific tables
   char* errorMessage = nullptr;
@@ -96,7 +96,7 @@ CaSqlite::CaSqlite(const Name& caName, const std::string& path)
                         nullptr, nullptr, &errorMessage);
   if (result != SQLITE_OK && errorMessage != nullptr) {
     sqlite3_free(errorMessage);
-    BOOST_THROW_EXCEPTION(std::runtime_error("CaSqlite DB cannot be initialized"));
+    NDN_THROW(std::runtime_error("CaSqlite DB cannot be initialized"));
   }
 }
 
@@ -139,7 +139,7 @@ CaSqlite::getRequest(const std::string& requestId)
     }
   }
   else {
-    BOOST_THROW_EXCEPTION(std::runtime_error("Request " + requestId + " cannot be fetched from database"));
+    NDN_THROW(std::runtime_error("Request " + requestId + " cannot be fetched from database"));
   }
 }
 
@@ -168,7 +168,7 @@ CaSqlite::addRequest(const CaState& request)
     statement.bind(11, request.m_challengeState->m_remainingTime.count());
   }
   if (statement.step() != SQLITE_DONE) {
-    BOOST_THROW_EXCEPTION(std::runtime_error("Request " + request.m_requestId + " cannot be added to database"));
+    NDN_THROW(std::runtime_error("Request " + request.m_requestId + " cannot be added to database"));
   }
 }
 

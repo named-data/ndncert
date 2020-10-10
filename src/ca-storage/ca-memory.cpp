@@ -40,7 +40,7 @@ CaMemory::getRequest(const std::string& requestId)
 {
   auto search = m_requests.find(requestId);
   if (search == m_requests.end()) {
-    BOOST_THROW_EXCEPTION(std::runtime_error("Request " + requestId + " doest not exists"));
+    NDN_THROW(std::runtime_error("Request " + requestId + " doest not exists"));
   }
   return search->second;
 }
@@ -53,7 +53,7 @@ CaMemory::addRequest(const CaState& request)
     m_requests[request.m_requestId] = request;
   }
   else {
-    BOOST_THROW_EXCEPTION(std::runtime_error("Request " + request.m_requestId + " already exists"));
+    NDN_THROW(std::runtime_error("Request " + request.m_requestId + " already exists"));
   }
 }
 

@@ -67,7 +67,7 @@ Requester::onCaProfileResponse(const Data& reply)
   auto caItem = INFO::decodeDataContent(reply.getContent());
   if (!security::verifySignature(reply, *caItem.m_cert)) {
     NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
-    BOOST_THROW_EXCEPTION(std::runtime_error("Cannot verify replied Data packet signature."));
+    NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
   }
   return caItem;
 }
@@ -81,7 +81,7 @@ Requester::onCaProfileResponseAfterRedirection(const Data& reply, const Name& ca
   caItem.m_cert = std::make_shared<security::Certificate>(certBlock);
   if (caItem.m_cert->getFullName() != caCertFullName) {
     NDN_LOG_ERROR("Ca profile does not match the certificate information offered by the original CA.");
-    BOOST_THROW_EXCEPTION(std::runtime_error("Cannot verify replied Data packet signature."));
+    NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
   }
   return onCaProfileResponse(reply);
 }
@@ -104,7 +104,7 @@ Requester::onProbeResponse(const Data& reply, const CaProfile& ca,
 {
   if (!security::verifySignature(reply, *ca.m_cert)) {
     NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
-    BOOST_THROW_EXCEPTION(std::runtime_error("Cannot verify replied Data packet signature."));
+    NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
     return;
   }
   processIfError(reply);
@@ -193,7 +193,7 @@ Requester::onNewRenewRevokeResponse(RequesterState& state, const Data& reply)
 {
   if (!security::verifySignature(reply, *state.m_caItem.m_cert)) {
     NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
-    BOOST_THROW_EXCEPTION(std::runtime_error("Cannot verify replied Data packet signature."));
+    NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
   }
   processIfError(reply);
 
@@ -216,7 +216,7 @@ Requester::selectOrContinueChallenge(RequesterState& state, const std::string& c
 {
   auto challenge = ChallengeModule::createChallengeModule(challengeSelected);
   if (challenge == nullptr) {
-    BOOST_THROW_EXCEPTION(std::runtime_error("The challenge selected is not supported by your current version of NDNCERT."));
+    NDN_THROW(std::runtime_error("The challenge selected is not supported by your current version of NDNCERT."));
   }
   state.m_challengeType = challengeSelected;
   return challenge->getRequestedParameterList(state.m_status, state.m_challengeStatus);
@@ -227,11 +227,11 @@ Requester::genChallengeInterest(const RequesterState& state,
                                 std::vector<std::tuple<std::string, std::string>>&& parameters)
 {
   if (state.m_challengeType == "") {
-    BOOST_THROW_EXCEPTION(std::runtime_error("The challenge has not been selected."));
+    NDN_THROW(std::runtime_error("The challenge has not been selected."));
   }
   auto challenge = ChallengeModule::createChallengeModule(state.m_challengeType);
   if (challenge == nullptr) {
-    BOOST_THROW_EXCEPTION(std::runtime_error("The challenge selected is not supported by your current version of NDNCERT."));
+    NDN_THROW(std::runtime_error("The challenge selected is not supported by your current version of NDNCERT."));
   }
   auto challengeParams = challenge->genChallengeRequestTLV(state.m_status, state.m_challengeStatus, std::move(parameters));
 
@@ -255,7 +255,7 @@ Requester::onChallengeResponse(RequesterState& state, const Data& reply)
 {
   if (!security::verifySignature(reply, *state.m_caItem.m_cert)) {
     NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
-    BOOST_THROW_EXCEPTION(std::runtime_error("Cannot verify replied Data packet signature."));
+    NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
   }
   processIfError(reply);
   auto result = decodeBlockWithAesGcm128(reply.getContent(), state.m_aesKey, (const uint8_t*)"test", strlen("test"));
@@ -281,7 +281,7 @@ Requester::onCertFetchResponse(const Data& reply)
   }
   catch (const std::exception& e) {
     NDN_LOG_ERROR("Cannot parse replied certificate ");
-    BOOST_THROW_EXCEPTION(std::runtime_error("Cannot parse replied certificate "));
+    NDN_THROW(std::runtime_error("Cannot parse replied certificate "));
     return nullptr;
   }
 }
@@ -315,7 +315,7 @@ Requester::processIfError(const Data& data)
   NDN_LOG_ERROR("Error info replied from the CA with Error code: " +
             errorCodeToString(std::get<0>(errorInfo)) +
             " and Error Info: " + std::get<1>(errorInfo));
-  BOOST_THROW_EXCEPTION(std::runtime_error("Error info replied from the CA with Error code: " +
+  NDN_THROW(std::runtime_error("Error info replied from the CA with Error code: " +
                                            errorCodeToString(std::get<0>(errorInfo)) +
                                            " and Error Info: " + std::get<1>(errorInfo)));
 }

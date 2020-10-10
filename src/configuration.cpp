@@ -33,7 +33,7 @@ CaProfile::parse(const JsonSection& configJson)
   // CA prefix
   m_caPrefix = Name(configJson.get(CONFIG_CA_PREFIX, ""));
   if (m_caPrefix.empty()) {
-    BOOST_THROW_EXCEPTION(std::runtime_error("Cannot parse ca-prefix from the config file"));
+    NDN_THROW(std::runtime_error("Cannot parse ca-prefix from the config file"));
   }
   // CA info
   m_caInfo = configJson.get(CONFIG_CA_INFO, "");
@@ -49,7 +49,7 @@ CaProfile::parse(const JsonSection& configJson)
       auto probeParameter = item.second.get(CONFIG_PROBE_PARAMETER, "");
       probeParameter = boost::algorithm::to_lower_copy(probeParameter);
       if (probeParameter == "") {
-        BOOST_THROW_EXCEPTION(std::runtime_error("Probe parameter key cannot be empty."));
+        NDN_THROW(std::runtime_error("Probe parameter key cannot be empty."));
       }
       m_probeParameterKeys.push_back(probeParameter);
     }
@@ -62,10 +62,10 @@ CaProfile::parse(const JsonSection& configJson)
       auto challengeType = item.second.get(CONFIG_CHALLENGE, "");
       challengeType = boost::algorithm::to_lower_copy(challengeType);
       if (challengeType == "") {
-        BOOST_THROW_EXCEPTION(std::runtime_error("Challenge type canont be empty."));
+        NDN_THROW(std::runtime_error("Challenge type canont be empty."));
       }
       if (!ChallengeModule::isChallengeSupported(challengeType)) {
-        BOOST_THROW_EXCEPTION(std::runtime_error("Challenge " + challengeType + " is not supported."));
+        NDN_THROW(std::runtime_error("Challenge " + challengeType + " is not supported."));
       }
       m_supportedChallenges.push_back(challengeType);
     }
@@ -121,14 +121,14 @@ CaConfig::load(const std::string& fileName)
     boost::property_tree::read_json(fileName, configJson);
   }
   catch (const std::exception& error) {
-    BOOST_THROW_EXCEPTION(std::runtime_error("Failed to parse configuration file " + fileName + ", " + error.what()));
+    NDN_THROW(std::runtime_error("Failed to parse configuration file " + fileName + ", " + error.what()));
   }
   if (configJson.begin() == configJson.end()) {
-    BOOST_THROW_EXCEPTION(std::runtime_error("No JSON configuration found in file: " + fileName));
+    NDN_THROW(std::runtime_error("No JSON configuration found in file: " + fileName));
   }
   m_caItem.parse(configJson);
   if (m_caItem.m_supportedChallenges.size() == 0) {
-    BOOST_THROW_EXCEPTION(std::runtime_error("At least one challenge should be specified."));
+    NDN_THROW(std::runtime_error("At least one challenge should be specified."));
   }
   // parse redirection section if appears
   m_redirection = boost::none;
@@ -138,7 +138,7 @@ CaConfig::load(const std::string& fileName)
       auto caPrefixStr = item.second.get(CONFIG_CA_PREFIX, "");
       auto caCertStr = item.second.get(CONFIG_CERTIFICATE, "");
       if (caCertStr == "") {
-        BOOST_THROW_EXCEPTION(std::runtime_error("Redirect-to item's ca-prefix or certificate cannot be empty."));
+        NDN_THROW(std::runtime_error("Redirect-to item's ca-prefix or certificate cannot be empty."));
       }
       std::istringstream ss(caCertStr);
       auto caCert = io::load<security::Certificate>(ss);
@@ -155,7 +155,7 @@ CaConfig::load(const std::string& fileName)
     for (const auto& item : *nameAssignmentItems) {
       auto func = NameAssignmentFunc::createNameAssignmentFunc(item.first, item.second.data());
       if (func == nullptr) {
-        BOOST_THROW_EXCEPTION(std::runtime_error("Error on creating name assignment function"));
+        NDN_THROW(std::runtime_error("Error on creating name assignment function"));
       }
       m_nameAssignmentFuncs.push_back(std::move(func));
     }
@@ -170,10 +170,10 @@ RequesterCaCache::load(const std::string& fileName)
     boost::property_tree::read_json(fileName, configJson);
   }
   catch (const std::exception& error) {
-    BOOST_THROW_EXCEPTION(std::runtime_error("Failed to parse configuration file " + fileName + ", " + error.what()));
+    NDN_THROW(std::runtime_error("Failed to parse configuration file " + fileName + ", " + error.what()));
   }
   if (configJson.begin() == configJson.end()) {
-    BOOST_THROW_EXCEPTION(std::runtime_error("No JSON configuration found in file: " + fileName));
+    NDN_THROW(std::runtime_error("No JSON configuration found in file: " + fileName));
   }
   load(configJson);
 }
@@ -187,7 +187,7 @@ RequesterCaCache::load(const JsonSection& configSection)
     CaProfile caItem;
     caItem.parse(item.second);
     if (caItem.m_cert == nullptr) {
-      BOOST_THROW_EXCEPTION(std::runtime_error("No CA certificate is loaded from JSON configuration."));
+      NDN_THROW(std::runtime_error("No CA certificate is loaded from JSON configuration."));
     }
     m_caItems.push_back(std::move(caItem));
   }
