@@ -21,7 +21,7 @@
 #ifndef NDNCERT_CRYPTO_SUPPORT_CRYPTO_HELPER_HPP
 #define NDNCERT_CRYPTO_SUPPORT_CRYPTO_HELPER_HPP
 
-#include "ca-state.hpp"
+#include "../ndncert-common.hpp"
 #include <openssl/ec.h>
 #include <openssl/evp.h>
 
@@ -57,8 +57,9 @@ public:
   deriveSecret(const std::string& peerKeyStr);
   unique_ptr<ECDH_CTX> context;
 
-  PUBLIC_WITH_TESTS_ELSE_PRIVATE : uint8_t*
-                                   deriveSecret(const uint8_t* peerkey, int peerKeySize);
+  PUBLIC_WITH_TESTS_ELSE_PRIVATE :
+  uint8_t*
+  deriveSecret(const uint8_t* peerkey, int peerKeySize);
 
   uint8_t*
   getRawSelfPubKey();

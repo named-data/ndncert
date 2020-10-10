@@ -20,7 +20,6 @@
 
 #include "enc-tlv.hpp"
 #include "crypto-helper.hpp"
-
 #include <ndn-cxx/encoding/block-helpers.hpp>
 #include <ndn-cxx/encoding/buffer-stream.hpp>
 #include <ndn-cxx/security/transform/block-cipher.hpp>
