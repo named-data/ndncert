@@ -23,6 +23,23 @@
 namespace ndn {
 namespace ndncert {
 
+std::string
+convertJson2String(const JsonSection& json)
+{
+  std::stringstream ss;
+  boost::property_tree::write_json(ss, json);
+  return ss.str();
+}
+
+JsonSection
+convertString2Json(const std::string& jsonContent)
+{
+  std::istringstream ss(jsonContent);
+  JsonSection json;
+  boost::property_tree::json_parser::read_json(ss, json);
+  return json;
+}
+
 std::string statusToString(Status status) {
   switch (status)
   {
@@ -45,23 +62,6 @@ std::string statusToString(Status status) {
   }
 }
 
-std::string requestTypeToString(RequestType type)
-{
-  switch (type)
-  {
-  case RequestType::NEW:
-    return "New";
-  case RequestType::RENEW:
-    return "Renew";
-  case RequestType::REVOKE:
-    return "Revoke";
-  case RequestType::NOTINITIALIZED:
-    return "Not initalized";
-  default:
-    return "Unrecognized type";
-  }
-}
-
 std::map<ErrorCode, std::string> errorCodeText = {
   {ErrorCode::NO_ERROR,             "NO_ERROR"},
   {ErrorCode::BAD_INTEREST_FORMAT,  "BAD_INTEREST_FORMAT"},
@@ -80,21 +80,21 @@ std::string errorCodeToString(ErrorCode code)
   return errorCodeText.at(code);
 }
 
-std::string
-convertJson2String(const JsonSection& json)
+std::string requestTypeToString(RequestType type)
 {
-  std::stringstream ss;
-  boost::property_tree::write_json(ss, json);
-  return ss.str();
-}
-
-JsonSection
-convertString2Json(const std::string& jsonContent)
-{
-  std::istringstream ss(jsonContent);
-  JsonSection json;
-  boost::property_tree::json_parser::read_json(ss, json);
-  return json;
+  switch (type)
+  {
+  case RequestType::NEW:
+    return "New";
+  case RequestType::RENEW:
+    return "Renew";
+  case RequestType::REVOKE:
+    return "Revoke";
+  case RequestType::NOTINITIALIZED:
+    return "Not initalized";
+  default:
+    return "Unrecognized type";
+  }
 }
 
 }  // namespace ndncert

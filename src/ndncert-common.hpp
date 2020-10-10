@@ -124,9 +124,16 @@ const std::string CONFIG_CHALLENGE = "challenge";
 const std::string CONFIG_CERTIFICATE = "certificate";
 const std::string CONFIG_REDIRECTION = "redirect-to";
 const std::string CONFIG_NAME_ASSIGNMENT = "name-assignment";
+typedef boost::property_tree::ptree JsonSection;
 
+// JSON and string translation for Config file parsing
+std::string
+convertJson2String(const JsonSection& json);
 
-// NDNCERT Status Enum
+JsonSection
+convertString2Json(const std::string& jsonContent);
+
+// NDNCERT Request status enumeration
 enum class Status : uint16_t {
   BEFORE_CHALLENGE = 0,
   CHALLENGE = 1,
@@ -137,8 +144,11 @@ enum class Status : uint16_t {
   ENDED = 6
 };
 
-std::string statusToString(Status status);
+// Convert request status to string
+std::string
+statusToString(Status status);
 
+// NDNCERT error code
 enum class ErrorCode : uint16_t {
   NO_ERROR = 0,
   BAD_INTEREST_FORMAT = 1,
@@ -152,6 +162,11 @@ enum class ErrorCode : uint16_t {
   NO_AVAILABLE_NAMES = 9
 };
 
+// Convert error code to string
+std::string
+errorCodeToString(ErrorCode code);
+
+// NDNCERT request type
 enum class RequestType : uint16_t {
   NOTINITIALIZED = 0,
   NEW = 1,
@@ -159,17 +174,9 @@ enum class RequestType : uint16_t {
   REVOKE = 3
 };
 
-std::string requestTypeToString(RequestType type);
-
-std::string errorCodeToString(ErrorCode code);
-
-typedef boost::property_tree::ptree JsonSection;
-
+// Convert request type to string
 std::string
-convertJson2String(const JsonSection& json);
-
-JsonSection
-convertString2Json(const std::string& jsonContent);
+requestTypeToString(RequestType type);
 
 }  // namespace ndncert
 }  // namespace ndn
