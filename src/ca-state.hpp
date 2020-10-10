@@ -26,6 +26,9 @@
 namespace ndn {
 namespace ndncert {
 
+/**
+ * @brief The state maintained by the Challenge modules
+ */
 struct ChallengeState {
   ChallengeState(const std::string& challengeStatus, const system_clock::TimePoint& challengeTp,
                  size_t remainingTries, time::seconds remainingTime,
@@ -38,11 +41,9 @@ struct ChallengeState {
 };
 
 /**
- * @brief Represents a certificate request instance.
+ * @brief Represents a certificate request instance kept by the CA.
  *
- * ChallengeModule should take use of m_challengeStatus, m_challengeInstruction and
- * m_challengeDefinedField to finish verification.
- *
+ * ChallengeModule should take use of ChallengeState to keep state.
  */
 class CaState {
 

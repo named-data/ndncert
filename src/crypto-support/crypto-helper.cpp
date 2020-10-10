@@ -191,7 +191,7 @@ ECDHState::deriveSecret(const std::string& peerKeyStr)
 }
 
 int
-ndn_compute_hmac_sha256(const uint8_t* data, const unsigned data_length,
+hmac_sha256(const uint8_t* data, const unsigned data_length,
                         const uint8_t* key, const unsigned key_length,
                         uint8_t* result)
 {
@@ -203,28 +203,28 @@ ndn_compute_hmac_sha256(const uint8_t* data, const unsigned data_length,
 
 // avoid dependency on OpenSSL >= 1.1
 int
-hkdf(const uint8_t* secret, int secretLen, const uint8_t* salt,
-     int saltLen, uint8_t* okm, int okm_len,
+hkdf(const uint8_t* secret, int secret_len, const uint8_t* salt,
+     int salt_len, uint8_t* output, int output_len,
      const uint8_t* info, int info_len)
 {
   namespace t = ndn::security::transform;
 
   // hkdf generate prk
   uint8_t prk[HASH_SIZE];
-  if (saltLen == 0) {
+  if (salt_len == 0) {
     uint8_t realSalt[HASH_SIZE] = {0};
-    ndn_compute_hmac_sha256(secret, secretLen, realSalt, HASH_SIZE, prk);
+    hmac_sha256(secret, secret_len, realSalt, HASH_SIZE, prk);
   }
   else {
-    ndn_compute_hmac_sha256(secret, secretLen, salt, saltLen, prk);
+    hmac_sha256(secret, secret_len, salt, salt_len, prk);
   }
 
   // hkdf expand
   uint8_t prev[HASH_SIZE] = {0};
-  int done_len = 0, dig_len = HASH_SIZE, n = okm_len / dig_len;
-  if (okm_len % dig_len)
+  int done_len = 0, dig_len = HASH_SIZE, n = output_len / dig_len;
+  if (output_len % dig_len)
     n++;
-  if (n > 255 || okm == nullptr)
+  if (n > 255 || output == nullptr)
     return 0;
 
   for (int i = 1; i <= n; i++) {
@@ -246,8 +246,8 @@ hkdf(const uint8_t* secret, int secretLen, const uint8_t* salt,
 
     auto result = os.buf();
     memcpy(prev, result->data(), dig_len);
-    copy_len = (done_len + dig_len > okm_len) ? okm_len - done_len : dig_len;
-    memcpy(okm + done_len, prev, copy_len);
+    copy_len = (done_len + dig_len > output_len) ? output_len - done_len : dig_len;
+    memcpy(output + done_len, prev, copy_len);
     done_len += copy_len;
   }
   return done_len;

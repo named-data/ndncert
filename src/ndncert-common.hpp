@@ -41,6 +41,7 @@
 #include <ndn-cxx/encoding/tlv.hpp>
 #include <ndn-cxx/data.hpp>
 #include <ndn-cxx/encoding/block.hpp>
+#include <ndn-cxx/encoding/block-helpers.hpp>
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/interest.hpp>
 #include <ndn-cxx/link.hpp>

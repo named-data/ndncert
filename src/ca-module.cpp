@@ -293,7 +293,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   // create new request instance
   uint8_t requestIdData[32];
   Block certNameTlv = clientCert->getName().wireEncode();
-  ndn_compute_hmac_sha256(certNameTlv.wire(), certNameTlv.size(), m_requestIdGenKey, 32, requestIdData);
+  hmac_sha256(certNameTlv.wire(), certNameTlv.size(), m_requestIdGenKey, 32, requestIdData);
   CaState requestState(m_config.m_caItem.m_caPrefix, toHex(requestIdData, 32),
                        requestType, Status::BEFORE_CHALLENGE, *clientCert,
                        makeBinaryBlock(tlv::ContentType_Key, aesKey, sizeof(aesKey)));

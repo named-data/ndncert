@@ -92,7 +92,7 @@ BOOST_AUTO_TEST_CASE(HmacSha256)
                               0x90, 0xb6, 0xc7, 0x3b, 0xb5, 0x0f, 0x9c, 0x31,
                               0x22, 0xec, 0x84, 0x4a, 0xd7, 0xc2, 0xb3, 0xe5};
   uint8_t result[32];
-  ndn_compute_hmac_sha256(ikm, sizeof(ikm), salt, sizeof(salt), result);
+  hmac_sha256(ikm, sizeof(ikm), salt, sizeof(salt), result);
   BOOST_CHECK_EQUAL_COLLECTIONS(result, result + sizeof(result), expected,
                                 expected + sizeof(expected));
 }
