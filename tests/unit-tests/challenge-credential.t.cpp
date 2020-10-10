@@ -20,8 +20,6 @@
 
 #include "identity-challenge/challenge-credential.hpp"
 #include "test-common.hpp"
-#include <ndn-cxx/security/signing-helpers.hpp>
-#include <ndn-cxx/util/io.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -31,7 +29,7 @@ BOOST_FIXTURE_TEST_SUITE(TestChallengeCredential, IdentityManagementFixture)
 
 BOOST_AUTO_TEST_CASE(LoadConfig)
 {
-  ChallengeCredential challenge("./tests/unit-tests/challenge-credential.conf.test");
+  ChallengeCredential challenge("./tests/unit-tests/config-files/config-challenge-credential");
   BOOST_CHECK_EQUAL(challenge.CHALLENGE_TYPE, "Credential");
 
   challenge.parseConfigFile();
@@ -44,7 +42,7 @@ BOOST_AUTO_TEST_CASE(LoadConfig)
 BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
 {
   // create trust anchor
-  ChallengeCredential challenge("./tests/unit-tests/challenge-credential.conf.test");
+  ChallengeCredential challenge("./tests/unit-tests/config-files/config-challenge-credential");
   auto identity = addIdentity(Name("/trust"));
   auto key = identity.getDefaultKey();
   auto trustAnchor = key.getDefaultCertificate();

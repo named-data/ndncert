@@ -19,9 +19,13 @@
  * See AUTHORS.md for complete list of ndn-cxx authors and contributors.
  */
 
-#ifndef NDNCERT_TESTS_COMMON_HPP
-#define NDNCERT_TESTS_COMMON_HPP
+#ifndef NDNCERT_TESTS_TEST_COMMON_HPP
+#define NDNCERT_TESTS_TEST_COMMON_HPP
 
+#include "boost-test.hpp"
+#include "database-fixture.hpp"
+#include "identity-management-fixture.hpp"
+#include "unit-test-time-fixture.hpp"
 #include <iostream>
 #include <ndn-cxx/metadata-object.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
@@ -32,9 +36,4 @@
 #include <ndn-cxx/security/verification-helpers.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
-#include "boost-test.hpp"
-#include "database-fixture.hpp"
-#include "identity-management-fixture.hpp"
-#include "unit-test-time-fixture.hpp"
-
-#endif // NDNCERT_TESTS_COMMON_HPP
+#endif // NDNCERT_TESTS_TEST_COMMON_HPP

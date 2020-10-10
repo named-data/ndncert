@@ -18,10 +18,9 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include <protocol-detail/error.hpp>
-#include <protocol-detail/probe.hpp>
-#include <ndn-cxx/util/io.hpp>
 #include "requester.hpp"
+#include "protocol-detail/error.hpp"
+#include "protocol-detail/probe.hpp"
 #include "identity-challenge/challenge-module.hpp"
 #include "ca-module.hpp"
 #include "test-common.hpp"
