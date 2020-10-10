@@ -102,5 +102,5 @@ PROBE::decodeDataContent(const Block& block,
   }
 }
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn

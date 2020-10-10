@@ -77,7 +77,7 @@ private:
     }                                                                             \
   } g_NdnCert##C##ChallengeRegistrationVariable
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn
 
-#endif  // NDNCERT_ASSIGNMENT_FUNCS_HPP
+#endif // NDNCERT_ASSIGNMENT_FUNCS_HPP

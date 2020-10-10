@@ -89,5 +89,5 @@ operator<<(std::ostream& os, const CaState& request)
   return os;
 }
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn

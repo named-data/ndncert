@@ -179,7 +179,7 @@ enum class RequestType : uint16_t {
 std::string
 requestTypeToString(RequestType type);
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn
 
-#endif  // NDNCERT_NDNCERT_COMMON_HPP
+#endif // NDNCERT_NDNCERT_COMMON_HPP

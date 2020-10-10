@@ -170,5 +170,5 @@ ChallengeEmail::sendEmail(const std::string& emailAddress, const std::string& se
   return;
 }
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn

@@ -550,6 +550,6 @@ BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
 
 BOOST_AUTO_TEST_SUITE_END()  // TestCaModule
 
-}  // namespace tests
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace tests
+} // namespace ndncert
+} // namespace ndn

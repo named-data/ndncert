@@ -98,7 +98,7 @@ private:
     }                                                                 \
   } g_NdnCert##C##ChallengeRegistrationVariable
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn
 
-#endif  // NDNCERT_CHALLENGE_MODULE_HPP
+#endif // NDNCERT_CHALLENGE_MODULE_HPP

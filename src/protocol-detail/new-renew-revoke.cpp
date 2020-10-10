@@ -109,5 +109,5 @@ NEW_RENEW_REVOKE::decodeDataContent(const Block& content)
   return DecodedData{ecdhKey, saltInt, requestId, requestStatus, challenges};
 }
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn

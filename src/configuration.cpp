@@ -226,5 +226,5 @@ RequesterCaCache::addCaProfile(const CaProfile& profile)
   m_caItems.push_back(profile);
 }
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn

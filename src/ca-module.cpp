@@ -482,5 +482,5 @@ CaModule::generateErrorDataPacket(const Name& name, ErrorCode error, const std::
   return result;
 }
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn

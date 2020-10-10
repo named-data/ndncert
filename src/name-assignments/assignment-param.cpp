@@ -48,5 +48,5 @@ AssignmentParam::assignName(const std::vector<std::tuple<std::string, std::strin
   return resultList;
 }
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn

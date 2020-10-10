@@ -191,5 +191,5 @@ ChallengeCredential::fulfillParameters(std::vector<std::tuple<std::string, std::
   return;
 }
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn

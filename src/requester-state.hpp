@@ -97,7 +97,7 @@ struct RequesterState {
   bool m_isNewlyCreatedKey = false;
 };
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn
 
-#endif  // NDNCERT_REQUESTER_STATE_HPP
+#endif // NDNCERT_REQUESTER_STATE_HPP

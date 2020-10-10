@@ -46,7 +46,7 @@ public:
   decodeApplicationParameters(const Block& block);
 };
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn
 
-#endif  // NDNCERT_PROTOCOL_DETAIL_HPP
+#endif // NDNCERT_PROTOCOL_DETAIL_HPP

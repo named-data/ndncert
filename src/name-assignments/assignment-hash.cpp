@@ -51,5 +51,5 @@ AssignmentHash::assignName(const std::vector<std::tuple<std::string, std::string
   return resultList;
 }
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn

@@ -124,5 +124,5 @@ ChallengePin::genChallengeRequestTLV(Status status, const std::string& challenge
   request.encode();
   return request;
 }
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn

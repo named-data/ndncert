@@ -72,7 +72,7 @@ public:
 std::ostream&
 operator<<(std::ostream& os, const CaState& request);
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn
 
-#endif  // NDNCERT_CA_STATE_HPP
+#endif // NDNCERT_CA_STATE_HPP

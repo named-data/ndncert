@@ -42,6 +42,6 @@ BOOST_AUTO_TEST_CASE(EncodingDecoding)
 
 BOOST_AUTO_TEST_SUITE_END()
 
-}  // namespace tests
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace tests
+} // namespace ndncert
+} // namespace ndn

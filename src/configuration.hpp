@@ -172,7 +172,7 @@ public:
   std::list<CaProfile> m_caItems;
 };
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn
 
-#endif  // NDNCERT_CONFIGURATION_HPP
+#endif // NDNCERT_CONFIGURATION_HPP

@@ -44,5 +44,5 @@ ErrorTLV::decodefromDataContent(const Block& block)
   return std::make_tuple(error, readString(block.get(tlv_error_info)));
 }
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn

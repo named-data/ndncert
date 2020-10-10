@@ -30,5 +30,5 @@ RequesterState::RequesterState(security::KeyChain& keyChain, const CaProfile& ca
 {
 }
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn

@@ -320,5 +320,5 @@ Requester::processIfError(const Data& data)
                                            " and Error Info: " + std::get<1>(errorInfo)));
 }
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn

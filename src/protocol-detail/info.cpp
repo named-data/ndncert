@@ -77,5 +77,5 @@ INFO::decodeDataContent(const Block& block)
   return result;
 }
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn

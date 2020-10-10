@@ -60,10 +60,12 @@ public:
 
   uint8_t*
   deriveSecret(const std::string& peerKeyStr);
+
   unique_ptr<ECDH_CTX> context;
 
-  PUBLIC_WITH_TESTS_ELSE_PRIVATE : uint8_t*
-                                   deriveSecret(const uint8_t* peerkey, int peerKeySize);
+PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+  uint8_t*
+  deriveSecret(const uint8_t* peerkey, int peerKeySize);
 
   uint8_t*
   getRawSelfPubKey();
@@ -138,7 +140,7 @@ aes_gcm_128_decrypt(const uint8_t* ciphertext, size_t ciphertext_len, const uint
 void
 handleErrors(const std::string& errorInfo);
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn
 
-#endif  // NDNCERT_CRYPTO_SUPPORT_CRYPTO_HELPER_HPP
+#endif // NDNCERT_CRYPTO_SUPPORT_CRYPTO_HELPER_HPP

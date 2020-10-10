@@ -284,5 +284,5 @@ CaSqlite::deleteRequest(const std::string& requestId)
   statement.step();
 }
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn

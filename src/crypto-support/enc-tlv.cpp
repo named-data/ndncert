@@ -65,5 +65,5 @@ decodeBlockWithAesGcm128(const Block& block, const uint8_t* key, const uint8_t* 
   return result;
 }
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn

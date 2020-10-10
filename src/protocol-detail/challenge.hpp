@@ -36,7 +36,7 @@ public:
   decodeDataContent(const Block& data, RequesterState& state);
 };
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn
 
 #endif // NDNCERT_PROTOCOL_DETAIL_HPP

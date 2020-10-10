@@ -381,5 +381,5 @@ handleErrors(const std::string& errorInfo)
   BOOST_THROW_EXCEPTION(CryptoError("Error in CRYPTO SUPPORT: " + errorInfo));
 }
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn

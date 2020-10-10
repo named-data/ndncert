@@ -97,5 +97,5 @@ std::string requestTypeToString(RequestType type)
   }
 }
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn

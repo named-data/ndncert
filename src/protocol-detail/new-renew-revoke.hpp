@@ -49,7 +49,7 @@ public:
   decodeDataContent(const Block& content);
 };
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn
 
 #endif // NDNCERT_PROTOCOL_DETAIL_NEW_RENEW_REVOKE_HPP

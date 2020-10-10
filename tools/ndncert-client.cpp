@@ -481,8 +481,8 @@ main(int argc, char* argv[])
   return 0;
 }
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn
 
 int
 main(int argc, char* argv[])

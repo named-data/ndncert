@@ -41,7 +41,7 @@ public:
   decodefromDataContent(const Block& block);
 };
 
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace ndncert
+} // namespace ndn
 
 #endif // NDNCERT_PROTOCOL_ERROR_HPP

@@ -37,4 +37,4 @@
 #include "identity-management-fixture.hpp"
 #include "unit-test-time-fixture.hpp"
 
-#endif  // NDNCERT_TESTS_COMMON_HPP
+#endif // NDNCERT_TESTS_COMMON_HPP

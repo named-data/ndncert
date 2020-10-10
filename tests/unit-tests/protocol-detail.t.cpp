@@ -72,6 +72,6 @@ BOOST_AUTO_TEST_CASE(TestProbe)
 
 BOOST_AUTO_TEST_SUITE_END() // TestProtocolDetail
 
-}  // namespace tests
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace tests
+} // namespace ndncert
+} // namespace ndn
