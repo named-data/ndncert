@@ -1,0 +1,17 @@
+# -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
+top = '..'
+
+def build(bld):
+    if not bld.env.WITH_TESTS:
+        return
+
+    tmp_path = 'TMP_TESTS_PATH="%s"' % bld.bldnode.make_node('tmp-tests')
+
+    bld.program(
+        target='../unit-tests',
+        name='unit-tests',
+        source=bld.path.ant_glob(['*.cpp', 'unit-tests/**/*.cpp']),
+        use='ndn-cert BOOST',
+        includes='.',
+        defines=[tmp_path],
+        install_path=None)
