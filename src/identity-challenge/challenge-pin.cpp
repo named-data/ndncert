@@ -24,7 +24,7 @@
 namespace ndn {
 namespace ndncert {
 
-_LOG_INIT(ndncert.challenge.pin);
+NDN_LOG_INIT(ndncert.challenge.pin);
 NDNCERT_REGISTER_CHALLENGE(ChallengePin, "pin");
 
 const std::string ChallengePin::NEED_CODE = "need-code";
@@ -43,18 +43,18 @@ ChallengePin::handleChallengeRequest(const Block& params, CaState& request)
   params.parse();
   auto currentTime = time::system_clock::now();
   if (request.m_status == Status::BEFORE_CHALLENGE) {
-    _LOG_TRACE("Challenge Interest arrives. Init the challenge");
+    NDN_LOG_TRACE("Challenge Interest arrives. Init the challenge");
     // for the first time, init the challenge
     std::string secretCode = generateSecretCode();
     JsonSection secretJson;
     secretJson.add(PARAMETER_KEY_CODE, secretCode);
-    _LOG_TRACE("Secret for request " << request.m_requestId << " : " << secretCode);
+    NDN_LOG_TRACE("Secret for request " << request.m_requestId << " : " << secretCode);
     return returnWithNewChallengeStatus(request, NEED_CODE, std::move(secretJson), m_maxAttemptTimes, m_secretLifetime);
   }
   if (request.m_challengeState) {
     if (request.m_challengeState->m_challengeStatus == NEED_CODE ||
         request.m_challengeState->m_challengeStatus == WRONG_CODE) {
-      _LOG_TRACE("Challenge Interest arrives. Challenge Status: " << request.m_challengeState->m_challengeStatus);
+      NDN_LOG_TRACE("Challenge Interest arrives. Challenge Status: " << request.m_challengeState->m_challengeStatus);
       // the incoming interest should bring the pin code
       std::string givenCode = readString(params.get(tlv_parameter_value));
       auto secret = request.m_challengeState->m_secrets;
@@ -62,20 +62,20 @@ ChallengePin::handleChallengeRequest(const Block& params, CaState& request)
         return returnWithError(request, ErrorCode::OUT_OF_TIME, "Secret expired.");
       }
       if (givenCode == secret.get<std::string>(PARAMETER_KEY_CODE)) {
-        _LOG_TRACE("Correct PIN code. Challenge succeeded.");
+        NDN_LOG_TRACE("Correct PIN code. Challenge succeeded.");
         return returnWithSuccess(request);
       }
       // check rest attempt times
       if (request.m_challengeState->m_remainingTries > 1) {
         auto remainTime = m_secretLifetime - (currentTime - request.m_challengeState->m_timestamp);
-        _LOG_TRACE("Wrong PIN code provided. Remaining Tries - 1.");
+        NDN_LOG_TRACE("Wrong PIN code provided. Remaining Tries - 1.");
         return returnWithNewChallengeStatus(request, WRONG_CODE, std::move(secret),
                                             request.m_challengeState->m_remainingTries - 1,
                                             time::duration_cast<time::seconds>(remainTime));
       }
       else {
         // run out times
-        _LOG_TRACE("Wrong PIN code provided. Ran out tires. Challenge failed.");
+        NDN_LOG_TRACE("Wrong PIN code provided. Ran out tires. Challenge failed.");
         return returnWithError(request, ErrorCode::OUT_OF_TRIES, "Ran out tires.");
       }
     }

@@ -36,7 +36,7 @@ namespace ndncert {
 
 const size_t HASH_SIZE = 32;
 
-_LOG_INIT(crypto-support);
+NDN_LOG_INIT(ndncert.crypto-support);
 
 ECDHState::ECDHState()
 {
@@ -377,7 +377,7 @@ aes_gcm_128_decrypt(const uint8_t* ciphertext, size_t ciphertext_len, const uint
 void
 handleErrors(const std::string& errorInfo)
 {
-  _LOG_DEBUG("Error in CRYPTO SUPPORT " << errorInfo);
+  NDN_LOG_DEBUG("Error in CRYPTO SUPPORT " << errorInfo);
   BOOST_THROW_EXCEPTION(CryptoError("Error in CRYPTO SUPPORT: " + errorInfo));
 }
 

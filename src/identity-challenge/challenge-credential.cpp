@@ -27,7 +27,7 @@
 namespace ndn {
 namespace ndncert {
 
-_LOG_INIT(ndncert.challenge.credential);
+NDN_LOG_INIT(ndncert.challenge.credential);
 NDNCERT_REGISTER_CHALLENGE(ChallengeCredential, "Credential");
 
 const std::string ChallengeCredential::PARAMETER_KEY_CREDENTIAL_CERT = "issued-cert";
@@ -67,7 +67,7 @@ ChallengeCredential::parseConfigFile()
     std::istringstream ss(it->second.get("certificate", ""));
     auto cert = io::load<security::Certificate>(ss);
     if (cert == nullptr) {
-      _LOG_ERROR("Cannot load the certificate from config file");
+      NDN_LOG_ERROR("Cannot load the certificate from config file");
       continue;
     }
     m_trustAnchors.push_back(*cert);
@@ -93,7 +93,7 @@ ChallengeCredential::handleChallengeRequest(const Block& params, CaState& reques
           credential.wireDecode(elements[i + 1].blockFromValue());
         }
         catch (const std::exception& e) {
-          _LOG_ERROR("Cannot load challenge parameter: credential " << e.what());
+          NDN_LOG_ERROR("Cannot load challenge parameter: credential " << e.what());
           return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Cannot challenge credential: credential." + std::string(e.what()));
         }
       }
@@ -118,7 +118,7 @@ ChallengeCredential::handleChallengeRequest(const Block& params, CaState& reques
     }
   }
 
-  _LOG_TRACE("Cannot verify the proof of private key against credential");
+  NDN_LOG_TRACE("Cannot verify the proof of private key against credential");
   return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Cannot verify the proof of private key against credential.");
 }
 

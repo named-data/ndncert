@@ -62,14 +62,7 @@ namespace ndn {
 namespace ndncert {
 
 using boost::noncopyable;
-using ndn::Block;
-using ndn::Data;
-using ndn::Interest;
-using ndn::make_unique;
-using ndn::Name;
-using ndn::PartialName;
-using ndn::time::system_clock;
-using ndn::time::toUnixTimestamp;
+using time::system_clock;
 using std::bind;
 using std::enable_shared_from_this;
 using std::function;
@@ -78,11 +71,6 @@ using std::shared_ptr;
 using std::size_t;
 using std::unique_ptr;
 using std::weak_ptr;
-
-#define _LOG_INIT(name) NDN_LOG_INIT(ndncert.name)
-#define _LOG_DEBUG(x) NDN_LOG_DEBUG(__FILE__ << ":" << __LINE__ << ":" << " " << x)
-#define _LOG_TRACE(x) NDN_LOG_TRACE(__FILE__ << ":" << __LINE__ << ":" << " " << x)
-#define _LOG_ERROR(x) NDN_LOG_ERROR(x)
 
 enum : uint32_t {
   tlv_ca_prefix = 129,

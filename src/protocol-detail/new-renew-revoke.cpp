@@ -28,7 +28,7 @@
 namespace ndn {
 namespace ndncert {
 
-_LOG_INIT(ndncert.encoding.new_renew_revoke);
+NDN_LOG_INIT(ndncert.encoding.new_renew_revoke);
 
 Block
 NEW_RENEW_REVOKE::encodeApplicationParameters(RequestType requestType, const std::string& ecdhPub, const security::Certificate& certRequest)
@@ -41,7 +41,7 @@ NEW_RENEW_REVOKE::encodeApplicationParameters(RequestType requestType, const std
     >> security::transform::streamSink(ss);
   }
   catch (const security::transform::Error& e) {
-    _LOG_ERROR("Cannot convert self-signed cert into BASE64 string " << e.what());
+    NDN_LOG_ERROR("Cannot convert self-signed cert into BASE64 string " << e.what());
     return request;
   }
 

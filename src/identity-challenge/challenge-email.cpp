@@ -24,7 +24,7 @@
 namespace ndn {
 namespace ndncert {
 
-_LOG_INIT(ndncert.challenge.email);
+NDN_LOG_INIT(ndncert.challenge.email);
 NDNCERT_REGISTER_CHALLENGE(ChallengeEmail, "email");
 
 const std::string ChallengeEmail::NEED_CODE = "need-code";
@@ -55,20 +55,20 @@ ChallengeEmail::handleChallengeRequest(const Block& params, CaState& request)
     }
     auto lastComponentRequested = readString(request.m_cert.getIdentity().get(-1));
     if (lastComponentRequested != emailAddress) {
-      _LOG_TRACE("Email and requested name do not match. Email " << emailAddress << "requested last component " << lastComponentRequested);
+      NDN_LOG_TRACE("Email and requested name do not match. Email " << emailAddress << "requested last component " << lastComponentRequested);
     }
     std::string emailCode = generateSecretCode();
     JsonSection secretJson;
     secretJson.add(PARAMETER_KEY_CODE, emailCode);
     // send out the email
     sendEmail(emailAddress, emailCode, request);
-    _LOG_TRACE("Secret for request " << request.m_requestId << " : " << emailCode);
+    NDN_LOG_TRACE("Secret for request " << request.m_requestId << " : " << emailCode);
     return returnWithNewChallengeStatus(request, NEED_CODE, std::move(secretJson), m_maxAttemptTimes, m_secretLifetime);
   }
   if (request.m_challengeState) {
     if (request.m_challengeState->m_challengeStatus == NEED_CODE ||
         request.m_challengeState->m_challengeStatus == WRONG_CODE) {
-      _LOG_TRACE("Challenge Interest arrives. Challenge Status: " << request.m_challengeState->m_challengeStatus);
+      NDN_LOG_TRACE("Challenge Interest arrives. Challenge Status: " << request.m_challengeState->m_challengeStatus);
       // the incoming interest should bring the pin code
       std::string givenCode = readString(params.get(tlv_parameter_value));
       auto secret = request.m_challengeState->m_secrets;
@@ -79,20 +79,20 @@ ChallengeEmail::handleChallengeRequest(const Block& params, CaState& request)
       // check if provided secret is correct
       if (givenCode == secret.get<std::string>(PARAMETER_KEY_CODE)) {
         // the code is correct
-        _LOG_TRACE("Correct secret code. Challenge succeeded.");
+        NDN_LOG_TRACE("Correct secret code. Challenge succeeded.");
         return returnWithSuccess(request);
       }
       // otherwise, check remaining attempt times
       if (request.m_challengeState->m_remainingTries > 1) {
         auto remainTime = m_secretLifetime - (currentTime - request.m_challengeState->m_timestamp);
-        _LOG_TRACE("Wrong secret code provided. Remaining Tries - 1.");
+        NDN_LOG_TRACE("Wrong secret code provided. Remaining Tries - 1.");
         return returnWithNewChallengeStatus(request, WRONG_CODE, std::move(secret),
                                             request.m_challengeState->m_remainingTries - 1,
                                             time::duration_cast<time::seconds>(remainTime));
       }
       else {
         // run out times
-        _LOG_TRACE("Wrong secret code provided. Ran out tires. Challenge failed.");
+        NDN_LOG_TRACE("Wrong secret code provided. Ran out tires. Challenge failed.");
         return returnWithError(request, ErrorCode::OUT_OF_TRIES, "Ran out tires.");
       }
     }
@@ -163,9 +163,9 @@ ChallengeEmail::sendEmail(const std::string& emailAddress, const std::string& se
   command += " \"" + emailAddress + "\" \"" + secret + "\" \"" + request.m_caPrefix.toUri() + "\" \"" + request.m_cert.getName().toUri() + "\"";
   int result = system(command.c_str());
   if (result == -1) {
-    _LOG_TRACE("EmailSending Script " + m_sendEmailScript + " fails.");
+    NDN_LOG_TRACE("EmailSending Script " + m_sendEmailScript + " fails.");
   }
-  _LOG_TRACE("EmailSending Script " + m_sendEmailScript +
+  NDN_LOG_TRACE("EmailSending Script " + m_sendEmailScript +
              " was executed successfully with return value" + std::to_string(result) + ".");
   return;
 }

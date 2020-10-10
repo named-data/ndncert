@@ -38,7 +38,7 @@
 namespace ndn {
 namespace ndncert {
 
-_LOG_INIT(ndncert.client);
+NDN_LOG_INIT(ndncert.client);
 
 shared_ptr<Interest>
 Requester::genCaProfileDiscoveryInterest(const Name& caName)
@@ -66,7 +66,7 @@ Requester::onCaProfileResponse(const Data& reply)
 {
   auto caItem = INFO::decodeDataContent(reply.getContent());
   if (!security::verifySignature(reply, *caItem.m_cert)) {
-    _LOG_ERROR("Cannot verify replied Data packet signature.");
+    NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
     BOOST_THROW_EXCEPTION(std::runtime_error("Cannot verify replied Data packet signature."));
   }
   return caItem;
@@ -80,7 +80,7 @@ Requester::onCaProfileResponseAfterRedirection(const Data& reply, const Name& ca
   auto certBlock = caItem.m_cert->wireEncode();
   caItem.m_cert = std::make_shared<security::Certificate>(certBlock);
   if (caItem.m_cert->getFullName() != caCertFullName) {
-    _LOG_ERROR("Ca profile does not match the certificate information offered by the original CA.");
+    NDN_LOG_ERROR("Ca profile does not match the certificate information offered by the original CA.");
     BOOST_THROW_EXCEPTION(std::runtime_error("Cannot verify replied Data packet signature."));
   }
   return onCaProfileResponse(reply);
@@ -103,7 +103,7 @@ Requester::onProbeResponse(const Data& reply, const CaProfile& ca,
                            std::vector<std::pair<Name, int>>& identityNames, std::vector<Name>& otherCas)
 {
   if (!security::verifySignature(reply, *ca.m_cert)) {
-    _LOG_ERROR("Cannot verify replied Data packet signature.");
+    NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
     BOOST_THROW_EXCEPTION(std::runtime_error("Cannot verify replied Data packet signature."));
     return;
   }
@@ -192,7 +192,7 @@ std::list<std::string>
 Requester::onNewRenewRevokeResponse(RequesterState& state, const Data& reply)
 {
   if (!security::verifySignature(reply, *state.m_caItem.m_cert)) {
-    _LOG_ERROR("Cannot verify replied Data packet signature.");
+    NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
     BOOST_THROW_EXCEPTION(std::runtime_error("Cannot verify replied Data packet signature."));
   }
   processIfError(reply);
@@ -254,7 +254,7 @@ void
 Requester::onChallengeResponse(RequesterState& state, const Data& reply)
 {
   if (!security::verifySignature(reply, *state.m_caItem.m_cert)) {
-    _LOG_ERROR("Cannot verify replied Data packet signature.");
+    NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
     BOOST_THROW_EXCEPTION(std::runtime_error("Cannot verify replied Data packet signature."));
   }
   processIfError(reply);
@@ -280,7 +280,7 @@ Requester::onCertFetchResponse(const Data& reply)
     return std::make_shared<security::Certificate>(reply);
   }
   catch (const std::exception& e) {
-    _LOG_ERROR("Cannot parse replied certificate ");
+    NDN_LOG_ERROR("Cannot parse replied certificate ");
     BOOST_THROW_EXCEPTION(std::runtime_error("Cannot parse replied certificate "));
     return nullptr;
   }
@@ -312,7 +312,7 @@ Requester::processIfError(const Data& data)
   if (std::get<0>(errorInfo) == ErrorCode::NO_ERROR) {
     return;
   }
-  _LOG_ERROR("Error info replied from the CA with Error code: " +
+  NDN_LOG_ERROR("Error info replied from the CA with Error code: " +
             errorCodeToString(std::get<0>(errorInfo)) +
             " and Error Info: " + std::get<1>(errorInfo));
   BOOST_THROW_EXCEPTION(std::runtime_error("Error info replied from the CA with Error code: " +
