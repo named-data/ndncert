@@ -61,7 +61,7 @@ public: // factory
     CaStorageFactory& factory = getFactory();
     BOOST_ASSERT(factory.count(caStorageType) == 0);
     factory[caStorageType] = [] (const Name& caName, const std::string& path) {
-      return make_unique<CaStorageType>(caName, path);
+      return std::make_unique<CaStorageType>(caName, path);
     };
   }
 

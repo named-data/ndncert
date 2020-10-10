@@ -403,7 +403,7 @@ runNew(CaProfile profile, Name identityName)
   int validityPeriod = captureValidityPeriod();
   auto now = time::system_clock::now();
   std::cerr << "The validity period of your certificate will be: " << validityPeriod << " hours" << std::endl;
-  requesterState = make_shared<RequesterState>(keyChain, profile, RequestType::NEW);
+  requesterState =std::make_shared<RequesterState>(keyChain, profile, RequestType::NEW);
   auto interest = Requester::genNewInterest(*requesterState, identityName, now, now + time::hours(validityPeriod));
   if (interest != nullptr) {
     face.expressInterest(*interest, bind(&newCb, _2), bind(&onNackCb), bind(&timeoutCb));

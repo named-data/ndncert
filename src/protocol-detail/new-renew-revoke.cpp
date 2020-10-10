@@ -71,7 +71,7 @@ NEW_RENEW_REVOKE::decodeApplicationParameters(const Block& payload, RequestType 
   requestPayload.parse();
 
   security::Certificate cert = security::Certificate(requestPayload.get(tlv::Data));
-  clientCert = make_shared<security::Certificate>(cert);
+  clientCert =std::make_shared<security::Certificate>(cert);
 }
 
 Block

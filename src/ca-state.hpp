@@ -30,11 +30,11 @@ namespace ndncert {
  * @brief The state maintained by the Challenge modules
  */
 struct ChallengeState {
-  ChallengeState(const std::string& challengeStatus, const system_clock::TimePoint& challengeTp,
+  ChallengeState(const std::string& challengeStatus, const time::system_clock::TimePoint& challengeTp,
                  size_t remainingTries, time::seconds remainingTime,
                  JsonSection&& challengeSecrets);
   std::string m_challengeStatus;
-  system_clock::TimePoint m_timestamp;
+  time::system_clock::TimePoint m_timestamp;
   size_t m_remainingTries;
   time::seconds m_remainingTime;
   JsonSection m_secrets;
@@ -53,7 +53,7 @@ public:
           const security::Certificate& cert, Block m_encryptionKey);
   CaState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
           const security::Certificate& cert, const std::string& challengeType,
-          const std::string& challengeStatus, const system_clock::TimePoint& challengeTp,
+          const std::string& challengeStatus, const time::system_clock::TimePoint& challengeTp,
           size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
           Block m_encryptionKey);
 

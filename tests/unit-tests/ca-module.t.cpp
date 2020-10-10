@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(HandleProfileFetching)
       count++;
       auto block = response.getContent();
       block.parse();
-      infoInterest = make_shared<Interest>(Name(block.get(tlv::Name)).appendSegment(0));
+      infoInterest =std::make_shared<Interest>(Name(block.get(tlv::Name)).appendSegment(0));
       infoInterest->setCanBePrefix(false);
     }
     else {

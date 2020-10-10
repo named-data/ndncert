@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(PacketSize0)
       std::cout << "CA Config MetaData Size: " << response.wireEncode().size() << std::endl;
       auto block = response.getContent();
       block.parse();
-      infoInterest = make_shared<Interest>(Name(block.get(tlv::Name)).appendSegment(0));
+      infoInterest =std::make_shared<Interest>(Name(block.get(tlv::Name)).appendSegment(0));
       infoInterest->setCanBePrefix(false);
       std::cout << "CA Config fetch Interest Size: " << infoInterest->wireEncode().size() << std::endl;
     }

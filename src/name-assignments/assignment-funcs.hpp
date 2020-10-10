@@ -54,7 +54,7 @@ public:
   {
     FuncFactoryFactory& factory = getFactory();
     BOOST_ASSERT(factory.count(typeName) == 0);
-    factory[typeName] = [](const std::string& format) { return make_unique<ChallengeType>(format); };
+    factory[typeName] = [](const std::string& format) { return std::make_unique<ChallengeType>(format); };
   }
 
   static unique_ptr<NameAssignmentFunc>

@@ -39,7 +39,7 @@ public:
   {
     ChallengeFactory& factory = getFactory();
     BOOST_ASSERT(factory.count(typeName) == 0);
-    factory[typeName] = [] { return make_unique<ChallengeType>(); };
+    factory[typeName] = [] { return std::make_unique<ChallengeType>(); };
   }
 
   static bool

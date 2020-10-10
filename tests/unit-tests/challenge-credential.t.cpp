@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
   credential.setName(credentialName);
   credential.setContent(keyB.getPublicKey().data(), keyB.getPublicKey().size());
   SignatureInfo signatureInfo;
-  signatureInfo.setValidityPeriod(security::ValidityPeriod(system_clock::now(), system_clock::now() + time::minutes(1)));
+  signatureInfo.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(), time::system_clock::now() + time::minutes(1)));
   m_keyChain.sign(credential, signingByCertificate(trustAnchor).setSignatureInfo(signatureInfo));
   m_keyChain.addCertificate(keyB, credential);
 

@@ -91,7 +91,7 @@ Requester::genProbeInterest(const CaProfile& ca, std::vector<std::tuple<std::str
 {
   Name interestName = ca.m_caPrefix;
   interestName.append("CA").append("PROBE");
-  auto interest = make_shared<Interest>(interestName);
+  auto interest =std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
   interest->setApplicationParameters(PROBE::encodeApplicationParameters(std::move(probeInfo)));
@@ -160,7 +160,7 @@ Requester::genNewInterest(RequesterState& state, const Name& identityName,
   // generate Interest packet
   Name interestName = state.m_caItem.m_caPrefix;
   interestName.append("CA").append("NEW");
-  auto interest = make_shared<Interest>(interestName);
+  auto interest =std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
   interest->setApplicationParameters(
@@ -180,7 +180,7 @@ Requester::genRevokeInterest(RequesterState& state, const security::Certificate&
   // generate Interest packet
   Name interestName = state.m_caItem.m_caPrefix;
   interestName.append("CA").append("REVOKE");
-  auto interest = make_shared<Interest>(interestName);
+  auto interest =std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
   interest->setApplicationParameters(
@@ -237,7 +237,7 @@ Requester::genChallengeInterest(const RequesterState& state,
 
   Name interestName = state.m_caItem.m_caPrefix;
   interestName.append("CA").append("CHALLENGE").append(state.m_requestId);
-  auto interest = make_shared<Interest>(interestName);
+  auto interest =std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
 
@@ -267,7 +267,7 @@ shared_ptr<Interest>
 Requester::genCertFetchInterest(const RequesterState& state)
 {
   Name interestName = state.m_issuedCertName;
-  auto interest = make_shared<Interest>(interestName);
+  auto interest =std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(false);
   interest->setCanBePrefix(false);
   return interest;

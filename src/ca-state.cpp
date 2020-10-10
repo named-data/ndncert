@@ -25,7 +25,7 @@ namespace ndn {
 namespace ndncert {
 
 ChallengeState::ChallengeState(const std::string& challengeStatus,
-                               const system_clock::TimePoint& challengeTp,
+                               const time::system_clock::TimePoint& challengeTp,
                                size_t remainingTries, time::seconds remainingTime,
                                JsonSection&& challengeSecrets)
     : m_challengeStatus(challengeStatus)
@@ -55,7 +55,7 @@ CaState::CaState(const Name& caName, const std::string& requestId, RequestType r
 
 CaState::CaState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
                  const security::Certificate& cert, const std::string& challengeType,
-                 const std::string& challengeStatus, const system_clock::TimePoint& challengeTp,
+                 const std::string& challengeStatus, const time::system_clock::TimePoint& challengeTp,
                  size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
                  Block encryptionKey)
     : m_caPrefix(caName)

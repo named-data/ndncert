@@ -62,15 +62,6 @@ namespace ndn {
 namespace ndncert {
 
 using boost::noncopyable;
-using time::system_clock;
-using std::bind;
-using std::enable_shared_from_this;
-using std::function;
-using std::make_shared;
-using std::shared_ptr;
-using std::size_t;
-using std::unique_ptr;
-using std::weak_ptr;
 
 enum : uint32_t {
   tlv_ca_prefix = 129,
