@@ -36,9 +36,20 @@ namespace ndncert {
 
 const size_t HASH_SIZE = 32;
 
-NDN_LOG_INIT(ndncert.crypto-support);
+NDN_LOG_INIT(ndncert.cryptosupport);
+
+struct ECDHState::ECDH_CTX {
+  int EC_NID;
+  EVP_PKEY_CTX* ctx_params;
+  EVP_PKEY_CTX* ctx_keygen;
+  EVP_PKEY* privkey;
+  EVP_PKEY* peerkey;
+  EVP_PKEY* params;
+};
 
 ECDHState::ECDHState()
+  : m_publicKeyLen(0)
+  , m_sharedSecretLen(0)
 {
   OpenSSL_add_all_algorithms();
   context = std::make_unique<ECDH_CTX>();
@@ -123,15 +134,15 @@ ECDHState::getRawSelfPubKey()
 
   auto ecPoint = EC_KEY_get0_public_key(privECKey);
   const EC_GROUP* group = EC_KEY_get0_group(privECKey);
-  context->publicKeyLen = EC_POINT_point2oct(group, ecPoint, POINT_CONVERSION_COMPRESSED,
-                                             context->publicKey, 256, nullptr);
+  m_publicKeyLen = EC_POINT_point2oct(group, ecPoint, POINT_CONVERSION_COMPRESSED,
+                                    m_publicKey, 256, nullptr);
   EC_KEY_free(privECKey);
-  if (context->publicKeyLen == 0) {
+  if (m_publicKeyLen == 0) {
     handleErrors("Could not convert EC_POINTS to octet string when calling EC_POINT_point2oct.");
     return nullptr;
   }
 
-  return context->publicKey;
+  return m_publicKey;
 }
 
 std::string
@@ -139,12 +150,11 @@ ECDHState::getBase64PubKey()
 {
   namespace t = ndn::security::transform;
 
-  if (context->publicKeyLen == 0) {
+  if (m_publicKeyLen == 0) {
     this->getRawSelfPubKey();
   }
-
   std::ostringstream os;
-  t::bufferSource(context->publicKey, context->publicKeyLen) >> t::base64Encode(false) >> t::streamSink(os);
+  t::bufferSource(m_publicKey, m_publicKeyLen) >> t::base64Encode(false) >> t::streamSink(os);
   return os.str();
 }
 
@@ -167,15 +177,14 @@ ECDHState::deriveSecret(const uint8_t* peerkey, int peerKeySize)
     handleErrors("Cannot convert peer's key into a EC point when calling EC_POINT_oct2point()");
   }
 
-  if (-1 == (context->sharedSecretLen = ECDH_compute_key(context->sharedSecret, 256,
-                                                         peerPoint, privECKey, nullptr))) {
+  if (-1 == (m_sharedSecretLen = ECDH_compute_key(m_sharedSecret, 256, peerPoint, privECKey, nullptr))) {
     EC_POINT_free(peerPoint);
     EC_KEY_free(privECKey);
     handleErrors("Cannot generate ECDH secret when calling ECDH_compute_key()");
   }
   EC_POINT_free(peerPoint);
   EC_KEY_free(privECKey);
-  return context->sharedSecret;
+  return m_sharedSecret;
 }
 
 uint8_t*
@@ -192,8 +201,8 @@ ECDHState::deriveSecret(const std::string& peerKeyStr)
 
 int
 hmac_sha256(const uint8_t* data, const unsigned data_length,
-                        const uint8_t* key, const unsigned key_length,
-                        uint8_t* result)
+            const uint8_t* key, const unsigned key_length,
+            uint8_t* result)
 {
   HMAC(EVP_sha256(), key, key_length,
        (unsigned char*)data, data_length,

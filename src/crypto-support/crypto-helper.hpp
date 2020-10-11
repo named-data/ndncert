@@ -37,19 +37,6 @@ public:
   using std::runtime_error::runtime_error;
 };
 
-struct ECDH_CTX {
-  int EC_NID;
-  EVP_PKEY_CTX* ctx_params;
-  EVP_PKEY_CTX* ctx_keygen;
-  EVP_PKEY* privkey;
-  EVP_PKEY* peerkey;
-  EVP_PKEY* params;
-  uint8_t publicKey[256];
-  int publicKeyLen;
-  uint8_t sharedSecret[256];
-  int sharedSecretLen;
-};
-
 class ECDHState {
 public:
   ECDHState();
@@ -61,7 +48,10 @@ public:
   uint8_t*
   deriveSecret(const std::string& peerKeyStr);
 
-  unique_ptr<ECDH_CTX> context;
+  uint8_t m_publicKey[256];
+  size_t m_publicKeyLen;
+  uint8_t m_sharedSecret[256];
+  size_t m_sharedSecretLen;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   uint8_t*
@@ -69,6 +59,10 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 
   uint8_t*
   getRawSelfPubKey();
+
+private:
+  struct ECDH_CTX;
+  unique_ptr<ECDH_CTX> context;
 };
 
 /**

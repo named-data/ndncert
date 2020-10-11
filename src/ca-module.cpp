@@ -231,8 +231,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   auto saltInt = random::generateSecureWord64();
   // hkdf
   uint8_t aesKey[AES_128_KEY_LEN];
-  hkdf(ecdh.context->sharedSecret, ecdh.context->sharedSecretLen,
-       (uint8_t*)&saltInt, sizeof(saltInt), aesKey, sizeof(aesKey));
+  hkdf(ecdh.m_sharedSecret, ecdh.m_sharedSecretLen, (uint8_t*)&saltInt, sizeof(saltInt), aesKey, sizeof(aesKey));
 
   // verify identity name
   if (!m_config.m_caItem.m_caPrefix.isPrefixOf(clientCert->getIdentity())

@@ -31,22 +31,21 @@ BOOST_AUTO_TEST_CASE(EcdhWithRawKey)
 {
   ECDHState aliceState;
   auto alicePub = aliceState.getRawSelfPubKey();
-  BOOST_CHECK(aliceState.context->publicKeyLen != 0);
+  BOOST_CHECK(aliceState.m_publicKeyLen != 0);
 
   ECDHState bobState;
   auto bobPub = bobState.getRawSelfPubKey();
-  BOOST_CHECK(bobState.context->publicKeyLen != 0);
+  BOOST_CHECK(bobState.m_publicKeyLen != 0);
 
-  auto aliceResult = aliceState.deriveSecret(bobPub, bobState.context->publicKeyLen);
+  auto aliceResult = aliceState.deriveSecret(bobPub, bobState.m_publicKeyLen);
 
-  BOOST_CHECK(aliceState.context->sharedSecretLen != 0);
+  BOOST_CHECK(aliceState.m_sharedSecretLen != 0);
 
-  auto bobResult = bobState.deriveSecret(alicePub, aliceState.context->publicKeyLen);
+  auto bobResult = bobState.deriveSecret(alicePub, aliceState.m_publicKeyLen);
 
-  BOOST_CHECK(bobState.context->sharedSecretLen != 0);
+  BOOST_CHECK(bobState.m_sharedSecretLen != 0);
 
-  BOOST_CHECK_EQUAL_COLLECTIONS(aliceResult, aliceResult + 32,
-                                bobResult, bobResult + 32);
+  BOOST_CHECK_EQUAL_COLLECTIONS(aliceResult, aliceResult + 32, bobResult, bobResult + 32);
 }
 
 BOOST_AUTO_TEST_CASE(EcdhWithRawKeyWrongInput)
@@ -54,7 +53,7 @@ BOOST_AUTO_TEST_CASE(EcdhWithRawKeyWrongInput)
   ECDHState aliceState;
   auto alicePub = aliceState.getRawSelfPubKey();
   BOOST_CHECK(alicePub != nullptr);
-  BOOST_CHECK(aliceState.context->publicKeyLen != 0);
+  BOOST_CHECK(aliceState.m_publicKeyLen != 0);
   uint8_t fakePub[] = {0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b};
   BOOST_CHECK_THROW(aliceState.deriveSecret(fakePub, sizeof(fakePub)), CryptoError);
 }
@@ -70,13 +69,12 @@ BOOST_AUTO_TEST_CASE(EcdhWithBase64Key)
   BOOST_CHECK(bobPub != "");
 
   auto aliceResult = aliceState.deriveSecret(bobPub);
-  BOOST_CHECK(aliceState.context->sharedSecretLen != 0);
+  BOOST_CHECK(aliceState.m_sharedSecretLen != 0);
 
   auto bobResult = bobState.deriveSecret(alicePub);
-  BOOST_CHECK(bobState.context->sharedSecretLen != 0);
+  BOOST_CHECK(bobState.m_sharedSecretLen != 0);
 
-  BOOST_CHECK_EQUAL_COLLECTIONS(aliceResult, aliceResult + 32,
-                                bobResult, bobResult + 32);
+  BOOST_CHECK_EQUAL_COLLECTIONS(aliceResult, aliceResult + 32, bobResult, bobResult + 32);
 }
 
 BOOST_AUTO_TEST_CASE(HmacSha256)

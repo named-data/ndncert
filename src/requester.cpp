@@ -202,7 +202,7 @@ Requester::onNewRenewRevokeResponse(RequesterState& state, const Data& reply)
 
   // ECDH and HKDF
   state.m_ecdh.deriveSecret(content.ecdhKey);
-  hkdf(state.m_ecdh.context->sharedSecret, state.m_ecdh.context->sharedSecretLen,
+  hkdf(state.m_ecdh.m_sharedSecret, state.m_ecdh.m_sharedSecretLen,
        (uint8_t*)&content.salt, sizeof(content.salt), state.m_aesKey, sizeof(state.m_aesKey));
 
   // update state
