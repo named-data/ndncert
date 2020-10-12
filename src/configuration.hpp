@@ -112,7 +112,8 @@ using StatusUpdateCallback = function<void(const CaState&)>;
  *  ]
  * }
  */
-class CaConfig {
+class CaConfig
+{
 public:
   /**
    * Load CA configuration from the file.
@@ -143,7 +144,8 @@ public:
  * For Client configuration format, please refer to:
  *   https://github.com/named-data/ndncert/wiki/Client-Configuration-Sample
  */
-class RequesterCaCache {
+class RequesterCaCache
+{
 public:
   /**
    * @throw std::runtime_error when config file cannot be correctly parsed.

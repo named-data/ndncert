@@ -29,7 +29,8 @@ namespace ndncert {
 /**
  * assign names base on client probe parameter
  */
-class AssignmentHash: public NameAssignmentFunc {
+class AssignmentHash: public NameAssignmentFunc
+{
 public:
   AssignmentHash(const std::string& format = "");
 

@@ -26,7 +26,8 @@
 namespace ndn {
 namespace ndncert {
 
-class PROBE {
+class PROBE
+{
 public:
   // For Client use
   static Block

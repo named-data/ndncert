@@ -26,7 +26,8 @@
 namespace ndn {
 namespace ndncert {
 
-class ChallengeModule : noncopyable {
+class ChallengeModule : noncopyable
+{
 public:
   explicit
   ChallengeModule(const std::string& challengeType, size_t maxAttemptTimes, time::seconds secretLifetime);

@@ -26,7 +26,8 @@
 namespace ndn {
 namespace ndncert {
 
-class NameAssignmentFunc : noncopyable {
+class NameAssignmentFunc : noncopyable
+{
 public:
   explicit NameAssignmentFunc(const std::string& factoryType, const std::string& format = "");
 

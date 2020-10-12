@@ -26,7 +26,8 @@
 namespace ndn {
 namespace ndncert {
 
-class ErrorTLV {
+class ErrorTLV
+{
 public:
   /**
    * Encode error information into a Data content TLV

@@ -44,7 +44,8 @@ statusToString(Status status);
 /**
  * @brief The state maintained by the Challenge modules
  */
-struct ChallengeState {
+struct ChallengeState
+{
   ChallengeState(const std::string& challengeStatus, const time::system_clock::TimePoint& challengeTp,
                  size_t remainingTries, time::seconds remainingTime,
                  JsonSection&& challengeSecrets);
@@ -60,8 +61,8 @@ struct ChallengeState {
  *
  * ChallengeModule should take use of ChallengeState to keep state.
  */
-class CaState {
-
+class CaState
+{
 public:
   CaState();
   CaState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,

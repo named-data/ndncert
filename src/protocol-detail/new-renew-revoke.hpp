@@ -26,7 +26,8 @@
 namespace ndn {
 namespace ndncert {
 
-class NEW_RENEW_REVOKE {
+class NEW_RENEW_REVOKE
+{
 public:
   static Block
   encodeApplicationParameters(RequestType requestType, const std::string& ecdhPub, const security::Certificate& certRequest);

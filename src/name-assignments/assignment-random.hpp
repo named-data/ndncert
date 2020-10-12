@@ -29,7 +29,8 @@ namespace ndncert {
 /**
  * assign names base on client probe parameter
  */
-class AssignmentRandom: public NameAssignmentFunc {
+class AssignmentRandom: public NameAssignmentFunc
+{
 public:
   AssignmentRandom(const std::string& format = "");
 
@@ -37,9 +38,7 @@ public:
   assignName(const std::vector<std::tuple<std::string, std::string>>& params) override;
 };
 
-}
-}
-
-
+} // namespace ndncert
+} // namespace ndn
 
 #endif //NDNCERT_ASSIGNMENT_RANDOM_HPP

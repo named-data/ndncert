@@ -26,7 +26,8 @@
 namespace ndn {
 namespace ndncert {
 
-class INFO {
+class INFO
+{
 public:
   /**
    * Encode CA configuration and its certificate into a TLV block as INFO Data packet content.

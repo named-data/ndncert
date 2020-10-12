@@ -27,7 +27,8 @@
 namespace ndn {
 namespace ndncert {
 
-class CHALLENGE {
+class CHALLENGE
+{
 public:
   static Block
   encodeDataContent(const CaState& request);
