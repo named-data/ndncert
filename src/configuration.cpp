@@ -27,6 +27,19 @@
 namespace ndn {
 namespace ndncert {
 
+// Parse CA Configuration file
+const std::string CONFIG_CA_PREFIX = "ca-prefix";
+const std::string CONFIG_CA_INFO = "ca-info";
+const std::string CONFIG_MAX_VALIDITY_PERIOD = "max-validity-period";
+const std::string CONFIG_MAX_SUFFIX_LENGTH = "max-suffix-length";
+const std::string CONFIG_PROBE_PARAMETERS = "probe-parameters";
+const std::string CONFIG_PROBE_PARAMETER = "probe-parameter-key";
+const std::string CONFIG_SUPPORTED_CHALLENGES = "supported-challenges";
+const std::string CONFIG_CHALLENGE = "challenge";
+const std::string CONFIG_CERTIFICATE = "certificate";
+const std::string CONFIG_REDIRECTION = "redirect-to";
+const std::string CONFIG_NAME_ASSIGNMENT = "name-assignment";
+
 void
 CaProfile::parse(const JsonSection& configJson)
 {

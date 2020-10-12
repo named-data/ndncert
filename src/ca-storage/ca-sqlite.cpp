@@ -29,11 +29,27 @@
 namespace ndn {
 namespace ndncert {
 
+using namespace ndn::util;
 const std::string CaSqlite::STORAGE_TYPE = "ca-storage-sqlite3";
 
 NDNCERT_REGISTER_CA_STORAGE(CaSqlite);
 
-using namespace ndn::util;
+std::string
+convertJson2String(const JsonSection& json)
+{
+  std::stringstream ss;
+  boost::property_tree::write_json(ss, json);
+  return ss.str();
+}
+
+JsonSection
+convertString2Json(const std::string& jsonContent)
+{
+  std::istringstream ss(jsonContent);
+  JsonSection json;
+  boost::property_tree::json_parser::read_json(ss, json);
+  return json;
+}
 
 static const std::string INITIALIZATION = R"_DBTEXT_(
 CREATE TABLE IF NOT EXISTS

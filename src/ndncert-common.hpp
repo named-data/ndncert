@@ -61,6 +61,7 @@ namespace ndn {
 namespace ndncert {
 
 using boost::noncopyable;
+typedef boost::property_tree::ptree JsonSection;
 
 enum : uint32_t {
   tlv_ca_prefix = 129,
@@ -90,27 +91,6 @@ enum : uint32_t {
   tlv_cert_to_revoke = 177,
   tlv_probe_redirect = 179
 };
-
-// Parse CA Configuration file
-const std::string CONFIG_CA_PREFIX = "ca-prefix";
-const std::string CONFIG_CA_INFO = "ca-info";
-const std::string CONFIG_MAX_VALIDITY_PERIOD = "max-validity-period";
-const std::string CONFIG_MAX_SUFFIX_LENGTH = "max-suffix-length";
-const std::string CONFIG_PROBE_PARAMETERS = "probe-parameters";
-const std::string CONFIG_PROBE_PARAMETER = "probe-parameter-key";
-const std::string CONFIG_SUPPORTED_CHALLENGES = "supported-challenges";
-const std::string CONFIG_CHALLENGE = "challenge";
-const std::string CONFIG_CERTIFICATE = "certificate";
-const std::string CONFIG_REDIRECTION = "redirect-to";
-const std::string CONFIG_NAME_ASSIGNMENT = "name-assignment";
-typedef boost::property_tree::ptree JsonSection;
-
-// JSON and string translation for Config file parsing
-std::string
-convertJson2String(const JsonSection& json);
-
-JsonSection
-convertString2Json(const std::string& jsonContent);
 
 // NDNCERT error code
 enum class ErrorCode : uint16_t {
