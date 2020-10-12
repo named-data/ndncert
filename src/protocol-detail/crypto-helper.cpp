@@ -212,7 +212,6 @@ hmac_sha256(const uint8_t* data, const unsigned data_length,
   return 0;
 }
 
-// avoid dependency on OpenSSL >= 1.1
 int
 hkdf(const uint8_t* secret, int secret_len, const uint8_t* salt,
      int salt_len, uint8_t* output, int output_len,
@@ -389,7 +388,7 @@ void
 handleErrors(const std::string& errorInfo)
 {
   NDN_LOG_DEBUG("Error in CRYPTO SUPPORT " << errorInfo);
-  NDN_THROW(CryptoError("Error in CRYPTO SUPPORT: " + errorInfo));
+  NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: " + errorInfo));
 }
 
 } // namespace ndncert

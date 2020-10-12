@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(EcdhWithRawKeyWrongInput)
   BOOST_CHECK(alicePub != nullptr);
   BOOST_CHECK(aliceState.m_publicKeyLen != 0);
   uint8_t fakePub[] = {0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b};
-  BOOST_CHECK_THROW(aliceState.deriveSecret(fakePub, sizeof(fakePub)), CryptoError);
+  BOOST_CHECK_THROW(aliceState.deriveSecret(fakePub, sizeof(fakePub)), std::runtime_error);
 }
 
 BOOST_AUTO_TEST_CASE(EcdhWithBase64Key)

@@ -30,11 +30,6 @@ static const int INFO_LEN = 10;
 static const uint8_t INFO[] = {0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8, 0xf9};
 static const int AES_128_KEY_LEN = 16;
 
-class CryptoError : public std::runtime_error {
-public:
-  using std::runtime_error::runtime_error;
-};
-
 class ECDHState {
 public:
   ECDHState();
@@ -106,7 +101,7 @@ hmac_sha256(const uint8_t* data, const unsigned data_length,
  * @p ciphertext, output, enough memory must be allocated beforehands
  * @p tag, output, 16 bytes tag
  * @return the size of ciphertext
- * @throw CryptoError when there is an error in the process of encryption
+ * @throw runtime_error when there is an error in the process of encryption
  */
 int
 aes_gcm_128_encrypt(const uint8_t* plaintext, size_t plaintext_len, const uint8_t* associated, size_t associated_len,
@@ -123,7 +118,7 @@ aes_gcm_128_encrypt(const uint8_t* plaintext, size_t plaintext_len, const uint8_
  * @p iv, input, 12 bytes IV
  * @p plaintext, output, enough memory must be allocated beforehands
  * @return the size of plaintext or -1 if the verification fails
- * @throw CryptoError when there is an error in the process of encryption
+ * @throw runtime_error when there is an error in the process of encryption
  */
 int
 aes_gcm_128_decrypt(const uint8_t* ciphertext, size_t ciphertext_len, const uint8_t* associated, size_t associated_len,
