@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "ca-storage/ca-storage.hpp"
+#include "ca-detail/ca-storage.hpp"
 
 namespace ndn {
 namespace ndncert {
