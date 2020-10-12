@@ -30,7 +30,8 @@ static const int INFO_LEN = 10;
 static const uint8_t INFO[] = {0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8, 0xf9};
 static const int AES_128_KEY_LEN = 16;
 
-class ECDHState {
+class ECDHState
+{
 public:
   ECDHState();
   ~ECDHState();

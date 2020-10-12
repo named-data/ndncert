@@ -40,7 +40,8 @@ const size_t HASH_SIZE = 32;
 
 NDN_LOG_INIT(ndncert.cryptosupport);
 
-struct ECDHState::ECDH_CTX {
+struct ECDHState::ECDH_CTX
+{
   int EC_NID;
   EVP_PKEY_CTX* ctx_params;
   EVP_PKEY_CTX* ctx_keygen;
