@@ -19,7 +19,7 @@
  */
 
 #include "ca-module.hpp"
-#include "crypto-support/enc-tlv.hpp"
+#include "protocol-detail/enc-tlv.hpp"
 #include "identity-challenge/challenge-module.hpp"
 #include "name-assignments/assignment-funcs.hpp"
 #include "protocol-detail/challenge.hpp"

@@ -22,6 +22,8 @@
 #include <openssl/err.h>
 #include <openssl/hmac.h>
 #include <openssl/pem.h>
+#include <openssl/ec.h>
+#include <openssl/evp.h>
 #include <ndn-cxx/encoding/buffer-stream.hpp>
 #include <ndn-cxx/security/transform/base64-decode.hpp>
 #include <ndn-cxx/security/transform/base64-encode.hpp>

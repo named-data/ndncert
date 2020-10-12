@@ -22,8 +22,6 @@
 #define NDNCERT_CRYPTO_SUPPORT_CRYPTO_HELPER_HPP
 
 #include "../ndncert-common.hpp"
-#include <openssl/ec.h>
-#include <openssl/evp.h>
 
 namespace ndn {
 namespace ndncert {
