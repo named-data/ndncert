@@ -184,8 +184,7 @@ CaSqlite::updateRequest(const CaState& request)
   statement.bind(2, request.m_challengeType, SQLITE_TRANSIENT);
   if (request.m_challengeState) {
     statement.bind(3, request.m_challengeState->m_challengeStatus, SQLITE_TRANSIENT);
-    statement.bind(4, convertJson2String(request.m_challengeState->m_secrets),
-                   SQLITE_TRANSIENT);
+    statement.bind(4, convertJson2String(request.m_challengeState->m_secrets), SQLITE_TRANSIENT);
     statement.bind(5, time::toIsoString(request.m_challengeState->m_timestamp), SQLITE_TRANSIENT);
     statement.bind(6, request.m_challengeState->m_remainingTries);
     statement.bind(7, request.m_challengeState->m_remainingTime.count());

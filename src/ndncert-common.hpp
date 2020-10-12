@@ -112,21 +112,6 @@ convertJson2String(const JsonSection& json);
 JsonSection
 convertString2Json(const std::string& jsonContent);
 
-// NDNCERT Request status enumeration
-enum class Status : uint16_t {
-  BEFORE_CHALLENGE = 0,
-  CHALLENGE = 1,
-  PENDING = 2,
-  SUCCESS = 3,
-  FAILURE = 4,
-  NOT_STARTED = 5,
-  ENDED = 6
-};
-
-// Convert request status to string
-std::string
-statusToString(Status status);
-
 // NDNCERT error code
 enum class ErrorCode : uint16_t {
   NO_ERROR = 0,

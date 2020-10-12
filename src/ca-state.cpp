@@ -24,6 +24,28 @@
 namespace ndn {
 namespace ndncert {
 
+std::string statusToString(Status status) {
+  switch (status)
+  {
+  case Status::BEFORE_CHALLENGE:
+    return "Before challenge";
+  case Status::CHALLENGE:
+    return "In challenge";
+  case Status::PENDING:
+    return "Pending after challenge";
+  case Status::SUCCESS:
+    return "Success";
+  case Status::FAILURE:
+    return "Failure";
+  case Status::NOT_STARTED:
+    return "Not started";
+  case Status::ENDED:
+    return "Ended";
+  default:
+    return "Unrecognized status";
+  }
+}
+
 ChallengeState::ChallengeState(const std::string& challengeStatus,
                                const time::system_clock::TimePoint& challengeTp,
                                size_t remainingTries, time::seconds remainingTime,

@@ -26,6 +26,21 @@
 namespace ndn {
 namespace ndncert {
 
+// NDNCERT Request status enumeration
+enum class Status : uint16_t {
+  BEFORE_CHALLENGE = 0,
+  CHALLENGE = 1,
+  PENDING = 2,
+  SUCCESS = 3,
+  FAILURE = 4,
+  NOT_STARTED = 5,
+  ENDED = 6
+};
+
+// Convert request status to string
+std::string
+statusToString(Status status);
+
 /**
  * @brief The state maintained by the Challenge modules
  */

@@ -40,28 +40,6 @@ convertString2Json(const std::string& jsonContent)
   return json;
 }
 
-std::string statusToString(Status status) {
-  switch (status)
-  {
-  case Status::BEFORE_CHALLENGE:
-    return "Before challenge";
-  case Status::CHALLENGE:
-    return "In challenge";
-  case Status::PENDING:
-    return "Pending after challenge";
-  case Status::SUCCESS:
-    return "Success";
-  case Status::FAILURE:
-    return "Failure";
-  case Status::NOT_STARTED:
-    return "Not started";
-  case Status::ENDED:
-    return "Ended";
-  default:
-    return "Unrecognized status";
-  }
-}
-
 std::map<ErrorCode, std::string> errorCodeText = {
   {ErrorCode::NO_ERROR,             "NO_ERROR"},
   {ErrorCode::BAD_INTEREST_FORMAT,  "BAD_INTEREST_FORMAT"},
