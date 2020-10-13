@@ -138,7 +138,7 @@ ECDHState::getRawSelfPubKey()
   auto ecPoint = EC_KEY_get0_public_key(privECKey);
   const EC_GROUP* group = EC_KEY_get0_group(privECKey);
   m_publicKeyLen = EC_POINT_point2oct(group, ecPoint, POINT_CONVERSION_COMPRESSED,
-                                    m_publicKey, 256, nullptr);
+                                      m_publicKey, 256, nullptr);
   EC_KEY_free(privECKey);
   if (m_publicKeyLen == 0) {
     handleErrors("Could not convert EC_POINTS to octet string when calling EC_POINT_point2oct.");
@@ -180,11 +180,13 @@ ECDHState::deriveSecret(const uint8_t* peerkey, int peerKeySize)
     handleErrors("Cannot convert peer's key into a EC point when calling EC_POINT_oct2point()");
   }
 
-  if (-1 == (m_sharedSecretLen = ECDH_compute_key(m_sharedSecret, 256, peerPoint, privECKey, nullptr))) {
+  result = ECDH_compute_key(m_sharedSecret, 256, peerPoint, privECKey, nullptr);
+  if (result == -1) {
     EC_POINT_free(peerPoint);
     EC_KEY_free(privECKey);
     handleErrors("Cannot generate ECDH secret when calling ECDH_compute_key()");
   }
+  m_sharedSecretLen = static_cast<size_t>(result);
   EC_POINT_free(peerPoint);
   EC_KEY_free(privECKey);
   return m_sharedSecret;
