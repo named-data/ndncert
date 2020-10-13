@@ -19,12 +19,40 @@ jobs:
   include:
     # Linux
     - env: COMPILER=g++-8
+      addons:
+        apt:
+          update: true
+          packages: boost1.72
     - env: COMPILER=clang++-5.0
+      addons:
+        apt:
+          update: true
+          packages: boost1.72
     - env: COMPILER=clang++-7
+      addons:
+        apt:
+          update: true
+          packages: boost1.72
     - env: COMPILER=clang++-8
+      addons:
+        apt:
+          update: true
+          packages: boost1.72
     - env: COMPILER=clang++-10
+      addons:
+        apt:
+          update: true
+          packages: boost1.72
     - env: COMPILER=clang++-11
+      addons:
+        apt:
+          update: true
+          packages: boost1.72
     - env: COMPILER=clang++-12
+      addons:
+        apt:
+          update: true
+          packages: boost1.72
 
     # macOS
     - os: osx
