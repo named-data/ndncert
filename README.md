@@ -1,7 +1,7 @@
 # NDN Certificate Management Protocol (NDNCERT)
 
 ![Language](https://img.shields.io/badge/C%2B%2B-14-blue.svg)
-[![Build Status](https://travis-ci.org/named-data/ndncert.svg?branch=master)](https://travis-ci.org/named-data/ndncert)
+[![Build Status](https://travis-ci.org/Zhiyi-Zhang/ndncert.svg?branch=v0.3)](https://travis-ci.org/Zhiyi-Zhang/ndncert)
 
 The NDN certificate management protocol (**NDNCERT**) enables automatic certificate management
 in NDN. In Named Data Networking (NDN), every entity should have a corresponding identity
