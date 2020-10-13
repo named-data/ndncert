@@ -206,7 +206,8 @@ BOOST_AUTO_TEST_CASE(AesGcm1)
 
   uint8_t ciphertext[256] = {0};
   uint8_t tag[16] = {0};
-  int size = aes_gcm_128_encrypt(nullptr, 0, nullptr, 0, key, iv, ciphertext, tag);
+  const uint8_t empty_buffer[1] = {0};
+  int size = aes_gcm_128_encrypt(empty_buffer, 0, empty_buffer, 0, key, iv, ciphertext, tag);
   BOOST_CHECK(size == 0);
   BOOST_CHECK_EQUAL_COLLECTIONS(tag, tag + 16, expected_tag, expected_tag + sizeof(expected_tag));
 
@@ -238,7 +239,8 @@ BOOST_AUTO_TEST_CASE(AesGcm2)
 
   uint8_t ciphertext[256] = {0};
   uint8_t tag[16] = {0};
-  int size = aes_gcm_128_encrypt(nullptr, 0, aad, sizeof(aad), key, iv, ciphertext, tag);
+  const uint8_t empty_buffer[1] = {0};
+  int size = aes_gcm_128_encrypt(empty_buffer, 0, aad, sizeof(aad), key, iv, ciphertext, tag);
   BOOST_CHECK(size == 0);
   BOOST_CHECK_EQUAL_COLLECTIONS(tag, tag + 16, expected_tag, expected_tag + sizeof(expected_tag));
 
