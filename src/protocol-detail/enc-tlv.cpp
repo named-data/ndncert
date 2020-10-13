@@ -37,7 +37,7 @@ encodeBlockWithAesGcm128(uint32_t tlv_type, const uint8_t* key, const uint8_t* p
   iv.resize(12);
   random::generateSecureBytes(iv.data(), iv.size());
 
-  uint8_t encryptedPayload[payloadSize];
+  uint8_t* encryptedPayload = new uint8_t[payloadSize];
   uint8_t tag[16];
   size_t encryptedPayloadLen = aes_gcm_128_encrypt(payload, payloadSize, associatedData, associatedDataSize,
                                                    key, iv.data(), encryptedPayload, tag);
@@ -46,6 +46,7 @@ encodeBlockWithAesGcm128(uint32_t tlv_type, const uint8_t* key, const uint8_t* p
   content.push_back(makeBinaryBlock(tlv_authentication_tag, tag, 16));
   content.push_back(makeBinaryBlock(tlv_encrypted_payload, encryptedPayload, encryptedPayloadLen));
   content.encode();
+  delete[] encryptedPayload;
   return content;
 }
 
