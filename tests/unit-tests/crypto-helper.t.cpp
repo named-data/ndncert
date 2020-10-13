@@ -212,7 +212,7 @@ BOOST_AUTO_TEST_CASE(AesGcm1)
   BOOST_CHECK_EQUAL_COLLECTIONS(tag, tag + 16, expected_tag, expected_tag + sizeof(expected_tag));
 
   uint8_t decrypted[256] = {0};
-  size = aes_gcm_128_decrypt(ciphertext, size, nullptr, 0, tag, key, iv, decrypted);
+  size = aes_gcm_128_decrypt(ciphertext, size, empty_buffer, 0, tag, key, iv, decrypted);
   BOOST_CHECK(size == 0);
 }
 
