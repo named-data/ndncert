@@ -37,8 +37,8 @@ encodeBlockWithAesGcm128(uint32_t tlv_type, const uint8_t* key, const uint8_t* p
   iv.resize(12);
   random::generateSecureBytes(iv.data(), iv.size());
 
-  uint8_t* encryptedPayload = new uint8_t[payloadSize];
-  uint8_t* tag = new uint8_t[16];
+  uint8_t encryptedPayload[payloadSize];
+  uint8_t tag[16];
   size_t encryptedPayloadLen = aes_gcm_128_encrypt(payload, payloadSize, associatedData, associatedDataSize,
                                                    key, iv.data(), encryptedPayload, tag);
   auto content = makeEmptyBlock(tlv_type);
