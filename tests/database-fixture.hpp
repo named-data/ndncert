@@ -40,8 +40,8 @@ class DatabaseFixture : public IdentityManagementTimeFixture
 public:
   DatabaseFixture()
   {
-    auto parentDir = boost::filesystem::path(getenv("HOME"));
-    dbDir = parentDir / ".ndncert";
+    boost::filesystem::path parentDir{TMP_TESTS_PATH};
+    dbDir = parentDir / "test-home/.ndncert";
     if (!boost::filesystem::exists(dbDir)) {
       boost::filesystem::create_directory(dbDir);
     }
@@ -52,7 +52,7 @@ public:
     boost::filesystem::remove_all(dbDir);
   }
 
-public:
+protected:
   boost::filesystem::path dbDir;
 };
 
