@@ -20,12 +20,12 @@
 
 #include "requester.hpp"
 #include "identity-challenge/challenge-module.hpp"
-#include "protocol-detail/enc-tlv.hpp"
-#include "protocol-detail/challenge.hpp"
-#include "protocol-detail/error.hpp"
-#include "protocol-detail/info.hpp"
-#include "protocol-detail/new-renew-revoke.hpp"
-#include "protocol-detail/probe.hpp"
+#include "detail/enc-tlv.hpp"
+#include "detail/challenge-encoder.hpp"
+#include "detail/error-encoder.hpp"
+#include "detail/info-encoder.hpp"
+#include "detail/new-renew-revoke-encoder.hpp"
+#include "detail/probe-encoder.hpp"
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/transform/base64-encode.hpp>
 #include <ndn-cxx/security/transform/buffer-source.hpp>
@@ -64,7 +64,7 @@ Requester::genCaProfileInterestFromDiscoveryResponse(const Data& reply)
 boost::optional<CaProfile>
 Requester::onCaProfileResponse(const Data& reply)
 {
-  auto caItem = INFO::decodeDataContent(reply.getContent());
+  auto caItem = InfoEncoder::decodeDataContent(reply.getContent());
   if (!security::verifySignature(reply, *caItem.m_cert)) {
     NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
     NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
@@ -76,7 +76,7 @@ Requester::onCaProfileResponse(const Data& reply)
 boost::optional<CaProfile>
 Requester::onCaProfileResponseAfterRedirection(const Data& reply, const Name& caCertFullName)
 {
-  auto caItem = INFO::decodeDataContent(reply.getContent());
+  auto caItem = InfoEncoder::decodeDataContent(reply.getContent());
   auto certBlock = caItem.m_cert->wireEncode();
   caItem.m_cert = std::make_shared<security::Certificate>(certBlock);
   if (caItem.m_cert->getFullName() != caCertFullName) {
@@ -94,7 +94,7 @@ Requester::genProbeInterest(const CaProfile& ca, std::vector<std::tuple<std::str
   auto interest =std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
-  interest->setApplicationParameters(PROBE::encodeApplicationParameters(std::move(probeInfo)));
+  interest->setApplicationParameters(ProbeEncoder::encodeApplicationParameters(std::move(probeInfo)));
   return interest;
 }
 
@@ -108,7 +108,7 @@ Requester::onProbeResponse(const Data& reply, const CaProfile& ca,
     return;
   }
   processIfError(reply);
-  PROBE::decodeDataContent(reply.getContent(), identityNames, otherCas);
+  ProbeEncoder::decodeDataContent(reply.getContent(), identityNames, otherCas);
 }
 
 shared_ptr<Interest>
@@ -151,7 +151,7 @@ Requester::genNewInterest(RequesterState& state, const Name& identityName,
   // generate certificate request
   security::Certificate certRequest;
   certRequest.setName(Name(keyName).append("cert-request").appendVersion());
-  certRequest.setContentType(tlv::ContentType_Key);
+  certRequest.setContentType(ndn::tlv::ContentType_Key);
   certRequest.setContent(state.m_keyPair.getPublicKey().data(), state.m_keyPair.getPublicKey().size());
   SignatureInfo signatureInfo;
   signatureInfo.setValidityPeriod(security::ValidityPeriod(notBefore, notAfter));
@@ -164,7 +164,7 @@ Requester::genNewInterest(RequesterState& state, const Name& identityName,
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
   interest->setApplicationParameters(
-      NEW_RENEW_REVOKE::encodeApplicationParameters(RequestType::NEW, state.m_ecdh.getBase64PubKey(), certRequest));
+      NewRenewRevokeEncoder::encodeApplicationParameters(RequestType::NEW, state.m_ecdh.getBase64PubKey(), certRequest));
 
   // sign the Interest packet
   state.m_keyChain.sign(*interest, signingByKey(keyName));
@@ -184,7 +184,7 @@ Requester::genRevokeInterest(RequesterState& state, const security::Certificate&
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
   interest->setApplicationParameters(
-      NEW_RENEW_REVOKE::encodeApplicationParameters(RequestType::REVOKE, state.m_ecdh.getBase64PubKey(), certificate));
+      NewRenewRevokeEncoder::encodeApplicationParameters(RequestType::REVOKE, state.m_ecdh.getBase64PubKey(), certificate));
   return interest;
 }
 
@@ -198,7 +198,7 @@ Requester::onNewRenewRevokeResponse(RequesterState& state, const Data& reply)
   processIfError(reply);
 
   auto contentTLV = reply.getContent();
-  const auto& content = NEW_RENEW_REVOKE::decodeDataContent(contentTLV);
+  const auto& content = NewRenewRevokeEncoder::decodeDataContent(contentTLV);
 
   // ECDH and HKDF
   state.m_ecdh.deriveSecret(content.ecdhKey);
@@ -242,7 +242,7 @@ Requester::genChallengeInterest(const RequesterState& state,
   interest->setCanBePrefix(false);
 
   // encrypt the Interest parameters
-  auto paramBlock = encodeBlockWithAesGcm128(tlv::ApplicationParameters, state.m_aesKey,
+  auto paramBlock = encodeBlockWithAesGcm128(ndn::tlv::ApplicationParameters, state.m_aesKey,
                                              challengeParams.value(), challengeParams.value_size(),
                                              (const uint8_t*)"test", strlen("test"));
   interest->setApplicationParameters(paramBlock);
@@ -260,7 +260,7 @@ Requester::onChallengeResponse(RequesterState& state, const Data& reply)
   processIfError(reply);
   auto result = decodeBlockWithAesGcm128(reply.getContent(), state.m_aesKey, (const uint8_t*)"test", strlen("test"));
   Block contentTLV = makeBinaryBlock(tlv::EncryptedPayload, result.data(), result.size());
-  CHALLENGE::decodeDataContent(contentTLV, state);
+  ChallengeEncoder::decodeDataContent(contentTLV, state);
 }
 
 shared_ptr<Interest>
@@ -308,7 +308,7 @@ Requester::endSession(RequesterState& state)
 void
 Requester::processIfError(const Data& data)
 {
-  auto errorInfo = ErrorTLV::decodefromDataContent(data.getContent());
+  auto errorInfo = ErrorEncoder::decodefromDataContent(data.getContent());
   if (std::get<0>(errorInfo) == ErrorCode::NO_ERROR) {
     return;
   }

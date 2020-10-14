@@ -18,31 +18,39 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "error.hpp"
+#ifndef NDNCERT_DETAIL_NEW_RENEW_REVOKE_ENCODER_HPP
+#define NDNCERT_DETAIL_NEW_RENEW_REVOKE_ENCODER_HPP
+
+#include "../ca-state.hpp"
 
 namespace ndn {
 namespace ndncert {
 
-Block
-ErrorTLV::encodeDataContent(ErrorCode errorCode, const std::string& description)
+class NewRenewRevokeEncoder
 {
-  Block response = makeEmptyBlock(tlv::Content);
-  response.push_back(makeNonNegativeIntegerBlock(tlv::ErrorCode, static_cast<size_t>(errorCode)));
-  response.push_back(makeStringBlock(tlv::ErrorInfo, description));
-  response.encode();
-  return response;
-}
+public:
+  static Block
+  encodeApplicationParameters(RequestType requestType, const std::string& ecdhPub, const security::Certificate& certRequest);
 
-std::tuple<ErrorCode, std::string>
-ErrorTLV::decodefromDataContent(const Block& block)
-{
-  block.parse();
-  if (block.find(tlv::ErrorCode) == block.elements_end()) {
-    return std::make_tuple(ErrorCode::NO_ERROR, "");
-  }
-  ErrorCode error = static_cast<ErrorCode>(readNonNegativeInteger(block.get(tlv::ErrorCode)));
-  return std::make_tuple(error, readString(block.get(tlv::ErrorInfo)));
-}
+  static void
+  decodeApplicationParameters(const Block& block, RequestType requestType, std::string& ecdhPub, shared_ptr<security::Certificate>& certRequest);
+
+  static Block
+  encodeDataContent(const std::string& ecdhKey, const std::string& salt,
+                             const CaState& request,
+                             const std::list<std::string>& challenges);
+  struct DecodedData {
+    std::string ecdhKey;
+    uint64_t salt;
+    std::string requestId;
+    Status requestStatus;
+    std::list<std::string> challenges;
+  };
+  static DecodedData
+  decodeDataContent(const Block& content);
+};
 
 } // namespace ndncert
 } // namespace ndn
+
+#endif // NDNCERT_DETAIL_NEW_RENEW_REVOKE_HPP

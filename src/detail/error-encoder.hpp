@@ -18,31 +18,31 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_PROTOCOL_DETAIL_INFO_HPP
-#define NDNCERT_PROTOCOL_DETAIL_INFO_HPP
+#ifndef NDNCERT_DETAIL_ERROR_ENCODER_HPP
+#define NDNCERT_DETAIL_ERROR_ENCODER_HPP
 
 #include "../configuration.hpp"
 
 namespace ndn {
 namespace ndncert {
 
-class INFO
+class ErrorEncoder
 {
 public:
   /**
-   * Encode CA configuration and its certificate into a TLV block as INFO Data packet content.
+   * Encode error information into a Data content TLV
    */
   static Block
-  encodeDataContent(const CaProfile& caConfig, const security::Certificate& certificate);
+  encodeDataContent(ErrorCode errorCode, const std::string& description);
 
   /**
-   * Decode CA configuration from the TLV block of INFO Data packet content.
+   * Decode error information from Data content TLV
    */
-  static CaProfile
-  decodeDataContent(const Block& block);
+  static std::tuple<ErrorCode, std::string>
+  decodefromDataContent(const Block& block);
 };
 
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_PROTOCOL_DETAIL_HPP
+#endif // NDNCERT_DETAIL_ERROR_ENCODER_HPP

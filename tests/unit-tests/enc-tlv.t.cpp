@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "protocol-detail/enc-tlv.hpp"
-#include "protocol-detail/crypto-helper.hpp"
+#include "detail/enc-tlv.hpp"
+#include "detail/crypto-helper.hpp"
 #include "test-common.hpp"
 
 namespace ndn {
@@ -34,7 +34,7 @@ BOOST_AUTO_TEST_CASE(EncodingDecoding)
                          0x31, 0x1e, 0x41, 0x92, 0x96, 0x6f, 0xee, 0x92};
   const std::string plaintext = "alongstringalongstringalongstringalongstringalongstringalongstringalongstringalongstring";
   const std::string associatedData = "test";
-  auto block = encodeBlockWithAesGcm128(tlv::Content, key, (uint8_t*)plaintext.c_str(), plaintext.size(),
+  auto block = encodeBlockWithAesGcm128(ndn::tlv::Content, key, (uint8_t*)plaintext.c_str(), plaintext.size(),
                                         (uint8_t*)associatedData.c_str(), associatedData.size());
   auto decoded = decodeBlockWithAesGcm128(block, key, (uint8_t*)associatedData.c_str(), associatedData.size());
   BOOST_CHECK_EQUAL(plaintext, std::string((char*)decoded.get<uint8_t>(), decoded.size()));

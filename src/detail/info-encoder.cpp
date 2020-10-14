@@ -18,15 +18,15 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "info.hpp"
+#include "info-encoder.hpp"
 
 namespace ndn {
 namespace ndncert {
 
 Block
-INFO::encodeDataContent(const CaProfile& caConfig, const security::Certificate& certificate)
+InfoEncoder::encodeDataContent(const CaProfile& caConfig, const security::Certificate& certificate)
 {
-  auto content = makeEmptyBlock(tlv::Content);
+  auto content = makeEmptyBlock(ndn::tlv::Content);
   content.push_back(makeNestedBlock(tlv::CaPrefix, caConfig.m_caPrefix));
   std::string caInfo = "";
   if (caConfig.m_caInfo == "") {
@@ -46,7 +46,7 @@ INFO::encodeDataContent(const CaProfile& caConfig, const security::Certificate& 
 }
 
 CaProfile
-INFO::decodeDataContent(const Block& block)
+InfoEncoder::decodeDataContent(const Block& block)
 {
   CaProfile result;
   block.parse();
@@ -54,7 +54,7 @@ INFO::decodeDataContent(const Block& block)
     switch (item.type()) {
     case tlv::CaPrefix:
       item.parse();
-      result.m_caPrefix.wireDecode(item.get(tlv::Name));
+      result.m_caPrefix.wireDecode(item.get(ndn::tlv::Name));
       break;
     case tlv::CaInfo:
       result.m_caInfo = readString(item);
@@ -67,7 +67,7 @@ INFO::decodeDataContent(const Block& block)
       break;
     case tlv::CaCertificate:
       item.parse();
-      result.m_cert = std::make_shared<security::Certificate>(item.get(tlv::Data));
+      result.m_cert = std::make_shared<security::Certificate>(item.get(ndn::tlv::Data));
       break;
     default:
       continue;

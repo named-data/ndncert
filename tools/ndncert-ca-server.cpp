@@ -19,7 +19,6 @@
  */
 
 #include "ca-module.hpp"
-#include "identity-challenge/challenge-module.hpp"
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/program_options/options_description.hpp>

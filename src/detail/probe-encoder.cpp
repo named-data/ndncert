@@ -18,15 +18,15 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "probe.hpp"
+#include "probe-encoder.hpp"
 
 namespace ndn {
 namespace ndncert {
 
 Block
-PROBE::encodeApplicationParameters(std::vector<std::tuple<std::string, std::string>>&& parameters)
+ProbeEncoder::encodeApplicationParameters(std::vector<std::tuple<std::string, std::string>>&& parameters)
 {
-  auto content = makeEmptyBlock(tlv::ApplicationParameters);
+  auto content = makeEmptyBlock(ndn::tlv::ApplicationParameters);
   for (size_t i = 0; i < parameters.size(); ++i) {
     content.push_back(makeStringBlock(tlv::ParameterKey, std::get<0>(parameters[i])));
     content.push_back(makeStringBlock(tlv::ParameterValue, std::get<1>(parameters[i])));
@@ -36,7 +36,7 @@ PROBE::encodeApplicationParameters(std::vector<std::tuple<std::string, std::stri
 }
 
 std::vector<std::tuple<std::string, std::string>>
-PROBE::decodeApplicationParameters(const Block& block)
+ProbeEncoder::decodeApplicationParameters(const Block& block)
 {
   std::vector<std::tuple<std::string, std::string>> result;
   block.parse();
@@ -49,10 +49,10 @@ PROBE::decodeApplicationParameters(const Block& block)
 }
 
 Block
-PROBE::encodeDataContent(const std::vector<Name>& identifiers, boost::optional<size_t> maxSuffixLength,
+ProbeEncoder::encodeDataContent(const std::vector<Name>& identifiers, boost::optional<size_t> maxSuffixLength,
                          boost::optional<std::vector<std::shared_ptr<security::Certificate>>> redirectionItems)
 {
-  Block content = makeEmptyBlock(tlv::Content);
+  Block content = makeEmptyBlock(ndn::tlv::Content);
   for (const auto& name : identifiers) {
     Block item(tlv::ProbeResponse);
     item.push_back(name.wireEncode());
@@ -71,7 +71,7 @@ PROBE::encodeDataContent(const std::vector<Name>& identifiers, boost::optional<s
 }
 
 void
-PROBE::decodeDataContent(const Block& block,
+ProbeEncoder::decodeDataContent(const Block& block,
                          std::vector<std::pair<Name, int>>& availableNames,
                          std::vector<Name>& availableRedirection)
 {
@@ -82,7 +82,7 @@ PROBE::decodeDataContent(const Block& block,
       Name elementName;
       int maxSuffixLength = 0;
       for (const auto& subBlock: item.elements()) {
-          if (subBlock.type() == tlv::Name) {
+          if (subBlock.type() == ndn::tlv::Name) {
               if (!elementName.empty()) {
                   NDN_THROW(std::runtime_error("Invalid probe format"));
               }

@@ -22,7 +22,7 @@
 #include "identity-challenge/challenge-module.hpp"
 #include "identity-challenge/challenge-email.hpp"
 #include "identity-challenge/challenge-pin.hpp"
-#include "protocol-detail/info.hpp"
+#include "detail/info-encoder.hpp"
 #include "requester.hpp"
 #include "test-common.hpp"
 
@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(HandleProfileFetching)
       count++;
       auto block = response.getContent();
       block.parse();
-      infoInterest =std::make_shared<Interest>(Name(block.get(tlv::Name)).appendSegment(0));
+      infoInterest =std::make_shared<Interest>(Name(block.get(ndn::tlv::Name)).appendSegment(0));
       infoInterest->setCanBePrefix(false);
     }
     else {
@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE(HandleProfileFetching)
       BOOST_CHECK(security::verifySignature(response, cert));
       auto contentBlock = response.getContent();
       contentBlock.parse();
-      auto caItem = INFO::decodeDataContent(contentBlock);
+      auto caItem = InfoEncoder::decodeDataContent(contentBlock);
       BOOST_CHECK_EQUAL(caItem.m_caPrefix, "/ndn");
       BOOST_CHECK_EQUAL(caItem.m_probeParameterKeys.size(), 1);
       BOOST_CHECK_EQUAL(caItem.m_probeParameterKeys.front(), "full name");
@@ -110,7 +110,7 @@ BOOST_AUTO_TEST_CASE(HandleProbe)
   Interest interest("/ndn/CA/PROBE");
   interest.setCanBePrefix(false);
 
-  Block paramTLV = makeEmptyBlock(tlv::ApplicationParameters);
+  Block paramTLV = makeEmptyBlock(ndn::tlv::ApplicationParameters);
   paramTLV.push_back(makeStringBlock(tlv::ParameterKey, "name"));
   paramTLV.push_back(makeStringBlock(tlv::ParameterValue, "zhiyi"));
   paramTLV.encode();
@@ -126,7 +126,7 @@ BOOST_AUTO_TEST_CASE(HandleProbe)
     Block probeResponse = contentBlock.get(tlv::ProbeResponse);
     probeResponse.parse();
     Name caName;
-    caName.wireDecode(probeResponse.get(tlv::Name));
+    caName.wireDecode(probeResponse.get(ndn::tlv::Name));
     BOOST_CHECK_EQUAL(caName.size(), 2);
   });
   face.receive(interest);
@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE(HandleProbeUsingDefaultHandler)
   Interest interest("/ndn/CA/PROBE");
   interest.setCanBePrefix(false);
 
-  Block paramTLV = makeEmptyBlock(tlv::ApplicationParameters);
+  Block paramTLV = makeEmptyBlock(ndn::tlv::ApplicationParameters);
   paramTLV.push_back(makeStringBlock(tlv::ParameterKey, "name"));
   paramTLV.push_back(makeStringBlock(tlv::ParameterValue, "zhiyi"));
   paramTLV.encode();
@@ -164,7 +164,7 @@ BOOST_AUTO_TEST_CASE(HandleProbeUsingDefaultHandler)
     auto probeResponseBlock = contentBlock.get(tlv::ProbeResponse);
     probeResponseBlock.parse();
     Name caPrefix;
-    caPrefix.wireDecode(probeResponseBlock.get(tlv::Name));
+    caPrefix.wireDecode(probeResponseBlock.get(ndn::tlv::Name));
     BOOST_CHECK(caPrefix != "");
   });
   face.receive(interest);
@@ -186,7 +186,7 @@ BOOST_AUTO_TEST_CASE(HandleProbeRedirection)
   Interest interest("/ndn/CA/PROBE");
   interest.setCanBePrefix(false);
 
-  Block paramTLV = makeEmptyBlock(tlv::ApplicationParameters);
+  Block paramTLV = makeEmptyBlock(ndn::tlv::ApplicationParameters);
   paramTLV.push_back(makeStringBlock(tlv::ParameterKey, "name"));
   paramTLV.push_back(makeStringBlock(tlv::ParameterValue, "zhiyi"));
   paramTLV.encode();
@@ -457,14 +457,14 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
   auto clientKey = clientIdentity.getDefaultKey();
   security::Certificate clientCert;
   clientCert.setName(Name(clientKey.getName()).append("cert-request").appendVersion());
-  clientCert.setContentType(tlv::ContentType_Key);
+  clientCert.setContentType(ndn::tlv::ContentType_Key);
   clientCert.setFreshnessPeriod(time::hours(24));
   clientCert.setContent(clientKey.getPublicKey().data(), clientKey.getPublicKey().size());
   SignatureInfo signatureInfo;
   signatureInfo.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
                                                            time::system_clock::now() + time::hours(10)));
   m_keyChain.sign(clientCert, signingByKey(clientKey.getName()).setSignatureInfo(signatureInfo));
-  CaState certRequest(Name("/ndn"), "122", RequestType::NEW, Status::SUCCESS, clientCert, makeEmptyBlock(tlv::ContentType_Key));
+  CaState certRequest(Name("/ndn"), "122", RequestType::NEW, Status::SUCCESS, clientCert, makeEmptyBlock(ndn::tlv::ContentType_Key));
   auto issuedCert = ca.issueCertificate(certRequest);
 
   CaProfile item;
@@ -520,7 +520,7 @@ BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
   auto clientKey = clientIdentity.getDefaultKey();
   security::Certificate clientCert;
   clientCert.setName(Name(clientKey.getName()).append("NDNCERT").append(std::to_string(1473283247810732701)));
-  clientCert.setContentType(tlv::ContentType_Key);
+  clientCert.setContentType(ndn::tlv::ContentType_Key);
   clientCert.setFreshnessPeriod(time::hours(24));
   clientCert.setContent(clientKey.getPublicKey().data(), clientKey.getPublicKey().size());
   SignatureInfo signatureInfo;

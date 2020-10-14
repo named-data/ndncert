@@ -18,12 +18,10 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "new-renew-revoke.hpp"
-#include "ndncert-common.hpp"
+#include "new-renew-revoke-encoder.hpp"
 #include <ndn-cxx/security/transform/base64-encode.hpp>
 #include <ndn-cxx/security/transform/buffer-source.hpp>
 #include <ndn-cxx/security/transform/stream-sink.hpp>
-#include <ndn-cxx/util/logger.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -31,9 +29,9 @@ namespace ndncert {
 NDN_LOG_INIT(ndncert.encoding.new_renew_revoke);
 
 Block
-NEW_RENEW_REVOKE::encodeApplicationParameters(RequestType requestType, const std::string& ecdhPub, const security::Certificate& certRequest)
+NewRenewRevokeEncoder::encodeApplicationParameters(RequestType requestType, const std::string& ecdhPub, const security::Certificate& certRequest)
 {
-  Block request = makeEmptyBlock(tlv::ApplicationParameters);
+  Block request = makeEmptyBlock(ndn::tlv::ApplicationParameters);
   std::stringstream ss;
   try {
     security::transform::bufferSource(certRequest.wireEncode().wire(), certRequest.wireEncode().size())
@@ -56,7 +54,7 @@ NEW_RENEW_REVOKE::encodeApplicationParameters(RequestType requestType, const std
 }
 
 void
-NEW_RENEW_REVOKE::decodeApplicationParameters(const Block& payload, RequestType requestType, std::string& ecdhPub,
+NewRenewRevokeEncoder::decodeApplicationParameters(const Block& payload, RequestType requestType, std::string& ecdhPub,
                                               shared_ptr<security::Certificate>& clientCert) {
   payload.parse();
 
@@ -70,16 +68,16 @@ NEW_RENEW_REVOKE::decodeApplicationParameters(const Block& payload, RequestType 
   }
   requestPayload.parse();
 
-  security::Certificate cert = security::Certificate(requestPayload.get(tlv::Data));
+  security::Certificate cert = security::Certificate(requestPayload.get(ndn::tlv::Data));
   clientCert =std::make_shared<security::Certificate>(cert);
 }
 
 Block
-NEW_RENEW_REVOKE::encodeDataContent(const std::string& ecdhKey, const std::string& salt,
+NewRenewRevokeEncoder::encodeDataContent(const std::string& ecdhKey, const std::string& salt,
                                     const CaState& request,
                                     const std::list<std::string>& challenges)
 {
-  Block response = makeEmptyBlock(tlv::Content);
+  Block response = makeEmptyBlock(ndn::tlv::Content);
   response.push_back(makeStringBlock(tlv::EcdhPub, ecdhKey));
   response.push_back(makeStringBlock(tlv::Salt, salt));
   response.push_back(makeStringBlock(tlv::RequestId, request.m_requestId));
@@ -91,8 +89,8 @@ NEW_RENEW_REVOKE::encodeDataContent(const std::string& ecdhKey, const std::strin
   return response;
 }
 
-NEW_RENEW_REVOKE::DecodedData
-NEW_RENEW_REVOKE::decodeDataContent(const Block& content)
+NewRenewRevokeEncoder::DecodedData
+NewRenewRevokeEncoder::decodeDataContent(const Block& content)
 {
   content.parse();
   const auto& ecdhKey = readString(content.get(tlv::EcdhPub));

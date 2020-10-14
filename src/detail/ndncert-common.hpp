@@ -58,37 +58,40 @@
 #include <boost/property_tree/ptree.hpp>
 
 namespace ndn {
-namespace tlv {
-  enum : uint32_t {
-    CaPrefix = 129,
-    CaInfo = 131,
-    ParameterKey = 133,
-    ParameterValue = 135,
-    CaCertificate = 137,
-    MaxValidityPeriod = 139,
-    ProbeResponse = 141,
-    MaxSuffixLength = 143,
-    EcdhPub = 145,
-    CertRequest = 147,
-    Salt = 149,
-    RequestId = 151,
-    Challenge = 153,
-    Status = 155,
-    InitializationVector = 157,
-    EncryptedPayload = 159,
-    SelectedChallenge = 161,
-    ChallengeStatus = 163,
-    RemainingTries = 165,
-    RemainingTime = 167,
-    IssuedCertName = 169,
-    ErrorCode = 171,
-    ErrorInfo = 173,
-    AuthenticationTag = 175,
-    CertToRevoke = 177,
-    ProbeRedirect = 179
- };
-} // namespace tlv
 namespace ndncert {
+
+namespace tlv {
+
+enum : uint32_t {
+  CaPrefix = 129,
+  CaInfo = 131,
+  ParameterKey = 133,
+  ParameterValue = 135,
+  CaCertificate = 137,
+  MaxValidityPeriod = 139,
+  ProbeResponse = 141,
+  MaxSuffixLength = 143,
+  EcdhPub = 145,
+  CertRequest = 147,
+  Salt = 149,
+  RequestId = 151,
+  Challenge = 153,
+  Status = 155,
+  InitializationVector = 157,
+  EncryptedPayload = 159,
+  SelectedChallenge = 161,
+  ChallengeStatus = 163,
+  RemainingTries = 165,
+  RemainingTime = 167,
+  IssuedCertName = 169,
+  ErrorCode = 171,
+  ErrorInfo = 173,
+  AuthenticationTag = 175,
+  CertToRevoke = 177,
+  ProbeRedirect = 179
+};
+
+} // namespace tlv
 
 using boost::noncopyable;
 typedef boost::property_tree::ptree JsonSection;

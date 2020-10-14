@@ -18,26 +18,36 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_PROTOCOL_DETAIL_CHALLENGE_HPP
-#define NDNCERT_PROTOCOL_DETAIL_CHALLENGE_HPP
+#ifndef NDNCERT_DETAIL_PROBE_ENCODER_HPP
+#define NDNCERT_DETAIL_PROBE_ENCODER_HPP
 
-#include "../ca-state.hpp"
-#include "../requester-state.hpp"
+#include "../configuration.hpp"
 
 namespace ndn {
 namespace ndncert {
 
-class CHALLENGE
+class ProbeEncoder
 {
 public:
+  // For Client use
   static Block
-  encodeDataContent(const CaState& request);
+  encodeApplicationParameters(std::vector<std::tuple<std::string, std::string>>&& parameters);
 
   static void
-  decodeDataContent(const Block& data, RequesterState& state);
+  decodeDataContent(const Block& block, std::vector<std::pair<Name, int>>& availableNames,
+                    std::vector<Name>& availableRedirection);
+
+  // For CA use
+  static Block
+  encodeDataContent(const std::vector<Name>& identifiers,
+                    boost::optional<size_t> maxSuffixLength = boost::none,
+                    boost::optional<std::vector<std::shared_ptr<security::Certificate>>> redirectionItems = boost::none);
+
+  static std::vector<std::tuple<std::string, std::string>>
+  decodeApplicationParameters(const Block& block);
 };
 
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_PROTOCOL_DETAIL_HPP
+#endif // NDNCERT_DETAIL_PROBE_ENCODER_HPP

@@ -18,39 +18,31 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_PROTOCOL_DETAIL_NEW_RENEW_REVOKE_HPP
-#define NDNCERT_PROTOCOL_DETAIL_NEW_RENEW_REVOKE_HPP
+#ifndef NDNCERT_DETAIL_INFO_ENCODER_HPP
+#define NDNCERT_DETAIL_INFO_ENCODER_HPP
 
-#include "../ca-state.hpp"
+#include "../configuration.hpp"
 
 namespace ndn {
 namespace ndncert {
 
-class NEW_RENEW_REVOKE
+class InfoEncoder
 {
 public:
+  /**
+   * Encode CA configuration and its certificate into a TLV block as INFO Data packet content.
+   */
   static Block
-  encodeApplicationParameters(RequestType requestType, const std::string& ecdhPub, const security::Certificate& certRequest);
+  encodeDataContent(const CaProfile& caConfig, const security::Certificate& certificate);
 
-  static void
-  decodeApplicationParameters(const Block& block, RequestType requestType, std::string& ecdhPub, shared_ptr<security::Certificate>& certRequest);
-
-  static Block
-  encodeDataContent(const std::string& ecdhKey, const std::string& salt,
-                             const CaState& request,
-                             const std::list<std::string>& challenges);
-  struct DecodedData {
-    std::string ecdhKey;
-    uint64_t salt;
-    std::string requestId;
-    Status requestStatus;
-    std::list<std::string> challenges;
-  };
-  static DecodedData
-  decodeDataContent(const Block& content);
+  /**
+   * Decode CA configuration from the TLV block of INFO Data packet content.
+   */
+  static CaProfile
+  decodeDataContent(const Block& block);
 };
 
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_PROTOCOL_DETAIL_NEW_RENEW_REVOKE_HPP
+#endif // NDNCERT_DETAIL_INFO_ENCODER_HPP

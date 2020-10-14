@@ -20,7 +20,7 @@
 
 #include "ca-module.hpp"
 #include "identity-challenge/challenge-pin.hpp"
-#include "protocol-detail/info.hpp"
+#include "detail/info-encoder.hpp"
 #include "requester.hpp"
 #include "test-common.hpp"
 
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(PacketSize0)
       std::cout << "CA Config MetaData Size: " << response.wireEncode().size() << std::endl;
       auto block = response.getContent();
       block.parse();
-      infoInterest =std::make_shared<Interest>(Name(block.get(tlv::Name)).appendSegment(0));
+      infoInterest =std::make_shared<Interest>(Name(block.get(ndn::tlv::Name)).appendSegment(0));
       infoInterest->setCanBePrefix(false);
       std::cout << "CA Config fetch Interest Size: " << infoInterest->wireEncode().size() << std::endl;
     }
@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(PacketSize0)
       BOOST_CHECK(security::verifySignature(response, cert));
       auto contentBlock = response.getContent();
       contentBlock.parse();
-      auto caItem = INFO::decodeDataContent(contentBlock);
+      auto caItem = InfoEncoder::decodeDataContent(contentBlock);
       BOOST_CHECK_EQUAL(caItem.m_caPrefix, "/ndn");
       BOOST_CHECK_EQUAL(caItem.m_probeParameterKeys.size(), 1);
       BOOST_CHECK_EQUAL(caItem.m_probeParameterKeys.front(), "full name");

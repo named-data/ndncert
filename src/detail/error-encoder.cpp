@@ -18,36 +18,31 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_PROTOCOL_DETAIL_PROBE_HPP
-#define NDNCERT_PROTOCOL_DETAIL_PROBE_HPP
-
-#include "../configuration.hpp"
+#include "error-encoder.hpp"
 
 namespace ndn {
 namespace ndncert {
 
-class PROBE
+Block
+ErrorEncoder::encodeDataContent(ErrorCode errorCode, const std::string& description)
 {
-public:
-  // For Client use
-  static Block
-  encodeApplicationParameters(std::vector<std::tuple<std::string, std::string>>&& parameters);
+  Block response = makeEmptyBlock(ndn::tlv::Content);
+  response.push_back(makeNonNegativeIntegerBlock(tlv::ErrorCode, static_cast<size_t>(errorCode)));
+  response.push_back(makeStringBlock(tlv::ErrorInfo, description));
+  response.encode();
+  return response;
+}
 
-  static void
-  decodeDataContent(const Block& block, std::vector<std::pair<Name, int>>& availableNames,
-                    std::vector<Name>& availableRedirection);
-
-  // For CA use
-  static Block
-  encodeDataContent(const std::vector<Name>& identifiers,
-                    boost::optional<size_t> maxSuffixLength = boost::none,
-                    boost::optional<std::vector<std::shared_ptr<security::Certificate>>> redirectionItems = boost::none);
-
-  static std::vector<std::tuple<std::string, std::string>>
-  decodeApplicationParameters(const Block& block);
-};
+std::tuple<ErrorCode, std::string>
+ErrorEncoder::decodefromDataContent(const Block& block)
+{
+  block.parse();
+  if (block.find(tlv::ErrorCode) == block.elements_end()) {
+    return std::make_tuple(ErrorCode::NO_ERROR, "");
+  }
+  ErrorCode error = static_cast<ErrorCode>(readNonNegativeInteger(block.get(tlv::ErrorCode)));
+  return std::make_tuple(error, readString(block.get(tlv::ErrorInfo)));
+}
 
 } // namespace ndncert
 } // namespace ndn
-
-#endif // NDNCERT_PROTOCOL_DETAIL_HPP

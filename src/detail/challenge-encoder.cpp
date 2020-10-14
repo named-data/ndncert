@@ -18,13 +18,13 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "challenge.hpp"
+#include "challenge-encoder.hpp"
 
 namespace ndn {
 namespace ndncert {
 
 Block
-CHALLENGE::encodeDataContent(const CaState& request)
+ChallengeEncoder::encodeDataContent(const CaState& request)
 {
   Block response = makeEmptyBlock(tlv::EncryptedPayload);
   response.push_back(makeNonNegativeIntegerBlock(tlv::Status, static_cast<size_t>(request.m_status)));
@@ -40,7 +40,7 @@ CHALLENGE::encodeDataContent(const CaState& request)
 }
 
 void
-CHALLENGE::decodeDataContent(const Block& data, RequesterState& state)
+ChallengeEncoder::decodeDataContent(const Block& data, RequesterState& state)
 {
   data.parse();
   state.m_status = static_cast<Status>(readNonNegativeInteger(data.get(tlv::Status)));

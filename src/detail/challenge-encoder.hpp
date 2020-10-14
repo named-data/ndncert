@@ -18,31 +18,26 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_PROTOCOL_DETAIL_ERROR_HPP
-#define NDNCERT_PROTOCOL_DETAIL_ERROR_HPP
+#ifndef NDNCERT_DETAIL_CHALLENGE_STEP_HPP
+#define NDNCERT_DETAIL_CHALLENGE_STEP_HPP
 
-#include "../configuration.hpp"
+#include "../ca-state.hpp"
+#include "../requester-state.hpp"
 
 namespace ndn {
 namespace ndncert {
 
-class ErrorTLV
+class ChallengeEncoder
 {
 public:
-  /**
-   * Encode error information into a Data content TLV
-   */
   static Block
-  encodeDataContent(ErrorCode errorCode, const std::string& description);
+  encodeDataContent(const CaState& request);
 
-  /**
-   * Decode error information from Data content TLV
-   */
-  static std::tuple<ErrorCode, std::string>
-  decodefromDataContent(const Block& block);
+  static void
+  decodeDataContent(const Block& data, RequesterState& state);
 };
 
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_PROTOCOL_ERROR_HPP
+#endif // NDNCERT_DETAIL_CHALLENGE_STEP_HPP

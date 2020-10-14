@@ -19,7 +19,7 @@
  */
 
 #include "identity-challenge/challenge-module.hpp"
-#include "protocol-detail/info.hpp"
+#include "detail/info-encoder.hpp"
 #include "requester.hpp"
 #include <ndn-cxx/security/verification-helpers.hpp>
 #include <boost/asio.hpp>

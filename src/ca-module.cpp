@@ -19,14 +19,14 @@
  */
 
 #include "ca-module.hpp"
-#include "protocol-detail/enc-tlv.hpp"
+#include "detail/enc-tlv.hpp"
 #include "identity-challenge/challenge-module.hpp"
 #include "name-assignments/assignment-funcs.hpp"
-#include "protocol-detail/challenge.hpp"
-#include "protocol-detail/error.hpp"
-#include "protocol-detail/info.hpp"
-#include "protocol-detail/new-renew-revoke.hpp"
-#include "protocol-detail/probe.hpp"
+#include "detail/challenge-encoder.hpp"
+#include "detail/error-encoder.hpp"
+#include "detail/info-encoder.hpp"
+#include "detail/new-renew-revoke-encoder.hpp"
+#include "detail/probe-encoder.hpp"
 #include <ndn-cxx/metadata-object.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
@@ -121,7 +121,7 @@ CaModule::getCaProfileData()
     const auto& pib = m_keyChain.getPib();
     const auto& identity = pib.getIdentity(m_config.m_caItem.m_caPrefix);
     const auto& cert = identity.getDefaultKey().getDefaultCertificate();
-    Block contentTLV = INFO::encodeDataContent(m_config.m_caItem, cert);
+    Block contentTLV = InfoEncoder::encodeDataContent(m_config.m_caItem, cert);
 
     Name infoPacketName(m_config.m_caItem.m_caPrefix);
     infoPacketName.append("CA").append("INFO").appendVersion().appendSegment(0);
@@ -155,7 +155,7 @@ CaModule::onProbe(const Interest& request)
   NDN_LOG_TRACE("Received PROBE request");
 
   // process PROBE requests: collect probe parameters
-  auto parameters = PROBE::decodeApplicationParameters(request.getApplicationParameters());
+  auto parameters = ProbeEncoder::decodeApplicationParameters(request.getApplicationParameters());
   std::vector<PartialName> availableComponents;
   for (auto& item : m_config.m_nameAssignmentFuncs) {
     auto names = item->assignName(parameters);
@@ -175,7 +175,7 @@ CaModule::onProbe(const Interest& request)
 
   Data result;
   result.setName(request.getName());
-  result.setContent(PROBE::encodeDataContent(availableNames, m_config.m_caItem.m_maxSuffixLength, m_config.m_redirection));
+  result.setContent(ProbeEncoder::encodeDataContent(availableNames, m_config.m_caItem.m_maxSuffixLength, m_config.m_redirection));
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
   m_keyChain.sign(result, signingByIdentity(m_config.m_caItem.m_caPrefix));
   m_face.put(result);
@@ -192,7 +192,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   std::string ecdhPub;
   shared_ptr<security::Certificate> clientCert;
   try {
-    NEW_RENEW_REVOKE::decodeApplicationParameters(parameterTLV, requestType, ecdhPub, clientCert);
+    NewRenewRevokeEncoder::decodeApplicationParameters(parameterTLV, requestType, ecdhPub, clientCert);
   }
   catch (const std::exception& e) {
     if (!parameterTLV.hasValue()) {
@@ -295,7 +295,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   hmac_sha256(certNameTlv.wire(), certNameTlv.size(), m_requestIdGenKey, 32, requestIdData);
   CaState requestState(m_config.m_caItem.m_caPrefix, toHex(requestIdData, 32),
                        requestType, Status::BEFORE_CHALLENGE, *clientCert,
-                       makeBinaryBlock(tlv::ContentType_Key, aesKey, sizeof(aesKey)));
+                       makeBinaryBlock(ndn::tlv::ContentType_Key, aesKey, sizeof(aesKey)));
   try {
     m_storage->addRequest(requestState);
   }
@@ -308,7 +308,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   Data result;
   result.setName(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  result.setContent(NEW_RENEW_REVOKE::encodeDataContent(myEcdhPubKeyBase64,
+  result.setContent(NewRenewRevokeEncoder::encodeDataContent(myEcdhPubKeyBase64,
                                                         std::to_string(saltInt),
                                                         requestState,
                                                         m_config.m_caItem.m_supportedChallenges));
@@ -387,7 +387,7 @@ CaModule::onChallenge(const Interest& request)
       requestState.m_status = Status::SUCCESS;
       m_storage->deleteRequest(requestState.m_requestId);
 
-      payload = CHALLENGE::encodeDataContent(requestState);
+      payload = ChallengeEncoder::encodeDataContent(requestState);
       payload.parse();
       payload.push_back(makeNestedBlock(tlv::IssuedCertName, issuedCert.getName()));
       payload.encode();
@@ -397,20 +397,20 @@ CaModule::onChallenge(const Interest& request)
       requestState.m_status = Status::SUCCESS;
       m_storage->deleteRequest(requestState.m_requestId);
 
-      payload = CHALLENGE::encodeDataContent(requestState);
+      payload = ChallengeEncoder::encodeDataContent(requestState);
       NDN_LOG_TRACE("Challenge succeeded. Certificate has been revoked");
     }
   }
   else {
     m_storage->updateRequest(requestState);
-    payload = CHALLENGE::encodeDataContent(requestState);
+    payload = ChallengeEncoder::encodeDataContent(requestState);
     NDN_LOG_TRACE("No failure no success. Challenge moves on");
   }
 
   Data result;
   result.setName(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  auto contentBlock = encodeBlockWithAesGcm128(tlv::Content, requestState.m_encryptionKey.value(), payload.value(),
+  auto contentBlock = encodeBlockWithAesGcm128(ndn::tlv::Content, requestState.m_encryptionKey.value(), payload.value(),
                                                payload.value_size(), (uint8_t*)"test", strlen("test"));
   result.setContent(contentBlock);
   m_keyChain.sign(result, signingByIdentity(m_config.m_caItem.m_caPrefix));
@@ -476,7 +476,7 @@ CaModule::generateErrorDataPacket(const Name& name, ErrorCode error, const std::
   Data result;
   result.setName(name);
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  result.setContent(ErrorTLV::encodeDataContent(error, errorInfo));
+  result.setContent(ErrorEncoder::encodeDataContent(error, errorInfo));
   m_keyChain.sign(result, signingByIdentity(m_config.m_caItem.m_caPrefix));
   return result;
 }

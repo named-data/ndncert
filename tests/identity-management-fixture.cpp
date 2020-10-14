@@ -111,7 +111,7 @@ IdentityManagementFixture::addCertificate(const security::Key& key, const std::s
   certificate.setName(certificateName);
 
   // set metainfo
-  certificate.setContentType(tlv::ContentType_Key);
+  certificate.setContentType(ndn::tlv::ContentType_Key);
   certificate.setFreshnessPeriod(1_h);
 
   // set content

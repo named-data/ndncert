@@ -19,8 +19,8 @@
  */
 
 #include "requester.hpp"
-#include "protocol-detail/error.hpp"
-#include "protocol-detail/probe.hpp"
+#include "detail/error-encoder.hpp"
+#include "detail/probe-encoder.hpp"
 #include "identity-challenge/challenge-module.hpp"
 #include "ca-module.hpp"
 #include "test-common.hpp"
@@ -79,7 +79,7 @@ BOOST_AUTO_TEST_CASE(OnProbeResponse){
   Data reply;
   reply.setName(Name("/site/CA/PROBE"));
   reply.setFreshnessPeriod(time::seconds(100));
-  reply.setContent(PROBE::encodeDataContent(availableNames, 3, ca.m_config.m_redirection));
+  reply.setContent(ProbeEncoder::encodeDataContent(availableNames, 3, ca.m_config.m_redirection));
   m_keyChain.sign(reply, signingByIdentity(identity));
 
   std::vector<std::pair<Name, int>> names;
@@ -112,7 +112,7 @@ BOOST_AUTO_TEST_CASE(ErrorHandling)
   Data errorPacket;
   errorPacket.setName(Name("/site/pretend/this/is/error/packet"));
   errorPacket.setFreshnessPeriod(time::seconds(100));
-  errorPacket.setContent(ErrorTLV::encodeDataContent(ErrorCode::INVALID_PARAMETER, "This is a test."));
+  errorPacket.setContent(ErrorEncoder::encodeDataContent(ErrorCode::INVALID_PARAMETER, "This is a test."));
   m_keyChain.sign(errorPacket, signingByIdentity(identity));
 
   std::vector<std::pair<Name, int>> ids;
