@@ -42,9 +42,9 @@ encodeBlockWithAesGcm128(uint32_t tlv_type, const uint8_t* key, const uint8_t* p
   size_t encryptedPayloadLen = aes_gcm_128_encrypt(payload, payloadSize, associatedData, associatedDataSize,
                                                    key, iv.data(), encryptedPayload, tag);
   auto content = makeEmptyBlock(tlv_type);
-  content.push_back(makeBinaryBlock(tlv_initialization_vector, iv.data(), iv.size()));
-  content.push_back(makeBinaryBlock(tlv_authentication_tag, tag, 16));
-  content.push_back(makeBinaryBlock(tlv_encrypted_payload, encryptedPayload, encryptedPayloadLen));
+  content.push_back(makeBinaryBlock(tlv::InitializationVector, iv.data(), iv.size()));
+  content.push_back(makeBinaryBlock(tlv::AuthenticationTag, tag, 16));
+  content.push_back(makeBinaryBlock(tlv::EncryptedPayload, encryptedPayload, encryptedPayloadLen));
   content.encode();
   delete[] encryptedPayload;
   return content;
@@ -55,12 +55,12 @@ decodeBlockWithAesGcm128(const Block& block, const uint8_t* key, const uint8_t* 
 {
   block.parse();
   Buffer result;
-  result.resize(block.get(tlv_encrypted_payload).value_size());
-  int resultLen = aes_gcm_128_decrypt(block.get(tlv_encrypted_payload).value(),
-                                      block.get(tlv_encrypted_payload).value_size(),
-                                      associatedData, associatedDataSize, block.get(tlv_authentication_tag).value(),
-                                      key, block.get(tlv_initialization_vector).value(), result.data());
-  if (resultLen == -1 || resultLen != (int)block.get(tlv_encrypted_payload).value_size()) {
+  result.resize(block.get(tlv::EncryptedPayload).value_size());
+  int resultLen = aes_gcm_128_decrypt(block.get(tlv::EncryptedPayload).value(),
+                                      block.get(tlv::EncryptedPayload).value_size(),
+                                      associatedData, associatedDataSize, block.get(tlv::AuthenticationTag).value(),
+                                      key, block.get(tlv::InitializationVector).value(), result.data());
+  if (resultLen == -1 || resultLen != (int)block.get(tlv::EncryptedPayload).value_size()) {
     return Buffer();
   }
   return result;

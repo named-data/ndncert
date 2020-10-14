@@ -19,7 +19,7 @@
  */
 
 #include "new-renew-revoke.hpp"
-#include "../ndncert-common.hpp"
+#include "ndncert-common.hpp"
 #include <ndn-cxx/security/transform/base64-encode.hpp>
 #include <ndn-cxx/security/transform/buffer-source.hpp>
 #include <ndn-cxx/security/transform/stream-sink.hpp>
@@ -45,11 +45,11 @@ NEW_RENEW_REVOKE::encodeApplicationParameters(RequestType requestType, const std
     return request;
   }
 
-  request.push_back(makeStringBlock(tlv_ecdh_pub, ecdhPub));
+  request.push_back(makeStringBlock(tlv::EcdhPub, ecdhPub));
   if (requestType == RequestType::NEW || requestType == RequestType::RENEW) {
-    request.push_back(makeNestedBlock(tlv_cert_request, certRequest));
+    request.push_back(makeNestedBlock(tlv::CertRequest, certRequest));
   } else if (requestType == RequestType::REVOKE) {
-    request.push_back(makeNestedBlock(tlv_cert_to_revoke, certRequest));
+    request.push_back(makeNestedBlock(tlv::CertToRevoke, certRequest));
   }
   request.encode();
   return request;
@@ -60,13 +60,13 @@ NEW_RENEW_REVOKE::decodeApplicationParameters(const Block& payload, RequestType 
                                               shared_ptr<security::Certificate>& clientCert) {
   payload.parse();
 
-  ecdhPub = readString(payload.get(tlv_ecdh_pub));
+  ecdhPub = readString(payload.get(tlv::EcdhPub));
   Block requestPayload;
   if (requestType == RequestType::NEW) {
-    requestPayload = payload.get(tlv_cert_request);
+    requestPayload = payload.get(tlv::CertRequest);
   }
   else if (requestType == RequestType::REVOKE) {
-    requestPayload = payload.get(tlv_cert_to_revoke);
+    requestPayload = payload.get(tlv::CertToRevoke);
   }
   requestPayload.parse();
 
@@ -80,12 +80,12 @@ NEW_RENEW_REVOKE::encodeDataContent(const std::string& ecdhKey, const std::strin
                                     const std::list<std::string>& challenges)
 {
   Block response = makeEmptyBlock(tlv::Content);
-  response.push_back(makeStringBlock(tlv_ecdh_pub, ecdhKey));
-  response.push_back(makeStringBlock(tlv_salt, salt));
-  response.push_back(makeStringBlock(tlv_request_id, request.m_requestId));
-  response.push_back(makeNonNegativeIntegerBlock(tlv_status, static_cast<size_t>(request.m_status)));
+  response.push_back(makeStringBlock(tlv::EcdhPub, ecdhKey));
+  response.push_back(makeStringBlock(tlv::Salt, salt));
+  response.push_back(makeStringBlock(tlv::RequestId, request.m_requestId));
+  response.push_back(makeNonNegativeIntegerBlock(tlv::Status, static_cast<size_t>(request.m_status)));
   for (const auto& entry: challenges) {
-    response.push_back(makeStringBlock(tlv_challenge, entry));
+    response.push_back(makeStringBlock(tlv::Challenge, entry));
   }
   response.encode();
   return response;
@@ -95,14 +95,14 @@ NEW_RENEW_REVOKE::DecodedData
 NEW_RENEW_REVOKE::decodeDataContent(const Block& content)
 {
   content.parse();
-  const auto& ecdhKey = readString(content.get(tlv_ecdh_pub));
-  const auto& salt = readString(content.get(tlv_salt));
+  const auto& ecdhKey = readString(content.get(tlv::EcdhPub));
+  const auto& salt = readString(content.get(tlv::Salt));
   uint64_t saltInt = std::stoull(salt);
-  const auto& requestStatus = static_cast<Status>(readNonNegativeInteger(content.get(tlv_status)));
-  const auto& requestId = readString(content.get(tlv_request_id));
+  const auto& requestStatus = static_cast<Status>(readNonNegativeInteger(content.get(tlv::Status)));
+  const auto& requestId = readString(content.get(tlv::RequestId));
   std::list<std::string> challenges;
   for (auto const& element : content.elements()) {
-    if (element.type() == tlv_challenge) {
+    if (element.type() == tlv::Challenge) {
       challenges.push_back(readString(element));
     }
   }

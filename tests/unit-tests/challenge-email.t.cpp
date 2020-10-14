@@ -47,9 +47,9 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmail)
   auto cert = key.getDefaultCertificate();
   CaState request(Name("/ndn/site1"), "123", RequestType::NEW, Status::BEFORE_CHALLENGE, cert, makeEmptyBlock(tlv::ContentType_Key));
 
-  Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
-  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengeEmail::PARAMETER_KEY_EMAIL));
-  paramTLV.push_back(makeStringBlock(tlv_parameter_value, "zhiyi@cs.ucla.edu"));
+  Block paramTLV = makeEmptyBlock(tlv::EncryptedPayload);
+  paramTLV.push_back(makeStringBlock(tlv::ParameterKey, ChallengeEmail::PARAMETER_KEY_EMAIL));
+  paramTLV.push_back(makeStringBlock(tlv::ParameterValue, "zhiyi@cs.ucla.edu"));
 
   ChallengeEmail challenge("./tests/unit-tests/test-send-email.sh");
   challenge.handleChallengeRequest(paramTLV, request);
@@ -96,9 +96,9 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithInvalidEmail)
   auto cert = key.getDefaultCertificate();
   CaState request(Name("/ndn/site1"), "123", RequestType::NEW, Status::BEFORE_CHALLENGE, cert, makeEmptyBlock(tlv::ContentType_Key));
 
-  Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
-  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengeEmail::PARAMETER_KEY_EMAIL));
-  paramTLV.push_back(makeStringBlock(tlv_parameter_value, "zhiyi@cs"));
+  Block paramTLV = makeEmptyBlock(tlv::EncryptedPayload);
+  paramTLV.push_back(makeStringBlock(tlv::ParameterKey, ChallengeEmail::PARAMETER_KEY_EMAIL));
+  paramTLV.push_back(makeStringBlock(tlv::ParameterValue, "zhiyi@cs"));
 
   ChallengeEmail challenge;
   challenge.handleChallengeRequest(paramTLV, request);
@@ -119,9 +119,9 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
                   "email", ChallengeEmail::NEED_CODE, time::system_clock::now(),
                   3, time::seconds(3600), std::move(json), makeEmptyBlock(tlv::ContentType_Key));
 
-  Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
-  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengeEmail::PARAMETER_KEY_CODE));
-  paramTLV.push_back(makeStringBlock(tlv_parameter_value, "4567"));
+  Block paramTLV = makeEmptyBlock(tlv::EncryptedPayload);
+  paramTLV.push_back(makeStringBlock(tlv::ParameterKey, ChallengeEmail::PARAMETER_KEY_CODE));
+  paramTLV.push_back(makeStringBlock(tlv::ParameterValue, "4567"));
 
   ChallengeEmail challenge;
   challenge.handleChallengeRequest(paramTLV, request);
@@ -141,9 +141,9 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithWrongCode)
                   "email", ChallengeEmail::NEED_CODE, time::system_clock::now(),
                   3, time::seconds(3600), std::move(json), makeEmptyBlock(tlv::ContentType_Key));
 
-  Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
-  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengeEmail::PARAMETER_KEY_CODE));
-  paramTLV.push_back(makeStringBlock(tlv_parameter_value, "7890"));
+  Block paramTLV = makeEmptyBlock(tlv::EncryptedPayload);
+  paramTLV.push_back(makeStringBlock(tlv::ParameterKey, ChallengeEmail::PARAMETER_KEY_CODE));
+  paramTLV.push_back(makeStringBlock(tlv::ParameterValue, "7890"));
 
   ChallengeEmail challenge;
   challenge.handleChallengeRequest(paramTLV, request);

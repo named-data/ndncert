@@ -23,7 +23,7 @@
 namespace ndn {
 namespace ndncert {
 
-std::map<ErrorCode, std::string> errorCodeText = {
+const std::map<ErrorCode, std::string> errorCodeText = {
   {ErrorCode::NO_ERROR,             "NO_ERROR"},
   {ErrorCode::BAD_INTEREST_FORMAT,  "BAD_INTEREST_FORMAT"},
   {ErrorCode::BAD_PARAMETER_FORMAT, "BAD_PARAMETER_FORMAT"},
@@ -36,6 +36,13 @@ std::map<ErrorCode, std::string> errorCodeText = {
   {ErrorCode::NO_AVAILABLE_NAMES,   "NO_AVAILABLE_NAMES"}
 };
 
+const std::map<RequestType, std::string> requestTypeText = {
+  {RequestType::NEW, "New"},
+  {RequestType::RENEW, "Renew"},
+  {RequestType::REVOKE, "Revoke"},
+  {RequestType::NOTINITIALIZED, "Not Initialized"},
+};
+
 std::string errorCodeToString(ErrorCode code)
 {
   return errorCodeText.at(code);
@@ -43,19 +50,7 @@ std::string errorCodeToString(ErrorCode code)
 
 std::string requestTypeToString(RequestType type)
 {
-  switch (type)
-  {
-  case RequestType::NEW:
-    return "New";
-  case RequestType::RENEW:
-    return "Renew";
-  case RequestType::REVOKE:
-    return "Revoke";
-  case RequestType::NOTINITIALIZED:
-    return "Not initalized";
-  default:
-    return "Unrecognized type";
-  }
+  return requestTypeText.at(type);
 }
 
 } // namespace ndncert

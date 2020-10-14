@@ -56,7 +56,7 @@ ChallengePin::handleChallengeRequest(const Block& params, CaState& request)
         request.m_challengeState->m_challengeStatus == WRONG_CODE) {
       NDN_LOG_TRACE("Challenge Interest arrives. Challenge Status: " << request.m_challengeState->m_challengeStatus);
       // the incoming interest should bring the pin code
-      std::string givenCode = readString(params.get(tlv_parameter_value));
+      std::string givenCode = readString(params.get(tlv::ParameterValue));
       auto secret = request.m_challengeState->m_secrets;
       if (currentTime - request.m_challengeState->m_timestamp >= m_secretLifetime) {
         return returnWithError(request, ErrorCode::OUT_OF_TIME, "Secret expired.");
@@ -106,17 +106,17 @@ ChallengePin::getRequestedParameterList(Status status, const std::string& challe
 Block
 ChallengePin::genChallengeRequestTLV(Status status, const std::string& challengeStatus, std::vector<std::tuple<std::string, std::string>>&& params)
 {
-  Block request = makeEmptyBlock(tlv_encrypted_payload);
+  Block request = makeEmptyBlock(tlv::EncryptedPayload);
   if (status == Status::BEFORE_CHALLENGE) {
-    request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
+    request.push_back(makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
   }
   else if (status == Status::CHALLENGE && (challengeStatus == NEED_CODE || challengeStatus == WRONG_CODE)) {
     if (params.size() != 1 || std::get<0>(params[0]) != PARAMETER_KEY_CODE) {
       NDN_THROW(std::runtime_error("Wrong parameter provided."));
     }
-    request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
-    request.push_back(makeStringBlock(tlv_parameter_key, PARAMETER_KEY_CODE));
-    request.push_back(makeStringBlock(tlv_parameter_value, std::get<1>(params[0])));
+    request.push_back(makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
+    request.push_back(makeStringBlock(tlv::ParameterKey, PARAMETER_KEY_CODE));
+    request.push_back(makeStringBlock(tlv::ParameterValue, std::get<1>(params[0])));
   }
   else {
     NDN_THROW(std::runtime_error("Unexpected status or challenge status."));

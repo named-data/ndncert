@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmptyInfo)
   CaState request(Name("/ndn/site1"), "123", RequestType::NEW, Status::BEFORE_CHALLENGE, cert, makeEmptyBlock(tlv::ContentType_Key));
 
   ChallengePin challenge;
-  challenge.handleChallengeRequest(makeEmptyBlock(tlv_encrypted_payload), request);
+  challenge.handleChallengeRequest(makeEmptyBlock(tlv::EncryptedPayload), request);
 
   BOOST_CHECK(request.m_status == Status::CHALLENGE);
   BOOST_CHECK_EQUAL(request.m_challengeState->m_challengeStatus, ChallengePin::NEED_CODE);
@@ -59,9 +59,9 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
                   "pin", ChallengePin::NEED_CODE, time::system_clock::now(),
                   3, time::seconds(3600), std::move(secret), makeEmptyBlock(tlv::ContentType_Key));
 
-  Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
-  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengePin::PARAMETER_KEY_CODE));
-  paramTLV.push_back(makeStringBlock(tlv_parameter_value, "12345"));
+  Block paramTLV = makeEmptyBlock(tlv::EncryptedPayload);
+  paramTLV.push_back(makeStringBlock(tlv::ParameterKey, ChallengePin::PARAMETER_KEY_CODE));
+  paramTLV.push_back(makeStringBlock(tlv::ParameterValue, "12345"));
 
   ChallengePin challenge;
   challenge.handleChallengeRequest(paramTLV, request);
@@ -81,9 +81,9 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithWrongCode)
                   "pin", ChallengePin::NEED_CODE, time::system_clock::now(),
                   3, time::seconds(3600), std::move(secret), makeEmptyBlock(tlv::ContentType_Key));
 
-  Block paramTLV = makeEmptyBlock(tlv_encrypted_payload);
-  paramTLV.push_back(makeStringBlock(tlv_parameter_key, ChallengePin::PARAMETER_KEY_CODE));
-  paramTLV.push_back(makeStringBlock(tlv_parameter_value, "45678"));
+  Block paramTLV = makeEmptyBlock(tlv::EncryptedPayload);
+  paramTLV.push_back(makeStringBlock(tlv::ParameterKey, ChallengePin::PARAMETER_KEY_CODE));
+  paramTLV.push_back(makeStringBlock(tlv::ParameterValue, "45678"));
 
   ChallengePin challenge;
   challenge.handleChallengeRequest(paramTLV, request);

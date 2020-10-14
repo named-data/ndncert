@@ -357,11 +357,11 @@ CaModule::onChallenge(const Interest& request)
                                        "No parameters are found after decryption."));
     return;
   }
-  Block paramTLV = makeBinaryBlock(tlv_encrypted_payload, paramTLVPayload.data(), paramTLVPayload.size());
+  Block paramTLV = makeBinaryBlock(tlv::EncryptedPayload, paramTLVPayload.data(), paramTLVPayload.size());
   paramTLV.parse();
 
   // load the corresponding challenge module
-  std::string challengeType = readString(paramTLV.get(tlv_selected_challenge));
+  std::string challengeType = readString(paramTLV.get(tlv::SelectedChallenge));
   auto challenge = ChallengeModule::createChallengeModule(challengeType);
   if (challenge == nullptr) {
     NDN_LOG_TRACE("Unrecognized challenge type: " << challengeType);
@@ -389,7 +389,7 @@ CaModule::onChallenge(const Interest& request)
 
       payload = CHALLENGE::encodeDataContent(requestState);
       payload.parse();
-      payload.push_back(makeNestedBlock(tlv_issued_cert_name, issuedCert.getName()));
+      payload.push_back(makeNestedBlock(tlv::IssuedCertName, issuedCert.getName()));
       payload.encode();
       NDN_LOG_TRACE("Challenge succeeded. Certificate has been issued: " << issuedCert.getName());
     }

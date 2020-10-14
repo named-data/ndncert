@@ -21,7 +21,7 @@
 #ifndef NDNCERT_REQUESTER_STATE_HPP
 #define NDNCERT_REQUESTER_STATE_HPP
 
-#include "ndncert-common.hpp"
+#include "protocol-detail/ndncert-common.hpp"
 #include "protocol-detail/crypto-helper.hpp"
 #include "configuration.hpp"
 

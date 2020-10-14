@@ -21,20 +21,20 @@
 #ifndef NDNCERT_CRYPTO_SUPPORT_ENC_TLV_HPP
 #define NDNCERT_CRYPTO_SUPPORT_ENC_TLV_HPP
 
-#include "../ndncert-common.hpp"
+#include "ndncert-common.hpp"
 
 namespace ndn {
 namespace ndncert {
 
 /**
  * Encode the payload into TLV block with Authenticated GCM 128 Encryption
- * @p tlv_type, intput, the TLV TYPE of the encoded block, either ApplicationParameters or Content
+ * @p tlv::type, intput, the TLV TYPE of the encoded block, either ApplicationParameters or Content
  * @p key, intput, 16 Bytes, the AES key used for encryption
  * @p payload, input, the plaintext payload
  * @p payloadSize, input, the size of the plaintext payload
  * @p associatedData, input, associated data used for authentication
  * @p associatedDataSize, input, the size of associated data
- * @return the TLV block with @p tlv_type TLV TYPE
+ * @return the TLV block with @p tlv::type TLV TYPE
  */
 Block
 encodeBlockWithAesGcm128(uint32_t tlv_type, const uint8_t* key, const uint8_t* payload, size_t payloadSize,

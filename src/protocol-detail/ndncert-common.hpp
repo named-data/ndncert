@@ -58,39 +58,40 @@
 #include <boost/property_tree/ptree.hpp>
 
 namespace ndn {
+namespace tlv {
+  enum : uint32_t {
+    CaPrefix = 129,
+    CaInfo = 131,
+    ParameterKey = 133,
+    ParameterValue = 135,
+    CaCertificate = 137,
+    MaxValidityPeriod = 139,
+    ProbeResponse = 141,
+    MaxSuffixLength = 143,
+    EcdhPub = 145,
+    CertRequest = 147,
+    Salt = 149,
+    RequestId = 151,
+    Challenge = 153,
+    Status = 155,
+    InitializationVector = 157,
+    EncryptedPayload = 159,
+    SelectedChallenge = 161,
+    ChallengeStatus = 163,
+    RemainingTries = 165,
+    RemainingTime = 167,
+    IssuedCertName = 169,
+    ErrorCode = 171,
+    ErrorInfo = 173,
+    AuthenticationTag = 175,
+    CertToRevoke = 177,
+    ProbeRedirect = 179
+ };
+} // namespace tlv
 namespace ndncert {
 
 using boost::noncopyable;
 typedef boost::property_tree::ptree JsonSection;
-
-enum : uint32_t {
-  tlv_ca_prefix = 129,
-  tlv_ca_info = 131,
-  tlv_parameter_key = 133,
-  tlv_parameter_value = 135,
-  tlv_ca_certificate = 137,
-  tlv_max_validity_period = 139,
-  tlv_probe_response = 141,
-  tlv_max_suffix_length = 143,
-  tlv_ecdh_pub = 145,
-  tlv_cert_request = 147,
-  tlv_salt = 149,
-  tlv_request_id = 151,
-  tlv_challenge = 153,
-  tlv_status = 155,
-  tlv_initialization_vector = 157,
-  tlv_encrypted_payload = 159,
-  tlv_selected_challenge = 161,
-  tlv_challenge_status = 163,
-  tlv_remaining_tries = 165,
-  tlv_remaining_time = 167,
-  tlv_issued_cert_name = 169,
-  tlv_error_code = 171,
-  tlv_error_info = 173,
-  tlv_authentication_tag = 175,
-  tlv_cert_to_revoke = 177,
-  tlv_probe_redirect = 179
-};
 
 // NDNCERT error code
 enum class ErrorCode : uint16_t {

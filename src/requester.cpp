@@ -259,7 +259,7 @@ Requester::onChallengeResponse(RequesterState& state, const Data& reply)
   }
   processIfError(reply);
   auto result = decodeBlockWithAesGcm128(reply.getContent(), state.m_aesKey, (const uint8_t*)"test", strlen("test"));
-  Block contentTLV = makeBinaryBlock(tlv_encrypted_payload, result.data(), result.size());
+  Block contentTLV = makeBinaryBlock(tlv::EncryptedPayload, result.data(), result.size());
   CHALLENGE::decodeDataContent(contentTLV, state);
 }
 

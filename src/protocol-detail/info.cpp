@@ -27,7 +27,7 @@ Block
 INFO::encodeDataContent(const CaProfile& caConfig, const security::Certificate& certificate)
 {
   auto content = makeEmptyBlock(tlv::Content);
-  content.push_back(makeNestedBlock(tlv_ca_prefix, caConfig.m_caPrefix));
+  content.push_back(makeNestedBlock(tlv::CaPrefix, caConfig.m_caPrefix));
   std::string caInfo = "";
   if (caConfig.m_caInfo == "") {
     caInfo = "Issued by " + certificate.getSignatureInfo().getKeyLocator().getName().toUri();
@@ -35,12 +35,12 @@ INFO::encodeDataContent(const CaProfile& caConfig, const security::Certificate& 
   else {
     caInfo = caConfig.m_caInfo;
   }
-  content.push_back(makeStringBlock(tlv_ca_info, caInfo));
+  content.push_back(makeStringBlock(tlv::CaInfo, caInfo));
   for (const auto& key : caConfig.m_probeParameterKeys) {
-    content.push_back(makeStringBlock(tlv_parameter_key, key));
+    content.push_back(makeStringBlock(tlv::ParameterKey, key));
   }
-  content.push_back(makeNonNegativeIntegerBlock(tlv_max_validity_period, caConfig.m_maxValidityPeriod.count()));
-  content.push_back(makeNestedBlock(tlv_ca_certificate, certificate));
+  content.push_back(makeNonNegativeIntegerBlock(tlv::MaxValidityPeriod, caConfig.m_maxValidityPeriod.count()));
+  content.push_back(makeNestedBlock(tlv::CaCertificate, certificate));
   content.encode();
   return content;
 }
@@ -52,20 +52,20 @@ INFO::decodeDataContent(const Block& block)
   block.parse();
   for (auto const& item : block.elements()) {
     switch (item.type()) {
-    case tlv_ca_prefix:
+    case tlv::CaPrefix:
       item.parse();
       result.m_caPrefix.wireDecode(item.get(tlv::Name));
       break;
-    case tlv_ca_info:
+    case tlv::CaInfo:
       result.m_caInfo = readString(item);
       break;
-    case tlv_parameter_key:
+    case tlv::ParameterKey:
       result.m_probeParameterKeys.push_back(readString(item));
       break;
-    case tlv_max_validity_period:
+    case tlv::MaxValidityPeriod:
       result.m_maxValidityPeriod = time::seconds(readNonNegativeInteger(item));
       break;
-    case tlv_ca_certificate:
+    case tlv::CaCertificate:
       item.parse();
       result.m_cert = std::make_shared<security::Certificate>(item.get(tlv::Data));
       break;

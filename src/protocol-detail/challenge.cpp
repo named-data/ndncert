@@ -26,14 +26,14 @@ namespace ndncert {
 Block
 CHALLENGE::encodeDataContent(const CaState& request)
 {
-  Block response = makeEmptyBlock(tlv_encrypted_payload);
-  response.push_back(makeNonNegativeIntegerBlock(tlv_status, static_cast<size_t>(request.m_status)));
+  Block response = makeEmptyBlock(tlv::EncryptedPayload);
+  response.push_back(makeNonNegativeIntegerBlock(tlv::Status, static_cast<size_t>(request.m_status)));
   if (request.m_challengeState) {
-    response.push_back(makeStringBlock(tlv_challenge_status, request.m_challengeState->m_challengeStatus));
+    response.push_back(makeStringBlock(tlv::ChallengeStatus, request.m_challengeState->m_challengeStatus));
     response.push_back(
-        makeNonNegativeIntegerBlock(tlv_remaining_tries, request.m_challengeState->m_remainingTries));
+        makeNonNegativeIntegerBlock(tlv::RemainingTries, request.m_challengeState->m_remainingTries));
     response.push_back(
-        makeNonNegativeIntegerBlock(tlv_remaining_time, request.m_challengeState->m_remainingTime.count()));
+        makeNonNegativeIntegerBlock(tlv::RemainingTime, request.m_challengeState->m_remainingTime.count()));
   }
   response.encode();
   return response;
@@ -43,18 +43,18 @@ void
 CHALLENGE::decodeDataContent(const Block& data, RequesterState& state)
 {
   data.parse();
-  state.m_status = static_cast<Status>(readNonNegativeInteger(data.get(tlv_status)));
-  if (data.find(tlv_challenge_status) != data.elements_end()) {
-    state.m_challengeStatus = readString(data.get(tlv_challenge_status));
+  state.m_status = static_cast<Status>(readNonNegativeInteger(data.get(tlv::Status)));
+  if (data.find(tlv::ChallengeStatus) != data.elements_end()) {
+    state.m_challengeStatus = readString(data.get(tlv::ChallengeStatus));
   }
-  if (data.find(tlv_remaining_tries) != data.elements_end()) {
-    state.m_remainingTries = readNonNegativeInteger(data.get(tlv_remaining_tries));
+  if (data.find(tlv::RemainingTries) != data.elements_end()) {
+    state.m_remainingTries = readNonNegativeInteger(data.get(tlv::RemainingTries));
   }
-  if (data.find(tlv_remaining_time) != data.elements_end()) {
-    state.m_freshBefore = time::system_clock::now() + time::seconds(readNonNegativeInteger(data.get(tlv_remaining_time)));
+  if (data.find(tlv::RemainingTime) != data.elements_end()) {
+    state.m_freshBefore = time::system_clock::now() + time::seconds(readNonNegativeInteger(data.get(tlv::RemainingTime)));
   }
-  if (data.find(tlv_issued_cert_name) != data.elements_end()) {
-    Block issuedCertNameBlock = data.get(tlv_issued_cert_name);
+  if (data.find(tlv::IssuedCertName) != data.elements_end()) {
+    Block issuedCertNameBlock = data.get(tlv::IssuedCertName);
     state.m_issuedCertName = Name(issuedCertNameBlock.blockFromValue());
   }
 }

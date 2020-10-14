@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(GenProbeInterest)
   BOOST_CHECK(firstInterest->getName().at(-1).isParametersSha256Digest());
   // ignore the last name component (ParametersSha256Digest)
   BOOST_CHECK_EQUAL(firstInterest->getName().getPrefix(-1), "/site/CA/PROBE");
-  BOOST_CHECK_EQUAL(readString(firstInterest->getApplicationParameters().get(tlv_parameter_value)), "zhiyi@cs.ucla.edu");
+  BOOST_CHECK_EQUAL(readString(firstInterest->getApplicationParameters().get(tlv::ParameterValue)), "zhiyi@cs.ucla.edu");
 }
 
 BOOST_AUTO_TEST_CASE(OnProbeResponse){

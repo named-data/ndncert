@@ -28,8 +28,8 @@ PROBE::encodeApplicationParameters(std::vector<std::tuple<std::string, std::stri
 {
   auto content = makeEmptyBlock(tlv::ApplicationParameters);
   for (size_t i = 0; i < parameters.size(); ++i) {
-    content.push_back(makeStringBlock(tlv_parameter_key, std::get<0>(parameters[i])));
-    content.push_back(makeStringBlock(tlv_parameter_value, std::get<1>(parameters[i])));
+    content.push_back(makeStringBlock(tlv::ParameterKey, std::get<0>(parameters[i])));
+    content.push_back(makeStringBlock(tlv::ParameterValue, std::get<1>(parameters[i])));
   }
   content.encode();
   return content;
@@ -41,7 +41,7 @@ PROBE::decodeApplicationParameters(const Block& block)
   std::vector<std::tuple<std::string, std::string>> result;
   block.parse();
   for (size_t i = 0; i < block.elements().size() - 1; ++i) {
-    if (block.elements().at(i).type() == tlv_parameter_key && block.elements().at(i + 1).type() == tlv_parameter_value) {
+    if (block.elements().at(i).type() == tlv::ParameterKey && block.elements().at(i + 1).type() == tlv::ParameterValue) {
       result.push_back(std::make_tuple(readString(block.elements().at(i)), readString(block.elements().at(i + 1))));
     }
   }
@@ -54,16 +54,16 @@ PROBE::encodeDataContent(const std::vector<Name>& identifiers, boost::optional<s
 {
   Block content = makeEmptyBlock(tlv::Content);
   for (const auto& name : identifiers) {
-    Block item(tlv_probe_response);
+    Block item(tlv::ProbeResponse);
     item.push_back(name.wireEncode());
     if (maxSuffixLength) {
-      item.push_back(makeNonNegativeIntegerBlock(tlv_max_suffix_length, *maxSuffixLength));
+      item.push_back(makeNonNegativeIntegerBlock(tlv::MaxSuffixLength, *maxSuffixLength));
     }
     content.push_back(item);
   }
   if (redirectionItems) {
     for (const auto& item : *redirectionItems) {
-      content.push_back(makeNestedBlock(tlv_probe_redirect, item->getFullName()));
+      content.push_back(makeNestedBlock(tlv::ProbeRedirect, item->getFullName()));
     }
   }
   content.encode();
@@ -77,7 +77,7 @@ PROBE::decodeDataContent(const Block& block,
 {
   block.parse();
   for (const auto& item : block.elements()) {
-    if (item.type() == tlv_probe_response) {
+    if (item.type() == tlv::ProbeResponse) {
       item.parse();
       Name elementName;
       int maxSuffixLength = 0;
@@ -87,7 +87,7 @@ PROBE::decodeDataContent(const Block& block,
                   NDN_THROW(std::runtime_error("Invalid probe format"));
               }
               elementName.wireDecode(subBlock);
-          } else if (subBlock.type() == tlv_max_suffix_length) {
+          } else if (subBlock.type() == tlv::MaxSuffixLength) {
               maxSuffixLength = readNonNegativeInteger(subBlock);
           }
       }
@@ -96,7 +96,7 @@ PROBE::decodeDataContent(const Block& block,
       }
       availableNames.emplace_back(elementName, maxSuffixLength);
     }
-    if (item.type() == tlv_probe_redirect) {
+    if (item.type() == tlv::ProbeRedirect) {
       availableRedirection.emplace_back(Name(item.blockFromValue()));
     }
   }

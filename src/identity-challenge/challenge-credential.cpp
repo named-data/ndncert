@@ -87,7 +87,7 @@ ChallengeCredential::handleChallengeRequest(const Block& params, CaState& reques
   size_t signatureLen;
   const auto& elements = params.elements();
   for (size_t i = 0; i < elements.size(); i++) {
-    if (elements[i].type() == tlv_parameter_key) {
+    if (elements[i].type() == tlv::ParameterKey) {
       if (readString(elements[i]) == PARAMETER_KEY_CREDENTIAL_CERT) {
         try {
           credential.wireDecode(elements[i + 1].blockFromValue());
@@ -139,24 +139,24 @@ Block
 ChallengeCredential::genChallengeRequestTLV(Status status, const std::string& challengeStatus,
                                             std::vector<std::tuple<std::string, std::string>>&& params)
 {
-  Block request = makeEmptyBlock(tlv_encrypted_payload);
+  Block request = makeEmptyBlock(tlv::EncryptedPayload);
   if (status == Status::BEFORE_CHALLENGE) {
     if (params.size() != 2) {
       NDN_THROW(std::runtime_error("Wrong parameter provided."));
     }
-    request.push_back(makeStringBlock(tlv_selected_challenge, CHALLENGE_TYPE));
+    request.push_back(makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
     for (const auto& item : params) {
       if (std::get<0>(item) == PARAMETER_KEY_CREDENTIAL_CERT) {
-        request.push_back(makeStringBlock(tlv_parameter_key, PARAMETER_KEY_CREDENTIAL_CERT));
-        Block valueBlock = makeEmptyBlock(tlv_parameter_value);
+        request.push_back(makeStringBlock(tlv::ParameterKey, PARAMETER_KEY_CREDENTIAL_CERT));
+        Block valueBlock = makeEmptyBlock(tlv::ParameterValue);
         auto& certTlvStr = std::get<1>(item);
         valueBlock.push_back(Block((uint8_t*)certTlvStr.c_str(), certTlvStr.size()));
         request.push_back(valueBlock);
       }
       else if (std::get<0>(item) == PARAMETER_KEY_PROOF_OF_PRIVATE_KEY) {
-        request.push_back(makeStringBlock(tlv_parameter_key, PARAMETER_KEY_PROOF_OF_PRIVATE_KEY));
+        request.push_back(makeStringBlock(tlv::ParameterKey, PARAMETER_KEY_PROOF_OF_PRIVATE_KEY));
         auto& sigTlvStr = std::get<1>(item);
-        Block valueBlock = makeBinaryBlock(tlv_parameter_value, (uint8_t*)sigTlvStr.c_str(), sigTlvStr.size());
+        Block valueBlock = makeBinaryBlock(tlv::ParameterValue, (uint8_t*)sigTlvStr.c_str(), sigTlvStr.size());
         request.push_back(valueBlock);
       }
       else {

@@ -111,8 +111,8 @@ BOOST_AUTO_TEST_CASE(HandleProbe)
   interest.setCanBePrefix(false);
 
   Block paramTLV = makeEmptyBlock(tlv::ApplicationParameters);
-  paramTLV.push_back(makeStringBlock(tlv_parameter_key, "name"));
-  paramTLV.push_back(makeStringBlock(tlv_parameter_value, "zhiyi"));
+  paramTLV.push_back(makeStringBlock(tlv::ParameterKey, "name"));
+  paramTLV.push_back(makeStringBlock(tlv::ParameterValue, "zhiyi"));
   paramTLV.encode();
 
   interest.setApplicationParameters(paramTLV);
@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE(HandleProbe)
     BOOST_CHECK(security::verifySignature(response, cert));
     Block contentBlock = response.getContent();
     contentBlock.parse();
-    Block probeResponse = contentBlock.get(tlv_probe_response);
+    Block probeResponse = contentBlock.get(tlv::ProbeResponse);
     probeResponse.parse();
     Name caName;
     caName.wireDecode(probeResponse.get(tlv::Name));
@@ -149,8 +149,8 @@ BOOST_AUTO_TEST_CASE(HandleProbeUsingDefaultHandler)
   interest.setCanBePrefix(false);
 
   Block paramTLV = makeEmptyBlock(tlv::ApplicationParameters);
-  paramTLV.push_back(makeStringBlock(tlv_parameter_key, "name"));
-  paramTLV.push_back(makeStringBlock(tlv_parameter_value, "zhiyi"));
+  paramTLV.push_back(makeStringBlock(tlv::ParameterKey, "name"));
+  paramTLV.push_back(makeStringBlock(tlv::ParameterValue, "zhiyi"));
   paramTLV.encode();
 
   interest.setApplicationParameters(paramTLV);
@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE(HandleProbeUsingDefaultHandler)
     BOOST_CHECK(security::verifySignature(response, cert));
     auto contentBlock = response.getContent();
     contentBlock.parse();
-    auto probeResponseBlock = contentBlock.get(tlv_probe_response);
+    auto probeResponseBlock = contentBlock.get(tlv::ProbeResponse);
     probeResponseBlock.parse();
     Name caPrefix;
     caPrefix.wireDecode(probeResponseBlock.get(tlv::Name));
@@ -187,8 +187,8 @@ BOOST_AUTO_TEST_CASE(HandleProbeRedirection)
   interest.setCanBePrefix(false);
 
   Block paramTLV = makeEmptyBlock(tlv::ApplicationParameters);
-  paramTLV.push_back(makeStringBlock(tlv_parameter_key, "name"));
-  paramTLV.push_back(makeStringBlock(tlv_parameter_value, "zhiyi"));
+  paramTLV.push_back(makeStringBlock(tlv::ParameterKey, "name"));
+  paramTLV.push_back(makeStringBlock(tlv::ParameterValue, "zhiyi"));
   paramTLV.encode();
 
   interest.setApplicationParameters(paramTLV);
@@ -203,7 +203,7 @@ BOOST_AUTO_TEST_CASE(HandleProbeRedirection)
     // Test CA sent redirections
     std::vector<Name> redirectionItems;
     for (auto item : contentBlock.elements()) {
-      if (item.type() == tlv_probe_redirect) {
+      if (item.type() == tlv::ProbeRedirect) {
         redirectionItems.push_back(Name(item.blockFromValue()));
       }
     }
@@ -241,13 +241,13 @@ BOOST_AUTO_TEST_CASE(HandleNew)
     auto contentBlock = response.getContent();
     contentBlock.parse();
 
-    BOOST_CHECK(readString(contentBlock.get(tlv_ecdh_pub)) != "");
-    BOOST_CHECK(readString(contentBlock.get(tlv_salt)) != "");
-    BOOST_CHECK(readString(contentBlock.get(tlv_request_id)) != "");
+    BOOST_CHECK(readString(contentBlock.get(tlv::EcdhPub)) != "");
+    BOOST_CHECK(readString(contentBlock.get(tlv::Salt)) != "");
+    BOOST_CHECK(readString(contentBlock.get(tlv::RequestId)) != "");
 
     auto challengeBlockCount = 0;
     for (auto const& element : contentBlock.elements()) {
-      if (element.type() == tlv_challenge) {
+      if (element.type() == tlv::Challenge) {
         challengeBlockCount++;
       }
     }
@@ -255,7 +255,7 @@ BOOST_AUTO_TEST_CASE(HandleNew)
     BOOST_CHECK(challengeBlockCount != 0);
 
     auto challengeList = Requester::onNewRenewRevokeResponse(state, response);
-    auto ca_encryption_key = ca.getCaStorage()->getRequest(readString(contentBlock.get(tlv_request_id))).m_encryptionKey;
+    auto ca_encryption_key = ca.getCaStorage()->getRequest(readString(contentBlock.get(tlv::RequestId))).m_encryptionKey;
     BOOST_CHECK_EQUAL_COLLECTIONS(state.m_aesKey, state.m_aesKey + sizeof(state.m_aesKey),
                                   ca_encryption_key.value(), ca_encryption_key.value() + ca_encryption_key.value_size());
   });
@@ -286,7 +286,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidValidityPeriod1)
   face.onSendData.connect([&](const Data& response) {
     auto contentTlv = response.getContent();
     contentTlv.parse();
-    auto errorCode = static_cast<ErrorCode>(readNonNegativeInteger(contentTlv.get(tlv_error_code)));
+    auto errorCode = static_cast<ErrorCode>(readNonNegativeInteger(contentTlv.get(tlv::ErrorCode)));
     BOOST_CHECK(errorCode != ErrorCode::NO_ERROR);
   });
   face.receive(*interest1);
@@ -322,12 +322,12 @@ BOOST_AUTO_TEST_CASE(HandleNewWithLongSuffix)
     auto contentTlv = response.getContent();
     contentTlv.parse();
     if (interest3->getName().isPrefixOf(response.getName())) {
-      auto errorCode = static_cast<ErrorCode>(readNonNegativeInteger(contentTlv.get(tlv_error_code)));
+      auto errorCode = static_cast<ErrorCode>(readNonNegativeInteger(contentTlv.get(tlv::ErrorCode)));
       BOOST_CHECK(errorCode != ErrorCode::NO_ERROR);
     }
     else {
       // should successfully get responses
-      BOOST_CHECK_EXCEPTION(readNonNegativeInteger(contentTlv.get(tlv_error_code)), std::runtime_error,
+      BOOST_CHECK_EXCEPTION(readNonNegativeInteger(contentTlv.get(tlv::ErrorCode)), std::runtime_error,
                             [](const auto& e) { return true; });
     }
   });
@@ -358,7 +358,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidLength1)
   face.onSendData.connect([&](const Data& response) {
     auto contentTlv = response.getContent();
     contentTlv.parse();
-    auto errorCode = static_cast<ErrorCode>(readNonNegativeInteger(contentTlv.get(tlv_error_code)));
+    auto errorCode = static_cast<ErrorCode>(readNonNegativeInteger(contentTlv.get(tlv::ErrorCode)));
     BOOST_CHECK(errorCode != ErrorCode::NO_ERROR);
   });
   face.receive(*interest1);
@@ -481,13 +481,13 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
     auto contentBlock = response.getContent();
     contentBlock.parse();
 
-    BOOST_CHECK(readString(contentBlock.get(tlv_ecdh_pub)) != "");
-    BOOST_CHECK(readString(contentBlock.get(tlv_salt)) != "");
-    BOOST_CHECK(readString(contentBlock.get(tlv_request_id)) != "");
+    BOOST_CHECK(readString(contentBlock.get(tlv::EcdhPub)) != "");
+    BOOST_CHECK(readString(contentBlock.get(tlv::Salt)) != "");
+    BOOST_CHECK(readString(contentBlock.get(tlv::RequestId)) != "");
 
     auto challengeBlockCount = 0;
     for (auto const& element : contentBlock.elements()) {
-      if (element.type() == tlv_challenge) {
+      if (element.type() == tlv::Challenge) {
         challengeBlockCount++;
       }
     }
@@ -495,7 +495,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
     BOOST_CHECK(challengeBlockCount != 0);
 
     auto challengeList = Requester::onNewRenewRevokeResponse(state, response);
-    auto ca_encryption_key = ca.getCaStorage()->getRequest(readString(contentBlock.get(tlv_request_id))).m_encryptionKey;
+    auto ca_encryption_key = ca.getCaStorage()->getRequest(readString(contentBlock.get(tlv::RequestId))).m_encryptionKey;
     BOOST_CHECK_EQUAL_COLLECTIONS(state.m_aesKey, state.m_aesKey + sizeof(state.m_aesKey),
                                   ca_encryption_key.value(), ca_encryption_key.value() + ca_encryption_key.value_size());
   });
@@ -540,7 +540,7 @@ BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
     receiveData = true;
     auto contentTlv = response.getContent();
     contentTlv.parse();
-    BOOST_CHECK(static_cast<ErrorCode>(readNonNegativeInteger(contentTlv.get(tlv_error_code))) != ErrorCode::NO_ERROR);
+    BOOST_CHECK(static_cast<ErrorCode>(readNonNegativeInteger(contentTlv.get(tlv::ErrorCode))) != ErrorCode::NO_ERROR);
   });
   face.receive(*interest);
 

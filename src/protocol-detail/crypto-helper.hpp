@@ -21,7 +21,7 @@
 #ifndef NDNCERT_CRYPTO_SUPPORT_CRYPTO_HELPER_HPP
 #define NDNCERT_CRYPTO_SUPPORT_CRYPTO_HELPER_HPP
 
-#include "../ndncert-common.hpp"
+#include "ndncert-common.hpp"
 
 namespace ndn {
 namespace ndncert {
