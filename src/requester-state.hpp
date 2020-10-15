@@ -21,8 +21,8 @@
 #ifndef NDNCERT_REQUESTER_STATE_HPP
 #define NDNCERT_REQUESTER_STATE_HPP
 
-#include "detail/ndncert-common.hpp"
-#include "detail/crypto-helper.hpp"
+#include "protocol-detail/ndncert-common.hpp"
+#include "protocol-detail/crypto-helper.hpp"
 #include "configuration.hpp"
 
 namespace ndn {
@@ -44,7 +44,6 @@ struct RequesterState {
    * The type of request. Either NEW, RENEW, or REVOKE.
    */
   RequestType m_type;
-
   /**
    * The identity name for the requesting certificate.
    */
@@ -61,7 +60,6 @@ struct RequesterState {
    * The current status of the request.
    */
   Status m_status = Status::NOT_STARTED;
-
   /**
    * The type of challenge chosen.
    */

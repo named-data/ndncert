@@ -18,36 +18,31 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_DETAIL_PROBE_ENCODER_HPP
-#define NDNCERT_DETAIL_PROBE_ENCODER_HPP
+#ifndef NDNCERT_PROTOCOL_DETAIL_INFO_ENCODER_HPP
+#define NDNCERT_PROTOCOL_DETAIL_INFO_ENCODER_HPP
 
 #include "../configuration.hpp"
 
 namespace ndn {
 namespace ndncert {
 
-class ProbeEncoder
+class InfoEncoder
 {
 public:
-  // For Client use
+  /**
+   * Encode CA configuration and its certificate into a TLV block as INFO Data packet content.
+   */
   static Block
-  encodeApplicationParameters(std::vector<std::tuple<std::string, std::string>>&& parameters);
+  encodeDataContent(const CaProfile& caConfig, const security::Certificate& certificate);
 
-  static void
-  decodeDataContent(const Block& block, std::vector<std::pair<Name, int>>& availableNames,
-                    std::vector<Name>& availableRedirection);
-
-  // For CA use
-  static Block
-  encodeDataContent(const std::vector<Name>& identifiers,
-                    boost::optional<size_t> maxSuffixLength = boost::none,
-                    boost::optional<std::vector<std::shared_ptr<security::Certificate>>> redirectionItems = boost::none);
-
-  static std::vector<std::tuple<std::string, std::string>>
-  decodeApplicationParameters(const Block& block);
+  /**
+   * Decode CA configuration from the TLV block of INFO Data packet content.
+   */
+  static CaProfile
+  decodeDataContent(const Block& block);
 };
 
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_DETAIL_PROBE_ENCODER_HPP
+#endif // NDNCERT_PROTOCOL_DETAIL_INFO_ENCODER_HPP

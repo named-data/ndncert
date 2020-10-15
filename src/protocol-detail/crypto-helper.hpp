@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_CRYPTO_SUPPORT_CRYPTO_HELPER_HPP
-#define NDNCERT_CRYPTO_SUPPORT_CRYPTO_HELPER_HPP
+#ifndef NDNCERT_PROTOCOL_DETAIL_CRYPTO_HELPER_HPP
+#define NDNCERT_PROTOCOL_DETAIL_CRYPTO_HELPER_HPP
 
 #include "ndncert-common.hpp"
 
@@ -125,10 +125,33 @@ int
 aes_gcm_128_decrypt(const uint8_t* ciphertext, size_t ciphertext_len, const uint8_t* associated, size_t associated_len,
                     const uint8_t* tag, const uint8_t* key, const uint8_t* iv, uint8_t* plaintext);
 
-void
-handleErrors(const std::string& errorInfo);
+/**
+ * Encode the payload into TLV block with Authenticated GCM 128 Encryption
+ * @p tlv::type, intput, the TLV TYPE of the encoded block, either ApplicationParameters or Content
+ * @p key, intput, 16 Bytes, the AES key used for encryption
+ * @p payload, input, the plaintext payload
+ * @p payloadSize, input, the size of the plaintext payload
+ * @p associatedData, input, associated data used for authentication
+ * @p associatedDataSize, input, the size of associated data
+ * @return the TLV block with @p tlv::type TLV TYPE
+ */
+Block
+encodeBlockWithAesGcm128(uint32_t tlv_type, const uint8_t* key, const uint8_t* payload, size_t payloadSize,
+                         const uint8_t* associatedData, size_t associatedDataSize);
+
+/**
+ * Decode the payload from TLV block with Authenticated GCM 128 Encryption
+ * @p block, intput, the TLV block in the format of NDNCERT protocol
+ * @p key, intput, 16 Bytes, the AES key used for encryption
+ * @p associatedData, input, associated data used for authentication
+ * @p associatedDataSize, input, the size of associated data
+ * @return the plaintext buffer
+ */
+Buffer
+decodeBlockWithAesGcm128(const Block& block, const uint8_t* key,
+                         const uint8_t* associatedData, size_t associatedDataSize);
 
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_CRYPTO_SUPPORT_CRYPTO_HELPER_HPP
+#endif // NDNCERT_PROTOCOL_DETAIL_CRYPTO_HELPER_HPP

@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "detail/crypto-helper.hpp"
+#include "protocol-detail/crypto-helper.hpp"
 #include "test-common.hpp"
 
 namespace ndn {
@@ -292,6 +292,19 @@ BOOST_AUTO_TEST_CASE(AesGcm3)
   uint8_t decrypted[256] = {0};
   size = aes_gcm_128_decrypt(ciphertext, size, aad, sizeof(aad), tag, key, iv, decrypted);
   BOOST_CHECK(memcmp(decrypted, plaintext, sizeof(plaintext)) == 0);
+}
+
+
+BOOST_AUTO_TEST_CASE(BlockEncodingDecoding)
+{
+  const uint8_t key[] = {0xbc, 0x22, 0xf3, 0xf0, 0x5c, 0xc4, 0x0d, 0xb9,
+                         0x31, 0x1e, 0x41, 0x92, 0x96, 0x6f, 0xee, 0x92};
+  const std::string plaintext = "alongstringalongstringalongstringalongstringalongstringalongstringalongstringalongstring";
+  const std::string associatedData = "test";
+  auto block = encodeBlockWithAesGcm128(ndn::tlv::Content, key, (uint8_t*)plaintext.c_str(), plaintext.size(),
+                                        (uint8_t*)associatedData.c_str(), associatedData.size());
+  auto decoded = decodeBlockWithAesGcm128(block, key, (uint8_t*)associatedData.c_str(), associatedData.size());
+  BOOST_CHECK_EQUAL(plaintext, std::string((char*)decoded.get<uint8_t>(), decoded.size()));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

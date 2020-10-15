@@ -18,8 +18,6 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "identity-challenge/challenge-module.hpp"
-#include "detail/info-encoder.hpp"
 #include "requester.hpp"
 #include <ndn-cxx/security/verification-helpers.hpp>
 #include <boost/asio.hpp>
@@ -136,7 +134,6 @@ challengeCb(const Data& reply)
                          bind(&onNackCb), bind(&timeoutCb));
     return;
   }
-
   runChallenge(requesterState->m_challengeType);
 }
 
@@ -186,15 +183,8 @@ newCb(const Data& reply)
   }
   auto it = challengeList.begin();
   std::advance(it, challengeIndex);
-  unique_ptr<ChallengeModule> challenge = ChallengeModule::createChallengeModule(*it);
-  if (challenge != nullptr) {
-    std::cerr << "The challenge has been selected: " << *it << std::endl;
-    runChallenge(*it);
-  }
-  else {
-    std::cerr << "Error. Cannot load selected Challenge Module. Exit." << std::endl;
-    exit(1);
-  }
+  std::cerr << "The challenge has been selected: " << *it << std::endl;
+  runChallenge(*it);
 }
 
 static void
@@ -416,7 +406,15 @@ runNew(CaProfile profile, Name identityName)
 static void
 runChallenge(const std::string& challengeType)
 {
-  auto requirement = Requester::selectOrContinueChallenge(*requesterState, challengeType);
+  std::vector<std::tuple<std::string, std::string>> requirement;
+  try {
+    requirement = Requester::selectOrContinueChallenge(*requesterState, challengeType);
+  }
+  catch (const std::exception& e) {
+    std::cerr << "Error. Cannot successfully load the Challenge Module with error: " << std::string(e.what())
+              << "Exit." << std::endl;
+    exit(1);
+  }
   if (requirement.size() > 0) {
     std::cerr << "\n***************************************\n"
               << "Step " << nStep

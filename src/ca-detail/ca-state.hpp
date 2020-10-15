@@ -21,7 +21,7 @@
 #ifndef NDNCERT_CA_STATE_HPP
 #define NDNCERT_CA_STATE_HPP
 
-#include "detail/ndncert-common.hpp"
+#include "protocol-detail/ndncert-common.hpp"
 
 namespace ndn {
 namespace ndncert {

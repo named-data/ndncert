@@ -18,10 +18,10 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "detail/info-encoder.hpp"
-#include "detail/probe-encoder.hpp"
-#include "detail/new-renew-revoke-encoder.hpp"
-#include "detail/challenge-encoder.hpp"
+#include "protocol-detail/info-encoder.hpp"
+#include "protocol-detail/probe-encoder.hpp"
+#include "protocol-detail/new-renew-revoke-encoder.hpp"
+#include "protocol-detail/challenge-encoder.hpp"
 #include "test-common.hpp"
 
 namespace ndn {

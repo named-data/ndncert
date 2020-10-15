@@ -18,31 +18,36 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_DETAIL_ERROR_ENCODER_HPP
-#define NDNCERT_DETAIL_ERROR_ENCODER_HPP
+#ifndef NDNCERT_PROTOCOL_DETAIL_PROBE_ENCODER_HPP
+#define NDNCERT_PROTOCOL_DETAIL_PROBE_ENCODER_HPP
 
 #include "../configuration.hpp"
 
 namespace ndn {
 namespace ndncert {
 
-class ErrorEncoder
+class ProbeEncoder
 {
 public:
-  /**
-   * Encode error information into a Data content TLV
-   */
+  // For Client use
   static Block
-  encodeDataContent(ErrorCode errorCode, const std::string& description);
+  encodeApplicationParameters(std::vector<std::tuple<std::string, std::string>>&& parameters);
 
-  /**
-   * Decode error information from Data content TLV
-   */
-  static std::tuple<ErrorCode, std::string>
-  decodefromDataContent(const Block& block);
+  static void
+  decodeDataContent(const Block& block, std::vector<std::pair<Name, int>>& availableNames,
+                    std::vector<Name>& availableRedirection);
+
+  // For CA use
+  static Block
+  encodeDataContent(const std::vector<Name>& identifiers,
+                    boost::optional<size_t> maxSuffixLength = boost::none,
+                    boost::optional<std::vector<std::shared_ptr<security::Certificate>>> redirectionItems = boost::none);
+
+  static std::vector<std::tuple<std::string, std::string>>
+  decodeApplicationParameters(const Block& block);
 };
 
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_DETAIL_ERROR_ENCODER_HPP
+#endif // NDNCERT_PROTOCOL_DETAIL_PROBE_ENCODER_HPP

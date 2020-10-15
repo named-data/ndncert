@@ -32,6 +32,7 @@
 #include <ndn-cxx/security/transform/signer-filter.hpp>
 #include <ndn-cxx/security/transform/step-source.hpp>
 #include <ndn-cxx/security/transform/stream-sink.hpp>
+#include <ndn-cxx/util/random.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -39,6 +40,13 @@ namespace ndncert {
 const size_t HASH_SIZE = 32;
 
 NDN_LOG_INIT(ndncert.cryptosupport);
+
+void
+handleErrors(const std::string& errorInfo)
+{
+  NDN_LOG_DEBUG("Error in CRYPTO SUPPORT " << errorInfo);
+  NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: " + errorInfo));
+}
 
 struct ECDHState::ECDH_CTX
 {
@@ -387,11 +395,41 @@ aes_gcm_128_decrypt(const uint8_t* ciphertext, size_t ciphertext_len, const uint
   }
 }
 
-void
-handleErrors(const std::string& errorInfo)
+Block
+encodeBlockWithAesGcm128(uint32_t tlv_type, const uint8_t* key, const uint8_t* payload, size_t payloadSize,
+                         const uint8_t* associatedData, size_t associatedDataSize)
 {
-  NDN_LOG_DEBUG("Error in CRYPTO SUPPORT " << errorInfo);
-  NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: " + errorInfo));
+  Buffer iv;
+  iv.resize(12);
+  random::generateSecureBytes(iv.data(), iv.size());
+
+  uint8_t* encryptedPayload = new uint8_t[payloadSize];
+  uint8_t tag[16];
+  size_t encryptedPayloadLen = aes_gcm_128_encrypt(payload, payloadSize, associatedData, associatedDataSize,
+                                                   key, iv.data(), encryptedPayload, tag);
+  auto content = makeEmptyBlock(tlv_type);
+  content.push_back(makeBinaryBlock(tlv::InitializationVector, iv.data(), iv.size()));
+  content.push_back(makeBinaryBlock(tlv::AuthenticationTag, tag, 16));
+  content.push_back(makeBinaryBlock(tlv::EncryptedPayload, encryptedPayload, encryptedPayloadLen));
+  content.encode();
+  delete[] encryptedPayload;
+  return content;
+}
+
+Buffer
+decodeBlockWithAesGcm128(const Block& block, const uint8_t* key, const uint8_t* associatedData, size_t associatedDataSize)
+{
+  block.parse();
+  Buffer result;
+  result.resize(block.get(tlv::EncryptedPayload).value_size());
+  int resultLen = aes_gcm_128_decrypt(block.get(tlv::EncryptedPayload).value(),
+                                      block.get(tlv::EncryptedPayload).value_size(),
+                                      associatedData, associatedDataSize, block.get(tlv::AuthenticationTag).value(),
+                                      key, block.get(tlv::InitializationVector).value(), result.data());
+  if (resultLen == -1 || resultLen != (int)block.get(tlv::EncryptedPayload).value_size()) {
+    return Buffer();
+  }
+  return result;
 }
 
 } // namespace ndncert

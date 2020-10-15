@@ -106,8 +106,8 @@ public:
    */
   static shared_ptr<Interest>
   genNewInterest(RequesterState& state, const Name& identityName,
-                      const time::system_clock::TimePoint& notBefore,
-                      const time::system_clock::TimePoint& notAfter);
+                 const time::system_clock::TimePoint& notBefore,
+                 const time::system_clock::TimePoint& notAfter);
 
   /**
    * Generates a REVOKE interest to the CA.
@@ -135,6 +135,7 @@ public:
    * @p challengeSelected, The selected challenge for the request.
    *            Can use state.m_challengeType to continue.
    * @return The requirement list for the current stage of the challenge, in name, prompt mapping.
+   * @throw std::runtime_error if the challenge is not supported.
    */
   static std::vector<std::tuple<std::string, std::string>>
   selectOrContinueChallenge(RequesterState& state, const std::string& challengeSelected);
@@ -144,6 +145,7 @@ public:
    * @p state, The requester state of the request.
    * @p parameters, The requirement list, in name, value mapping.
    * @return The shared pointer to the encoded interest
+   * @throw std::runtime_error if the challenge is not selected or is not supported.
    */
   static shared_ptr<Interest>
   genChallengeInterest(const RequesterState& state,
