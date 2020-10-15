@@ -18,9 +18,9 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "name-assignments/assignment-random.hpp"
-#include "name-assignments/assignment-param.hpp"
-#include "name-assignments/assignment-hash.hpp"
+#include "name-assignment/assignment-random.hpp"
+#include "name-assignment/assignment-param.hpp"
+#include "name-assignment/assignment-hash.hpp"
 #include "test-common.hpp"
 
 namespace ndn {

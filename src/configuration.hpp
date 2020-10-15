@@ -22,7 +22,7 @@
 #define NDNCERT_CONFIGURATION_HPP
 
 #include "detail/ca-state.hpp"
-#include "name-assignments/assignment-funcs.hpp"
+#include "name-assignment/assignment-func.hpp"
 
 namespace ndn {
 namespace ndncert {

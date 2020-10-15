@@ -22,7 +22,7 @@
 #include "identity-challenge/challenge-module.hpp"
 #include <ndn-cxx/util/io.hpp>
 #include <boost/filesystem.hpp>
-#include "name-assignments/assignment-funcs.hpp"
+#include "name-assignment/assignment-func.hpp"
 
 namespace ndn {
 namespace ndncert {

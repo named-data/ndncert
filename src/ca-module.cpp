@@ -21,7 +21,7 @@
 #include "ca-module.hpp"
 #include "detail/crypto-helper.hpp"
 #include "identity-challenge/challenge-module.hpp"
-#include "name-assignments/assignment-funcs.hpp"
+#include "name-assignment/assignment-func.hpp"
 #include "detail/challenge-encoder.hpp"
 #include "detail/error-encoder.hpp"
 #include "detail/info-encoder.hpp"

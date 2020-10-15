@@ -18,10 +18,10 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_ASSIGNMENT_HASH_HPP
-#define NDNCERT_ASSIGNMENT_HASH_HPP
+#ifndef NDNCERT_ASSIGNMENT_RANDOM_HPP
+#define NDNCERT_ASSIGNMENT_RANDOM_HPP
 
-#include "assignment-funcs.hpp"
+#include "assignment-func.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -29,18 +29,16 @@ namespace ndncert {
 /**
  * assign names base on client probe parameter
  */
-class AssignmentHash: public NameAssignmentFunc
+class AssignmentRandom: public NameAssignmentFunc
 {
 public:
-  AssignmentHash(const std::string& format = "");
+  AssignmentRandom(const std::string& format = "");
 
   std::vector<PartialName>
   assignName(const std::vector<std::tuple<std::string, std::string>>& params) override;
-
 };
-}
-}
 
+} // namespace ndncert
+} // namespace ndn
 
-
-#endif //NDNCERT_ASSIGNMENT_HASH_HPP
+#endif //NDNCERT_ASSIGNMENT_RANDOM_HPP
