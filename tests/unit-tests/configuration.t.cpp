@@ -19,7 +19,7 @@
  */
 
 #include "configuration.hpp"
-#include "protocol-detail/info-encoder.hpp"
+#include "detail/info-encoder.hpp"
 #include "test-common.hpp"
 
 namespace ndn {

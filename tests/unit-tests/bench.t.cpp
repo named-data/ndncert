@@ -20,7 +20,7 @@
 
 #include "ca-module.hpp"
 #include "identity-challenge/challenge-pin.hpp"
-#include "protocol-detail/info-encoder.hpp"
+#include "detail/info-encoder.hpp"
 #include "requester.hpp"
 #include "test-common.hpp"
 

@@ -18,26 +18,39 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_PROTOCOL_DETAIL_CHALLENGE_STEP_HPP
-#define NDNCERT_PROTOCOL_DETAIL_CHALLENGE_STEP_HPP
+#ifndef NDNCERT_PROTOCOL_DETAIL_NEW_RENEW_REVOKE_ENCODER_HPP
+#define NDNCERT_PROTOCOL_DETAIL_NEW_RENEW_REVOKE_ENCODER_HPP
 
-#include "../ca-detail/ca-state.hpp"
-#include "../requester-state.hpp"
+#include "../detail/ca-state.hpp"
 
 namespace ndn {
 namespace ndncert {
 
-class ChallengeEncoder
+class NewRenewRevokeEncoder
 {
 public:
   static Block
-  encodeDataContent(const CaState& request);
+  encodeApplicationParameters(RequestType requestType, const std::string& ecdhPub, const security::Certificate& certRequest);
 
   static void
-  decodeDataContent(const Block& data, RequesterState& state);
+  decodeApplicationParameters(const Block& block, RequestType requestType, std::string& ecdhPub, shared_ptr<security::Certificate>& certRequest);
+
+  static Block
+  encodeDataContent(const std::string& ecdhKey, const std::string& salt,
+                             const CaState& request,
+                             const std::list<std::string>& challenges);
+  struct DecodedData {
+    std::string ecdhKey;
+    uint64_t salt;
+    std::string requestId;
+    Status requestStatus;
+    std::list<std::string> challenges;
+  };
+  static DecodedData
+  decodeDataContent(const Block& content);
 };
 
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_PROTOCOL_DETAIL_CHALLENGE_STEP_HPP
+#endif // NDNCERT_PROTOCOL_DETAIL_NEW_RENEW_REVOKE_HPP

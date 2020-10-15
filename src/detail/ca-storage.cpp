@@ -18,39 +18,25 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_PROTOCOL_DETAIL_NEW_RENEW_REVOKE_ENCODER_HPP
-#define NDNCERT_PROTOCOL_DETAIL_NEW_RENEW_REVOKE_ENCODER_HPP
-
-#include "../ca-detail/ca-state.hpp"
+#include "detail/ca-storage.hpp"
 
 namespace ndn {
 namespace ndncert {
 
-class NewRenewRevokeEncoder
+unique_ptr<CaStorage>
+CaStorage::createCaStorage(const std::string& caStorageType, const Name& caName, const std::string& path)
 {
-public:
-  static Block
-  encodeApplicationParameters(RequestType requestType, const std::string& ecdhPub, const security::Certificate& certRequest);
+  CaStorageFactory& factory = getFactory();
+  auto i = factory.find(caStorageType);
+  return i == factory.end() ? nullptr : i->second(caName, path);
+}
 
-  static void
-  decodeApplicationParameters(const Block& block, RequestType requestType, std::string& ecdhPub, shared_ptr<security::Certificate>& certRequest);
-
-  static Block
-  encodeDataContent(const std::string& ecdhKey, const std::string& salt,
-                             const CaState& request,
-                             const std::list<std::string>& challenges);
-  struct DecodedData {
-    std::string ecdhKey;
-    uint64_t salt;
-    std::string requestId;
-    Status requestStatus;
-    std::list<std::string> challenges;
-  };
-  static DecodedData
-  decodeDataContent(const Block& content);
-};
+CaStorage::CaStorageFactory&
+CaStorage::getFactory()
+{
+  static CaStorage::CaStorageFactory factory;
+  return factory;
+}
 
 } // namespace ndncert
 } // namespace ndn
-
-#endif // NDNCERT_PROTOCOL_DETAIL_NEW_RENEW_REVOKE_HPP

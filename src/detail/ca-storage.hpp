@@ -21,7 +21,7 @@
 #ifndef NDNCERT_CA_STORAGE_HPP
 #define NDNCERT_CA_STORAGE_HPP
 
-#include "ca-detail/ca-state.hpp"
+#include "detail/ca-state.hpp"
 
 namespace ndn {
 namespace ndncert {

@@ -21,8 +21,8 @@
 #ifndef NDNCERT_REQUESTER_STATE_HPP
 #define NDNCERT_REQUESTER_STATE_HPP
 
-#include "protocol-detail/ndncert-common.hpp"
-#include "protocol-detail/crypto-helper.hpp"
+#include "detail/ndncert-common.hpp"
+#include "detail/crypto-helper.hpp"
 #include "configuration.hpp"
 
 namespace ndn {

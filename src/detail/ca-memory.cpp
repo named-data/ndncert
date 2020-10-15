@@ -19,7 +19,6 @@
  */
 
 #include "ca-memory.hpp"
-
 #include <ndn-cxx/security/validation-policy.hpp>
 
 namespace ndn {

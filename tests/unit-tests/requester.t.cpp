@@ -19,8 +19,8 @@
  */
 
 #include "requester.hpp"
-#include "protocol-detail/error-encoder.hpp"
-#include "protocol-detail/probe-encoder.hpp"
+#include "detail/error-encoder.hpp"
+#include "detail/probe-encoder.hpp"
 #include "identity-challenge/challenge-module.hpp"
 #include "ca-module.hpp"
 #include "test-common.hpp"

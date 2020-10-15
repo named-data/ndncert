@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "ca-detail/ca-sqlite.hpp"
+#include "detail/ca-sqlite.hpp"
 #include "test-common.hpp"
 
 namespace ndn {

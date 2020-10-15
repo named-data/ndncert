@@ -18,25 +18,26 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "ca-detail/ca-storage.hpp"
+#ifndef NDNCERT_PROTOCOL_DETAIL_CHALLENGE_STEP_HPP
+#define NDNCERT_PROTOCOL_DETAIL_CHALLENGE_STEP_HPP
+
+#include "../detail/ca-state.hpp"
+#include "../requester-state.hpp"
 
 namespace ndn {
 namespace ndncert {
 
-unique_ptr<CaStorage>
-CaStorage::createCaStorage(const std::string& caStorageType, const Name& caName, const std::string& path)
+class ChallengeEncoder
 {
-  CaStorageFactory& factory = getFactory();
-  auto i = factory.find(caStorageType);
-  return i == factory.end() ? nullptr : i->second(caName, path);
-}
+public:
+  static Block
+  encodeDataContent(const CaState& request);
 
-CaStorage::CaStorageFactory&
-CaStorage::getFactory()
-{
-  static CaStorage::CaStorageFactory factory;
-  return factory;
-}
+  static void
+  decodeDataContent(const Block& data, RequesterState& state);
+};
 
 } // namespace ndncert
 } // namespace ndn
+
+#endif // NDNCERT_PROTOCOL_DETAIL_CHALLENGE_STEP_HPP

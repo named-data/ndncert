@@ -19,14 +19,14 @@
  */
 
 #include "ca-module.hpp"
-#include "protocol-detail/crypto-helper.hpp"
+#include "detail/crypto-helper.hpp"
 #include "identity-challenge/challenge-module.hpp"
 #include "name-assignments/assignment-funcs.hpp"
-#include "protocol-detail/challenge-encoder.hpp"
-#include "protocol-detail/error-encoder.hpp"
-#include "protocol-detail/info-encoder.hpp"
-#include "protocol-detail/new-renew-revoke-encoder.hpp"
-#include "protocol-detail/probe-encoder.hpp"
+#include "detail/challenge-encoder.hpp"
+#include "detail/error-encoder.hpp"
+#include "detail/info-encoder.hpp"
+#include "detail/new-renew-revoke-encoder.hpp"
+#include "detail/probe-encoder.hpp"
 #include <ndn-cxx/metadata-object.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
