@@ -41,7 +41,7 @@ public:
   DatabaseFixture()
   {
     boost::filesystem::path parentDir{TMP_TESTS_PATH};
-    dbDir = parentDir / "test-home/.ndncert";
+    dbDir = parentDir / "test-home" / ".ndncert";
     if (!boost::filesystem::exists(dbDir)) {
       boost::filesystem::create_directory(dbDir);
     }

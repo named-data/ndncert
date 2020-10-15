@@ -291,9 +291,9 @@ BOOST_AUTO_TEST_CASE(AesGcm3)
 
   uint8_t decrypted[256] = {0};
   size = aes_gcm_128_decrypt(ciphertext, size, aad, sizeof(aad), tag, key, iv, decrypted);
-  BOOST_CHECK(memcmp(decrypted, plaintext, sizeof(plaintext)) == 0);
+  BOOST_CHECK_EQUAL_COLLECTIONS(decrypted, decrypted + size,
+                                plaintext, plaintext + sizeof(plaintext));
 }
-
 
 BOOST_AUTO_TEST_CASE(BlockEncodingDecoding)
 {
