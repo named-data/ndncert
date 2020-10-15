@@ -84,9 +84,9 @@ hkdf(const uint8_t* secret, int secret_len,
  * @p key, intput, the key for the function
  * @p key_len, intput, the length of the key
  * @p result, output, result of the HMAC. Enough memory (32 Bytes) must be allocated beforehands
- * @return 0 if successful, -1 if failed
+ * @throw runtime_error when an error occurred in the underlying HMAC.
  */
-int
+void
 hmac_sha256(const uint8_t* data, const unsigned data_length,
             const uint8_t* key, const unsigned key_length,
             uint8_t* result);

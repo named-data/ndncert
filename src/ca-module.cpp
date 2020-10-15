@@ -292,7 +292,15 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   // create new request instance
   uint8_t requestIdData[32];
   Block certNameTlv = clientCert->getName().wireEncode();
-  hmac_sha256(certNameTlv.wire(), certNameTlv.size(), m_requestIdGenKey, 32, requestIdData);
+  try {
+    hmac_sha256(certNameTlv.wire(), certNameTlv.size(), m_requestIdGenKey, 32, requestIdData);
+  }
+  catch (const std::runtime_error& e) {
+    NDN_LOG_ERROR("Error computing the request ID: " << std::string(e.what()));
+    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
+                                       "Error computing the request ID."));
+    return;
+  }
   CaState requestState(m_config.m_caItem.m_caPrefix, toHex(requestIdData, 32),
                        requestType, Status::BEFORE_CHALLENGE, *clientCert,
                        makeBinaryBlock(ndn::tlv::ContentType_Key, aesKey, sizeof(aesKey)));
@@ -302,7 +310,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   catch (const std::runtime_error& e) {
     NDN_LOG_ERROR("Duplicate Request ID: The same request has been seen before.");
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
-                                       "Duplicate Request ID: The same request has been seen before.."));
+                                       "Duplicate Request ID: The same request has been seen before."));
     return;
   }
   Data result;
