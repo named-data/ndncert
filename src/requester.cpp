@@ -34,6 +34,7 @@
 #include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/util/random.hpp>
 #include <ndn-cxx/metadata-object.hpp>
+#include <boost/lexical_cast.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -313,10 +314,10 @@ Requester::processIfError(const Data& data)
     return;
   }
   NDN_LOG_ERROR("Error info replied from the CA with Error code: " +
-            errorCodeToString(std::get<0>(errorInfo)) +
+            boost::lexical_cast<std::string>(std::get<0>(errorInfo)) +
             " and Error Info: " + std::get<1>(errorInfo));
   NDN_THROW(std::runtime_error("Error info replied from the CA with Error code: " +
-                                           errorCodeToString(std::get<0>(errorInfo)) +
+                                       boost::lexical_cast<std::string>(std::get<0>(errorInfo)) +
                                            " and Error Info: " + std::get<1>(errorInfo)));
 }
 

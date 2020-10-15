@@ -23,34 +23,36 @@
 namespace ndn {
 namespace ndncert {
 
-const std::map<ErrorCode, std::string> errorCodeText = {
-  {ErrorCode::NO_ERROR,             "NO_ERROR"},
-  {ErrorCode::BAD_INTEREST_FORMAT,  "BAD_INTEREST_FORMAT"},
-  {ErrorCode::BAD_PARAMETER_FORMAT, "BAD_PARAMETER_FORMAT"},
-  {ErrorCode::BAD_SIGNATURE,        "BAD_SIGNATURE"},
-  {ErrorCode::INVALID_PARAMETER,    "INVALID_PARAMETER"},
-  {ErrorCode::NAME_NOT_ALLOWED,     "NAME_NOT_ALLOWED"},
-  {ErrorCode::BAD_VALIDITY_PERIOD,  "BAD_VALIDITY_PERIOD"},
-  {ErrorCode::OUT_OF_TRIES,         "OUT_OF_TRIES"},
-  {ErrorCode::OUT_OF_TIME,          "OUT_OF_TIME"},
-  {ErrorCode::NO_AVAILABLE_NAMES,   "NO_AVAILABLE_NAMES"}
-};
-
-const std::map<RequestType, std::string> requestTypeText = {
-  {RequestType::NEW, "New"},
-  {RequestType::RENEW, "Renew"},
-  {RequestType::REVOKE, "Revoke"},
-  {RequestType::NOTINITIALIZED, "Not Initialized"},
-};
-
-std::string errorCodeToString(ErrorCode code)
+std::ostream&
+operator<<(std::ostream& out, ErrorCode code)
 {
-  return errorCodeText.at(code);
+  switch (code) {
+    case ErrorCode::NO_ERROR: out << "NO_ERROR"; break;
+    case ErrorCode::BAD_INTEREST_FORMAT: out << "BAD_INTEREST_FORMAT"; break;
+    case ErrorCode::BAD_PARAMETER_FORMAT: out << "BAD_PARAMETER_FORMAT"; break;
+    case ErrorCode::BAD_SIGNATURE: out << "BAD_SIGNATURE"; break;
+    case ErrorCode::INVALID_PARAMETER: out << "INVALID_PARAMETER"; break;
+    case ErrorCode::NAME_NOT_ALLOWED: out << "NAME_NOT_ALLOWED"; break;
+    case ErrorCode::BAD_VALIDITY_PERIOD: out << "BAD_VALIDITY_PERIOD"; break;
+    case ErrorCode::OUT_OF_TRIES: out << "OUT_OF_TRIES"; break;
+    case ErrorCode::OUT_OF_TIME: out << "OUT_OF_TIME"; break;
+    case ErrorCode::NO_AVAILABLE_NAMES: out << "NO_AVAILABLE_NAMES"; break;
+    default: out << "UNKNOWN_ERROR"; break;
+  }
+  return out;
 }
 
-std::string requestTypeToString(RequestType type)
+std::ostream&
+operator<<(std::ostream& out, RequestType type)
 {
-  return requestTypeText.at(type);
+  switch(type) {
+    case RequestType::NEW: out << "New"; break;
+    case RequestType::RENEW: out << "Renew"; break;
+    case RequestType::REVOKE: out << "Revoke"; break;
+    case RequestType::NOTINITIALIZED: out << "Not Initialized"; break;
+    default: out << "UNKNOWN_REQUEST_TYPE"; break;
+  }
+  return out;
 }
 
 } // namespace ndncert

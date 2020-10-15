@@ -97,7 +97,7 @@ using boost::noncopyable;
 typedef boost::property_tree::ptree JsonSection;
 
 // NDNCERT error code
-enum class ErrorCode : uint16_t {
+enum class ErrorCode : uint64_t {
   NO_ERROR = 0,
   BAD_INTEREST_FORMAT = 1,
   BAD_PARAMETER_FORMAT = 2,
@@ -111,11 +111,11 @@ enum class ErrorCode : uint16_t {
 };
 
 // Convert error code to string
-std::string
-errorCodeToString(ErrorCode code);
+std::ostream&
+operator<<(std::ostream& os, ErrorCode code);
 
 // NDNCERT request type
-enum class RequestType : uint16_t {
+enum class RequestType : uint64_t {
   NOTINITIALIZED = 0,
   NEW = 1,
   RENEW = 2,
@@ -123,8 +123,8 @@ enum class RequestType : uint16_t {
 };
 
 // Convert request type to string
-std::string
-requestTypeToString(RequestType type);
+std::ostream&
+operator<<(std::ostream& out, RequestType type);
 
 } // namespace ndncert
 } // namespace ndn
