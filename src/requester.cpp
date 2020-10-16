@@ -313,12 +313,11 @@ Requester::processIfError(const Data& data)
   if (std::get<0>(errorInfo) == ErrorCode::NO_ERROR) {
     return;
   }
-  NDN_LOG_ERROR("Error info replied from the CA with Error code: " +
-            boost::lexical_cast<std::string>(std::get<0>(errorInfo)) +
-            " and Error Info: " + std::get<1>(errorInfo));
+  NDN_LOG_ERROR("Error info replied from the CA with Error code: " << std::get<0>(errorInfo) <<
+                " and Error Info: " << std::get<1>(errorInfo));
   NDN_THROW(std::runtime_error("Error info replied from the CA with Error code: " +
-                                       boost::lexical_cast<std::string>(std::get<0>(errorInfo)) +
-                                           " and Error Info: " + std::get<1>(errorInfo)));
+                               boost::lexical_cast<std::string>(std::get<0>(errorInfo)) +
+                               " and Error Info: " + std::get<1>(errorInfo)));
 }
 
 } // namespace ndncert
