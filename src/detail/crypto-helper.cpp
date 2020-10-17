@@ -392,8 +392,7 @@ Buffer
 decodeBlockWithAesGcm128(const Block& block, const uint8_t* key, const uint8_t* associatedData, size_t associatedDataSize)
 {
   block.parse();
-  Buffer result;
-  result.resize(block.get(tlv::EncryptedPayload).value_size());
+  Buffer result(block.get(tlv::EncryptedPayload).value_size());
   int resultLen = aes_gcm_128_decrypt(block.get(tlv::EncryptedPayload).value(),
                                       block.get(tlv::EncryptedPayload).value_size(),
                                       associatedData, associatedDataSize, block.get(tlv::AuthenticationTag).value(),
