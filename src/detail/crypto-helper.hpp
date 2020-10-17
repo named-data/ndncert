@@ -26,9 +26,6 @@
 namespace ndn {
 namespace ndncert {
 
-static const int INFO_LEN = 10;
-static const uint8_t INFO[] = {0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8, 0xf9};
-
 class ECDHState
 {
 public:
@@ -48,7 +45,7 @@ public:
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   uint8_t*
-  deriveSecret(const uint8_t* peerkey, int peerKeySize);
+  deriveSecret(const uint8_t* peerkey, size_t peerKeySize);
 
   uint8_t*
   getRawSelfPubKey();
@@ -72,10 +69,10 @@ private:
  * @return int The length of the derived key if successful, -1 if failed.
  */
 int
-hkdf(const uint8_t* secret, int secret_len,
-     const uint8_t* salt, int salt_len,
-     uint8_t* output, int output_len,
-     const uint8_t* info = INFO, int info_len = INFO_LEN);
+hkdf(const uint8_t* secret, size_t secret_len,
+     const uint8_t* salt, size_t salt_len,
+     uint8_t* output, size_t output_len,
+     const uint8_t* info = nullptr, size_t info_len = 0);
 
 /**
  * @brief HMAC based on SHA-256.
@@ -88,8 +85,8 @@ hkdf(const uint8_t* secret, int secret_len,
  * @throw runtime_error when an error occurred in the underlying HMAC.
  */
 void
-hmac_sha256(const uint8_t* data, const unsigned data_length,
-            const uint8_t* key, const unsigned key_length,
+hmac_sha256(const uint8_t* data, size_t data_length,
+            const uint8_t* key, size_t key_length,
             uint8_t* result);
 
 /**

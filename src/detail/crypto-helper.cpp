@@ -29,9 +29,6 @@
 #include <ndn-cxx/security/transform/base64-decode.hpp>
 #include <ndn-cxx/security/transform/base64-encode.hpp>
 #include <ndn-cxx/security/transform/buffer-source.hpp>
-#include <ndn-cxx/security/transform/private-key.hpp>
-#include <ndn-cxx/security/transform/signer-filter.hpp>
-#include <ndn-cxx/security/transform/step-source.hpp>
 #include <ndn-cxx/security/transform/stream-sink.hpp>
 #include <ndn-cxx/util/random.hpp>
 
@@ -57,39 +54,39 @@ ECDHState::ECDHState()
 
   // Create the context for parameter generation
   if (nullptr == (context->ctx_params = EVP_PKEY_CTX_new_id(EVP_PKEY_EC, nullptr))) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Could not create context contexts."));
+    NDN_THROW(std::runtime_error("Could not create context contexts."));
   }
 
   // Initialise the parameter generation
   if (EVP_PKEY_paramgen_init(context->ctx_params) != 1) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Could not initialize parameter generation."));
+    NDN_THROW(std::runtime_error("Could not initialize parameter generation."));
   }
 
   // We're going to use the ANSI X9.62 Prime 256v1 curve
   if (1 != EVP_PKEY_CTX_set_ec_paramgen_curve_nid(context->ctx_params, EC_NID)) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Likely unknown elliptical curve ID specified."));
+    NDN_THROW(std::runtime_error("Likely unknown elliptical curve ID specified."));
   }
 
   // Create the parameter object params
   if (!EVP_PKEY_paramgen(context->ctx_params, &context->params)) {
     // the generated key is written to context->params
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Could not create parameter object parameters."));
+    NDN_THROW(std::runtime_error("Could not create parameter object parameters."));
   }
 
   // Create the context for the key generation
   if (nullptr == (context->ctx_keygen = EVP_PKEY_CTX_new(context->params, nullptr))) {
     //The EVP_PKEY_CTX_new() function allocates public key algorithm context using
     //the algorithm specified in pkey and ENGINE e (in this case nullptr).
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Could not create the context for the key generation"));
+    NDN_THROW(std::runtime_error("Could not create the context for the key generation"));
   }
 
   // initializes a public key algorithm context
   if (1 != EVP_PKEY_keygen_init(context->ctx_keygen)) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Could not init context for key generation."));
+    NDN_THROW(std::runtime_error("Could not init context for key generation."));
   }
   if (1 != EVP_PKEY_keygen(context->ctx_keygen, &context->privkey)) {
     //performs a key generation operation, the generated key is written to context->privkey.
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Could not generate DHE keys in final step"));
+    NDN_THROW(std::runtime_error("Could not generate DHE keys in final step"));
   }
 }
 
@@ -121,7 +118,7 @@ ECDHState::getRawSelfPubKey()
   auto privECKey = EVP_PKEY_get1_EC_KEY(context->privkey);
 
   if (privECKey == nullptr) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Could not get key when calling EVP_PKEY_get1_EC_KEY()."));
+    NDN_THROW(std::runtime_error("Could not get key when calling EVP_PKEY_get1_EC_KEY()."));
   }
 
   auto ecPoint = EC_KEY_get0_public_key(privECKey);
@@ -130,7 +127,7 @@ ECDHState::getRawSelfPubKey()
                                       m_publicKey, 256, nullptr);
   EC_KEY_free(privECKey);
   if (m_publicKeyLen == 0) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Could not convert EC_POINTS to octet string when calling EC_POINT_point2oct."));
+    NDN_THROW(std::runtime_error("Could not convert EC_POINTS to octet string when calling EC_POINT_point2oct."));
   }
   return m_publicKey;
 }
@@ -149,12 +146,12 @@ ECDHState::getBase64PubKey()
 }
 
 uint8_t*
-ECDHState::deriveSecret(const uint8_t* peerkey, int peerKeySize)
+ECDHState::deriveSecret(const uint8_t* peerkey, size_t peerKeySize)
 {
   auto privECKey = EVP_PKEY_get1_EC_KEY(context->privkey);
 
   if (privECKey == nullptr) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Could not get key when calling EVP_PKEY_get1_EC_KEY()"));
+    NDN_THROW(std::runtime_error("Could not get key when calling EVP_PKEY_get1_EC_KEY()"));
   }
 
   auto group = EC_KEY_get0_group(privECKey);
@@ -163,14 +160,14 @@ ECDHState::deriveSecret(const uint8_t* peerkey, int peerKeySize)
   if (result == 0) {
     EC_POINT_free(peerPoint);
     EC_KEY_free(privECKey);
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Cannot convert peer's key into a EC point when calling EC_POINT_oct2point()"));
+    NDN_THROW(std::runtime_error("Cannot convert peer's key into a EC point when calling EC_POINT_oct2point()"));
   }
 
   result = ECDH_compute_key(m_sharedSecret, 256, peerPoint, privECKey, nullptr);
   if (result == -1) {
     EC_POINT_free(peerPoint);
     EC_KEY_free(privECKey);
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Cannot generate ECDH secret when calling ECDH_compute_key()"));
+    NDN_THROW(std::runtime_error("Cannot generate ECDH secret when calling ECDH_compute_key()"));
   }
   m_sharedSecretLen = static_cast<size_t>(result);
   EC_POINT_free(peerPoint);
@@ -191,41 +188,41 @@ ECDHState::deriveSecret(const std::string& peerKeyStr)
 }
 
 void
-hmac_sha256(const uint8_t* data, const unsigned data_length,
-            const uint8_t* key, const unsigned key_length,
+hmac_sha256(const uint8_t* data, size_t data_length,
+            const uint8_t* key, size_t key_length,
             uint8_t* result)
 {
   auto ret = HMAC(EVP_sha256(), key, key_length, (unsigned char*)data, data_length,
                   (unsigned char*)result, nullptr);
   if (ret == nullptr) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Error computing HMAC when calling HMAC()"));
+    NDN_THROW(std::runtime_error("Error computing HMAC when calling HMAC()"));
   }
 }
 
 int
-hkdf(const uint8_t* secret, int secret_len, const uint8_t* salt,
-     int salt_len, uint8_t* output, int output_len,
-     const uint8_t* info, int info_len)
+hkdf(const uint8_t* secret, size_t secret_len, const uint8_t* salt,
+     size_t salt_len, uint8_t* output, size_t output_len,
+     const uint8_t* info, size_t info_len)
 {
   EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, nullptr);
   if (EVP_PKEY_derive_init(pctx) <= 0) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: HKDF: Cannot init ctx when calling EVP_PKEY_derive_init()."));
+    NDN_THROW(std::runtime_error("HKDF: Cannot init ctx when calling EVP_PKEY_derive_init()."));
   }
   if (EVP_PKEY_CTX_set_hkdf_md(pctx, EVP_sha256()) <= 0) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: HKDF: Cannot set md when calling EVP_PKEY_CTX_set_hkdf_md()."));
+    NDN_THROW(std::runtime_error("HKDF: Cannot set md when calling EVP_PKEY_CTX_set_hkdf_md()."));
   }
   if (EVP_PKEY_CTX_set1_hkdf_salt(pctx, salt, salt_len) <= 0) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: HKDF: Cannot set salt when calling EVP_PKEY_CTX_set1_hkdf_salt()."));
+    NDN_THROW(std::runtime_error("HKDF: Cannot set salt when calling EVP_PKEY_CTX_set1_hkdf_salt()."));
   }
   if (EVP_PKEY_CTX_set1_hkdf_key(pctx, secret, secret_len) <= 0) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: HKDF: Cannot set secret when calling EVP_PKEY_CTX_set1_hkdf_key()."));
+    NDN_THROW(std::runtime_error("HKDF: Cannot set secret when calling EVP_PKEY_CTX_set1_hkdf_key()."));
   }
   if (EVP_PKEY_CTX_add1_hkdf_info(pctx, info, info_len) <= 0) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: HKDF: Cannot set info when calling EVP_PKEY_CTX_add1_hkdf_info()."));
+    NDN_THROW(std::runtime_error("HKDF: Cannot set info when calling EVP_PKEY_CTX_add1_hkdf_info()."));
   }
   size_t outLen = output_len;
   if (EVP_PKEY_derive(pctx, output, &outLen) <= 0) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: HKDF: Cannot derive result when calling EVP_PKEY_derive()."));
+    NDN_THROW(std::runtime_error("HKDF: Cannot derive result when calling EVP_PKEY_derive()."));
   }
   return (int)outLen;
 }
@@ -240,46 +237,46 @@ aes_gcm_128_encrypt(const uint8_t* plaintext, size_t plaintext_len, const uint8_
 
   // Create and initialise the context
   if (!(ctx = EVP_CIPHER_CTX_new())) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Cannot create and initialise the context when calling EVP_CIPHER_CTX_new()"));
+    NDN_THROW(std::runtime_error("Cannot create and initialise the context when calling EVP_CIPHER_CTX_new()"));
   }
 
   // Initialise the encryption operation.
   if (1 != EVP_EncryptInit_ex(ctx, EVP_aes_128_gcm(), nullptr, nullptr, nullptr)) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Cannot initialise the encryption operation when calling EVP_EncryptInit_ex()"));
+    NDN_THROW(std::runtime_error("Cannot initialise the encryption operation when calling EVP_EncryptInit_ex()"));
   }
 
   // Set IV length if default 12 bytes (96 bits) is not appropriate
   if (1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, 12, nullptr)) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Cannot set IV length when calling EVP_CIPHER_CTX_ctrl()"));
+    NDN_THROW(std::runtime_error("Cannot set IV length when calling EVP_CIPHER_CTX_ctrl()"));
   }
 
   // Initialise key and IV
   if (1 != EVP_EncryptInit_ex(ctx, nullptr, nullptr, key, iv)) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Cannot initialize key and IV when calling EVP_EncryptInit_ex()"));
+    NDN_THROW(std::runtime_error("Cannot initialize key and IV when calling EVP_EncryptInit_ex()"));
   }
 
   // Provide any AAD data. This can be called zero or more times as required
   if (1 != EVP_EncryptUpdate(ctx, nullptr, &len, associated, associated_len)) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Cannot set associated authentication data when calling EVP_EncryptUpdate()"));
+    NDN_THROW(std::runtime_error("Cannot set associated authentication data when calling EVP_EncryptUpdate()"));
   }
 
   // Provide the message to be encrypted, and obtain the encrypted output.
   // EVP_EncryptUpdate can be called multiple times if necessary
   if (1 != EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len)) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Cannot encrypt when calling EVP_EncryptUpdate()"));
+    NDN_THROW(std::runtime_error("Cannot encrypt when calling EVP_EncryptUpdate()"));
   }
   ciphertext_len = len;
 
   // Finalise the encryption. Normally ciphertext bytes may be written at
   // this stage, but this does not occur in GCM mode
   if (1 != EVP_EncryptFinal_ex(ctx, ciphertext + len, &len)) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Cannot finalise the encryption when calling EVP_EncryptFinal_ex()"));
+    NDN_THROW(std::runtime_error("Cannot finalise the encryption when calling EVP_EncryptFinal_ex()"));
   }
   ciphertext_len += len;
 
   // Get the tag
   if (1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, 16, tag)) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Cannot get tag when calling EVP_CIPHER_CTX_ctrl()"));
+    NDN_THROW(std::runtime_error("Cannot get tag when calling EVP_CIPHER_CTX_ctrl()"));
   }
 
   // Clean up
@@ -298,39 +295,39 @@ aes_gcm_128_decrypt(const uint8_t* ciphertext, size_t ciphertext_len, const uint
 
   // Create and initialise the context
   if (!(ctx = EVP_CIPHER_CTX_new())) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Cannot create and initialise the context when calling EVP_CIPHER_CTX_new()"));
+    NDN_THROW(std::runtime_error("Cannot create and initialise the context when calling EVP_CIPHER_CTX_new()"));
   }
 
   // Initialise the decryption operation.
   if (!EVP_DecryptInit_ex(ctx, EVP_aes_128_gcm(), nullptr, nullptr, nullptr)) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Cannot initialise the decryption operation when calling EVP_DecryptInit_ex()"));
+    NDN_THROW(std::runtime_error("Cannot initialise the decryption operation when calling EVP_DecryptInit_ex()"));
   }
 
   // Set IV length. Not necessary if this is 12 bytes (96 bits)
   if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, 12, nullptr)) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Cannot set IV length when calling EVP_CIPHER_CTX_ctrl"));
+    NDN_THROW(std::runtime_error("Cannot set IV length when calling EVP_CIPHER_CTX_ctrl"));
   }
 
   // Initialise key and IV
   if (!EVP_DecryptInit_ex(ctx, nullptr, nullptr, key, iv)) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Cannot initialise key and IV when calling EVP_DecryptInit_ex()"));
+    NDN_THROW(std::runtime_error("Cannot initialise key and IV when calling EVP_DecryptInit_ex()"));
   }
 
   // Provide any AAD data. This can be called zero or more times as required
   if (!EVP_DecryptUpdate(ctx, nullptr, &len, associated, associated_len)) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Cannot set associated authentication data when calling EVP_EncryptUpdate()"));
+    NDN_THROW(std::runtime_error("Cannot set associated authentication data when calling EVP_EncryptUpdate()"));
   }
 
   // Provide the message to be decrypted, and obtain the plaintext output.
   // EVP_DecryptUpdate can be called multiple times if necessary
   if (!EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len)) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Cannot decrypt when calling EVP_DecryptUpdate()"));
+    NDN_THROW(std::runtime_error("Cannot decrypt when calling EVP_DecryptUpdate()"));
   }
   plaintext_len = len;
 
   // Set expected tag value. Works in OpenSSL 1.0.1d and later
   if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, 16, (void*)tag)) {
-    NDN_THROW(std::runtime_error("Error in CRYPTO SUPPORT: Cannot set tag value when calling EVP_CIPHER_CTX_ctrl"));
+    NDN_THROW(std::runtime_error("Cannot set tag value when calling EVP_CIPHER_CTX_ctrl"));
   }
 
   // Finalise the decryption. A positive return value indicates success,
