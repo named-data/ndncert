@@ -66,12 +66,12 @@ class CaState
 public:
   CaState();
   CaState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
-          const security::Certificate& cert, Block m_encryptionKey);
+          const security::Certificate& cert, Block m_encryptionKey, uint32_t aesBlockCounter = 0);
   CaState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
           const security::Certificate& cert, const std::string& challengeType,
           const std::string& challengeStatus, const time::system_clock::TimePoint& challengeTp,
           size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
-          Block m_encryptionKey);
+          Block m_encryptionKey, uint32_t aesBlockCounter);
 
 public:
   Name m_caPrefix;
@@ -80,6 +80,7 @@ public:
   Status m_status;
   security::Certificate m_cert;
   Block m_encryptionKey;
+  uint32_t m_aesBlockCounter = 0;
 
   std::string m_challengeType;
   boost::optional<ChallengeState> m_challengeState;

@@ -295,14 +295,45 @@ BOOST_AUTO_TEST_CASE(AesGcm3)
                                 plaintext, plaintext + sizeof(plaintext));
 }
 
+BOOST_AUTO_TEST_CASE(AesIV)
+{
+  const uint8_t key[] = {0xbc, 0x22, 0xf3, 0xf0, 0x5c, 0xc4, 0x0d, 0xb9,
+                         0x31, 0x1e, 0x41, 0x92, 0x96, 0x6f, 0xee, 0x92};
+  const std::string plaintext = "alongstringalongstringalongstringalongstringalongstringalongstringalongstringalongstring";
+  const std::string associatedData = "test";
+  uint32_t counter = 0;
+  auto block = encodeBlockWithAesGcm128(ndn::tlv::Content, key, (uint8_t*)plaintext.c_str(), plaintext.size(),
+                                        (uint8_t*)associatedData.c_str(), associatedData.size(), counter);
+  block.parse();
+  auto ivBlock = block.get(tlv::InitializationVector);
+  Buffer ivBuf(ivBlock.value(), ivBlock.value_size());
+  BOOST_CHECK_EQUAL(ivBuf.size(), 12);
+  BOOST_CHECK(ivBuf[0] >= 128);
+  BOOST_CHECK_EQUAL(ivBuf[8] + ivBuf[9] + ivBuf[10] + ivBuf[11], 0);
+  BOOST_CHECK_EQUAL(counter, 11);
+  counter = 300;
+  block = encodeBlockWithAesGcm128(ndn::tlv::ApplicationParameters, key, (uint8_t*)plaintext.c_str(), plaintext.size(),
+                                   (uint8_t*)associatedData.c_str(), associatedData.size(), counter);
+  block.parse();
+  ivBlock = block.get(tlv::InitializationVector);
+  Buffer ivBuf2(ivBlock.value(), ivBlock.value_size());
+  BOOST_CHECK_EQUAL(ivBuf2.size(), 12);
+  BOOST_CHECK(ivBuf2[0] < 128);
+  BOOST_CHECK_EQUAL(ivBuf2[8] + ivBuf2[9], 0);
+  BOOST_CHECK_EQUAL(ivBuf2[10], 1);
+  BOOST_CHECK_EQUAL(ivBuf2[11], 44);
+  BOOST_CHECK_EQUAL(counter, 311);
+}
+
 BOOST_AUTO_TEST_CASE(BlockEncodingDecoding)
 {
   const uint8_t key[] = {0xbc, 0x22, 0xf3, 0xf0, 0x5c, 0xc4, 0x0d, 0xb9,
                          0x31, 0x1e, 0x41, 0x92, 0x96, 0x6f, 0xee, 0x92};
   const std::string plaintext = "alongstringalongstringalongstringalongstringalongstringalongstringalongstringalongstring";
   const std::string associatedData = "test";
+  uint32_t counter = 0;
   auto block = encodeBlockWithAesGcm128(ndn::tlv::Content, key, (uint8_t*)plaintext.c_str(), plaintext.size(),
-                                        (uint8_t*)associatedData.c_str(), associatedData.size());
+                                        (uint8_t*)associatedData.c_str(), associatedData.size(), counter);
   auto decoded = decodeBlockWithAesGcm128(block, key, (uint8_t*)associatedData.c_str(), associatedData.size());
   BOOST_CHECK_EQUAL(plaintext, std::string((char*)decoded.get<uint8_t>(), decoded.size()));
 }

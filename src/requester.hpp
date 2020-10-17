@@ -162,7 +162,7 @@ public:
    * @throw std::runtime_error if the challenge is not selected or is not supported.
    */
   static shared_ptr<Interest>
-  genChallengeInterest(const RequesterState& state,
+  genChallengeInterest(RequesterState& state,
                        std::vector<std::tuple<std::string, std::string>>&& parameters);
 
   /**

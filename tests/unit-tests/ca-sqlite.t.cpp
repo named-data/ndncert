@@ -50,7 +50,8 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   JsonSection json;
   json.put("test", "4567");
   CaState request2(Name("/ndn/site1"), "123", RequestType::NEW, Status::CHALLENGE, cert1,
-                   "email", "test", time::system_clock::now(), 3, time::seconds(3600), std::move(json), makeEmptyBlock(ndn::tlv::ContentType_Key));
+                   "email", "test", time::system_clock::now(), 3, time::seconds(3600),
+                  std::move(json), makeEmptyBlock(ndn::tlv::ContentType_Key), 0);
   storage.updateRequest(request2);
   result = storage.getRequest("123");
   BOOST_CHECK_EQUAL(request2.m_cert, result.m_cert);

@@ -349,8 +349,10 @@ CaModule::onChallenge(const Interest& request)
   // decrypt the parameters
   Buffer paramTLVPayload;
   try {
-    paramTLVPayload = decodeBlockWithAesGcm128(request.getApplicationParameters(), requestState.m_encryptionKey.value(),
-                                               (uint8_t*)"test", strlen("test"));
+    paramTLVPayload = decodeBlockWithAesGcm128(request.getApplicationParameters(),
+                                               requestState.m_encryptionKey.value(),
+                                               (const uint8_t*)requestState.m_requestId.c_str(),
+                                               requestState.m_requestId.size());
   }
   catch (const std::exception& e) {
     NDN_LOG_ERROR("Interest paramaters decryption failed: " << e.what());
@@ -419,8 +421,11 @@ CaModule::onChallenge(const Interest& request)
   Data result;
   result.setName(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  auto contentBlock = encodeBlockWithAesGcm128(ndn::tlv::Content, requestState.m_encryptionKey.value(), payload.value(),
-                                               payload.value_size(), (uint8_t*)"test", strlen("test"));
+  auto contentBlock = encodeBlockWithAesGcm128(ndn::tlv::Content, requestState.m_encryptionKey.value(),
+                                               payload.value(), payload.value_size(),
+                                               (const uint8_t*)requestState.m_requestId.c_str(),
+                                               requestState.m_requestId.size(),
+                                               requestState.m_aesBlockCounter);
   result.setContent(contentBlock);
   m_keyChain.sign(result, signingByIdentity(m_config.m_caItem.m_caPrefix));
   m_face.put(result);

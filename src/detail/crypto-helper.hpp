@@ -134,11 +134,12 @@ aes_gcm_128_decrypt(const uint8_t* ciphertext, size_t ciphertext_len, const uint
  * @param payloadSize The size of the plaintext payload.
  * @param associatedData The associated data used for authentication.
  * @param associatedDataSize The size of associated data.
+ * @param counter The counter of blocks that have been encrypted by the requester/CA.
  * @return Block The TLV block with @param tlv_type TLV TYPE.
  */
 Block
 encodeBlockWithAesGcm128(uint32_t tlv_type, const uint8_t* key, const uint8_t* payload, size_t payloadSize,
-                         const uint8_t* associatedData, size_t associatedDataSize);
+                         const uint8_t* associatedData, size_t associatedDataSize, uint32_t& counter);
 
 /**
  * @brief Decode the payload from TLV block with Authenticated GCM 128 Encryption.

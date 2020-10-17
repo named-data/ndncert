@@ -19,6 +19,7 @@
  */
 
 #include "crypto-helper.hpp"
+#include <cmath>
 #include <openssl/err.h>
 #include <openssl/hmac.h>
 #include <openssl/pem.h>
@@ -31,6 +32,7 @@
 #include <ndn-cxx/security/transform/buffer-source.hpp>
 #include <ndn-cxx/security/transform/stream-sink.hpp>
 #include <ndn-cxx/util/random.hpp>
+#include <boost/endian/conversion.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -206,24 +208,31 @@ hkdf(const uint8_t* secret, size_t secret_len, const uint8_t* salt,
 {
   EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, nullptr);
   if (EVP_PKEY_derive_init(pctx) <= 0) {
+    EVP_PKEY_CTX_free(pctx);
     NDN_THROW(std::runtime_error("HKDF: Cannot init ctx when calling EVP_PKEY_derive_init()."));
   }
   if (EVP_PKEY_CTX_set_hkdf_md(pctx, EVP_sha256()) <= 0) {
+    EVP_PKEY_CTX_free(pctx);
     NDN_THROW(std::runtime_error("HKDF: Cannot set md when calling EVP_PKEY_CTX_set_hkdf_md()."));
   }
   if (EVP_PKEY_CTX_set1_hkdf_salt(pctx, salt, salt_len) <= 0) {
+    EVP_PKEY_CTX_free(pctx);
     NDN_THROW(std::runtime_error("HKDF: Cannot set salt when calling EVP_PKEY_CTX_set1_hkdf_salt()."));
   }
   if (EVP_PKEY_CTX_set1_hkdf_key(pctx, secret, secret_len) <= 0) {
+    EVP_PKEY_CTX_free(pctx);
     NDN_THROW(std::runtime_error("HKDF: Cannot set secret when calling EVP_PKEY_CTX_set1_hkdf_key()."));
   }
   if (EVP_PKEY_CTX_add1_hkdf_info(pctx, info, info_len) <= 0) {
+    EVP_PKEY_CTX_free(pctx);
     NDN_THROW(std::runtime_error("HKDF: Cannot set info when calling EVP_PKEY_CTX_add1_hkdf_info()."));
   }
   size_t outLen = output_len;
   if (EVP_PKEY_derive(pctx, output, &outLen) <= 0) {
+    EVP_PKEY_CTX_free(pctx);
     NDN_THROW(std::runtime_error("HKDF: Cannot derive result when calling EVP_PKEY_derive()."));
   }
+  EVP_PKEY_CTX_free(pctx);
   return (int)outLen;
 }
 
@@ -350,22 +359,32 @@ aes_gcm_128_decrypt(const uint8_t* ciphertext, size_t ciphertext_len, const uint
 
 Block
 encodeBlockWithAesGcm128(uint32_t tlv_type, const uint8_t* key, const uint8_t* payload, size_t payloadSize,
-                         const uint8_t* associatedData, size_t associatedDataSize)
+                         const uint8_t* associatedData, size_t associatedDataSize, uint32_t& counter)
 {
-  Buffer iv;
-  iv.resize(12);
+  Buffer iv(12);
   random::generateSecureBytes(iv.data(), iv.size());
+  if (tlv_type == ndn::tlv::ApplicationParameters) {
+    // requester
+    iv[0] &= ~(1UL << 7);
+  }
+  else {
+    // CA
+    iv[0] |= 1UL << 7;
+  }
+  uint32_t temp = counter;
+  boost::endian::native_to_big_inplace(temp);
+  std::memcpy(&iv[8], reinterpret_cast<const uint8_t*>(&temp), 4);
+  counter += std::ceil(payloadSize / 8);
 
-  uint8_t* encryptedPayload = new uint8_t[payloadSize];
+  Buffer encryptedPayload(payloadSize);
   uint8_t tag[16];
   size_t encryptedPayloadLen = aes_gcm_128_encrypt(payload, payloadSize, associatedData, associatedDataSize,
-                                                   key, iv.data(), encryptedPayload, tag);
+                                                   key, iv.data(), encryptedPayload.data(), tag);
   auto content = makeEmptyBlock(tlv_type);
   content.push_back(makeBinaryBlock(tlv::InitializationVector, iv.data(), iv.size()));
   content.push_back(makeBinaryBlock(tlv::AuthenticationTag, tag, 16));
-  content.push_back(makeBinaryBlock(tlv::EncryptedPayload, encryptedPayload, encryptedPayloadLen));
+  content.push_back(makeBinaryBlock(tlv::EncryptedPayload, encryptedPayload.data(), encryptedPayloadLen));
   content.encode();
-  delete[] encryptedPayload;
   return content;
 }
 

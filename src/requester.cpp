@@ -224,7 +224,7 @@ Requester::selectOrContinueChallenge(RequesterState& state, const std::string& c
 }
 
 shared_ptr<Interest>
-Requester::genChallengeInterest(const RequesterState& state,
+Requester::genChallengeInterest(RequesterState& state,
                                 std::vector<std::tuple<std::string, std::string>>&& parameters)
 {
   if (state.m_challengeType == "") {
@@ -245,7 +245,9 @@ Requester::genChallengeInterest(const RequesterState& state,
   // encrypt the Interest parameters
   auto paramBlock = encodeBlockWithAesGcm128(ndn::tlv::ApplicationParameters, state.m_aesKey,
                                              challengeParams.value(), challengeParams.value_size(),
-                                             (const uint8_t*)"test", strlen("test"));
+                                             (const uint8_t*)state.m_requestId.c_str(),
+                                             state.m_requestId.size(),
+                                             state.m_aesBlockCounter);
   interest->setApplicationParameters(paramBlock);
   state.m_keyChain.sign(*interest, signingByKey(state.m_keyPair.getName()));
   return interest;
@@ -259,7 +261,9 @@ Requester::onChallengeResponse(RequesterState& state, const Data& reply)
     NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
   }
   processIfError(reply);
-  auto result = decodeBlockWithAesGcm128(reply.getContent(), state.m_aesKey, (const uint8_t*)"test", strlen("test"));
+  auto result = decodeBlockWithAesGcm128(reply.getContent(), state.m_aesKey,
+                                         (const uint8_t*)state.m_requestId.c_str(),
+                                         state.m_requestId.size());
   Block contentTLV = makeBinaryBlock(tlv::EncryptedPayload, result.data(), result.size());
   ChallengeEncoder::decodeDataContent(contentTLV, state);
 }

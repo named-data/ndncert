@@ -52,7 +52,8 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
 
   // update operation
   CaState request2(Name("/ndn/site1"), "123", RequestType::NEW, Status::CHALLENGE, cert1,
-                   "email", "test", time::system_clock::now(), 3, time::seconds(3600), std::move(json), makeStringBlock(ndn::tlv::ContentType_Key, "PretendItIsAKey"));
+                   "email", "test", time::system_clock::now(), 3, time::seconds(3600),
+                   std::move(json), makeStringBlock(ndn::tlv::ContentType_Key, "PretendItIsAKey"), 0);
   storage.updateRequest(request2);
   result = storage.getRequest("123");
   BOOST_CHECK_EQUAL(request2.m_cert, result.m_cert);

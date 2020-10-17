@@ -65,13 +65,14 @@ CaState::CaState()
 }
 
 CaState::CaState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
-                 const security::Certificate& cert, Block encryptionKey)
+                 const security::Certificate& cert, Block encryptionKey, uint32_t aesBlockCounter)
     : m_caPrefix(caName)
     , m_requestId(requestId)
     , m_requestType(requestType)
     , m_status(status)
     , m_cert(cert)
     , m_encryptionKey(std::move(encryptionKey))
+    , m_aesBlockCounter(aesBlockCounter)
 {
 }
 
@@ -79,13 +80,14 @@ CaState::CaState(const Name& caName, const std::string& requestId, RequestType r
                  const security::Certificate& cert, const std::string& challengeType,
                  const std::string& challengeStatus, const time::system_clock::TimePoint& challengeTp,
                  size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
-                 Block encryptionKey)
+                 Block encryptionKey, uint32_t aesBlockCounter)
     : m_caPrefix(caName)
     , m_requestId(requestId)
     , m_requestType(requestType)
     , m_status(status)
     , m_cert(cert)
     , m_encryptionKey(std::move(encryptionKey))
+    , m_aesBlockCounter(aesBlockCounter)
     , m_challengeType(challengeType)
     , m_challengeState(ChallengeState(challengeStatus, challengeTp, remainingTries, remainingTime, std::move(challengeSecrets)))
 {
