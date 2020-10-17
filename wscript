@@ -16,6 +16,8 @@ def options(opt):
     optgrp = opt.add_option_group('ndncert Options')
     optgrp.add_option('--with-tests', action='store_true', default=False,
                       help='Build unit tests')
+    optgrp.add_option('--without-systemd', action='store_true', default=False,
+                      help='Disable systemd integration')
 
 def configure(conf):
     conf.load(['compiler_cxx', 'gnu_dirs',
@@ -25,6 +27,10 @@ def configure(conf):
 
     conf.check_cfg(package='libndn-cxx', args=['--cflags', '--libs'], uselib_store='NDN_CXX',
                    pkg_config_path=os.environ.get('PKG_CONFIG_PATH', '%s/pkgconfig' % conf.env.LIBDIR))
+
+    if not conf.options.without_systemd:
+            conf.check_cfg(package='libsystemd', args=['--cflags', '--libs'],
+                           uselib_store='SYSTEMD', mandatory=False)
 
     conf.check_sqlite3()
     conf.check_openssl(lib='crypto', atleast_version=0x1010100f) # 1.1.1
@@ -98,8 +104,7 @@ def build(bld):
         target='bin/ndncert-send-email-challenge',
         install_path='${BINDIR}',
         chmod=Utils.O755)
-
-    if Utils.unversioned_sys_platform() == 'linux':
+     if bld.env.HAVE_SYSTEMD:
         bld(features='subst',
             name='ndncert-server.service',
             source='systemd/ndncert-server.service.in',
