@@ -40,11 +40,11 @@ std::string repoPort = "7376";
 static bool
 writeDataToRepo(const Data& data) {
   boost::asio::ip::tcp::iostream requestStream;
-#if BOOST_VERSION >= 106600
+#if BOOST_VERSION >= 106700
     requestStream.expires_after(std::chrono::seconds(3));
 #else
-    requestStream.expires_from_now(std::chrono::seconds(3));
-#endif
+    requestStream.expires_from_now(boost::posix_time::seconds(3));
+#endif //BOOST_VERSION >= 106700
   requestStream.connect(repoHost, repoPort);
   if (!requestStream) {
     std::cerr << "ERROR: Cannot publish certificate to repo-ng"
