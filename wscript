@@ -16,8 +16,8 @@ def options(opt):
     optgrp = opt.add_option_group('ndncert Options')
     optgrp.add_option('--with-tests', action='store_true', default=False,
                       help='Build unit tests')
-    optgrp.add_option('--without-systemd', action='store_true', default=False,
-                      help='Disable systemd integration')
+    optgrp.add_option('--with-systemd', action='store_true', default=False,
+                      help='Enable systemd service file compilation')
 
 def configure(conf):
     conf.load(['compiler_cxx', 'gnu_dirs',
@@ -27,10 +27,6 @@ def configure(conf):
 
     conf.check_cfg(package='libndn-cxx', args=['--cflags', '--libs'], uselib_store='NDN_CXX',
                    pkg_config_path=os.environ.get('PKG_CONFIG_PATH', '%s/pkgconfig' % conf.env.LIBDIR))
-
-    if not conf.options.without_systemd:
-            conf.check_cfg(package='libsystemd', args=['--cflags', '--libs'],
-                           uselib_store='SYSTEMD', mandatory=False)
 
     conf.check_sqlite3()
     conf.check_openssl(lib='crypto', atleast_version=0x1010100f) # 1.1.1
@@ -63,6 +59,8 @@ def configure(conf):
     # will not appear in the config header, but will instead be passed directly to the
     # compiler on the command line.
     conf.write_config_header('src/ndncert-config.hpp')
+
+    conf.define_cond('WITH_SYSTEMD', conf.options.with_systemd)
 
 def build(bld):
     bld.shlib(target='ndn-cert',
@@ -105,14 +103,12 @@ def build(bld):
         install_path='${BINDIR}',
         chmod=Utils.O755)
 
-    if bld.env.HAVE_SYSTEMD:
+    bld(features='subst',
+        name='ndncert-server.service',
+        source='systemd/ndncert-server.service.in',
+        target='systemd/ndncert-server.service')
 
-        bld(features='subst',
-            name='ndncert-server.service',
-            source='systemd/ndncert-server.service.in',
-            target='systemd/ndncert-server.service')
-
-        bld(features='subst',
-            name='ndncert-server.service',
-            source='systemd/ndncert-ca.service.in',
-            target='systemd/ndncert-ca.service')
+    bld(features='subst',
+        name='ndncert-server.service',
+        source='systemd/ndncert-ca.service.in',
+        target='systemd/ndncert-ca.service')
