@@ -79,10 +79,9 @@ BOOST_AUTO_TEST_CASE(EcdhWithBase64Key)
 
 BOOST_AUTO_TEST_CASE(HmacSha256)
 {
-  // RFC5869 appendix A.1, IKM, Salt -> PRK
-  const uint8_t ikm[] = {0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b,
-                         0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b,
-                         0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b};
+  const uint8_t input[] = {0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b,
+                           0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b,
+                           0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b};
   const uint8_t salt[] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
                           0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c};
   const uint8_t expected[] = {0x07, 0x77, 0x09, 0x36, 0x2c, 0x2e, 0x32, 0xdf,
@@ -90,7 +89,7 @@ BOOST_AUTO_TEST_CASE(HmacSha256)
                               0x90, 0xb6, 0xc7, 0x3b, 0xb5, 0x0f, 0x9c, 0x31,
                               0x22, 0xec, 0x84, 0x4a, 0xd7, 0xc2, 0xb3, 0xe5};
   uint8_t result[32];
-  hmac_sha256(ikm, sizeof(ikm), salt, sizeof(salt), result);
+  hmac_sha256(input, sizeof(input), salt, sizeof(salt), result);
   BOOST_CHECK_EQUAL_COLLECTIONS(result, result + sizeof(result), expected,
                                 expected + sizeof(expected));
 }
@@ -330,12 +329,15 @@ BOOST_AUTO_TEST_CASE(BlockEncodingDecoding)
   const uint8_t key[] = {0xbc, 0x22, 0xf3, 0xf0, 0x5c, 0xc4, 0x0d, 0xb9,
                          0x31, 0x1e, 0x41, 0x92, 0x96, 0x6f, 0xee, 0x92};
   const std::string plaintext = "alongstringalongstringalongstringalongstringalongstringalongstringalongstringalongstring";
-  const std::string associatedData = "test";
+  const std::string associatedData = "right";
+  const std::string wrongAssociatedData = "wrong";
   uint32_t counter = 0;
   auto block = encodeBlockWithAesGcm128(ndn::tlv::Content, key, (uint8_t*)plaintext.c_str(), plaintext.size(),
                                         (uint8_t*)associatedData.c_str(), associatedData.size(), counter);
   auto decoded = decodeBlockWithAesGcm128(block, key, (uint8_t*)associatedData.c_str(), associatedData.size());
-  BOOST_CHECK_EQUAL(plaintext, std::string((char*)decoded.get<uint8_t>(), decoded.size()));
+  BOOST_CHECK_EQUAL(plaintext, std::string(decoded.get<char>(), decoded.size()));
+  decoded = decodeBlockWithAesGcm128(block, key, (uint8_t*)wrongAssociatedData.c_str(), wrongAssociatedData.size());
+  BOOST_CHECK_EQUAL(decoded.size(), 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
