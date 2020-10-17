@@ -25,6 +25,7 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <iostream>
+#include <chrono>
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
 
@@ -42,7 +43,7 @@ writeDataToRepo(const Data& data) {
 #if BOOST_VERSION >= 106600
     requestStream.expires_after(std::chrono::seconds(3));
 #else
-    requestStream.expires_at(std::chrono::seconds(3));
+    requestStream.expires_from_now(std::chrono::seconds(3));
 #endif
   requestStream.connect(repoHost, repoPort);
   if (!requestStream) {
