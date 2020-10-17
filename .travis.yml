@@ -1,7 +1,7 @@
 version: ~> 1.0
 language: cpp
 os: linux
-dist: focal
+dist: bionic
 
 arch:
   - amd64
