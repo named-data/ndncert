@@ -104,7 +104,9 @@ def build(bld):
         target='bin/ndncert-send-email-challenge',
         install_path='${BINDIR}',
         chmod=Utils.O755)
-     if bld.env.HAVE_SYSTEMD:
+
+    if bld.env.HAVE_SYSTEMD:
+
         bld(features='subst',
             name='ndncert-server.service',
             source='systemd/ndncert-server.service.in',
