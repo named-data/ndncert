@@ -109,3 +109,8 @@ def build(bld):
             name='ndncert-server.service',
             source='systemd/ndncert-server.service.in',
             target='systemd/ndncert-server.service')
+
+        bld(features='subst',
+            name='ndncert-server.service',
+            source='systemd/ndncert-ca.service.in',
+            target='systemd/ndncert-ca.service')
