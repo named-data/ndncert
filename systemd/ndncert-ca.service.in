@@ -2,9 +2,7 @@
 Description=Certificate Management Identity Management Service for NDN
 
 [Service]
-Environment=HOME=%S/ndncert
-EnvironmentFile=-@SYSCONFDIR@/ndncert
-EnvironmentFile=-@SYSCONFDIR@/default/ndncert
+Environment=HOME=%S/ndncert-ca
 ExecStart=@BINDIR@/ndncert-ca-server
 Restart=on-failure
 RestartPreventExitStatus=2
@@ -12,3 +10,4 @@ User=ndn
 
 [Install]
 WantedBy=multi-user.target
+Alias=ndncert.service
