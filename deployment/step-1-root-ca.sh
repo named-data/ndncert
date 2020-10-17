@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# file name and password to a safebag
+# file name and password to a safebag TODO
 
 # compile and install ndncert
 git clone https://github.com/Zhiyi-Zhang/ndncert.git
