@@ -1,9 +1,10 @@
 [Unit]
 Description=Certificate Management Service for NDN
-BindsTo=nfd.service
+Wants=nfd.service
 After=nfd.service
 
 [Service]
+Type=simple
 Environment=HOME=%S/ndn/ndncert
 EnvironmentFile=-@SYSCONFDIR@/default/ndncert
 ExecStart=@BINDIR@/ndncert-ca-server $FLAGS
@@ -32,4 +33,5 @@ SystemCallFilter=~@clock @cpu-emulation @debug @module @mount @obsolete @privile
 
 [Install]
 WantedBy=multi-user.target
-WantedBy=nfd.service
+Alias=ndncert.service
+Alias=ndncert-ca.service
