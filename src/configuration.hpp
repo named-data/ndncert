@@ -85,7 +85,7 @@ private:
  * fired whenever a request instance is created, challenge status is updated, and when certificate
  * is issued.
  *
- * @p CaState, input, the state of the certificate request whose status is updated.
+ * @param CaState The state of the certificate request whose status is updated.
  */
 using StatusUpdateCallback = function<void(const CaState&)>;
 

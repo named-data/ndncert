@@ -34,26 +34,30 @@ class Requester : noncopyable
 {
 public:
   /**
-   * Generates a CA profile discovery Interest following RDR protocol.
-   * @p caName, the name prefix of the CA.
+   * @brief Generates a CA profile discovery Interest following RDR protocol.
+   *
+   * @param caName The name prefix of the CA.
    * @return A shared pointer to an Interest ready to be sent.
    */
   static shared_ptr<Interest>
   genCaProfileDiscoveryInterest(const Name& caName);
 
   /**
-   * Generates a CA profile fetching Interest following RDR protocol.
-   * @p reply, the Data packet replied from discovery Interest.
+   * @brief Generates a CA profile fetching Interest following RDR protocol.
+   *
+   * @param reply The Data packet replied from discovery Interest.
    * @return A shared pointer to an Interest ready to be sent.
    */
   static shared_ptr<Interest>
   genCaProfileInterestFromDiscoveryResponse(const Data& reply);
 
   /**
-   * Decodes the CA profile from the replied CA profile Data packet.
+   * @brief Decodes the CA profile from the replied CA profile Data packet.
+   *
    * Will first verify the signature of the packet using the key provided inside the profile.
    * The application should be cautious whether to add CaProfile into the RequesterCaCache.
-   * @p reply, the Data packet replied from CA profile fetching Interest.
+   *
+   * @param reply The Data packet replied from CA profile fetching Interest.
    * @return the CaProfile if decoding is successful
    * @throw std::runtime_error if the decoding fails or receiving an error packet.
    */
@@ -61,12 +65,14 @@ public:
   onCaProfileResponse(const Data& reply);
 
   /**
-   * Decodes the CA profile from the replied CA profile Data packet after the redirection.
+   * @brief Decodes the CA profile from the replied CA profile Data packet after the redirection.
+   *
    * Will first verify the signature of the packet using the key provided inside the profile and
    * verify the certificate's digest matches the one obtained from the original CA.
    * The application should be cautious whether to add CaProfile into the RequesterCaCache.
-   * @p reply, the Data packet replied from CA profile fetching Interest.
-   * @p caCertFullName, the full name obtained from original CA's probe response.
+   *
+   * @param reply The Data packet replied from CA profile fetching Interest.
+   * @param caCertFullName The full name obtained from original CA's probe response.
    * @return the CaProfile if decoding is successful
    * @throw std::runtime_error if the decoding fails or receiving an error packet.
    */
@@ -74,21 +80,24 @@ public:
   onCaProfileResponseAfterRedirection(const Data& reply, const Name& caCertFullName);
 
   /**
-   * Generates a PROBE interest to the CA (for suggested name assignments).
-   * @p ca, the CA that interest is send to
-   * @p probeInfo, the requester information to carry to the CA
+   * @brief Generates a PROBE interest to the CA (for suggested name assignments).
+   *
+   * @param ca The CA that interest is send to
+   * @param probeInfo The requester information to carry to the CA
    * @return A shared pointer of to the encoded interest, ready to be sent.
    */
   static shared_ptr<Interest>
   genProbeInterest(const CaProfile& ca, std::vector<std::tuple<std::string, std::string>>&& probeInfo);
 
   /**
-   * Decodes the replied data for PROBE process from the CA.
+   * @brief Decodes the replied data for PROBE process from the CA.
+   *
    * Will first verify the signature of the packet using the key provided inside the profile.
-   * @p reply, The replied data packet
-   * @p ca, the profile of the CA that replies the packet
-   * @p identityNames, The vector to load the decoded identity names from the data.
-   * @p otherCas, The vector to load the decoded redirection CA prefixes from the data.
+   *
+   * @param reply The replied data packet
+   * @param ca the profile of the CA that replies the packet
+   * @param identityNames The vector to load the decoded identity names from the data.
+   * @param otherCas The vector to load the decoded redirection CA prefixes from the data.
    * @throw std::runtime_error if the decoding fails or receiving an error packet.
    */
   static void
@@ -97,11 +106,12 @@ public:
 
   // NEW/REVOKE/RENEW related helpers
   /**
-   * Generates a NEW interest to the CA.
-   * @p state, The current requester state for this request. Will be modified in the function.
-   * @p identityName, The identity name to be requested.
-   * @p notBefore, The expected notBefore field for the certificate (starting time)
-   * @p notAfter, The expected notAfter field for the certificate (expiration time)
+   * @brief Generates a NEW interest to the CA.
+   *
+   * @param state The current requester state for this request. Will be modified in the function.
+   * @param identityName The identity name to be requested.
+   * @param notBefore The expected notBefore field for the certificate (starting time)
+   * @param notAfter The expected notAfter field for the certificate (expiration time)
    * @return The shared pointer to the encoded interest.
    */
   static shared_ptr<Interest>
@@ -110,18 +120,20 @@ public:
                  const time::system_clock::TimePoint& notAfter);
 
   /**
-   * Generates a REVOKE interest to the CA.
-   * @p state, The current requester state for this request. Will be modified in the function.
-   * @p certificate, the certificate to the revoked.
+   * @brief Generates a REVOKE interest to the CA.
+   *
+   * @param state The current requester state for this request. Will be modified in the function.
+   * @param certificate The certificate to the revoked.
    * @return The shared pointer to the encoded interest.
    */
   static shared_ptr<Interest>
   genRevokeInterest(RequesterState& state, const security::Certificate& certificate);
 
   /**
-   * Decodes the replied data of NEW, RENEW, or REVOKE interest from the CA.
-   * @p state, the current requester state for the request. Will be updated in the function.
-   * @p reply, the replied data from the network
+   * @brief Decodes the replied data of NEW, RENEW, or REVOKE interest from the CA.
+   *
+   * @param state The current requester state for the request. Will be updated in the function.
+   * @param reply The replied data from the network
    * @return the list of challenge accepted by the CA, for CHALLENGE step.
    * @throw std::runtime_error if the decoding fails or receiving an error packet.
    */
@@ -130,9 +142,10 @@ public:
 
   // CHALLENGE helpers
   /**
-   * Generates the required parameter for the selected challenge for the request
-   * @p state, The requester state of the request.Will be updated in the function.
-   * @p challengeSelected, The selected challenge for the request.
+   * @brief Generates the required parameter for the selected challenge for the request
+   *
+   * @param state, The requester state of the request.Will be updated in the function.
+   * @param challengeSelected, The selected challenge for the request.
    *            Can use state.m_challengeType to continue.
    * @return The requirement list for the current stage of the challenge, in name, prompt mapping.
    * @throw std::runtime_error if the challenge is not supported.
@@ -141,9 +154,10 @@ public:
   selectOrContinueChallenge(RequesterState& state, const std::string& challengeSelected);
 
   /**
-   * Generates the CHALLENGE interest for the request.
-   * @p state, The requester state of the request.
-   * @p parameters, The requirement list, in name, value mapping.
+   * @brief Generates the CHALLENGE interest for the request.
+   *
+   * @param state, The requester state of the request.
+   * @param parameters, The requirement list, in name, value mapping.
    * @return The shared pointer to the encoded interest
    * @throw std::runtime_error if the challenge is not selected or is not supported.
    */
@@ -152,33 +166,37 @@ public:
                        std::vector<std::tuple<std::string, std::string>>&& parameters);
 
   /**
-   * Decodes the responded data from the CHALLENGE interest.
-   * @p state, the corresponding requester state of the request. Will be modified.
-   * @p reply, the response data.
+   * @brief Decodes the responded data from the CHALLENGE interest.
+   *
+   * @param state, the corresponding requester state of the request. Will be modified.
+   * @param reply, the response data.
    * @throw std::runtime_error if the decoding fails or receiving an error packet.
    */
   static void
   onChallengeResponse(RequesterState& state, const Data& reply);
 
   /**
-   * Generate the interest to fetch the issued certificate
-   * @p state, the state of the request.
+   * @brief Generate the interest to fetch the issued certificate
+   *
+   * @param state, the state of the request.
    * @return The shared pointer to the encoded interest
    */
   static shared_ptr<Interest>
   genCertFetchInterest(const RequesterState& state);
 
   /**
-   * Decoded and installs the response certificate from the certificate fetch.
-   * @p reply, the data replied from the certificate fetch interest.
+   * @brief Decoded and installs the response certificate from the certificate fetch.
+   *
+   * @param reply, the data replied from the certificate fetch interest.
    * @return The shared pointer to the certificate being fetched.
    */
   static shared_ptr<security::Certificate>
   onCertFetchResponse(const Data& reply);
 
   /**
-   * End the current request session and performs cleanup if necessary.
-   * @p state, the requester state for the request.
+   * @brief End the current request session and performs cleanup if necessary.
+   *
+   * @param state, the requester state for the request.
    */
   static void
   endSession(RequesterState& state);

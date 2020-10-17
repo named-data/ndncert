@@ -36,10 +36,11 @@ public:
   /**
    * @brief The name assignment function provided by the CA operator to generate available
    * namecomponents.
+   *
    * The function does not guarantee that all the returned names are available. Therefore the
    * CA should further check the availability of each returned name and remove unavailable results.
    *
-   * @p vector, input, a list of parameter key-value pair used for name assignment.
+   * @param vector A list of parameter key-value pair used for name assignment.
    * @return a vector containing the possible namespaces derived from the parameters.
    */
   virtual std::vector<PartialName>

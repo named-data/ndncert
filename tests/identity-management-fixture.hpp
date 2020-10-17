@@ -64,8 +64,8 @@ public:
 
   /**
    *  @brief Save identity certificate to a file
-   *  @p identity identity
-   *  @p filename file name, should be writable
+   *  @param identity identity
+   *  @param filename file name, should be writable
    *  @return whether successful
    */
   bool

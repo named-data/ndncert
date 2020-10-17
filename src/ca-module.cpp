@@ -39,6 +39,7 @@ namespace ndncert {
 
 static const time::seconds DEFAULT_DATA_FRESHNESS_PERIOD = 1_s;
 static const time::seconds REQUEST_VALIDITY_PERIOD_NOT_BEFORE_GRACE_PERIOD = 120_s;
+static const int AES_128_KEY_LEN = 16;
 
 NDN_LOG_INIT(ndncert.ca);
 
