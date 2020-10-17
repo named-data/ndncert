@@ -45,7 +45,7 @@ operator<<(std::ostream& out, ErrorCode code)
 std::ostream&
 operator<<(std::ostream& out, RequestType type)
 {
-  switch(type) {
+  switch (type) {
     case RequestType::NEW: out << "New"; break;
     case RequestType::RENEW: out << "Renew"; break;
     case RequestType::REVOKE: out << "Revoke"; break;
