@@ -9,7 +9,7 @@ Three steps:
 ## Step 1
 
 ```bash
-sudo ./step1-root-ca.sh
+sudo ./deploy.sh
 ```
 
 ## Step 2
@@ -21,7 +21,7 @@ ndncert-client
 ```
 
 ```bash
-sudo ./step-2-site-ca.sh
+sudo ./deploy.sh
 ```
 
 ```bash

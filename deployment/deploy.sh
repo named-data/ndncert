@@ -1,11 +1,71 @@
 #!/usr/bin/env bash
 
-echo "What is the CA Prefix (eg. /example) you want to deploy?"
-read CA_PREFIX
+function generate_client_config() {
+echo
+echo "What is the parent CA's prefix?"
+read -r parent_ca_prefix
+echo "what is the parent certificate?"
+root_cert=$(cat | tr -d '\n')
+
+cat > ndncert-site-client.conf << ~EOF
+{
+  "ca-list":
+  [
+    {
+      "ca-prefix": "$parent_ca_prefix",
+      "ca-info": "NDN Testbed Root Trust Anchor",
+      "max-validity-period": "1296000",
+      "max-suffix-length": "3",
+      "probe-parameters":
+      [
+        {"probe-parameter-key": "pin"}
+      ],
+      "certificate": "$root_cert"
+    }
+  ]
+}
+~EOF
+echo "config file generated at ndncert-site-client.conf"
+echo
+}
+
+function generate_ca_config() {
+echo "Load the new configuration file for the CA"
+echo "Would you like to allow email challenge for this CA? [Y/N]"
+read -r allow_email_challenge
+# prepare CA configuration file
+cat > /usr/local/etc/ndncert/ca.conf << ~EOF
+{
+  "ca-prefix": "$1",
+  "ca-info": "NDN Trust Anchor: $1",
+  "max-validity-period": "1296000",
+  "max-suffix-length": "2",
+  "probe-parameters":
+  [
+    {"probe-parameter-key": "email"}
+  ],
+  "supported-challenges":
+  [
+~EOF
+if [ "$allow_email_challenge" = 'y' ]; then
+    echo '{ "challenge": "email" },' >> /usr/local/etc/ndncert/ca.conf
+elif [ "$allow_email_challenge" = 'Y' ]; then
+    echo '{ "challenge": "email" },' >> /usr/local/etc/ndncert/ca.conf
+fi
+cat >> /usr/local/etc/ndncert/ca.conf << ~EOF
+    { "challenge": "pin" }
+  ],
+  "name-assignment":
+  {
+    "param": "/email"
+  }
+}
+~EOF
 echo ""
+}
 
 echo "Do you want to (re) compile and build NDNCERT? [Y/N]"
-read NDNCERT_COMPILE
+read -r NDNCERT_COMPILE
 echo ""
 
 case $NDNCERT_COMPILE in
@@ -32,7 +92,7 @@ echo "=="
 echo "==================================================================="
 echo ""
 echo "Are you sure [Y/n] ?"
-read DEPLOY
+read -r DEPLOY
 
 case $DEPLOY in
              N|n)
@@ -54,8 +114,12 @@ echo "== Deployment started"
 echo "=="
 echo "==================================================================="
 
+echo "What is the CA Prefix (eg. /example) you want to deploy?"
+read -r CA_PREFIX
+echo ""
+
 echo "Do you want to install ndncert CA for systemd on this machine? [Y/N]"
-read SYSTEMD_INSTALL
+read -r SYSTEMD_INSTALL
 echo ""
 
 case $SYSTEMD_INSTALL in
@@ -66,7 +130,7 @@ case $SYSTEMD_INSTALL in
              ;;
              Y|y)
                    echo "Copying NDNCERT-CA systemd service on this machine"
-		               sudo cp $(pwd)/../build/systemd/ndncert-ca.service /etc/systemd/system
+		               sudo cp "$(pwd)/../build/systemd/ndncert-ca.service" /etc/systemd/system
 		               sudo chmod 644 /etc/systemd/system/ndncert-ca.service
              ;;
              *)
@@ -91,25 +155,25 @@ sudo chown ndn /var/lib/ndncert-ca
 echo '/var/lib/ndncert-ca is ready, GOOD!'
 
 echo ""
-echo "Do you want to import an exisitng safebag for ${CA_PREFIX}? [Y/N]"
-read USE_SAFE_BAG
+echo "Do you want to import an exisitng safebag for $CA_PREFIX ? [Y/N]"
+read -r USE_SAFE_BAG
 
 case $USE_SAFE_BAG in
              N|n)
-                   echo "Generating new NDN identity for ${CA_PREFIX}"
-                   sudo HOME=/var/lib/ndncert-ca -u ndn ndnsec-keygen $CA_PREFIX
+                   echo "Generating new NDN identity for $CA_PREFIX"
+                   sudo HOME=/var/lib/ndncert-ca -u ndn ndnsec-keygen "$CA_PREFIX"
              ;;
              Y|y)
                    echo "Reading the safebag."
                    echo "What is the safebag file name?"
-                   read SAFE_BAG_PATH
+                   read -r SAFE_BAG_PATH
                    echo ""
 
                    echo "What is the password of the safebag?"
-                   read SAFE_BAG_PWD
+                   read -r SAFE_BAG_PWD
                    echo ""
 
-                   sudo HOME=/var/lib/ndncert-ca -u ndn ndnsec-import -i $SAFEBAG_FILE -P $PWD
+                   sudo HOME=/var/lib/ndncert-ca -u ndn ndnsec-import -i "$SAFE_BAG_PATH" -P "$SAFE_BAG_PWD"
              ;;
              *)
                    echo "Unknown option, deployment cancelled"
@@ -117,12 +181,29 @@ case $USE_SAFE_BAG in
              ;;
 esac
 
-echo "Load the new configuration file for the CA"
-echo -e "{\n\"ca-prefix\": \"${CA_PREFIX}\",\n\"ca-info\": \"NDNCERT CA for ${CA_PREFIX}\",\n\"max-validity-period\": \"1296000\",\n\"max-suffix-length\": \"2\",\n\"supported-challenges\":\n[\n{ \"challenge\": \"pin\" }\n]\n}" > /usr/local/etc/ndncert/ca.conf
 echo ""
+echo "Do you want to request a certificate from a parent CA? [Y/N]"
+read -r RUN_CLIENT
+case $RUN_CLIENT in
+             Y|y)
+                  echo "Running ndncert client"
+                  generate_client_config
+                  ndncert-client -c ndncert-site-client.conf
+                  rm ndncert-site-client.conf
+
+                  echo "What is the new certificate name?"
+                  read -r new_cert_name
+                  ndnsec set-default -c "$new_cert_name"
+             ;;
+             *)
+                   echo "Will not request a certificate. "
+             ;;
+esac
+
+generate_ca_config "$CA_PREFIX"
 
 echo "Do you want to start the service now? [Y/N]"
-read START_NOW
+read -r START_NOW
 case $START_NOW in
              N|n)
                    echo "Successfully finish the deployment of NDNCERT. You can run sudo systemctl start ndncert-ca when you want to start the service"
