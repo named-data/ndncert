@@ -48,9 +48,9 @@ cat > ndncert-deploy-ca.conf << ~EOF
   [
 ~EOF
 if [ "$allow_email_challenge" = 'y' ]; then
-    echo '{ "challenge": "email" },' >> ndncert-deploy-ca.conf
+    echo '    { "challenge": "email" },' >> ndncert-deploy-ca.conf
 elif [ "$allow_email_challenge" = 'Y' ]; then
-    echo '{ "challenge": "email" },' >> ndncert-deploy-ca.conf
+    echo '    { "challenge": "email" },' >> ndncert-deploy-ca.conf
 fi
 cat >> ndncert-deploy-ca.conf << ~EOF
     { "challenge": "pin" }
@@ -63,7 +63,7 @@ cat >> ndncert-deploy-ca.conf << ~EOF
 ~EOF
 
 sudo touch /usr/local/etc/ndncert/ca.conf
-mv ndncert-deploy-ca.conf /usr/local/etc/ndncert/ca.conf
+sudo mv ndncert-deploy-ca.conf /usr/local/etc/ndncert/ca.conf
 
 echo ""
 }
