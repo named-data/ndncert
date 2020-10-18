@@ -64,6 +64,9 @@ cat >> /usr/local/etc/ndncert/ca.conf << ~EOF
 echo ""
 }
 
+DEPLOYMENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+NDNCERT_DIR="$(dirname DEPLOYMENT_DIR)"
+
 echo "Do you want to (re) compile and build NDNCERT? [Y/N]"
 read -r NDNCERT_COMPILE
 echo ""
@@ -73,8 +76,8 @@ case $NDNCERT_COMPILE in
                    echo "Okay, we'll skip compilation and build."
              ;;
              Y|y)
-                   cd ../ && CXXFLAGS="-O2" ./waf configure
-                   ./waf
+                   CXXFLAGS="-O2" "$NDNCERT_DIR/waf" configure
+                   "$NDNCERT_DIR/waf"
              ;;
              *)
                    echo "Unknown option, build and install is cancelled"
@@ -82,7 +85,7 @@ case $NDNCERT_COMPILE in
              ;;
 esac
 echo "Need sudo to install NDNCERT CLI tools"
-sudo ./waf install
+sudo "$NDNCERT_DIR/waf" install
 echo ""
 
 echo "==================================================================="
@@ -130,7 +133,7 @@ case $SYSTEMD_INSTALL in
              ;;
              Y|y)
                    echo "Copying NDNCERT-CA systemd service on this machine"
-		               sudo cp "$(pwd)/../build/systemd/ndncert-ca.service" /etc/systemd/system
+		               sudo cp "$NDNCERT_DIR/build/systemd/ndncert-ca.service" /etc/systemd/system
 		               sudo chmod 644 /etc/systemd/system/ndncert-ca.service
              ;;
              *)
