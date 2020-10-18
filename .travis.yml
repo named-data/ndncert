@@ -25,12 +25,6 @@ jobs:
     - env: COMPILER=clang++-10
     - env: COMPILER=clang++-11
     - env: COMPILER=clang++-12
-      addons:
-        apt:
-          update: true
-          sources:
-            - sourceline: 'ppa:mhier/libboost-latest'
-          packages: boost1.72
 
     # macOS
     - os: osx
