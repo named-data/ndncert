@@ -64,10 +64,10 @@ cat >> /usr/local/etc/ndncert/ca.conf << ~EOF
 echo ""
 }
 
-DEPLOYMENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-NDNCERT_DIR="$(dirname "$DEPLOYMENT_DIR")"
-CURRENT_PATH="$(pwd)"
-cd "$NDNCERT_DIR"
+deployment_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+ndncert_dir="$(dirname "$deployment_dir")"
+current_path="$(pwd)"
+cd "$ndncert_dir"
 
 echo "Do you want to (re) compile and build NDNCERT? [Y/N]"
 read -r NDNCERT_COMPILE
@@ -83,8 +83,8 @@ case $NDNCERT_COMPILE in
              ;;
              *)
                    echo "Unknown option, build and install is cancelled"
-                   cd "$CURRENT_PATH"
-                   exit
+                   cd "$current_path"
+                   exit 1
              ;;
 esac
 echo "Need sudo to install NDNCERT CLI tools"
@@ -93,59 +93,59 @@ echo ""
 
 echo "==================================================================="
 echo "=="
-echo "== Deploying NDNCERT"
+echo "== deploying NDNCERT"
 echo "=="
 echo "==================================================================="
 echo ""
 echo "Are you sure [Y/n] ?"
-read -r DEPLOY
+read -r deploy
 
-case $DEPLOY in
+case $deploy in
              N|n)
-                   echo "Deployment cancelled"
-                   cd "$CURRENT_PATH"
-                   exit
+                   echo "deployment cancelled"
+                   cd "$current_path"
+                   exit 1
              ;;
              Y|y)
              ;;
              *)
                    echo "Unknown option, deployment cancelled"
-                   cd "$CURRENT_PATH"
-                   exit
+                   cd "$current_path"
+                   exit 1
              ;;
 esac
 
 echo ""
 echo "==================================================================="
 echo "=="
-echo "== Deployment started"
+echo "== deployment started"
 echo "=="
 echo "==================================================================="
 
 echo "What is the CA Prefix (eg. /example) you want to deploy?"
-read -r CA_PREFIX
+read -r ca_prefix
 echo ""
 
 echo "Do you want to install ndncert CA for systemd on this machine? [Y/N]"
-read -r SYSTEMD_INSTALL
+read -r systemd_install
 echo ""
 
-case $SYSTEMD_INSTALL in
+case $systemd_install in
              N|n)
                    echo "We will not install systemd CA on this machine"
                    echo "Successfully finish the deployment of NDNCERT. To run NDNCERT, please use CLI ndncert-ca-server"
-                   cd "$CURRENT_PATH"
-                   exit
+                   cd "$current_path"
+                   exit 0
              ;;
              Y|y)
                    echo "Copying NDNCERT-CA systemd service on this machine"
-		               sudo cp "$NDNCERT_DIR/build/systemd/ndncert-ca.service" /etc/systemd/system
+		               sudo cp "$ndncert_dir/build/systemd/ndncert-ca.service" /etc/systemd/system
 		               sudo chmod 644 /etc/systemd/system/ndncert-ca.service
              ;;
              *)
                    echo "Unknown option, deployment cancelled"
-                   cd "$CURRENT_PATH"
-                   exit
+                   cd "$current_path"
+                   exit 1
              ;;
 esac
 
@@ -165,37 +165,37 @@ sudo chown ndn /var/lib/ndncert-ca
 echo '/var/lib/ndncert-ca is ready, GOOD!'
 
 echo ""
-echo "Do you want to import an exisitng safebag for $CA_PREFIX ? [Y/N]"
+echo "Do you want to import an exisitng safebag for $ca_prefix ? [Y/N]"
 read -r USE_SAFE_BAG
 
 case $USE_SAFE_BAG in
              N|n)
-                   echo "Generating new NDN identity for $CA_PREFIX"
-                   sudo HOME=/var/lib/ndncert-ca -u ndn ndnsec-keygen "$CA_PREFIX"
+                   echo "Generating new NDN identity for $ca_prefix"
+                   sudo HOME=/var/lib/ndncert-ca -u ndn ndnsec-keygen "$ca_prefix"
              ;;
              Y|y)
                    echo "Reading the safebag."
                    echo "What is the safebag file name?"
-                   read -r SAFE_BAG_PATH
+                   read -r safe_bag_path
                    echo ""
 
                    echo "What is the password of the safebag?"
-                   read -r SAFE_BAG_PWD
+                   read -r safe_bafg_pwd
                    echo ""
 
-                   sudo HOME=/var/lib/ndncert-ca -u ndn ndnsec-import -i "$SAFE_BAG_PATH" -P "$SAFE_BAG_PWD"
+                   sudo HOME=/var/lib/ndncert-ca -u ndn ndnsec-import -i "$safe_bag_path" -P "$safe_bafg_pwd"
              ;;
              *)
                    echo "Unknown option, deployment cancelled"
-                   cd "$CURRENT_PATH"
-                   exit
+                   cd "$current_path"
+                   exit 1
              ;;
 esac
 
 echo ""
 echo "Do you want to request a certificate from a parent CA? [Y/N]"
-read -r RUN_CLIENT
-case $RUN_CLIENT in
+read -r run_client
+case $run_client in
              Y|y)
                   echo "Running ndncert client"
                   generate_client_config
@@ -211,15 +211,15 @@ case $RUN_CLIENT in
              ;;
 esac
 
-generate_ca_config "$CA_PREFIX"
+generate_ca_config "$ca_prefix"
 
 echo "Do you want to start the service now? [Y/N]"
-read -r START_NOW
-case $START_NOW in
+read -r start_now
+case $start_now in
              N|n)
                    echo "Successfully finish the deployment of NDNCERT. You can run sudo systemctl start ndncert-ca when you want to start the service"
-                   cd "$CURRENT_PATH"
-                   exit
+                   cd "$current_path"
+                   exit 0
              ;;
              Y|y)
                    echo "Starting the service ndncert-ca"
@@ -228,14 +228,14 @@ case $START_NOW in
                    echo "Reading the status of service ndncert-ca"
                    sudo systemctl status ndncert-ca
                    echo "Successfully finish the deployment of NDNCERT. You can run sudo systemctl status ndncert-ca when you want to check the status of the service"
-                   cd "$CURRENT_PATH"
-                   exit
+                   cd "$current_path"
+                   exit 0
              ;;
              *)
                    echo "Unknown option, deployment cancelled"
-                   cd "$CURRENT_PATH"
-                   exit
+                   cd "$current_path"
+                   exit 1
              ;;
 esac
 
-cd "$CURRENT_PATH"
+cd "$current_path"
