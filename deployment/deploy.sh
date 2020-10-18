@@ -184,7 +184,7 @@ echo "=="
 echo "==================================================================="
 
 echo ""
-echo "Do you want to import an exisitng safebag for $ca_prefix ? [Y/N]"
+echo "Do you want to import an existing safebag for $ca_prefix ? [Y/N]"
 read -r use_safe_bag
 
 case $use_safe_bag in
