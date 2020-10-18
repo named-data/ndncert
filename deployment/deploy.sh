@@ -66,6 +66,8 @@ echo ""
 
 DEPLOYMENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 NDNCERT_DIR="$(dirname "$DEPLOYMENT_DIR")"
+CURRENT_PATH="$(pwd)"
+cd "$NDNCERT_DIR"
 
 echo "Do you want to (re) compile and build NDNCERT? [Y/N]"
 read -r NDNCERT_COMPILE
@@ -76,16 +78,17 @@ case $NDNCERT_COMPILE in
                    echo "Okay, we'll skip compilation and build."
              ;;
              Y|y)
-                   CXXFLAGS="-O2" "$NDNCERT_DIR/waf" configure
-                   "$NDNCERT_DIR/waf"
+                   CXXFLAGS="-O2" "./waf" configure
+                   "./waf"
              ;;
              *)
                    echo "Unknown option, build and install is cancelled"
+                   cd "$CURRENT_PATH"
                    exit
              ;;
 esac
 echo "Need sudo to install NDNCERT CLI tools"
-sudo "$NDNCERT_DIR/waf" install
+sudo "./waf" install
 echo ""
 
 echo "==================================================================="
@@ -100,12 +103,14 @@ read -r DEPLOY
 case $DEPLOY in
              N|n)
                    echo "Deployment cancelled"
+                   cd "$CURRENT_PATH"
                    exit
              ;;
              Y|y)
              ;;
              *)
                    echo "Unknown option, deployment cancelled"
+                   cd "$CURRENT_PATH"
                    exit
              ;;
 esac
@@ -129,6 +134,7 @@ case $SYSTEMD_INSTALL in
              N|n)
                    echo "We will not install systemd CA on this machine"
                    echo "Successfully finish the deployment of NDNCERT. To run NDNCERT, please use CLI ndncert-ca-server"
+                   cd "$CURRENT_PATH"
                    exit
              ;;
              Y|y)
@@ -138,6 +144,7 @@ case $SYSTEMD_INSTALL in
              ;;
              *)
                    echo "Unknown option, deployment cancelled"
+                   cd "$CURRENT_PATH"
                    exit
              ;;
 esac
@@ -180,6 +187,7 @@ case $USE_SAFE_BAG in
              ;;
              *)
                    echo "Unknown option, deployment cancelled"
+                   cd "$CURRENT_PATH"
                    exit
              ;;
 esac
@@ -210,6 +218,7 @@ read -r START_NOW
 case $START_NOW in
              N|n)
                    echo "Successfully finish the deployment of NDNCERT. You can run sudo systemctl start ndncert-ca when you want to start the service"
+                   cd "$CURRENT_PATH"
                    exit
              ;;
              Y|y)
@@ -219,10 +228,14 @@ case $START_NOW in
                    echo "Reading the status of service ndncert-ca"
                    sudo systemctl status ndncert-ca
                    echo "Successfully finish the deployment of NDNCERT. You can run sudo systemctl status ndncert-ca when you want to check the status of the service"
+                   cd "$CURRENT_PATH"
                    exit
              ;;
              *)
                    echo "Unknown option, deployment cancelled"
+                   cd "$CURRENT_PATH"
                    exit
              ;;
 esac
+
+cd "$CURRENT_PATH"
