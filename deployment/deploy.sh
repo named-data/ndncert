@@ -166,12 +166,17 @@ echo '/var/lib/ndncert-ca is ready, GOOD!'
 
 echo ""
 echo "Do you want to import an exisitng safebag for $ca_prefix ? [Y/N]"
-read -r USE_SAFE_BAG
+read -r use_safe_bag
 
-case $USE_SAFE_BAG in
+case $use_safe_bag in
              N|n)
-                   echo "Generating new NDN identity for $ca_prefix"
-                   sudo HOME=/var/lib/ndncert-ca -u ndn ndnsec-keygen "$ca_prefix"
+                   if [ "$(ndnsec list | grep " $ca_prefix$" > /dev/null 2>&1; echo $?)" -ne 0 ]; then
+                     echo "Generating new NDN identity for $ca_prefix"
+                     sudo HOME=/var/lib/ndncert-ca -u ndn ndnsec-keygen "$ca_prefix"
+                   else
+                     echo "Key detected for $ca_prefix"
+                     echo "Continue..."
+                   fi
              ;;
              Y|y)
                    echo "Reading the safebag."
