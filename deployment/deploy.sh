@@ -65,7 +65,7 @@ echo ""
 }
 
 DEPLOYMENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-NDNCERT_DIR="$(dirname DEPLOYMENT_DIR)"
+NDNCERT_DIR="$(dirname "$DEPLOYMENT_DIR")"
 
 echo "Do you want to (re) compile and build NDNCERT? [Y/N]"
 read -r NDNCERT_COMPILE
