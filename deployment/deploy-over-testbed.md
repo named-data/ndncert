@@ -17,10 +17,6 @@ sudo ./deploy.sh
 On each site:
 
 ```bash
-ndncert-client
-```
-
-```bash
 sudo ./deploy.sh
 ```
 
