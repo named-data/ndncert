@@ -34,7 +34,7 @@ echo "Load the new configuration file for the CA"
 echo "Would you like to allow email challenge for this CA? [Y/N]"
 read -r allow_email_challenge
 # prepare CA configuration file
-sudo cat > /usr/local/etc/ndncert/ca.conf << ~EOF
+cat > ndncert-deploy-ca.conf << ~EOF
 {
   "ca-prefix": "$1",
   "ca-info": "NDN Trust Anchor: $1",
@@ -48,11 +48,11 @@ sudo cat > /usr/local/etc/ndncert/ca.conf << ~EOF
   [
 ~EOF
 if [ "$allow_email_challenge" = 'y' ]; then
-    sudo echo '{ "challenge": "email" },' >> /usr/local/etc/ndncert/ca.conf
+    echo '{ "challenge": "email" },' >> ndncert-deploy-ca.conf
 elif [ "$allow_email_challenge" = 'Y' ]; then
-    sudo echo '{ "challenge": "email" },' >> /usr/local/etc/ndncert/ca.conf
+    echo '{ "challenge": "email" },' >> ndncert-deploy-ca.conf
 fi
-sudo cat >> /usr/local/etc/ndncert/ca.conf << ~EOF
+cat >> ndncert-deploy-ca.conf << ~EOF
     { "challenge": "pin" }
   ],
   "name-assignment":
@@ -61,6 +61,10 @@ sudo cat >> /usr/local/etc/ndncert/ca.conf << ~EOF
   }
 }
 ~EOF
+
+sudo touch /usr/local/etc/ndncert/ca.conf
+mv ndncert-deploy-ca.conf /usr/local/etc/ndncert/ca.conf
+
 echo ""
 }
 
