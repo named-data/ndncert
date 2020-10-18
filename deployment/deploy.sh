@@ -4,7 +4,7 @@ function generate_client_config() {
 echo
 echo "What is the parent CA's prefix?"
 read -r parent_ca_prefix
-echo "what is the parent certificate?"
+echo "what is the parent certificate? (use Ctrl-D to end input)"
 root_cert=$(cat | tr -d '\n')
 
 cat > ndncert-site-client.conf << ~EOF
@@ -34,7 +34,7 @@ echo "Load the new configuration file for the CA"
 echo "Would you like to allow email challenge for this CA? [Y/N]"
 read -r allow_email_challenge
 # prepare CA configuration file
-cat > /usr/local/etc/ndncert/ca.conf << ~EOF
+sudo cat > /usr/local/etc/ndncert/ca.conf << ~EOF
 {
   "ca-prefix": "$1",
   "ca-info": "NDN Trust Anchor: $1",
@@ -48,11 +48,11 @@ cat > /usr/local/etc/ndncert/ca.conf << ~EOF
   [
 ~EOF
 if [ "$allow_email_challenge" = 'y' ]; then
-    echo '{ "challenge": "email" },' >> /usr/local/etc/ndncert/ca.conf
+    sudo echo '{ "challenge": "email" },' >> /usr/local/etc/ndncert/ca.conf
 elif [ "$allow_email_challenge" = 'Y' ]; then
-    echo '{ "challenge": "email" },' >> /usr/local/etc/ndncert/ca.conf
+    sudo echo '{ "challenge": "email" },' >> /usr/local/etc/ndncert/ca.conf
 fi
-cat >> /usr/local/etc/ndncert/ca.conf << ~EOF
+sudo cat >> /usr/local/etc/ndncert/ca.conf << ~EOF
     { "challenge": "pin" }
   ],
   "name-assignment":
