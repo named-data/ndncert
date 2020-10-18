@@ -261,6 +261,7 @@ case $start_now in
              ;;
              Y|y)
                    echo "Starting the service ndncert-ca"
+                   sudo systemctl daemon-reload
                    sudo systemctl start ndncert-ca
                    sleep 2
                    echo "Reading the status of service ndncert-ca"
