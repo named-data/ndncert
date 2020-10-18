@@ -70,6 +70,32 @@ BOOST_AUTO_TEST_CASE(TestProbe)
   BOOST_CHECK_EQUAL(decodedRedirectionItems[0], config.m_redirection->at(0)->getFullName());
 }
 
+BOOST_AUTO_TEST_CASE(TestNewRenewRevoke)
+{
+  auto identity = addIdentity(Name("/ndn"));
+  auto key = identity.getDefaultKey();
+  auto cert = key.getDefaultCertificate();
+
+  ECDHState ecdhState;
+  auto block = NewRenewRevokeEncoder::encodeApplicationParameters(RequestType::NEW,
+                                                                  ecdhState.getBase64PubKey(),
+                                                                  cert);
+  std::string ecdhPub;
+  shared_ptr<security::Certificate> clientCert;
+  NewRenewRevokeEncoder::decodeApplicationParameters(block, RequestType::NEW, ecdhPub, clientCert);
+  BOOST_CHECK_EQUAL(ecdhState.getBase64PubKey(), ecdhPub);
+  BOOST_CHECK_EQUAL(cert, *clientCert);
+
+  block = NewRenewRevokeEncoder::encodeApplicationParameters(RequestType::REVOKE,
+                                                             ecdhState.getBase64PubKey(),
+                                                             cert);
+  NewRenewRevokeEncoder::decodeApplicationParameters(block, RequestType::REVOKE, ecdhPub, clientCert);
+  BOOST_CHECK_EQUAL(ecdhState.getBase64PubKey(), ecdhPub);
+  BOOST_CHECK_EQUAL(cert, *clientCert);
+
+  // NewRenewRevokeEncoder::encodeDataContent(ecdhState.getBase64PubKey(), "")
+}
+
 BOOST_AUTO_TEST_SUITE_END() // TestProtocolDetail
 
 } // namespace tests

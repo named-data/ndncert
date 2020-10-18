@@ -237,7 +237,7 @@ Requester::genChallengeInterest(RequesterState& state,
   auto challengeParams = challenge->genChallengeRequestTLV(state.m_status, state.m_challengeStatus, std::move(parameters));
 
   Name interestName = state.m_caItem.m_caPrefix;
-  interestName.append("CA").append("CHALLENGE").append(state.m_requestId);
+  interestName.append("CA").append("CHALLENGE").append(state.m_requestId.data(), state.m_requestId.size());
   auto interest =std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
@@ -245,7 +245,7 @@ Requester::genChallengeInterest(RequesterState& state,
   // encrypt the Interest parameters
   auto paramBlock = encodeBlockWithAesGcm128(ndn::tlv::ApplicationParameters, state.m_aesKey,
                                              challengeParams.value(), challengeParams.value_size(),
-                                             (const uint8_t*)state.m_requestId.c_str(),
+                                             state.m_requestId.data(),
                                              state.m_requestId.size(),
                                              state.m_aesBlockCounter);
   interest->setApplicationParameters(paramBlock);
@@ -262,7 +262,7 @@ Requester::onChallengeResponse(RequesterState& state, const Data& reply)
   }
   processIfError(reply);
   auto result = decodeBlockWithAesGcm128(reply.getContent(), state.m_aesKey,
-                                         (const uint8_t*)state.m_requestId.c_str(),
+                                         state.m_requestId.data(),
                                          state.m_requestId.size());
   Block contentTLV = makeBinaryBlock(tlv::EncryptedPayload, result.data(), result.size());
   ChallengeEncoder::decodeDataContent(contentTLV, state);

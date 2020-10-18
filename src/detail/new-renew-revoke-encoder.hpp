@@ -37,12 +37,13 @@ public:
 
   static Block
   encodeDataContent(const std::string& ecdhKey, const std::string& salt,
-                             const CaState& request,
-                             const std::list<std::string>& challenges);
+                    const CaState& request,
+                    const std::list<std::string>& challenges);
+
   struct DecodedData {
     std::string ecdhKey;
     uint64_t salt;
-    std::string requestId;
+    RequestID requestId;
     Status requestStatus;
     std::list<std::string> challenges;
   };

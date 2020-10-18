@@ -62,7 +62,7 @@ ChallengeEmail::handleChallengeRequest(const Block& params, CaState& request)
     secretJson.add(PARAMETER_KEY_CODE, emailCode);
     // send out the email
     sendEmail(emailAddress, emailCode, request);
-    NDN_LOG_TRACE("Secret for request " << request.m_requestId << " : " << emailCode);
+    NDN_LOG_TRACE("Secret for request " << toHex(request.m_requestId.data(), request.m_requestId.size())  << " : " << emailCode);
     return returnWithNewChallengeStatus(request, NEED_CODE, std::move(secretJson), m_maxAttemptTimes, m_secretLifetime);
   }
   if (request.m_challengeState) {

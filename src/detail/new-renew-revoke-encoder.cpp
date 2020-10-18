@@ -55,7 +55,8 @@ NewRenewRevokeEncoder::encodeApplicationParameters(RequestType requestType, cons
 
 void
 NewRenewRevokeEncoder::decodeApplicationParameters(const Block& payload, RequestType requestType, std::string& ecdhPub,
-                                              shared_ptr<security::Certificate>& clientCert) {
+                                                   shared_ptr<security::Certificate>& clientCert)
+{
   payload.parse();
 
   ecdhPub = readString(payload.get(tlv::EcdhPub));
@@ -74,13 +75,13 @@ NewRenewRevokeEncoder::decodeApplicationParameters(const Block& payload, Request
 
 Block
 NewRenewRevokeEncoder::encodeDataContent(const std::string& ecdhKey, const std::string& salt,
-                                    const CaState& request,
-                                    const std::list<std::string>& challenges)
+                                         const CaState& request,
+                                         const std::list<std::string>& challenges)
 {
   Block response = makeEmptyBlock(ndn::tlv::Content);
   response.push_back(makeStringBlock(tlv::EcdhPub, ecdhKey));
   response.push_back(makeStringBlock(tlv::Salt, salt));
-  response.push_back(makeStringBlock(tlv::RequestId, request.m_requestId));
+  response.push_back(makeBinaryBlock(tlv::RequestId, request.m_requestId.data(), request.m_requestId.size()));
   response.push_back(makeNonNegativeIntegerBlock(tlv::Status, static_cast<size_t>(request.m_status)));
   for (const auto& entry: challenges) {
     response.push_back(makeStringBlock(tlv::Challenge, entry));
@@ -97,7 +98,8 @@ NewRenewRevokeEncoder::decodeDataContent(const Block& content)
   const auto& salt = readString(content.get(tlv::Salt));
   uint64_t saltInt = std::stoull(salt);
   const auto& requestStatus = static_cast<Status>(readNonNegativeInteger(content.get(tlv::Status)));
-  const auto& requestId = readString(content.get(tlv::RequestId));
+  RequestID requestId;
+  std::memcpy(requestId.data(), content.get(tlv::RequestId).value(), content.get(tlv::RequestId).size());
   std::list<std::string> challenges;
   for (auto const& element : content.elements()) {
     if (element.type() == tlv::Challenge) {

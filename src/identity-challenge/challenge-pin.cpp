@@ -48,7 +48,7 @@ ChallengePin::handleChallengeRequest(const Block& params, CaState& request)
     std::string secretCode = generateSecretCode();
     JsonSection secretJson;
     secretJson.add(PARAMETER_KEY_CODE, secretCode);
-    NDN_LOG_TRACE("Secret for request " << request.m_requestId << " : " << secretCode);
+    NDN_LOG_TRACE("Secret for request " << toHex(request.m_requestId.data(), request.m_requestId.size()) << " : " << secretCode);
     return returnWithNewChallengeStatus(request, NEED_CODE, std::move(secretJson), m_maxAttemptTimes, m_secretLifetime);
   }
   if (request.m_challengeState) {

@@ -35,11 +35,11 @@ CaMemory::CaMemory(const Name& caName, const std::string& path)
 }
 
 CaState
-CaMemory::getRequest(const std::string& requestId)
+CaMemory::getRequest(const RequestID& requestId)
 {
   auto search = m_requests.find(requestId);
   if (search == m_requests.end()) {
-    NDN_THROW(std::runtime_error("Request " + requestId + " doest not exists"));
+    NDN_THROW(std::runtime_error("Request " + toHex(requestId.data(), requestId.size()) + " doest not exists"));
   }
   return search->second;
 }
@@ -52,7 +52,7 @@ CaMemory::addRequest(const CaState& request)
     m_requests[request.m_requestId] = request;
   }
   else {
-    NDN_THROW(std::runtime_error("Request " + request.m_requestId + " already exists"));
+    NDN_THROW(std::runtime_error("Request " + toHex(request.m_requestId.data(), request.m_requestId.size()) + " already exists"));
   }
 }
 
@@ -64,7 +64,7 @@ CaMemory::updateRequest(const CaState& request)
 }
 
 void
-CaMemory::deleteRequest(const std::string& requestId)
+CaMemory::deleteRequest(const RequestID& requestId)
 {
   auto search = m_requests.find(requestId);
   auto keyName = search->second.m_cert.getKeyName();

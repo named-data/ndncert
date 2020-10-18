@@ -64,7 +64,7 @@ CaState::CaState()
 {
 }
 
-CaState::CaState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
+CaState::CaState(const Name& caName, const RequestID& requestId, RequestType requestType, Status status,
                  const security::Certificate& cert, Block encryptionKey, uint32_t aesBlockCounter)
     : m_caPrefix(caName)
     , m_requestId(requestId)
@@ -76,7 +76,7 @@ CaState::CaState(const Name& caName, const std::string& requestId, RequestType r
 {
 }
 
-CaState::CaState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
+CaState::CaState(const Name& caName, const RequestID& requestId, RequestType requestType, Status status,
                  const security::Certificate& cert, const std::string& challengeType,
                  const std::string& challengeStatus, const time::system_clock::TimePoint& challengeTp,
                  size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
@@ -97,7 +97,7 @@ std::ostream&
 operator<<(std::ostream& os, const CaState& request)
 {
   os << "Request's CA name: " << request.m_caPrefix << "\n";
-  os << "Request's request ID: " << request.m_requestId << "\n";
+  os << "Request's request ID: " << toHex(request.m_requestId.data(), request.m_requestId.size()) << "\n";
   os << "Request's status: " << statusToString(request.m_status) << "\n";
   os << "Request's challenge type: " << request.m_challengeType << "\n";
   if (request.m_challengeState) {

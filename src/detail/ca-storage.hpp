@@ -33,7 +33,7 @@ public: // request related
    * @throw if request cannot be fetched from underlying data storage
    */
   virtual CaState
-  getRequest(const std::string& requestId) = 0;
+  getRequest(const RequestID& requestId) = 0;
 
   /**
    * @throw if there is an existing request with the same request ID
@@ -45,7 +45,7 @@ public: // request related
   updateRequest(const CaState& request) = 0;
 
   virtual void
-  deleteRequest(const std::string& requestId) = 0;
+  deleteRequest(const RequestID& requestId) = 0;
 
   virtual std::list<CaState>
   listAllRequests() = 0;

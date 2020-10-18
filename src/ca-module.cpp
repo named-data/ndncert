@@ -302,7 +302,9 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
                                        "Error computing the request ID."));
     return;
   }
-  CaState requestState(m_config.m_caItem.m_caPrefix, toHex(requestIdData, 32),
+  RequestID id;
+  std::memcpy(id.data(), requestIdData, id.size());
+  CaState requestState(m_config.m_caItem.m_caPrefix, id,
                        requestType, Status::BEFORE_CHALLENGE, *clientCert,
                        makeBinaryBlock(ndn::tlv::ContentType_Key, aesKey, sizeof(aesKey)));
   try {
@@ -318,9 +320,9 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   result.setName(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
   result.setContent(NewRenewRevokeEncoder::encodeDataContent(myEcdhPubKeyBase64,
-                                                        std::to_string(saltInt),
-                                                        requestState,
-                                                        m_config.m_caItem.m_supportedChallenges));
+                                                             std::to_string(saltInt),
+                                                             requestState,
+                                                             m_config.m_caItem.m_supportedChallenges));
   m_keyChain.sign(result, signingByIdentity(m_config.m_caItem.m_caPrefix));
   m_face.put(result);
   if (m_config.m_statusUpdateCallback) {
@@ -332,15 +334,15 @@ void
 CaModule::onChallenge(const Interest& request)
 {
   // get certificate request state
-  CaState requestState = getCertificateRequest(request);
-  if (requestState.m_requestId == "") {
+  auto requestState = getCertificateRequest(request);
+  if (requestState== nullptr) {
     NDN_LOG_ERROR("No certificate request state can be found.");
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
                                        "No certificate request state can be found."));
     return;
   }
   // verify signature
-  if (!security::verifySignature(request, requestState.m_cert)) {
+  if (!security::verifySignature(request, requestState->m_cert)) {
     NDN_LOG_ERROR("Invalid Signature in the Interest packet.");
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::BAD_SIGNATURE,
                                        "Invalid Signature in the Interest packet."));
@@ -350,20 +352,20 @@ CaModule::onChallenge(const Interest& request)
   Buffer paramTLVPayload;
   try {
     paramTLVPayload = decodeBlockWithAesGcm128(request.getApplicationParameters(),
-                                               requestState.m_encryptionKey.value(),
-                                               (const uint8_t*)requestState.m_requestId.c_str(),
-                                               requestState.m_requestId.size());
+                                               requestState->m_encryptionKey.value(),
+                                               requestState->m_requestId.data(),
+                                               requestState->m_requestId.size());
   }
   catch (const std::exception& e) {
     NDN_LOG_ERROR("Interest paramaters decryption failed: " << e.what());
-    m_storage->deleteRequest(requestState.m_requestId);
+    m_storage->deleteRequest(requestState->m_requestId);
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
                                        "Interest paramaters decryption failed."));
     return;
   }
   if (paramTLVPayload.size() == 0) {
     NDN_LOG_ERROR("No parameters are found after decryption.");
-    m_storage->deleteRequest(requestState.m_requestId);
+    m_storage->deleteRequest(requestState->m_requestId);
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
                                        "No parameters are found after decryption."));
     return;
@@ -376,69 +378,68 @@ CaModule::onChallenge(const Interest& request)
   auto challenge = ChallengeModule::createChallengeModule(challengeType);
   if (challenge == nullptr) {
     NDN_LOG_TRACE("Unrecognized challenge type: " << challengeType);
-    m_storage->deleteRequest(requestState.m_requestId);
+    m_storage->deleteRequest(requestState->m_requestId);
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER, "Unrecognized challenge type."));
     return;
   }
 
   NDN_LOG_TRACE("CHALLENGE module to be load: " << challengeType);
-  auto errorInfo = challenge->handleChallengeRequest(paramTLV, requestState);
+  auto errorInfo = challenge->handleChallengeRequest(paramTLV, *requestState);
   if (std::get<0>(errorInfo) != ErrorCode::NO_ERROR) {
-    m_storage->deleteRequest(requestState.m_requestId);
+    m_storage->deleteRequest(requestState->m_requestId);
     m_face.put(generateErrorDataPacket(request.getName(), std::get<0>(errorInfo), std::get<1>(errorInfo)));
     return;
   }
 
   Block payload;
-  if (requestState.m_status == Status::PENDING) {
+  if (requestState->m_status == Status::PENDING) {
     // if challenge succeeded
-    if (requestState.m_requestType == RequestType::NEW) {
-      auto issuedCert = issueCertificate(requestState);
-      requestState.m_cert = issuedCert;
-      requestState.m_status = Status::SUCCESS;
-      m_storage->deleteRequest(requestState.m_requestId);
+    if (requestState->m_requestType == RequestType::NEW) {
+      auto issuedCert = issueCertificate(*requestState);
+      requestState->m_cert = issuedCert;
+      requestState->m_status = Status::SUCCESS;
+      m_storage->deleteRequest(requestState->m_requestId);
 
-      payload = ChallengeEncoder::encodeDataContent(requestState);
+      payload = ChallengeEncoder::encodeDataContent(*requestState);
       payload.parse();
       payload.push_back(makeNestedBlock(tlv::IssuedCertName, issuedCert.getName()));
       payload.encode();
       NDN_LOG_TRACE("Challenge succeeded. Certificate has been issued: " << issuedCert.getName());
     }
-    else if (requestState.m_requestType == RequestType::REVOKE) {
-      requestState.m_status = Status::SUCCESS;
-      m_storage->deleteRequest(requestState.m_requestId);
+    else if (requestState->m_requestType == RequestType::REVOKE) {
+      requestState->m_status = Status::SUCCESS;
+      m_storage->deleteRequest(requestState->m_requestId);
 
-      payload = ChallengeEncoder::encodeDataContent(requestState);
+      payload = ChallengeEncoder::encodeDataContent(*requestState);
       NDN_LOG_TRACE("Challenge succeeded. Certificate has been revoked");
     }
   }
   else {
-    m_storage->updateRequest(requestState);
-    payload = ChallengeEncoder::encodeDataContent(requestState);
+    m_storage->updateRequest(*requestState);
+    payload = ChallengeEncoder::encodeDataContent(*requestState);
     NDN_LOG_TRACE("No failure no success. Challenge moves on");
   }
 
   Data result;
   result.setName(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  auto contentBlock = encodeBlockWithAesGcm128(ndn::tlv::Content, requestState.m_encryptionKey.value(),
+  auto contentBlock = encodeBlockWithAesGcm128(ndn::tlv::Content, requestState->m_encryptionKey.value(),
                                                payload.value(), payload.value_size(),
-                                               (const uint8_t*)requestState.m_requestId.c_str(),
-                                               requestState.m_requestId.size(),
-                                               requestState.m_aesBlockCounter);
+                                               requestState->m_requestId.data(),
+                                               requestState->m_requestId.size(),
+                                               requestState->m_aesBlockCounter);
   result.setContent(contentBlock);
   m_keyChain.sign(result, signingByIdentity(m_config.m_caItem.m_caPrefix));
   m_face.put(result);
   if (m_config.m_statusUpdateCallback) {
-    m_config.m_statusUpdateCallback(requestState);
+    m_config.m_statusUpdateCallback(*requestState);
   }
 }
 
 security::Certificate
 CaModule::issueCertificate(const CaState& requestState)
 {
-  auto expectedPeriod =
-      requestState.m_cert.getValidityPeriod().getPeriod();
+  auto expectedPeriod = requestState.m_cert.getValidityPeriod().getPeriod();
   security::ValidityPeriod period(expectedPeriod.first, expectedPeriod.second);
   security::Certificate newCert;
 
@@ -457,25 +458,26 @@ CaModule::issueCertificate(const CaState& requestState)
   return newCert;
 }
 
-CaState
+std::unique_ptr<CaState>
 CaModule::getCertificateRequest(const Interest& request)
 {
-  std::string requestId;
-  CaState requestState;
+  RequestID requestId;
   try {
-    requestId = readString(request.getName().at(m_config.m_caItem.m_caPrefix.size() + 2));
+    auto& component = request.getName().at(m_config.m_caItem.m_caPrefix.size() + 2);
+    std::memcpy(requestId.data(), component.value(), component.value_size());
   }
   catch (const std::exception& e) {
     NDN_LOG_ERROR("Cannot read the request ID out from the request: " << e.what());
+    return nullptr;
   }
   try {
-    NDN_LOG_TRACE("Request Id to query the database " << requestId);
-    requestState = m_storage->getRequest(requestId);
+    NDN_LOG_TRACE("Request Id to query the database " << toHex(requestId.data(), requestId.size()));
+    return std::make_unique<CaState>(m_storage->getRequest(requestId));
   }
   catch (const std::exception& e) {
     NDN_LOG_ERROR("Cannot get certificate request record from the storage: " << e.what());
+    return nullptr;
   }
-  return requestState;
 }
 
 void

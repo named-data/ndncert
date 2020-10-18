@@ -21,7 +21,7 @@
 #ifndef NDNCERT_REQUESTER_STATE_HPP
 #define NDNCERT_REQUESTER_STATE_HPP
 
-#include "detail/ndncert-common.hpp"
+#include "detail/ca-state.hpp"
 #include "detail/crypto-helper.hpp"
 #include "configuration.hpp"
 
@@ -55,7 +55,7 @@ struct RequesterState {
   /**
    * @brief The CA-generated request ID for the request.
    */
-  std::string m_requestId;
+  RequestID m_requestId;
   /**
    * @brief The current status of the request.
    */

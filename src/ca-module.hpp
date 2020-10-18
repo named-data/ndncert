@@ -70,7 +70,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
   onRegisterFailed(const std::string& reason);
 
-  CaState
+  std::unique_ptr<CaState>
   getCertificateRequest(const Interest& request);
 
   security::Certificate

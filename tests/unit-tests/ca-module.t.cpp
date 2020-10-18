@@ -255,7 +255,9 @@ BOOST_AUTO_TEST_CASE(HandleNew)
     BOOST_CHECK(challengeBlockCount != 0);
 
     auto challengeList = Requester::onNewRenewRevokeResponse(state, response);
-    auto ca_encryption_key = ca.getCaStorage()->getRequest(readString(contentBlock.get(tlv::RequestId))).m_encryptionKey;
+    RequestID requestId;
+    std::memcpy(requestId.data(), contentBlock.get(tlv::RequestId).value(), contentBlock.get(tlv::RequestId).value_size());
+    auto ca_encryption_key = ca.getCaStorage()->getRequest(requestId).m_encryptionKey;
     BOOST_CHECK_EQUAL_COLLECTIONS(state.m_aesKey, state.m_aesKey + sizeof(state.m_aesKey),
                                   ca_encryption_key.value(), ca_encryption_key.value() + ca_encryption_key.value_size());
   });
@@ -418,7 +420,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
 
       auto paramList = Requester::selectOrContinueChallenge(state, "pin");
       auto request = ca.getCertificateRequest(*challengeInterest2);
-      auto secret = request.m_challengeState->m_secrets.get(ChallengePin::PARAMETER_KEY_CODE, "");
+      auto secret = request->m_challengeState->m_secrets.get(ChallengePin::PARAMETER_KEY_CODE, "");
       std::get<1>(paramList[0]) = secret;
       challengeInterest3 = Requester::genChallengeInterest(state, std::move(paramList));
       std::cout << "CHALLENGE Interest Size: " << challengeInterest3->wireEncode().size() << std::endl;
@@ -464,7 +466,8 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
   signatureInfo.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
                                                            time::system_clock::now() + time::hours(10)));
   m_keyChain.sign(clientCert, signingByKey(clientKey.getName()).setSignatureInfo(signatureInfo));
-  CaState certRequest(Name("/ndn"), "122", RequestType::NEW, Status::SUCCESS, clientCert, makeEmptyBlock(ndn::tlv::ContentType_Key));
+  RequestID requestId = {1,2,3,4,5,6,7,8};
+  CaState certRequest(Name("/ndn"), requestId, RequestType::NEW, Status::SUCCESS, clientCert, makeEmptyBlock(ndn::tlv::ContentType_Key));
   auto issuedCert = ca.issueCertificate(certRequest);
 
   CaProfile item;
@@ -495,7 +498,9 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
     BOOST_CHECK(challengeBlockCount != 0);
 
     auto challengeList = Requester::onNewRenewRevokeResponse(state, response);
-    auto ca_encryption_key = ca.getCaStorage()->getRequest(readString(contentBlock.get(tlv::RequestId))).m_encryptionKey;
+    RequestID requestId;
+    std::memcpy(requestId.data(), contentBlock.get(tlv::RequestId).value(), contentBlock.get(tlv::RequestId).value_size());
+    auto ca_encryption_key = ca.getCaStorage()->getRequest(requestId).m_encryptionKey;
     BOOST_CHECK_EQUAL_COLLECTIONS(state.m_aesKey, state.m_aesKey + sizeof(state.m_aesKey),
                                   ca_encryption_key.value(), ca_encryption_key.value() + ca_encryption_key.value_size());
   });

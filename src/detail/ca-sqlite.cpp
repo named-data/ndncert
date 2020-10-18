@@ -55,7 +55,7 @@ static const std::string INITIALIZATION = R"_DBTEXT_(
 CREATE TABLE IF NOT EXISTS
   CaStates(
     id INTEGER PRIMARY KEY,
-    request_id TEXT NOT NULL,
+    request_id BLOB NOT NULL,
     ca_name BLOB NOT NULL,
     request_type INTEGER NOT NULL,
     status INTEGER NOT NULL,
@@ -123,7 +123,7 @@ CaSqlite::~CaSqlite()
 }
 
 CaState
-CaSqlite::getRequest(const std::string& requestId)
+CaSqlite::getRequest(const RequestID& requestId)
 {
   Sqlite3Statement statement(m_database,
                              R"_SQLTEXT_(SELECT id, ca_name, status,
@@ -132,7 +132,7 @@ CaSqlite::getRequest(const std::string& requestId)
                              challenge_tp, remaining_tries, remaining_time,
                              request_type, encryption_key, aes_block_counter
                              FROM CaStates where request_id = ?)_SQLTEXT_");
-  statement.bind(1, requestId, SQLITE_TRANSIENT);
+  statement.bind(1, requestId.data(), requestId.size(), SQLITE_TRANSIENT);
 
   if (statement.step() == SQLITE_ROW) {
     Name caName(statement.getBlock(1));
@@ -158,7 +158,7 @@ CaSqlite::getRequest(const std::string& requestId)
     }
   }
   else {
-    NDN_THROW(std::runtime_error("Request " + requestId + " cannot be fetched from database"));
+    NDN_THROW(std::runtime_error("Request " + toHex(requestId.data(), requestId.size()) + " cannot be fetched from database"));
   }
 }
 
@@ -171,7 +171,7 @@ CaSqlite::addRequest(const CaState& request)
                   cert_request, challenge_type, challenge_status, challenge_secrets,
                   challenge_tp, remaining_tries, remaining_time, encryption_key, aes_block_counter)
                   values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
-  statement.bind(1, request.m_requestId, SQLITE_TRANSIENT);
+  statement.bind(1, request.m_requestId.data(), request.m_requestId.size(), SQLITE_TRANSIENT);
   statement.bind(2, request.m_caPrefix.wireEncode(), SQLITE_TRANSIENT);
   statement.bind(3, static_cast<int>(request.m_status));
   statement.bind(4, static_cast<int>(request.m_requestType));
@@ -188,7 +188,7 @@ CaSqlite::addRequest(const CaState& request)
     statement.bind(11, request.m_challengeState->m_remainingTime.count());
   }
   if (statement.step() != SQLITE_DONE) {
-    NDN_THROW(std::runtime_error("Request " + request.m_requestId + " cannot be added to database"));
+    NDN_THROW(std::runtime_error("Request " + toHex(request.m_requestId.data(), request.m_requestId.size()) + " cannot be added to database"));
   }
 }
 
@@ -217,7 +217,7 @@ CaSqlite::updateRequest(const CaState& request)
     statement.bind(7, 0);
   }
   statement.bind(8, request.m_aesBlockCounter);
-  statement.bind(9, request.m_requestId, SQLITE_TRANSIENT);
+  statement.bind(9, request.m_requestId.data(), request.m_requestId.size(), SQLITE_TRANSIENT);
 
   if (statement.step() != SQLITE_DONE) {
     addRequest(request);
@@ -234,7 +234,8 @@ CaSqlite::listAllRequests()
                              encryption_key, aes_block_counter
                              FROM CaStates)_SQLTEXT_");
   while (statement.step() == SQLITE_ROW) {
-    auto requestId = statement.getString(1);
+    RequestID requestId;
+    std::memcpy(requestId.data(), statement.getBlob(1), statement.getSize(1));
     Name caName(statement.getBlock(2));
     auto status = static_cast<Status>(statement.getInt(3));
     auto challengeStatus = statement.getString(4);
@@ -273,7 +274,8 @@ CaSqlite::listAllRequests(const Name& caName)
   statement.bind(1, caName.wireEncode(), SQLITE_TRANSIENT);
 
   while (statement.step() == SQLITE_ROW) {
-    auto requestId = statement.getString(1);
+    RequestID requestId;
+    std::memcpy(requestId.data(), statement.getBlob(1), statement.getSize(1));
     Name caName(statement.getBlock(2));
     auto status = static_cast<Status>(statement.getInt(3));
     auto challengeStatus = statement.getString(4);
@@ -300,11 +302,11 @@ CaSqlite::listAllRequests(const Name& caName)
 }
 
 void
-CaSqlite::deleteRequest(const std::string& requestId)
+CaSqlite::deleteRequest(const RequestID& requestId)
 {
   Sqlite3Statement statement(m_database,
                              R"_SQLTEXT_(DELETE FROM CaStates WHERE request_id = ?)_SQLTEXT_");
-  statement.bind(1, requestId, SQLITE_TRANSIENT);
+  statement.bind(1, requestId.data(), requestId.size(), SQLITE_TRANSIENT);
   statement.step();
 }
 

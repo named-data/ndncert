@@ -38,7 +38,8 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmptyInfo)
   auto identity = addIdentity(Name("/ndn/site1"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
-  CaState request(Name("/ndn/site1"), "123", RequestType::NEW, Status::BEFORE_CHALLENGE, cert, makeEmptyBlock(ndn::tlv::ContentType_Key));
+  RequestID requestId = {1,2,3,4,5,6,7,8};
+  CaState request(Name("/ndn/site1"), requestId, RequestType::NEW, Status::BEFORE_CHALLENGE, cert, makeEmptyBlock(ndn::tlv::ContentType_Key));
 
   ChallengePin challenge;
   challenge.handleChallengeRequest(makeEmptyBlock(tlv::EncryptedPayload), request);
@@ -55,7 +56,8 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
   auto cert = key.getDefaultCertificate();
   JsonSection secret;
   secret.add(ChallengePin::PARAMETER_KEY_CODE, "12345");
-  CaState request(Name("/ndn/site1"), "123", RequestType::NEW, Status::CHALLENGE, cert,
+  RequestID requestId = {1,2,3,4,5,6,7,8};
+  CaState request(Name("/ndn/site1"), requestId, RequestType::NEW, Status::CHALLENGE, cert,
                   "pin", ChallengePin::NEED_CODE, time::system_clock::now(),
                   3, time::seconds(3600), std::move(secret), makeEmptyBlock(ndn::tlv::ContentType_Key), 0);
 
@@ -77,7 +79,8 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithWrongCode)
   auto cert = key.getDefaultCertificate();
   JsonSection secret;
   secret.add(ChallengePin::PARAMETER_KEY_CODE, "12345");
-  CaState request(Name("/ndn/site1"), "123", RequestType::NEW, Status::CHALLENGE, cert,
+  RequestID requestId = {1,2,3,4,5,6,7,8};
+  CaState request(Name("/ndn/site1"), requestId, RequestType::NEW, Status::CHALLENGE, cert,
                   "pin", ChallengePin::NEED_CODE, time::system_clock::now(),
                   3, time::seconds(3600), std::move(secret), makeEmptyBlock(ndn::tlv::ContentType_Key), 0);
 

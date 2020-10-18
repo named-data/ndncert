@@ -37,7 +37,7 @@ public:
    * @throw if request cannot be fetched from underlying data storage
    */
   CaState
-  getRequest(const std::string& requestId) override;
+  getRequest(const RequestID& requestId) override;
 
   /**
    * @throw if there is an existing request with the same request ID
@@ -49,7 +49,7 @@ public:
   updateRequest(const CaState& request) override;
 
   void
-  deleteRequest(const std::string& requestId) override;
+  deleteRequest(const RequestID& requestId) override;
 
   std::list<CaState>
   listAllRequests() override;
@@ -58,7 +58,7 @@ public:
   listAllRequests(const Name& caName) override;
 
 private:
-  std::map<Name, CaState> m_requests;
+  std::map<RequestID, CaState> m_requests;
 };
 
 } // namespace ndncert

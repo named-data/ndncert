@@ -53,7 +53,8 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
   auto identityA = addIdentity(Name("/example"));
   auto keyA = identityA.getDefaultKey();
   auto certA = key.getDefaultCertificate();
-  CaState state(Name("/example"), "123", RequestType::NEW, Status::BEFORE_CHALLENGE, certA, makeEmptyBlock(ndn::tlv::ContentType_Key));
+  RequestID requestId = {1,2,3,4,5,6,7,8};
+  CaState state(Name("/example"), requestId, RequestType::NEW, Status::BEFORE_CHALLENGE, certA, makeEmptyBlock(ndn::tlv::ContentType_Key));
 
   // create requester's credential
   auto identityB = addIdentity(Name("/trust/cert"));
@@ -69,7 +70,7 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
 
   // using private key to sign cert request
   auto params = challenge.getRequestedParameterList(state.m_status, "");
-  ChallengeCredential::fulfillParameters(params, m_keyChain, credential.getName(), "123");
+  ChallengeCredential::fulfillParameters(params, m_keyChain, credential.getName(), requestId);
   Block paramsTlv = challenge.genChallengeRequestTLV(state.m_status, "", std::move(params));
   challenge.handleChallengeRequest(paramsTlv, state);
   BOOST_CHECK_EQUAL(statusToString(state.m_status), statusToString(Status::PENDING));

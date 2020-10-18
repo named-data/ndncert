@@ -112,12 +112,11 @@ ChallengeCredential::handleChallengeRequest(const Block& params, CaState& reques
   for (auto anchor : m_trustAnchors) {
     if (anchor.getKeyName() == signingKeyName) {
       if (security::verifySignature(credential, anchor) &&
-          security::verifySignature((uint8_t*)request.m_requestId.c_str(), request.m_requestId.size(), signature, signatureLen, key)) {
+          security::verifySignature(request.m_requestId.data(), request.m_requestId.size(), signature, signatureLen, key)) {
         return returnWithSuccess(request);
       }
     }
   }
-
   NDN_LOG_TRACE("Cannot verify the proof of private key against credential");
   return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Cannot verify the proof of private key against credential.");
 }
@@ -173,13 +172,13 @@ ChallengeCredential::genChallengeRequestTLV(Status status, const std::string& ch
 
 void
 ChallengeCredential::fulfillParameters(std::vector<std::tuple<std::string, std::string>>& params,
-                                       KeyChain& keyChain, const Name& issuedCertName, const std::string& requestId)
+                                       KeyChain& keyChain, const Name& issuedCertName, const RequestID& requestId)
 {
   auto& pib = keyChain.getPib();
   auto id = pib.getIdentity(security::extractIdentityFromCertName(issuedCertName));
   auto issuedCert = id.getKey(security::extractKeyNameFromCertName(issuedCertName)).getCertificate(issuedCertName);
   auto issuedCertTlv = issuedCert.wireEncode();
-  auto signatureTlv = keyChain.sign((uint8_t*)requestId.c_str(), requestId.length(), security::signingByCertificate(issuedCertName));
+  auto signatureTlv = keyChain.sign(requestId.data(), requestId.size(), security::signingByCertificate(issuedCertName));
   for (auto& item : params) {
     if (std::get<0>(item) == PARAMETER_KEY_CREDENTIAL_CERT) {
       std::get<1>(item) = std::string((char*)issuedCertTlv.wire(), issuedCertTlv.size());

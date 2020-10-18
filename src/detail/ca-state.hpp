@@ -22,9 +22,12 @@
 #define NDNCERT_CA_STATE_HPP
 
 #include "detail/ndncert-common.hpp"
+#include <array>
 
 namespace ndn {
 namespace ndncert {
+
+typedef std::array<uint8_t, 8> RequestID;
 
 // NDNCERT Request status enumeration
 enum class Status : uint16_t {
@@ -65,9 +68,9 @@ class CaState
 {
 public:
   CaState();
-  CaState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
+  CaState(const Name& caName, const RequestID& requestId, RequestType requestType, Status status,
           const security::Certificate& cert, Block m_encryptionKey, uint32_t aesBlockCounter = 0);
-  CaState(const Name& caName, const std::string& requestId, RequestType requestType, Status status,
+  CaState(const Name& caName, const RequestID& requestId, RequestType requestType, Status status,
           const security::Certificate& cert, const std::string& challengeType,
           const std::string& challengeStatus, const time::system_clock::TimePoint& challengeTp,
           size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
@@ -75,7 +78,7 @@ public:
 
 public:
   Name m_caPrefix;
-  std::string m_requestId;
+  RequestID m_requestId;
   RequestType m_requestType;
   Status m_status;
   security::Certificate m_cert;

@@ -36,11 +36,12 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   auto cert1 = key1.getDefaultCertificate();
 
   // add operation
-  CaState request1(Name("/ndn/site1"), "123", RequestType::NEW, Status::BEFORE_CHALLENGE, cert1, makeStringBlock(ndn::tlv::ContentType_Key, "PretendItIsAKey"));
+  RequestID requestId = {1,2,3,4,5,6,7,8};
+  CaState request1(Name("/ndn/site1"), requestId, RequestType::NEW, Status::BEFORE_CHALLENGE, cert1, makeStringBlock(ndn::tlv::ContentType_Key, "PretendItIsAKey"));
   storage.addRequest(request1);
 
   // get operation
-  auto result = storage.getRequest("123");
+  auto result = storage.getRequest(requestId);
   BOOST_CHECK_EQUAL(request1.m_cert, result.m_cert);
   BOOST_CHECK(request1.m_status == result.m_status);
   BOOST_CHECK_EQUAL(request1.m_caPrefix, result.m_caPrefix);
@@ -49,11 +50,11 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   // update operation
   JsonSection json;
   json.put("test", "4567");
-  CaState request2(Name("/ndn/site1"), "123", RequestType::NEW, Status::CHALLENGE, cert1,
+  CaState request2(Name("/ndn/site1"), requestId, RequestType::NEW, Status::CHALLENGE, cert1,
                    "email", "test", time::system_clock::now(), 3, time::seconds(3600),
                   std::move(json), makeEmptyBlock(ndn::tlv::ContentType_Key), 0);
   storage.updateRequest(request2);
-  result = storage.getRequest("123");
+  result = storage.getRequest(requestId);
   BOOST_CHECK_EQUAL(request2.m_cert, result.m_cert);
   BOOST_CHECK(request2.m_status == result.m_status);
   BOOST_CHECK_EQUAL(request2.m_caPrefix, result.m_caPrefix);
@@ -61,18 +62,19 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   auto identity2 = addIdentity(Name("/ndn/site2"));
   auto key2 = identity2.getDefaultKey();
   auto cert2 = key2.getDefaultCertificate();
-  CaState request3(Name("/ndn/site2"), "456", RequestType::NEW, Status::BEFORE_CHALLENGE, cert2, makeStringBlock(ndn::tlv::ContentType_Key, "PretendItIsAKey"));
+  RequestID requestId2 = {8,7,6,5,4,3,2,1};
+  CaState request3(Name("/ndn/site2"), requestId2, RequestType::NEW, Status::BEFORE_CHALLENGE, cert2, makeStringBlock(ndn::tlv::ContentType_Key, "PretendItIsAKey"));
   storage.addRequest(request3);
 
   // list operation
   auto allRequests = storage.listAllRequests();
   BOOST_CHECK_EQUAL(allRequests.size(), 2);
 
-  storage.deleteRequest("456");
+  storage.deleteRequest(requestId2);
   allRequests = storage.listAllRequests();
   BOOST_CHECK_EQUAL(allRequests.size(), 1);
 
-  storage.deleteRequest("123");
+  storage.deleteRequest(requestId);
   allRequests = storage.listAllRequests();
   BOOST_CHECK_EQUAL(allRequests.size(), 0);
 }
@@ -86,7 +88,8 @@ BOOST_AUTO_TEST_CASE(DuplicateAdd)
     auto cert1 = key1.getDefaultCertificate();
 
     // add operation
-    CaState request1(Name("/ndn/site1"), "123", RequestType::NEW, Status::BEFORE_CHALLENGE, cert1, makeEmptyBlock(ndn::tlv::ContentType_Key));
+    RequestID requestId = {1,2,3,4,5,6,7,8};
+    CaState request1(Name("/ndn/site1"),requestId, RequestType::NEW, Status::BEFORE_CHALLENGE, cert1, makeEmptyBlock(ndn::tlv::ContentType_Key));
     BOOST_CHECK_NO_THROW(storage.addRequest(request1));
     // add again
     BOOST_CHECK_THROW(storage.addRequest(request1), std::runtime_error);
