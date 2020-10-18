@@ -29,9 +29,27 @@ ndnsec-dump-certificate XXX
 ```
 
 ## Step 3
+Stop NDNCERT CA
+```bash
+sudo systemctl stop ndncert-ca
+```
 
-stop service
+Update CA configuation file ``ca.conf`` with the output certificate just get:
+Inside ``ca.conf``, site CAs are configured by sections below:
 
-update config file
+```
+  "redirect-to":
+  [
+    {
+      "ca-prefix": "/example/site1",
+      "certificate": "Bv0CvQcwCAdleGFtcGxlCAVzaXRlMQgDS0VZCAh6af3szF4QZwgEc2VsZggJ/QAAAXT6+NCKFAkYAQIZBAA27oAV/QEmMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA43hjZT0HUFFJcqwj8lZnd/vg0NrzqvZ4jhsq1c+nv6J3Huc9Uq5jRZwhFQ8nBWT3CeFScO5FUQfNXDIDncZ4vYPFEnockOFVtvmKQ/ELwReUvjH80d1NPGrIVrD0lMRpv2sFr6NW2p7aw6bCSj3OJq7H/+QHDkAryssMZyHwTbPzMZHyYKmxR68CyCCpvLlgp8tYFT+cCrOc3lz3nROK3VFR+apgwubpvl8nbKD10QLcgMHSkLoLEy/Ksq8OH7MQhUEZDjLk/zL9baZ7MiKXtdUZCNTZk13y5z+4aT4TqumLB+obiDXmv6JAi+CkYIMf2ck2IvMV6JgxxIlv3+Ke2wIDAQABFlAbAQEcIQcfCAdleGFtcGxlCAVzaXRlMQgDS0VZCAh6af3szF4QZ/0A/Sb9AP4PMTk3MDAxMDFUMDAwMDAw/QD/DzIwNDAwOTMwVDIyNTQwNBf9AQCCSXOqUX40mAIdKCa+nnfJCGZbNowQPJp5kDnyolj5/Ek9x8czyLcX58xTsgYtiPmL5DxMgkRujRJu9INm0pUJIJRlsqhDOwsrxIjlSgwy5AeexYe7SM3rSwljLxTR4MfBw26pym9iYt8ovHXotCDE+etyKwHzXoOgzxORoPXqBGwobNOPnhDfpzHQBFOrPd8qqLAGioNNk/k2U/uyvBbLoZS4ScNVJpfbcvcmzu/A8H/VyT4234LrlISL9WpWlO8J18yzhrXchFR0ZwCoYge5rLZ4vsQhY1WqXHCsYnRa3la6Txz44EWYEBpmk12qnkPt06KAPvQ82N1CICxFb9NY"
+    }
+  ]
+```
 
-restart service
+Replace the ``ca-prefix`` and ``certificate`` in this example section with the ones in your case.
+
+Start NDNCERT CA
+```bash
+sudo systemctl start ndncert-ca
+```
