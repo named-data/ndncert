@@ -1,5 +1,11 @@
 #! /bin/bash
 
+# sudo check
+if [ "$EUID" -ne 0 ]
+  then echo "Please run as root"
+  exit
+fi
+
 echo 'Please enter the /ndn certificate:(end with Ctrl-D)'
 ROOT_CERT=$(cat | tr -d '\n')
 
