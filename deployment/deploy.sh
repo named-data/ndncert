@@ -30,6 +30,7 @@ echo
 }
 
 function generate_ca_config() {
+echo
 echo "Load the new configuration file for the CA"
 echo "Would you like to allow email challenge for this CA? [Y/N]"
 read -r allow_email_challenge
@@ -130,6 +131,13 @@ echo "What is the CA Prefix (eg. /example) you want to deploy?"
 read -r ca_prefix
 echo ""
 
+echo ""
+echo "==================================================================="
+echo "=="
+echo "== systemd config"
+echo "=="
+echo "==================================================================="
+
 echo "Do you want to install ndncert CA for systemd on this machine? [Y/N]"
 read -r systemd_install
 echo ""
@@ -167,6 +175,13 @@ echo "ndncert-ca service requires /var/lib/ndncert-ca. Will check or create the 
 sudo mkdir -p /var/lib/ndncert-ca
 sudo chown ndn /var/lib/ndncert-ca
 echo '/var/lib/ndncert-ca is ready, GOOD!'
+
+echo ""
+echo "==================================================================="
+echo "=="
+echo "== anchor certificate generation"
+echo "=="
+echo "==================================================================="
 
 echo ""
 echo "Do you want to import an exisitng safebag for $ca_prefix ? [Y/N]"
@@ -220,7 +235,21 @@ case $run_client in
              ;;
 esac
 
+echo ""
+echo "==================================================================="
+echo "=="
+echo "== configuration generation"
+echo "=="
+echo "==================================================================="
+
 generate_ca_config "$ca_prefix"
+
+echo ""
+echo "==================================================================="
+echo "=="
+echo "== done"
+echo "=="
+echo "==================================================================="
 
 echo "Do you want to start the service now? [Y/N]"
 read -r start_now
