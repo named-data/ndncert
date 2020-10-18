@@ -170,7 +170,7 @@ read -r use_safe_bag
 
 case $use_safe_bag in
              N|n)
-                   if [ "$(ndnsec list | grep " $ca_prefix$" > /dev/null 2>&1; echo $?)" -ne 0 ]; then
+                   if [ "$(HOME=/var/lib/ndncert-ca ndnsec list | grep " $ca_prefix$" > /dev/null 2>&1; echo $?)" -ne 0 ]; then
                      echo "Generating new NDN identity for $ca_prefix"
                      sudo HOME=/var/lib/ndncert-ca -u ndn ndnsec-keygen "$ca_prefix"
                    else
