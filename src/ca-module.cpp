@@ -229,10 +229,11 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
     return;
   }
   // generate salt for HKDF
-  auto saltInt = random::generateSecureWord64();
+  std::array<uint8_t, 32> salt;
+  random::generateSecureBytes(salt.data(), salt.size());
   // hkdf
   uint8_t aesKey[AES_128_KEY_LEN];
-  hkdf(ecdh.m_sharedSecret, ecdh.m_sharedSecretLen, (uint8_t*)&saltInt, sizeof(saltInt), aesKey, sizeof(aesKey));
+  hkdf(ecdh.m_sharedSecret, ecdh.m_sharedSecretLen, salt.data(), salt.size(), aesKey, sizeof(aesKey));
 
   // verify identity name
   if (!m_config.m_caItem.m_caPrefix.isPrefixOf(clientCert->getIdentity())
@@ -320,7 +321,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   result.setName(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
   result.setContent(NewRenewRevokeEncoder::encodeDataContent(myEcdhPubKeyBase64,
-                                                             std::to_string(saltInt),
+                                                             salt,
                                                              requestState,
                                                              m_config.m_caItem.m_supportedChallenges));
   m_keyChain.sign(result, signingByIdentity(m_config.m_caItem.m_caPrefix));

@@ -36,13 +36,13 @@ public:
   decodeApplicationParameters(const Block& block, RequestType requestType, std::string& ecdhPub, shared_ptr<security::Certificate>& certRequest);
 
   static Block
-  encodeDataContent(const std::string& ecdhKey, const std::string& salt,
+  encodeDataContent(const std::string& ecdhKey, const std::array<uint8_t, 32>& salt,
                     const CaState& request,
                     const std::list<std::string>& challenges);
 
   struct DecodedData {
     std::string ecdhKey;
-    uint64_t salt;
+    std::array<uint8_t, 32> salt;
     RequestID requestId;
     Status requestStatus;
     std::list<std::string> challenges;
