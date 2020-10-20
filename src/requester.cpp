@@ -20,7 +20,7 @@
 
 #include "requester.hpp"
 #include "identity-challenge/challenge-module.hpp"
-#include "detail/crypto-helper.hpp"
+#include "detail/crypto-helpers.hpp"
 #include "detail/challenge-encoder.hpp"
 #include "detail/error-encoder.hpp"
 #include "detail/info-encoder.hpp"

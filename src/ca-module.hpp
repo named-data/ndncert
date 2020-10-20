@@ -22,7 +22,7 @@
 #define NDNCERT_CA_MODULE_HPP
 
 #include "configuration.hpp"
-#include "detail/crypto-helper.hpp"
+#include "detail/crypto-helpers.hpp"
 #include "detail/ca-storage.hpp"
 
 namespace ndn {

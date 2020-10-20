@@ -22,7 +22,7 @@
 #define NDNCERT_REQUESTER_STATE_HPP
 
 #include "detail/ca-state.hpp"
-#include "detail/crypto-helper.hpp"
+#include "detail/crypto-helpers.hpp"
 #include "configuration.hpp"
 
 namespace ndn {

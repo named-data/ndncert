@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "detail/crypto-helper.hpp"
+#include "detail/crypto-helpers.hpp"
 #include "test-common.hpp"
 
 namespace ndn {

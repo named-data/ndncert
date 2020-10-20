@@ -38,17 +38,18 @@ public:
   uint8_t*
   deriveSecret(const std::string& peerKeyStr);
 
-  uint8_t m_publicKey[256];
-  size_t m_publicKeyLen;
-  uint8_t m_sharedSecret[256];
-  size_t m_sharedSecretLen;
-
 NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   uint8_t*
   deriveSecret(const uint8_t* peerkey, size_t peerKeySize);
 
   uint8_t*
   getRawSelfPubKey();
+
+public:
+  uint8_t m_publicKey[256];
+  size_t m_publicKeyLen = 0;
+  uint8_t m_sharedSecret[256];
+  size_t m_sharedSecretLen = 0;
 
 private:
   struct ECDH_CTX;
