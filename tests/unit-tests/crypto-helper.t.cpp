@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE(HmacSha256)
                               0x90, 0xb6, 0xc7, 0x3b, 0xb5, 0x0f, 0x9c, 0x31,
                               0x22, 0xec, 0x84, 0x4a, 0xd7, 0xc2, 0xb3, 0xe5};
   uint8_t result[32];
-  hmac_sha256(input, sizeof(input), salt, sizeof(salt), result);
+  hmacSha256(input, sizeof(input), salt, sizeof(salt), result);
   BOOST_CHECK_EQUAL_COLLECTIONS(result, result + sizeof(result), expected,
                                 expected + sizeof(expected));
 }
@@ -206,12 +206,12 @@ BOOST_AUTO_TEST_CASE(AesGcm1)
   uint8_t ciphertext[256] = {0};
   uint8_t tag[16] = {0};
   const uint8_t empty_buffer[1] = {0};
-  int size = aes_gcm_128_encrypt(empty_buffer, 0, empty_buffer, 0, key, iv, ciphertext, tag);
+  int size = aesGcm128Encrypt(empty_buffer, 0, empty_buffer, 0, key, iv, ciphertext, tag);
   BOOST_CHECK(size == 0);
   BOOST_CHECK_EQUAL_COLLECTIONS(tag, tag + 16, expected_tag, expected_tag + sizeof(expected_tag));
 
   uint8_t decrypted[256] = {0};
-  size = aes_gcm_128_decrypt(ciphertext, size, empty_buffer, 0, tag, key, iv, decrypted);
+  size = aesGcm128Decrypt(ciphertext, size, empty_buffer, 0, tag, key, iv, decrypted);
   BOOST_CHECK(size == 0);
 }
 
@@ -239,12 +239,12 @@ BOOST_AUTO_TEST_CASE(AesGcm2)
   uint8_t ciphertext[256] = {0};
   uint8_t tag[16] = {0};
   const uint8_t empty_buffer[1] = {0};
-  int size = aes_gcm_128_encrypt(empty_buffer, 0, aad, sizeof(aad), key, iv, ciphertext, tag);
+  int size = aesGcm128Encrypt(empty_buffer, 0, aad, sizeof(aad), key, iv, ciphertext, tag);
   BOOST_CHECK(size == 0);
   BOOST_CHECK_EQUAL_COLLECTIONS(tag, tag + 16, expected_tag, expected_tag + sizeof(expected_tag));
 
   uint8_t decrypted[256] = {0};
-  size = aes_gcm_128_decrypt(ciphertext, size, aad, sizeof(aad), tag, key, iv, decrypted);
+  size = aesGcm128Decrypt(ciphertext, size, aad, sizeof(aad), tag, key, iv, decrypted);
   BOOST_CHECK(size == 0);
 }
 
@@ -283,13 +283,13 @@ BOOST_AUTO_TEST_CASE(AesGcm3)
 
   uint8_t ciphertext[256] = {0};
   uint8_t tag[16] = {0};
-  int size = aes_gcm_128_encrypt(plaintext, sizeof(plaintext), aad, sizeof(aad), key, iv, ciphertext, tag);
+  int size = aesGcm128Encrypt(plaintext, sizeof(plaintext), aad, sizeof(aad), key, iv, ciphertext, tag);
   BOOST_CHECK_EQUAL_COLLECTIONS(ciphertext, ciphertext + size,
                                 expected_ciphertext, expected_ciphertext + sizeof(expected_ciphertext));
   BOOST_CHECK_EQUAL_COLLECTIONS(tag, tag + 16, expected_tag, expected_tag + sizeof(expected_tag));
 
   uint8_t decrypted[256] = {0};
-  size = aes_gcm_128_decrypt(ciphertext, size, aad, sizeof(aad), tag, key, iv, decrypted);
+  size = aesGcm128Decrypt(ciphertext, size, aad, sizeof(aad), tag, key, iv, decrypted);
   BOOST_CHECK_EQUAL_COLLECTIONS(decrypted, decrypted + size,
                                 plaintext, plaintext + sizeof(plaintext));
 }

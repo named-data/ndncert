@@ -42,7 +42,7 @@ struct ECDHState::ECDH_CTX
 {
   ~ECDH_CTX()
   {
-    // Contexts
+    // contexts
     if (ctx_params != nullptr) {
       EVP_PKEY_CTX_free(ctx_params);
     }
@@ -69,34 +69,34 @@ struct ECDHState::ECDH_CTX
 
 ECDHState::ECDHState()
 {
-  context = std::make_unique<ECDH_CTX>();
+  m_context = std::make_unique<ECDH_CTX>();
   auto EC_NID = NID_X9_62_prime256v1;
 
-  if (nullptr == (context->ctx_params = EVP_PKEY_CTX_new_id(EVP_PKEY_EC, nullptr))) {
+  if (nullptr == (m_context->ctx_params = EVP_PKEY_CTX_new_id(EVP_PKEY_EC, nullptr))) {
     NDN_THROW(std::runtime_error("Could not create context."));
   }
-  if (EVP_PKEY_paramgen_init(context->ctx_params) != 1) {
-    context.reset();
+  if (EVP_PKEY_paramgen_init(m_context->ctx_params) != 1) {
+    m_context.reset();
     NDN_THROW(std::runtime_error("Could not initialize parameter generation."));
   }
-  if (1 != EVP_PKEY_CTX_set_ec_paramgen_curve_nid(context->ctx_params, EC_NID)) {
-    context.reset();
+  if (1 != EVP_PKEY_CTX_set_ec_paramgen_curve_nid(m_context->ctx_params, EC_NID)) {
+    m_context.reset();
     NDN_THROW(std::runtime_error("Likely unknown elliptical curve ID specified."));
   }
-  if (!EVP_PKEY_paramgen(context->ctx_params, &context->params)) {
-    context.reset();
+  if (!EVP_PKEY_paramgen(m_context->ctx_params, &m_context->params)) {
+    m_context.reset();
     NDN_THROW(std::runtime_error("Could not create parameter object parameters."));
   }
-  if (nullptr == (context->ctx_keygen = EVP_PKEY_CTX_new(context->params, nullptr))) {
-    context.reset();
+  if (nullptr == (m_context->ctx_keygen = EVP_PKEY_CTX_new(m_context->params, nullptr))) {
+    m_context.reset();
     NDN_THROW(std::runtime_error("Could not create the context for the key generation"));
   }
-  if (1 != EVP_PKEY_keygen_init(context->ctx_keygen)) {
-    context.reset();
+  if (1 != EVP_PKEY_keygen_init(m_context->ctx_keygen)) {
+    m_context.reset();
     NDN_THROW(std::runtime_error("Could not init context for key generation."));
   }
-  if (1 != EVP_PKEY_keygen(context->ctx_keygen, &context->privkey)) {
-    context.reset();
+  if (1 != EVP_PKEY_keygen(m_context->ctx_keygen, &m_context->privkey)) {
+    m_context.reset();
     NDN_THROW(std::runtime_error("Could not generate DHE keys in final step"));
   }
 }
@@ -107,9 +107,9 @@ ECDHState::~ECDHState()
 uint8_t*
 ECDHState::getRawSelfPubKey()
 {
-  auto privECKey = EVP_PKEY_get1_EC_KEY(context->privkey);
+  auto privECKey = EVP_PKEY_get1_EC_KEY(m_context->privkey);
   if (privECKey == nullptr) {
-    context.reset();
+    m_context.reset();
     NDN_THROW(std::runtime_error("Could not get key when calling EVP_PKEY_get1_EC_KEY()."));
   }
   auto ecPoint = EC_KEY_get0_public_key(privECKey);
@@ -118,7 +118,7 @@ ECDHState::getRawSelfPubKey()
                                       m_publicKey, sizeof(m_publicKey), nullptr);
   EC_KEY_free(privECKey);
   if (m_publicKeyLen == 0) {
-    context.reset();
+    m_context.reset();
     NDN_THROW(std::runtime_error("Could not convert EC_POINTS to octet string when calling EC_POINT_point2oct."));
   }
   return m_publicKey;
@@ -139,9 +139,9 @@ ECDHState::getBase64PubKey()
 uint8_t*
 ECDHState::deriveSecret(const uint8_t* peerkey, size_t peerKeySize)
 {
-  auto privECKey = EVP_PKEY_get1_EC_KEY(context->privkey);
+  auto privECKey = EVP_PKEY_get1_EC_KEY(m_context->privkey);
   if (privECKey == nullptr) {
-    context.reset();
+    m_context.reset();
     NDN_THROW(std::runtime_error("Could not get key when calling EVP_PKEY_get1_EC_KEY()"));
   }
   auto group = EC_KEY_get0_group(privECKey);
@@ -150,14 +150,14 @@ ECDHState::deriveSecret(const uint8_t* peerkey, size_t peerKeySize)
   if (result == 0) {
     EC_POINT_free(peerPoint);
     EC_KEY_free(privECKey);
-    context.reset();
+    m_context.reset();
     NDN_THROW(std::runtime_error("Cannot convert peer's key into a EC point when calling EC_POINT_oct2point()"));
   }
   result = ECDH_compute_key(m_sharedSecret, sizeof(m_sharedSecret), peerPoint, privECKey, nullptr);
   if (result == -1) {
     EC_POINT_free(peerPoint);
     EC_KEY_free(privECKey);
-    context.reset();
+    m_context.reset();
     NDN_THROW(std::runtime_error("Cannot generate ECDH secret when calling ECDH_compute_key()"));
   }
   m_sharedSecretLen = static_cast<size_t>(result);
@@ -177,12 +177,12 @@ ECDHState::deriveSecret(const std::string& peerKeyStr)
 }
 
 void
-hmac_sha256(const uint8_t* data, size_t data_length,
-            const uint8_t* key, size_t key_length,
+hmacSha256(const uint8_t* data, size_t dataLen,
+            const uint8_t* key, size_t keyLen,
             uint8_t* result)
 {
-  auto ret = HMAC(EVP_sha256(), key, key_length,
-                  static_cast<const unsigned char*>(data), data_length,
+  auto ret = HMAC(EVP_sha256(), key, keyLen,
+                  static_cast<const unsigned char*>(data), dataLen,
                   static_cast<unsigned char*>(result), nullptr);
   if (ret == nullptr) {
     NDN_THROW(std::runtime_error("Error computing HMAC when calling HMAC()"));
@@ -190,9 +190,9 @@ hmac_sha256(const uint8_t* data, size_t data_length,
 }
 
 size_t
-hkdf(const uint8_t* secret, size_t secret_len, const uint8_t* salt,
-     size_t salt_len, uint8_t* output, size_t output_len,
-     const uint8_t* info, size_t info_len)
+hkdf(const uint8_t* secret, size_t secretLen, const uint8_t* salt,
+     size_t saltLen, uint8_t* output, size_t outputLen,
+     const uint8_t* info, size_t infoLen)
 {
   EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, nullptr);
   if (EVP_PKEY_derive_init(pctx) <= 0) {
@@ -203,19 +203,19 @@ hkdf(const uint8_t* secret, size_t secret_len, const uint8_t* salt,
     EVP_PKEY_CTX_free(pctx);
     NDN_THROW(std::runtime_error("HKDF: Cannot set md when calling EVP_PKEY_CTX_set_hkdf_md()."));
   }
-  if (EVP_PKEY_CTX_set1_hkdf_salt(pctx, salt, salt_len) <= 0) {
+  if (EVP_PKEY_CTX_set1_hkdf_salt(pctx, salt, saltLen) <= 0) {
     EVP_PKEY_CTX_free(pctx);
     NDN_THROW(std::runtime_error("HKDF: Cannot set salt when calling EVP_PKEY_CTX_set1_hkdf_salt()."));
   }
-  if (EVP_PKEY_CTX_set1_hkdf_key(pctx, secret, secret_len) <= 0) {
+  if (EVP_PKEY_CTX_set1_hkdf_key(pctx, secret, secretLen) <= 0) {
     EVP_PKEY_CTX_free(pctx);
     NDN_THROW(std::runtime_error("HKDF: Cannot set secret when calling EVP_PKEY_CTX_set1_hkdf_key()."));
   }
-  if (EVP_PKEY_CTX_add1_hkdf_info(pctx, info, info_len) <= 0) {
+  if (EVP_PKEY_CTX_add1_hkdf_info(pctx, info, infoLen) <= 0) {
     EVP_PKEY_CTX_free(pctx);
     NDN_THROW(std::runtime_error("HKDF: Cannot set info when calling EVP_PKEY_CTX_add1_hkdf_info()."));
   }
-  size_t outLen = output_len;
+  size_t outLen = outputLen;
   if (EVP_PKEY_derive(pctx, output, &outLen) <= 0) {
     EVP_PKEY_CTX_free(pctx);
     NDN_THROW(std::runtime_error("HKDF: Cannot derive result when calling EVP_PKEY_derive()."));
@@ -225,12 +225,12 @@ hkdf(const uint8_t* secret, size_t secret_len, const uint8_t* salt,
 }
 
 int
-aes_gcm_128_encrypt(const uint8_t* plaintext, size_t plaintext_len, const uint8_t* associated, size_t associated_len,
+aesGcm128Encrypt(const uint8_t* plaintext, size_t plaintextLen, const uint8_t* associated, size_t associatedLen,
                     const uint8_t* key, const uint8_t* iv, uint8_t* ciphertext, uint8_t* tag)
 {
   EVP_CIPHER_CTX* ctx;
   int len;
-  int ciphertext_len;
+  int ciphertextLen;
   if (!(ctx = EVP_CIPHER_CTX_new())) {
     NDN_THROW(std::runtime_error("Cannot create and initialise the context when calling EVP_CIPHER_CTX_new()"));
   }
@@ -246,35 +246,35 @@ aes_gcm_128_encrypt(const uint8_t* plaintext, size_t plaintext_len, const uint8_
     EVP_CIPHER_CTX_free(ctx);
     NDN_THROW(std::runtime_error("Cannot initialize key and IV when calling EVP_EncryptInit_ex()"));
   }
-  if (1 != EVP_EncryptUpdate(ctx, nullptr, &len, associated, associated_len)) {
+  if (1 != EVP_EncryptUpdate(ctx, nullptr, &len, associated, associatedLen)) {
     EVP_CIPHER_CTX_free(ctx);
     NDN_THROW(std::runtime_error("Cannot set associated authentication data when calling EVP_EncryptUpdate()"));
   }
-  if (1 != EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len)) {
+  if (1 != EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintextLen)) {
     EVP_CIPHER_CTX_free(ctx);
     NDN_THROW(std::runtime_error("Cannot encrypt when calling EVP_EncryptUpdate()"));
   }
-  ciphertext_len = len;
+  ciphertextLen = len;
   if (1 != EVP_EncryptFinal_ex(ctx, ciphertext + len, &len)) {
     EVP_CIPHER_CTX_free(ctx);
     NDN_THROW(std::runtime_error("Cannot finalise the encryption when calling EVP_EncryptFinal_ex()"));
   }
-  ciphertext_len += len;
+  ciphertextLen += len;
   if (1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, 16, tag)) {
     EVP_CIPHER_CTX_free(ctx);
     NDN_THROW(std::runtime_error("Cannot get tag when calling EVP_CIPHER_CTX_ctrl()"));
   }
   EVP_CIPHER_CTX_free(ctx);
-  return ciphertext_len;
+  return ciphertextLen;
 }
 
 int
-aes_gcm_128_decrypt(const uint8_t* ciphertext, size_t ciphertext_len, const uint8_t* associated, size_t associated_len,
+aesGcm128Decrypt(const uint8_t* ciphertext, size_t ciphertextLen, const uint8_t* associated, size_t associatedLen,
                     const uint8_t* tag, const uint8_t* key, const uint8_t* iv, uint8_t* plaintext)
 {
   EVP_CIPHER_CTX* ctx;
   int len;
-  int plaintext_len;
+  int plaintextLen;
   int ret;
   if (!(ctx = EVP_CIPHER_CTX_new())) {
     NDN_THROW(std::runtime_error("Cannot create and initialise the context when calling EVP_CIPHER_CTX_new()"));
@@ -291,15 +291,15 @@ aes_gcm_128_decrypt(const uint8_t* ciphertext, size_t ciphertext_len, const uint
     EVP_CIPHER_CTX_free(ctx);
     NDN_THROW(std::runtime_error("Cannot initialise key and IV when calling EVP_DecryptInit_ex()"));
   }
-  if (!EVP_DecryptUpdate(ctx, nullptr, &len, associated, associated_len)) {
+  if (!EVP_DecryptUpdate(ctx, nullptr, &len, associated, associatedLen)) {
     EVP_CIPHER_CTX_free(ctx);
     NDN_THROW(std::runtime_error("Cannot set associated authentication data when calling EVP_EncryptUpdate()"));
   }
-  if (!EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len)) {
+  if (!EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertextLen)) {
     EVP_CIPHER_CTX_free(ctx);
     NDN_THROW(std::runtime_error("Cannot decrypt when calling EVP_DecryptUpdate()"));
   }
-  plaintext_len = len;
+  plaintextLen = len;
   if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, 16, (void*)tag)) {
     EVP_CIPHER_CTX_free(ctx);
     NDN_THROW(std::runtime_error("Cannot set tag value when calling EVP_CIPHER_CTX_ctrl"));
@@ -307,8 +307,8 @@ aes_gcm_128_decrypt(const uint8_t* ciphertext, size_t ciphertext_len, const uint
   ret = EVP_DecryptFinal_ex(ctx, plaintext + len, &len);
   EVP_CIPHER_CTX_free(ctx);
   if (ret > 0) {
-    plaintext_len += len;
-    return plaintext_len;
+    plaintextLen += len;
+    return plaintextLen;
   }
   else {
     return -1;
@@ -342,7 +342,7 @@ encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key, const uint8_t* pa
 
   Buffer encryptedPayload(payloadSize);
   uint8_t tag[16];
-  size_t encryptedPayloadLen = aes_gcm_128_encrypt(payload, payloadSize, associatedData, associatedDataSize,
+  size_t encryptedPayloadLen = aesGcm128Encrypt(payload, payloadSize, associatedData, associatedDataSize,
                                                    key, iv.data(), encryptedPayload.data(), tag);
   auto content = makeEmptyBlock(tlvType);
   content.push_back(makeBinaryBlock(tlv::InitializationVector, iv.data(), iv.size()));
@@ -357,7 +357,7 @@ decodeBlockWithAesGcm128(const Block& block, const uint8_t* key, const uint8_t* 
 {
   block.parse();
   Buffer result(block.get(tlv::EncryptedPayload).value_size());
-  int resultLen = aes_gcm_128_decrypt(block.get(tlv::EncryptedPayload).value(),
+  int resultLen = aesGcm128Decrypt(block.get(tlv::EncryptedPayload).value(),
                                       block.get(tlv::EncryptedPayload).value_size(),
                                       associatedData, associatedDataSize, block.get(tlv::AuthenticationTag).value(),
                                       key, block.get(tlv::InitializationVector).value(), result.data());

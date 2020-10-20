@@ -58,50 +58,50 @@ public:
 
 private:
   struct ECDH_CTX;
-  unique_ptr<ECDH_CTX> context;
+  unique_ptr<ECDH_CTX> m_context;
 };
 
 /**
  * @brief HMAC based key derivation function (HKDF).
  *
  * @param secret The input to the HKDF.
- * @param secret_len The length of the secret.
+ * @param secretLen The length of the secret.
  * @param salt The salt used in HKDF.
- * @param salt_len The length of the salt.
+ * @param saltLen The length of the salt.
  * @param output The output of the HKDF.
- * @param output_len The length of expected output.
+ * @param outputLen The length of expected output.
  * @param info The additional information used in HKDF.
- * @param info_len The length of the additional information.
+ * @param infoLen The length of the additional information.
  * @return size_t The length of the derived key if successful.
  */
 size_t
-hkdf(const uint8_t* secret, size_t secret_len,
-     const uint8_t* salt, size_t salt_len,
-     uint8_t* output, size_t output_len,
-     const uint8_t* info = nullptr, size_t info_len = 0);
+hkdf(const uint8_t* secret, size_t secretLen,
+     const uint8_t* salt, size_t saltLen,
+     uint8_t* output, size_t outputLen,
+     const uint8_t* info = nullptr, size_t infoLen = 0);
 
 /**
  * @brief HMAC based on SHA-256.
  *
  * @param data The intput array to hmac.
- * @param data_length The length of the input array.
+ * @param dataLen The length of the input array.
  * @param key The HMAC key.
- * @param key_length The length of the HMAC key.
+ * @param keyLen The length of the HMAC key.
  * @param result The result of the HMAC. Enough memory (32 Bytes) must be allocated beforehands.
  * @throw runtime_error when an error occurred in the underlying HMAC.
  */
 void
-hmac_sha256(const uint8_t* data, size_t data_length,
-            const uint8_t* key, size_t key_length,
-            uint8_t* result);
+hmacSha256(const uint8_t* data, size_t dataLen,
+           const uint8_t* key, size_t keyLen,
+           uint8_t* result);
 
 /**
  * @brief Authenticated GCM 128 Encryption with associated data.
  *
  * @param plaintext The plaintext.
- * @param plaintext_len The size of plaintext.
+ * @param plaintextLen The size of plaintext.
  * @param associated The associated authentication data.
- * @param associated_len The size of associated authentication data.
+ * @param associatedLen The size of associated authentication data.
  * @param key 16 bytes AES key.
  * @param iv 12 bytes IV.
  * @param ciphertext The output and enough memory must be allocated beforehands.
@@ -110,16 +110,16 @@ hmac_sha256(const uint8_t* data, size_t data_length,
  * @throw runtime_error When there is an error in the process of encryption.
  */
 int
-aes_gcm_128_encrypt(const uint8_t* plaintext, size_t plaintext_len, const uint8_t* associated, size_t associated_len,
-                    const uint8_t* key, const uint8_t* iv, uint8_t* ciphertext, uint8_t* tag);
+aesGcm128Encrypt(const uint8_t* plaintext, size_t plaintextLen, const uint8_t* associated, size_t associatedLen,
+                 const uint8_t* key, const uint8_t* iv, uint8_t* ciphertext, uint8_t* tag);
 
 /**
  * @brief Authenticated GCM 128 Decryption with associated data.
  *
  * @param ciphertext The ciphertext.
- * @param ciphertext_len The size of ciphertext.
+ * @param ciphertextLen The size of ciphertext.
  * @param associated The associated authentication data.
- * @param associated_len The size of associated authentication data.
+ * @param associatedLen The size of associated authentication data.
  * @param tag 16 bytes tag.
  * @param key 16 bytes AES key.
  * @param iv 12 bytes IV.
@@ -128,8 +128,8 @@ aes_gcm_128_encrypt(const uint8_t* plaintext, size_t plaintext_len, const uint8_
  * @throw runtime_error When there is an error in the process of encryption.
  */
 int
-aes_gcm_128_decrypt(const uint8_t* ciphertext, size_t ciphertext_len, const uint8_t* associated, size_t associated_len,
-                    const uint8_t* tag, const uint8_t* key, const uint8_t* iv, uint8_t* plaintext);
+aesGcm128Decrypt(const uint8_t* ciphertext, size_t ciphertextLen, const uint8_t* associated, size_t associatedLen,
+                 const uint8_t* tag, const uint8_t* key, const uint8_t* iv, uint8_t* plaintext);
 
 /**
  * @brief Encode the payload into TLV block with Authenticated GCM 128 Encryption.
