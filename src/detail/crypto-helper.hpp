@@ -43,7 +43,7 @@ public:
   uint8_t m_sharedSecret[256];
   size_t m_sharedSecretLen;
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   uint8_t*
   deriveSecret(const uint8_t* peerkey, size_t peerKeySize);
 

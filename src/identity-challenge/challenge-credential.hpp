@@ -71,11 +71,11 @@ public:
   static const std::string PARAMETER_KEY_CREDENTIAL_CERT;
   static const std::string PARAMETER_KEY_PROOF_OF_PRIVATE_KEY;
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
   parseConfigFile();
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::list<security::Certificate> m_trustAnchors;
   std::string m_configFile;
 };

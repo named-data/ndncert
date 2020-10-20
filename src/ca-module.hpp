@@ -54,7 +54,7 @@ public:
   Data
   getCaProfileData();
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
   onCaProfileDiscovery(const Interest& request);
 
@@ -82,7 +82,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   Data
   generateErrorDataPacket(const Name& name, ErrorCode error, const std::string& errorInfo);
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   Face& m_face;
   CaConfig m_config;
   unique_ptr<CaStorage> m_storage;

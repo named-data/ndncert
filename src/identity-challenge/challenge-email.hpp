@@ -75,7 +75,7 @@ public:
   static const std::string PARAMETER_KEY_EMAIL;
   static const std::string PARAMETER_KEY_CODE;
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   static bool
   isValidEmailAddress(const std::string& emailAddress);
 
