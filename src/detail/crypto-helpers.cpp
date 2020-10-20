@@ -115,7 +115,7 @@ ECDHState::getRawSelfPubKey()
   auto ecPoint = EC_KEY_get0_public_key(privECKey);
   const EC_GROUP* group = EC_KEY_get0_group(privECKey);
   m_publicKeyLen = EC_POINT_point2oct(group, ecPoint, POINT_CONVERSION_COMPRESSED,
-                                      m_publicKey, 256, nullptr);
+                                      m_publicKey, sizeof(m_publicKey), nullptr);
   EC_KEY_free(privECKey);
   if (m_publicKeyLen == 0) {
     context.reset();
@@ -153,7 +153,7 @@ ECDHState::deriveSecret(const uint8_t* peerkey, size_t peerKeySize)
     context.reset();
     NDN_THROW(std::runtime_error("Cannot convert peer's key into a EC point when calling EC_POINT_oct2point()"));
   }
-  result = ECDH_compute_key(m_sharedSecret, 256, peerPoint, privECKey, nullptr);
+  result = ECDH_compute_key(m_sharedSecret, sizeof(m_sharedSecret), peerPoint, privECKey, nullptr);
   if (result == -1) {
     EC_POINT_free(peerPoint);
     EC_KEY_free(privECKey);
@@ -181,14 +181,15 @@ hmac_sha256(const uint8_t* data, size_t data_length,
             const uint8_t* key, size_t key_length,
             uint8_t* result)
 {
-  auto ret = HMAC(EVP_sha256(), key, key_length, (unsigned char*)data, data_length,
-                  (unsigned char*)result, nullptr);
+  auto ret = HMAC(EVP_sha256(), key, key_length,
+                  static_cast<const unsigned char*>(data), data_length,
+                  static_cast<unsigned char*>(result), nullptr);
   if (ret == nullptr) {
     NDN_THROW(std::runtime_error("Error computing HMAC when calling HMAC()"));
   }
 }
 
-int
+size_t
 hkdf(const uint8_t* secret, size_t secret_len, const uint8_t* salt,
      size_t salt_len, uint8_t* output, size_t output_len,
      const uint8_t* info, size_t info_len)
@@ -220,7 +221,7 @@ hkdf(const uint8_t* secret, size_t secret_len, const uint8_t* salt,
     NDN_THROW(std::runtime_error("HKDF: Cannot derive result when calling EVP_PKEY_derive()."));
   }
   EVP_PKEY_CTX_free(pctx);
-  return (int)outLen;
+  return outLen;
 }
 
 int
@@ -303,29 +304,24 @@ aes_gcm_128_decrypt(const uint8_t* ciphertext, size_t ciphertext_len, const uint
     EVP_CIPHER_CTX_free(ctx);
     NDN_THROW(std::runtime_error("Cannot set tag value when calling EVP_CIPHER_CTX_ctrl"));
   }
-  // Finalise the decryption. A positive return value indicates success,
-  // anything else is a failure - the plaintext is not trustworthy.
   ret = EVP_DecryptFinal_ex(ctx, plaintext + len, &len);
-  // Clean up
   EVP_CIPHER_CTX_free(ctx);
   if (ret > 0) {
-    // Success
     plaintext_len += len;
     return plaintext_len;
   }
   else {
-    // Verify failed
     return -1;
   }
 }
 
 Block
-encodeBlockWithAesGcm128(uint32_t tlv_type, const uint8_t* key, const uint8_t* payload, size_t payloadSize,
+encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key, const uint8_t* payload, size_t payloadSize,
                          const uint8_t* associatedData, size_t associatedDataSize, uint32_t& counter)
 {
   Buffer iv(12);
   random::generateSecureBytes(iv.data(), iv.size());
-  if (tlv_type == ndn::tlv::ApplicationParameters) {
+  if (tlvType == ndn::tlv::ApplicationParameters) {
     // requester
     iv[0] &= ~(1UL << 7);
   }
@@ -333,16 +329,22 @@ encodeBlockWithAesGcm128(uint32_t tlv_type, const uint8_t* key, const uint8_t* p
     // CA
     iv[0] |= 1UL << 7;
   }
-  uint32_t temp = counter;
-  boost::endian::native_to_big_inplace(temp);
+  uint32_t temp = boost::endian::native_to_big(counter);
   std::memcpy(&iv[8], reinterpret_cast<const uint8_t*>(&temp), 4);
-  counter += std::ceil(payloadSize / 8);
+  uint32_t increment = std::ceil((payloadSize + 16 - 1)/16);
+  if (std::numeric_limits<uint32_t>::max() - counter < increment) {
+    // simply set counter to be 0. Will not hurt the property of being unique.
+    counter = 0;
+  }
+  else {
+    counter += increment;
+  }
 
   Buffer encryptedPayload(payloadSize);
   uint8_t tag[16];
   size_t encryptedPayloadLen = aes_gcm_128_encrypt(payload, payloadSize, associatedData, associatedDataSize,
                                                    key, iv.data(), encryptedPayload.data(), tag);
-  auto content = makeEmptyBlock(tlv_type);
+  auto content = makeEmptyBlock(tlvType);
   content.push_back(makeBinaryBlock(tlv::InitializationVector, iv.data(), iv.size()));
   content.push_back(makeBinaryBlock(tlv::AuthenticationTag, tag, 16));
   content.push_back(makeBinaryBlock(tlv::EncryptedPayload, encryptedPayload.data(), encryptedPayloadLen));

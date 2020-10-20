@@ -18,14 +18,19 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_PROTOCOL_DETAIL_CRYPTO_HELPER_HPP
-#define NDNCERT_PROTOCOL_DETAIL_CRYPTO_HELPER_HPP
+#ifndef NDNCERT_DETAIL_CRYPTO_HELPER_HPP
+#define NDNCERT_DETAIL_CRYPTO_HELPER_HPP
 
 #include "ndncert-common.hpp"
 
 namespace ndn {
 namespace ndncert {
 
+/**
+ * @brief State for ECDH.
+ *
+ * The ECDH is based on prime256v1.
+ */
 class ECDHState
 {
 public:
@@ -67,9 +72,9 @@ private:
  * @param output_len The length of expected output.
  * @param info The additional information used in HKDF.
  * @param info_len The length of the additional information.
- * @return int The length of the derived key if successful, -1 if failed.
+ * @return size_t The length of the derived key if successful.
  */
-int
+size_t
 hkdf(const uint8_t* secret, size_t secret_len,
      const uint8_t* salt, size_t salt_len,
      uint8_t* output, size_t output_len,
@@ -135,11 +140,12 @@ aes_gcm_128_decrypt(const uint8_t* ciphertext, size_t ciphertext_len, const uint
  * @param payloadSize The size of the plaintext payload.
  * @param associatedData The associated data used for authentication.
  * @param associatedDataSize The size of associated data.
- * @param counter The counter of blocks that have been encrypted by the requester/CA.
+ * @param counter An opaque counter that must be passed to subsequent invocations of this function
+ *                with the same @param key.
  * @return Block The TLV block with @param tlv_type TLV TYPE.
  */
 Block
-encodeBlockWithAesGcm128(uint32_t tlv_type, const uint8_t* key, const uint8_t* payload, size_t payloadSize,
+encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key, const uint8_t* payload, size_t payloadSize,
                          const uint8_t* associatedData, size_t associatedDataSize, uint32_t& counter);
 
 /**
@@ -158,4 +164,4 @@ decodeBlockWithAesGcm128(const Block& block, const uint8_t* key,
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_PROTOCOL_DETAIL_CRYPTO_HELPER_HPP
+#endif // NDNCERT_DETAIL_CRYPTO_HELPER_HPP

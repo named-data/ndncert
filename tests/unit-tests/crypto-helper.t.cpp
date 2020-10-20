@@ -309,7 +309,7 @@ BOOST_AUTO_TEST_CASE(AesIV)
   BOOST_CHECK_EQUAL(ivBuf.size(), 12);
   BOOST_CHECK(ivBuf[0] >= 128);
   BOOST_CHECK_EQUAL(ivBuf[8] + ivBuf[9] + ivBuf[10] + ivBuf[11], 0);
-  BOOST_CHECK_EQUAL(counter, 11);
+  BOOST_CHECK_EQUAL(counter, 6);
   counter = 300;
   block = encodeBlockWithAesGcm128(ndn::tlv::ApplicationParameters, key, (uint8_t*)plaintext.c_str(), plaintext.size(),
                                    (uint8_t*)associatedData.c_str(), associatedData.size(), counter);
@@ -321,7 +321,7 @@ BOOST_AUTO_TEST_CASE(AesIV)
   BOOST_CHECK_EQUAL(ivBuf2[8] + ivBuf2[9], 0);
   BOOST_CHECK_EQUAL(ivBuf2[10], 1);
   BOOST_CHECK_EQUAL(ivBuf2[11], 44);
-  BOOST_CHECK_EQUAL(counter, 311);
+  BOOST_CHECK_EQUAL(counter, 306);
 }
 
 BOOST_AUTO_TEST_CASE(BlockEncodingDecoding)
