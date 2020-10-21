@@ -59,7 +59,7 @@ ECDHState::ECDHState()
     NDN_THROW(std::runtime_error("Could not create parameter object parameters"));
   }
   // key generation context
-  EVP_PKEY_CTX *ctx_keygen = EVP_PKEY_CTX_new(params, nullptr);
+  EVP_PKEY_CTX* ctx_keygen = EVP_PKEY_CTX_new(params, nullptr);
   if (ctx_keygen == nullptr) {
     EVP_PKEY_free(params);
     EVP_PKEY_CTX_free(ctx_params);
@@ -204,7 +204,7 @@ hkdf(const uint8_t* secret, size_t secretLen, const uint8_t* salt,
      size_t saltLen, uint8_t* output, size_t outputLen,
      const uint8_t* info, size_t infoLen)
 {
-  EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, nullptr);
+  EVP_PKEY_CTX* pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, nullptr);
   if (EVP_PKEY_derive_init(pctx) <= 0) {
     EVP_PKEY_CTX_free(pctx);
     NDN_THROW(std::runtime_error("HKDF: Cannot init ctx when calling EVP_PKEY_derive_init()"));
@@ -236,7 +236,7 @@ hkdf(const uint8_t* secret, size_t secretLen, const uint8_t* salt,
 
 size_t
 aesGcm128Encrypt(const uint8_t* plaintext, size_t plaintextLen, const uint8_t* associated, size_t associatedLen,
-                    const uint8_t* key, const uint8_t* iv, uint8_t* ciphertext, uint8_t* tag)
+                 const uint8_t* key, const uint8_t* iv, uint8_t* ciphertext, uint8_t* tag)
 {
   EVP_CIPHER_CTX* ctx;
   int len;
@@ -280,7 +280,7 @@ aesGcm128Encrypt(const uint8_t* plaintext, size_t plaintextLen, const uint8_t* a
 
 size_t
 aesGcm128Decrypt(const uint8_t* ciphertext, size_t ciphertextLen, const uint8_t* associated, size_t associatedLen,
-                    const uint8_t* tag, const uint8_t* key, const uint8_t* iv, uint8_t* plaintext)
+                 const uint8_t* tag, const uint8_t* key, const uint8_t* iv, uint8_t* plaintext)
 {
   EVP_CIPHER_CTX* ctx;
   int len;
@@ -354,7 +354,7 @@ encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key, const uint8_t* pa
   Buffer encryptedPayload(payloadSize);
   uint8_t tag[16];
   size_t encryptedPayloadLen = aesGcm128Encrypt(payload, payloadSize, associatedData, associatedDataSize,
-                                                   key, iv.data(), encryptedPayload.data(), tag);
+                                                key, iv.data(), encryptedPayload.data(), tag);
   auto content = makeEmptyBlock(tlvType);
   content.push_back(makeBinaryBlock(tlv::InitializationVector, iv.data(), iv.size()));
   content.push_back(makeBinaryBlock(tlv::AuthenticationTag, tag, 16));
@@ -370,11 +370,11 @@ decodeBlockWithAesGcm128(const Block& block, const uint8_t* key, const uint8_t* 
   //   https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3#242-aes-gcm-encryption
   block.parse();
   Buffer result(block.get(tlv::EncryptedPayload).value_size());
-  int resultLen = aesGcm128Decrypt(block.get(tlv::EncryptedPayload).value(),
-                                      block.get(tlv::EncryptedPayload).value_size(),
-                                      associatedData, associatedDataSize, block.get(tlv::AuthenticationTag).value(),
-                                      key, block.get(tlv::InitializationVector).value(), result.data());
-  if (resultLen == -1 || resultLen != (int)block.get(tlv::EncryptedPayload).value_size()) {
+  auto resultLen = aesGcm128Decrypt(block.get(tlv::EncryptedPayload).value(),
+                                    block.get(tlv::EncryptedPayload).value_size(),
+                                    associatedData, associatedDataSize, block.get(tlv::AuthenticationTag).value(),
+                                    key, block.get(tlv::InitializationVector).value(), result.data());
+  if (resultLen == -1 || resultLen != block.get(tlv::EncryptedPayload).value_size()) {
     return Buffer();
   }
   return result;
