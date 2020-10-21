@@ -30,52 +30,47 @@ BOOST_AUTO_TEST_SUITE(TestCryptoHelper)
 BOOST_AUTO_TEST_CASE(EcdhWithRawKey)
 {
   ECDHState aliceState;
-  auto alicePub = aliceState.getRawSelfPubKey();
-  BOOST_CHECK(aliceState.m_publicKeyLen != 0);
+  auto alicePub = aliceState.getSelfPubKey();
+  BOOST_CHECK(!alicePub.empty());
 
   ECDHState bobState;
-  auto bobPub = bobState.getRawSelfPubKey();
-  BOOST_CHECK(bobState.m_publicKeyLen != 0);
+  auto bobPub = bobState.getSelfPubKey();
+  BOOST_CHECK(!bobPub.empty());
 
-  auto aliceResult = aliceState.deriveSecret(bobPub, bobState.m_publicKeyLen);
-
-  BOOST_CHECK(aliceState.m_sharedSecretLen != 0);
-
-  auto bobResult = bobState.deriveSecret(alicePub, aliceState.m_publicKeyLen);
-
-  BOOST_CHECK(bobState.m_sharedSecretLen != 0);
-
-  BOOST_CHECK_EQUAL_COLLECTIONS(aliceResult, aliceResult + 32, bobResult, bobResult + 32);
+  auto aliceResult = aliceState.deriveSecret(bobPub);
+  BOOST_CHECK(!aliceResult.empty());
+  auto bobResult = bobState.deriveSecret(alicePub);
+  BOOST_CHECK(!bobResult.empty());
+  BOOST_CHECK_EQUAL_COLLECTIONS(aliceResult.begin(), aliceResult.end(), bobResult.begin(), bobResult.end());
 }
 
 BOOST_AUTO_TEST_CASE(EcdhWithRawKeyWrongInput)
 {
   ECDHState aliceState;
-  auto alicePub = aliceState.getRawSelfPubKey();
-  BOOST_CHECK(alicePub != nullptr);
-  BOOST_CHECK(aliceState.m_publicKeyLen != 0);
+  auto alicePub = aliceState.getSelfPubKey();
+  BOOST_CHECK(!alicePub.empty());
   uint8_t fakePub[] = {0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b};
   BOOST_CHECK_THROW(aliceState.deriveSecret(fakePub, sizeof(fakePub)), std::runtime_error);
 }
 
-BOOST_AUTO_TEST_CASE(EcdhWithBase64Key)
-{
-  ECDHState aliceState;
-  auto alicePub = aliceState.getBase64PubKey();
-  BOOST_CHECK(alicePub != "");
+// BOOST_AUTO_TEST_CASE(EcdhWithBase64Key)
+// {
+//   ECDHState aliceState;
+//   auto alicePub = aliceState.getBase64PubKey();
+//   BOOST_CHECK(alicePub != "");
 
-  ECDHState bobState;
-  auto bobPub = bobState.getBase64PubKey();
-  BOOST_CHECK(bobPub != "");
+//   ECDHState bobState;
+//   auto bobPub = bobState.getBase64PubKey();
+//   BOOST_CHECK(bobPub != "");
 
-  auto aliceResult = aliceState.deriveSecret(bobPub);
-  BOOST_CHECK(aliceState.m_sharedSecretLen != 0);
+//   auto aliceResult = aliceState.deriveSecret(bobPub);
+//   BOOST_CHECK(aliceState.m_sharedSecretLen != 0);
 
-  auto bobResult = bobState.deriveSecret(alicePub);
-  BOOST_CHECK(bobState.m_sharedSecretLen != 0);
+//   auto bobResult = bobState.deriveSecret(alicePub);
+//   BOOST_CHECK(bobState.m_sharedSecretLen != 0);
 
-  BOOST_CHECK_EQUAL_COLLECTIONS(aliceResult, aliceResult + 32, bobResult, bobResult + 32);
-}
+//   BOOST_CHECK_EQUAL_COLLECTIONS(aliceResult, aliceResult + 32, bobResult, bobResult + 32);
+// }
 
 BOOST_AUTO_TEST_CASE(HmacSha256)
 {

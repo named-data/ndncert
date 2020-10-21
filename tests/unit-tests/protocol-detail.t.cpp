@@ -77,20 +77,17 @@ BOOST_AUTO_TEST_CASE(TestNewRenewRevoke)
   auto cert = key.getDefaultCertificate();
 
   ECDHState ecdhState;
-  auto block = NewRenewRevokeEncoder::encodeApplicationParameters(RequestType::NEW,
-                                                                  ecdhState.getBase64PubKey(),
-                                                                  cert);
-  std::string ecdhPub;
+  auto selfKey = ecdhState.getSelfPubKey();
+  auto block = NewRenewRevokeEncoder::encodeApplicationParameters(RequestType::NEW, selfKey, cert);
+  std::vector<uint8_t> peerKey;
   shared_ptr<security::Certificate> clientCert;
-  NewRenewRevokeEncoder::decodeApplicationParameters(block, RequestType::NEW, ecdhPub, clientCert);
-  BOOST_CHECK_EQUAL(ecdhState.getBase64PubKey(), ecdhPub);
+  NewRenewRevokeEncoder::decodeApplicationParameters(block, RequestType::NEW, peerKey, clientCert);
+  BOOST_CHECK_EQUAL_COLLECTIONS(selfKey.begin(), selfKey.end(), peerKey.begin(), peerKey.end());
   BOOST_CHECK_EQUAL(cert, *clientCert);
 
-  block = NewRenewRevokeEncoder::encodeApplicationParameters(RequestType::REVOKE,
-                                                             ecdhState.getBase64PubKey(),
-                                                             cert);
-  NewRenewRevokeEncoder::decodeApplicationParameters(block, RequestType::REVOKE, ecdhPub, clientCert);
-  BOOST_CHECK_EQUAL(ecdhState.getBase64PubKey(), ecdhPub);
+  block = NewRenewRevokeEncoder::encodeApplicationParameters(RequestType::REVOKE, selfKey, cert);
+  NewRenewRevokeEncoder::decodeApplicationParameters(block, RequestType::REVOKE, peerKey, clientCert);
+  BOOST_CHECK_EQUAL_COLLECTIONS(selfKey.begin(), selfKey.end(), peerKey.begin(), peerKey.end());
   BOOST_CHECK_EQUAL(cert, *clientCert);
 
   // NewRenewRevokeEncoder::encodeDataContent(ecdhState.getBase64PubKey(), "")

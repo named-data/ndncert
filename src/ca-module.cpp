@@ -190,7 +190,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   // REVOKE Naming Convention: /<CA-prefix>/CA/REVOKE/[SignedInterestParameters_Digest]
   // get ECDH pub key and cert request
   const auto& parameterTLV = request.getApplicationParameters();
-  std::string ecdhPub;
+  std::vector<uint8_t> ecdhPub;
   shared_ptr<security::Certificate> clientCert;
   try {
     NewRenewRevokeEncoder::decodeApplicationParameters(parameterTLV, requestType, ecdhPub, clientCert);
@@ -209,7 +209,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
     return;
   }
 
-  if (ecdhPub == "") {
+  if (ecdhPub.empty()) {
     NDN_LOG_ERROR("Empty ECDH PUB obtained from the Interest parameter.");
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
                                        "Empty ECDH PUB obtained from the Interest parameter."));
@@ -218,9 +218,10 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
 
   // get server's ECDH pub key
   ECDHState ecdh;
-  auto myEcdhPubKeyBase64 = ecdh.getBase64PubKey();
+  auto myEcdhPubKeyBase64 = ecdh.getSelfPubKey();
+  std::vector<uint8_t> sharedSecret;
   try {
-    ecdh.deriveSecret(ecdhPub);
+    sharedSecret = ecdh.deriveSecret(ecdhPub);
   }
   catch (const std::exception& e) {
     NDN_LOG_ERROR("Cannot derive a shared secret using the provided ECDH key: " << e.what());
@@ -233,7 +234,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   random::generateSecureBytes(salt.data(), salt.size());
   // hkdf
   uint8_t aesKey[AES_128_KEY_LEN];
-  hkdf(ecdh.m_sharedSecret, ecdh.m_sharedSecretLen, salt.data(), salt.size(), aesKey, sizeof(aesKey));
+  hkdf(sharedSecret.data(), sharedSecret.size(), salt.data(), salt.size(), aesKey, sizeof(aesKey));
 
   // verify identity name
   if (!m_config.m_caItem.m_caPrefix.isPrefixOf(clientCert->getIdentity())

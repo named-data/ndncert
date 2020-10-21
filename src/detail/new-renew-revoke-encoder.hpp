@@ -30,25 +30,22 @@ class NewRenewRevokeEncoder
 {
 public:
   static Block
-  encodeApplicationParameters(RequestType requestType, const std::string& ecdhPub, const security::Certificate& certRequest);
+  encodeApplicationParameters(RequestType requestType, const std::vector<uint8_t>& ecdhPub,
+                              const security::Certificate& certRequest);
 
   static void
-  decodeApplicationParameters(const Block& block, RequestType requestType, std::string& ecdhPub, shared_ptr<security::Certificate>& certRequest);
+  decodeApplicationParameters(const Block& block, RequestType requestType, std::vector<uint8_t>& ecdhPub,
+                              shared_ptr<security::Certificate>& certRequest);
 
   static Block
-  encodeDataContent(const std::string& ecdhKey, const std::array<uint8_t, 32>& salt,
+  encodeDataContent(const std::vector<uint8_t>& ecdhKey,
+                    const std::array<uint8_t, 32>& salt,
                     const CaState& request,
                     const std::list<std::string>& challenges);
 
-  struct DecodedData {
-    std::string ecdhKey;
-    std::array<uint8_t, 32> salt;
-    RequestID requestId;
-    Status requestStatus;
-    std::list<std::string> challenges;
-  };
-  static DecodedData
-  decodeDataContent(const Block& content);
+  static std::list<std::string>
+  decodeDataContent(const Block& content, std::vector<uint8_t>& ecdhKey,
+                    std::array<uint8_t, 32>& salt, RequestID& requestId, Status& status);
 };
 
 } // namespace ndncert

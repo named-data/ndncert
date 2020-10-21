@@ -30,7 +30,6 @@
 #include <ndn-cxx/util/random.hpp>
 #include <openssl/ec.h>
 #include <openssl/err.h>
-#include <openssl/evp.h>
 #include <openssl/hmac.h>
 #include <openssl/kdf.h>
 #include <openssl/pem.h>
@@ -38,143 +37,183 @@
 namespace ndn {
 namespace ndncert {
 
-struct ECDHState::ECDH_CTX
-{
-  ~ECDH_CTX()
-  {
-    // contexts
-    if (ctx_params != nullptr) {
-      EVP_PKEY_CTX_free(ctx_params);
-    }
-    if (ctx_keygen != nullptr) {
-      EVP_PKEY_CTX_free(ctx_keygen);
-    }
-    // Keys
-    if (privkey != nullptr) {
-      EVP_PKEY_free(privkey);
-    }
-    if (peerkey != nullptr) {
-      EVP_PKEY_free(peerkey);
-    }
-    if (params != nullptr) {
-      EVP_PKEY_free(params);
-    }
-  }
-  EVP_PKEY_CTX* ctx_params = nullptr;
-  EVP_PKEY_CTX* ctx_keygen = nullptr;
-  EVP_PKEY* privkey = nullptr;
-  EVP_PKEY* peerkey = nullptr;
-  EVP_PKEY* params = nullptr;
-};
-
 ECDHState::ECDHState()
 {
-  m_context = std::make_unique<ECDH_CTX>();
   auto EC_NID = NID_X9_62_prime256v1;
-
-  if (nullptr == (m_context->ctx_params = EVP_PKEY_CTX_new_id(EVP_PKEY_EC, nullptr))) {
+  // params context
+  EVP_PKEY_CTX* ctx_params = EVP_PKEY_CTX_new_id(EVP_PKEY_EC, nullptr);
+  if (ctx_params == nullptr) {
     NDN_THROW(std::runtime_error("Could not create context."));
   }
-  if (EVP_PKEY_paramgen_init(m_context->ctx_params) != 1) {
-    m_context.reset();
+  if (EVP_PKEY_paramgen_init(ctx_params) != 1) {
+    EVP_PKEY_CTX_free(ctx_params);
     NDN_THROW(std::runtime_error("Could not initialize parameter generation."));
   }
-  if (1 != EVP_PKEY_CTX_set_ec_paramgen_curve_nid(m_context->ctx_params, EC_NID)) {
-    m_context.reset();
+  if (1 != EVP_PKEY_CTX_set_ec_paramgen_curve_nid(ctx_params, EC_NID)) {
+    EVP_PKEY_CTX_free(ctx_params);
     NDN_THROW(std::runtime_error("Likely unknown elliptical curve ID specified."));
   }
-  if (!EVP_PKEY_paramgen(m_context->ctx_params, &m_context->params)) {
-    m_context.reset();
+  // generate params
+  EVP_PKEY* params = nullptr;
+  if (!EVP_PKEY_paramgen(ctx_params, &params)) {
+    EVP_PKEY_CTX_free(ctx_params);
     NDN_THROW(std::runtime_error("Could not create parameter object parameters."));
   }
-  if (nullptr == (m_context->ctx_keygen = EVP_PKEY_CTX_new(m_context->params, nullptr))) {
-    m_context.reset();
+  // key generation context
+  EVP_PKEY_CTX *ctx_keygen = EVP_PKEY_CTX_new(params, nullptr);
+  if (ctx_keygen == nullptr) {
+    EVP_PKEY_free(params);
+    EVP_PKEY_CTX_free(ctx_params);
     NDN_THROW(std::runtime_error("Could not create the context for the key generation"));
   }
-  if (1 != EVP_PKEY_keygen_init(m_context->ctx_keygen)) {
-    m_context.reset();
+  if (1 != EVP_PKEY_keygen_init(ctx_keygen)) {
+    EVP_PKEY_CTX_free(ctx_keygen);
+    EVP_PKEY_free(params);
+    EVP_PKEY_CTX_free(ctx_params);
     NDN_THROW(std::runtime_error("Could not init context for key generation."));
   }
-  if (1 != EVP_PKEY_keygen(m_context->ctx_keygen, &m_context->privkey)) {
-    m_context.reset();
+  if (1 != EVP_PKEY_keygen(ctx_keygen, &m_privkey)) {
+    EVP_PKEY_CTX_free(ctx_keygen);
+    EVP_PKEY_free(params);
+    EVP_PKEY_CTX_free(ctx_params);
     NDN_THROW(std::runtime_error("Could not generate DHE keys in final step"));
   }
+  EVP_PKEY_CTX_free(ctx_keygen);
+  EVP_PKEY_free(params);
+  EVP_PKEY_CTX_free(ctx_params);
 }
 
 ECDHState::~ECDHState()
-{}
-
-uint8_t*
-ECDHState::getRawSelfPubKey()
 {
-  auto privECKey = EVP_PKEY_get1_EC_KEY(m_context->privkey);
+  if (m_privkey != nullptr) {
+    EVP_PKEY_free(m_privkey);
+  }
+}
+
+const std::vector<uint8_t>&
+ECDHState::getSelfPubKey()
+{
+  auto privECKey = EVP_PKEY_get1_EC_KEY(m_privkey);
   if (privECKey == nullptr) {
-    m_context.reset();
     NDN_THROW(std::runtime_error("Could not get key when calling EVP_PKEY_get1_EC_KEY()."));
   }
   auto ecPoint = EC_KEY_get0_public_key(privECKey);
-  const EC_GROUP* group = EC_KEY_get0_group(privECKey);
-  m_publicKeyLen = EC_POINT_point2oct(group, ecPoint, POINT_CONVERSION_COMPRESSED,
-                                      m_publicKey, sizeof(m_publicKey), nullptr);
+  auto group = EC_KEY_get0_group(privECKey);
+  auto requiredBufLen = EC_POINT_point2oct(group, ecPoint, POINT_CONVERSION_COMPRESSED, nullptr, 0, nullptr);
+  m_pubKey.resize(requiredBufLen);
+  auto rev = EC_POINT_point2oct(group, ecPoint, POINT_CONVERSION_COMPRESSED,
+                                m_pubKey.data(), requiredBufLen, nullptr);
   EC_KEY_free(privECKey);
-  if (m_publicKeyLen == 0) {
-    m_context.reset();
+  if (rev == 0) {
     NDN_THROW(std::runtime_error("Could not convert EC_POINTS to octet string when calling EC_POINT_point2oct."));
   }
-  return m_publicKey;
+  return m_pubKey;
 }
 
-std::string
-ECDHState::getBase64PubKey()
+const std::vector<uint8_t>&
+ECDHState::deriveSecret(const std::vector<uint8_t>& peerKey)
 {
-  if (m_publicKeyLen == 0) {
-    this->getRawSelfPubKey();
-  }
-  std::ostringstream os;
-  namespace t = ndn::security::transform;
-  t::bufferSource(m_publicKey, m_publicKeyLen) >> t::base64Encode(false) >> t::streamSink(os);
-  return os.str();
+  return deriveSecret(peerKey.data(), peerKey.size());
 }
 
-uint8_t*
-ECDHState::deriveSecret(const uint8_t* peerkey, size_t peerKeySize)
+const std::vector<uint8_t>&
+ECDHState::deriveSecret(const uint8_t* peerKey, size_t peerKeySize)
 {
-  auto privECKey = EVP_PKEY_get1_EC_KEY(m_context->privkey);
+  // prepare self private key
+  auto privECKey = EVP_PKEY_get1_EC_KEY(m_privkey);
   if (privECKey == nullptr) {
-    m_context.reset();
     NDN_THROW(std::runtime_error("Could not get key when calling EVP_PKEY_get1_EC_KEY()"));
   }
   auto group = EC_KEY_get0_group(privECKey);
+  EC_KEY_free(privECKey);
+  // prepare the peer public key
   auto peerPoint = EC_POINT_new(group);
-  int result = EC_POINT_oct2point(group, peerPoint, peerkey, peerKeySize, nullptr);
-  if (result == 0) {
+  if (peerPoint == nullptr) {
+    NDN_THROW(std::runtime_error("TBD"));
+  }
+  if (EC_POINT_oct2point(group, peerPoint, peerKey, peerKeySize, nullptr) == 0) {
     EC_POINT_free(peerPoint);
-    EC_KEY_free(privECKey);
-    m_context.reset();
     NDN_THROW(std::runtime_error("Cannot convert peer's key into a EC point when calling EC_POINT_oct2point()"));
   }
-  result = ECDH_compute_key(m_sharedSecret, sizeof(m_sharedSecret), peerPoint, privECKey, nullptr);
-  if (result == -1) {
+  EC_KEY *ecPeerkey = EC_KEY_new();
+  if (ecPeerkey == nullptr) {
     EC_POINT_free(peerPoint);
-    EC_KEY_free(privECKey);
-    m_context.reset();
-    NDN_THROW(std::runtime_error("Cannot generate ECDH secret when calling ECDH_compute_key()"));
+    NDN_THROW(std::runtime_error("TBD"));
   }
-  m_sharedSecretLen = static_cast<size_t>(result);
+  if (EC_KEY_set_group(ecPeerkey, group) != 1) {
+    EC_POINT_free(peerPoint);
+    NDN_THROW(std::runtime_error("TBD"));
+  }
+  if (EC_KEY_set_public_key(ecPeerkey, peerPoint) == 0) {
+    EC_KEY_free(ecPeerkey);
+    EC_POINT_free(peerPoint);
+    NDN_THROW(std::runtime_error("Cannot initialize peer EC_KEY with the EC_POINT."));
+  }
+  EVP_PKEY *evpPeerkey = EVP_PKEY_new();
+  if (EVP_PKEY_set1_EC_KEY(evpPeerkey, ecPeerkey) == 0) {
+    EC_KEY_free(ecPeerkey);
+    EC_POINT_free(peerPoint);
+    NDN_THROW(std::runtime_error("TBD."));
+  }
+  EC_KEY_free(ecPeerkey);
   EC_POINT_free(peerPoint);
-  EC_KEY_free(privECKey);
-  return m_sharedSecret;
+  // ECDH context
+  EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(m_privkey, NULL);
+  if (ctx == nullptr) {
+    EVP_PKEY_free(evpPeerkey);
+    NDN_THROW(std::runtime_error("TBD"));
+  }
+	/* Initialise */
+	if(1 != EVP_PKEY_derive_init(ctx)) {
+    EVP_PKEY_CTX_free(ctx);
+    EVP_PKEY_free(evpPeerkey);
+    NDN_THROW(std::runtime_error("TBD"));
+  }
+	/* Provide the peer public key */
+	if(1 != EVP_PKEY_derive_set_peer(ctx, evpPeerkey)) {
+    EVP_PKEY_CTX_free(ctx);
+    EVP_PKEY_free(evpPeerkey);
+    NDN_THROW(std::runtime_error("TBD"));
+  }
+	/* Determine buffer length for shared secret */
+  size_t secretLen = 0;
+	if(1 != EVP_PKEY_derive(ctx, NULL, &secretLen)) {
+    EVP_PKEY_CTX_free(ctx);
+    EVP_PKEY_free(evpPeerkey);
+    NDN_THROW(std::runtime_error("TBD"));
+  }
+	m_secret.resize(secretLen);
+	/* Derive the shared secret */
+	if(1 != (EVP_PKEY_derive(ctx, m_secret.data(), &secretLen))) {
+    EVP_PKEY_CTX_free(ctx);
+    EVP_PKEY_free(evpPeerkey);
+    NDN_THROW(std::runtime_error("TBD"));
+  }
+  // result = ECDH_compute_key(m_sharedSecret, sizeof(m_sharedSecret), peerPoint, privECKey, nullptr);
+  // if (result == -1) {
+  //   EC_POINT_free(peerPoint);
+  //   EC_KEY_free(privECKey);
+  //   EVP_PKEY_free(m_privkey);
+  //   NDN_THROW(std::runtime_error("Cannot generate ECDH secret when calling ECDH_compute_key()"));
+  // }
+  // m_sharedSecretLen = static_cast<size_t>(result);
+  // EC_POINT_free(peerPoint);
+  // EC_KEY_free(privECKey);
+  // return m_sharedSecret;
+  EVP_PKEY_CTX_free(ctx);
+  EVP_PKEY_free(evpPeerkey);
+  return m_secret;
 }
 
-uint8_t*
-ECDHState::deriveSecret(const std::string& peerKeyStr)
-{
-  namespace t = ndn::security::transform;
-  OBufferStream os;
-  t::bufferSource(peerKeyStr) >> t::base64Decode(false) >> t::streamSink(os);
-  auto result = os.buf();
-  return this->deriveSecret(result->data(), result->size());
-}
+// uint8_t*
+// ECDHState::deriveSecret(const std::string& peerKeyStr)
+// {
+//   namespace t = ndn::security::transform;
+//   OBufferStream os;
+//   t::bufferSource(peerKeyStr) >> t::base64Decode(false) >> t::streamSink(os);
+//   auto result = os.buf();
+//   return this->deriveSecret(result->data(), result->size());
+// }
 
 void
 hmacSha256(const uint8_t* data, size_t dataLen,

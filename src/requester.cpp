@@ -165,7 +165,7 @@ Requester::genNewInterest(RequesterState& state, const Name& identityName,
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
   interest->setApplicationParameters(
-      NewRenewRevokeEncoder::encodeApplicationParameters(RequestType::NEW, state.m_ecdh.getBase64PubKey(), certRequest));
+      NewRenewRevokeEncoder::encodeApplicationParameters(RequestType::NEW, state.m_ecdh.getSelfPubKey(), certRequest));
 
   // sign the Interest packet
   state.m_keyChain.sign(*interest, signingByKey(keyName));
@@ -185,7 +185,7 @@ Requester::genRevokeInterest(RequesterState& state, const security::Certificate&
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
   interest->setApplicationParameters(
-      NewRenewRevokeEncoder::encodeApplicationParameters(RequestType::REVOKE, state.m_ecdh.getBase64PubKey(), certificate));
+      NewRenewRevokeEncoder::encodeApplicationParameters(RequestType::REVOKE, state.m_ecdh.getSelfPubKey(), certificate));
   return interest;
 }
 
@@ -199,17 +199,17 @@ Requester::onNewRenewRevokeResponse(RequesterState& state, const Data& reply)
   processIfError(reply);
 
   auto contentTLV = reply.getContent();
-  const auto& content = NewRenewRevokeEncoder::decodeDataContent(contentTLV);
+  std::vector<uint8_t> ecdhKey;
+  std::array<uint8_t, 32> salt;
+  auto challenges = NewRenewRevokeEncoder::decodeDataContent(contentTLV, ecdhKey, salt, state.m_requestId, state.m_status);
 
   // ECDH and HKDF
-  state.m_ecdh.deriveSecret(content.ecdhKey);
-  hkdf(state.m_ecdh.m_sharedSecret, state.m_ecdh.m_sharedSecretLen,
-       (uint8_t*)&content.salt, sizeof(content.salt), state.m_aesKey, sizeof(state.m_aesKey));
+  auto sharedSecret = state.m_ecdh.deriveSecret(ecdhKey);
+  hkdf(sharedSecret.data(), sharedSecret.size(),
+       salt.data(), salt.size(), state.m_aesKey, sizeof(state.m_aesKey));
 
   // update state
-  state.m_status = content.requestStatus;
-  state.m_requestId = content.requestId;
-  return content.challenges;
+  return challenges;
 }
 
 std::vector<std::tuple<std::string, std::string>>

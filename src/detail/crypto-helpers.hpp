@@ -22,6 +22,7 @@
 #define NDNCERT_DETAIL_CRYPTO_HELPER_HPP
 
 #include "ndncert-common.hpp"
+#include <openssl/evp.h>
 
 namespace ndn {
 namespace ndncert {
@@ -31,34 +32,31 @@ namespace ndncert {
  *
  * The ECDH is based on prime256v1.
  */
-class ECDHState
+class ECDHState : noncopyable
 {
 public:
   ECDHState();
   ~ECDHState();
 
-  std::string
-  getBase64PubKey();
+  // std::string
+  // getBase64PubKey();
 
-  uint8_t*
-  deriveSecret(const std::string& peerKeyStr);
+  // uint8_t*
+  // deriveSecret(const std::string& peerKeyStr);
 
-NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  uint8_t*
+  const std::vector<uint8_t>&
   deriveSecret(const uint8_t* peerkey, size_t peerKeySize);
 
-  uint8_t*
-  getRawSelfPubKey();
+  const std::vector<uint8_t>&
+  deriveSecret(const std::vector<uint8_t>& peerkey);
 
-public:
-  uint8_t m_publicKey[256];
-  size_t m_publicKeyLen = 0;
-  uint8_t m_sharedSecret[256];
-  size_t m_sharedSecretLen = 0;
+  const std::vector<uint8_t>&
+  getSelfPubKey();
 
 private:
-  struct ECDH_CTX;
-  unique_ptr<ECDH_CTX> m_context;
+  EVP_PKEY* m_privkey = nullptr;
+  std::vector<uint8_t> m_pubKey;
+  std::vector<uint8_t> m_secret;
 };
 
 /**
