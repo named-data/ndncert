@@ -38,12 +38,6 @@ public:
   ECDHState();
   ~ECDHState();
 
-  // std::string
-  // getBase64PubKey();
-
-  // uint8_t*
-  // deriveSecret(const std::string& peerKeyStr);
-
   const std::vector<uint8_t>&
   deriveSecret(const uint8_t* peerkey, size_t peerKeySize);
 

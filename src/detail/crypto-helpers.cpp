@@ -189,31 +189,10 @@ ECDHState::deriveSecret(const uint8_t* peerKey, size_t peerKeySize)
     EVP_PKEY_free(evpPeerkey);
     NDN_THROW(std::runtime_error("TBD"));
   }
-  // result = ECDH_compute_key(m_sharedSecret, sizeof(m_sharedSecret), peerPoint, privECKey, nullptr);
-  // if (result == -1) {
-  //   EC_POINT_free(peerPoint);
-  //   EC_KEY_free(privECKey);
-  //   EVP_PKEY_free(m_privkey);
-  //   NDN_THROW(std::runtime_error("Cannot generate ECDH secret when calling ECDH_compute_key()"));
-  // }
-  // m_sharedSecretLen = static_cast<size_t>(result);
-  // EC_POINT_free(peerPoint);
-  // EC_KEY_free(privECKey);
-  // return m_sharedSecret;
   EVP_PKEY_CTX_free(ctx);
   EVP_PKEY_free(evpPeerkey);
   return m_secret;
 }
-
-// uint8_t*
-// ECDHState::deriveSecret(const std::string& peerKeyStr)
-// {
-//   namespace t = ndn::security::transform;
-//   OBufferStream os;
-//   t::bufferSource(peerKeyStr) >> t::base64Decode(false) >> t::streamSink(os);
-//   auto result = os.buf();
-//   return this->deriveSecret(result->data(), result->size());
-// }
 
 void
 hmacSha256(const uint8_t* data, size_t dataLen,

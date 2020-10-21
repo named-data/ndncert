@@ -53,25 +53,6 @@ BOOST_AUTO_TEST_CASE(EcdhWithRawKeyWrongInput)
   BOOST_CHECK_THROW(aliceState.deriveSecret(fakePub, sizeof(fakePub)), std::runtime_error);
 }
 
-// BOOST_AUTO_TEST_CASE(EcdhWithBase64Key)
-// {
-//   ECDHState aliceState;
-//   auto alicePub = aliceState.getBase64PubKey();
-//   BOOST_CHECK(alicePub != "");
-
-//   ECDHState bobState;
-//   auto bobPub = bobState.getBase64PubKey();
-//   BOOST_CHECK(bobPub != "");
-
-//   auto aliceResult = aliceState.deriveSecret(bobPub);
-//   BOOST_CHECK(aliceState.m_sharedSecretLen != 0);
-
-//   auto bobResult = bobState.deriveSecret(alicePub);
-//   BOOST_CHECK(bobState.m_sharedSecretLen != 0);
-
-//   BOOST_CHECK_EQUAL_COLLECTIONS(aliceResult, aliceResult + 32, bobResult, bobResult + 32);
-// }
-
 BOOST_AUTO_TEST_CASE(HmacSha256)
 {
   const uint8_t input[] = {0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b,
