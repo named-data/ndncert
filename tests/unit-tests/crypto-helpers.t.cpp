@@ -312,8 +312,9 @@ BOOST_AUTO_TEST_CASE(BlockEncodingDecoding)
                                         (uint8_t*)associatedData.c_str(), associatedData.size(), counter);
   auto decoded = decodeBlockWithAesGcm128(block, key, (uint8_t*)associatedData.c_str(), associatedData.size());
   BOOST_CHECK_EQUAL(plaintext, std::string(decoded.get<char>(), decoded.size()));
-  decoded = decodeBlockWithAesGcm128(block, key, (uint8_t*)wrongAssociatedData.c_str(), wrongAssociatedData.size());
-  BOOST_CHECK_EQUAL(decoded.size(), 0);
+  BOOST_CHECK_THROW(decodeBlockWithAesGcm128(block, key,
+                                             (uint8_t*)wrongAssociatedData.c_str(),
+                                             wrongAssociatedData.size()), std::runtime_error);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

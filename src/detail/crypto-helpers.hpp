@@ -130,8 +130,8 @@ aesGcm128Decrypt(const uint8_t* ciphertext, size_t ciphertextLen, const uint8_t*
  * @param associatedData The associated data used for authentication.
  * @param associatedDataSize The size of associated data.
  * @param counter An opaque counter that must be passed to subsequent invocations of this function
- *                with the same @param key.
- * @return Block The TLV block with @param tlv_type TLV TYPE.
+ *                with the same @p key.
+ * @return Block The TLV block with @p tlv_type TLV TYPE.
  */
 Block
 encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key, const uint8_t* payload, size_t payloadSize,

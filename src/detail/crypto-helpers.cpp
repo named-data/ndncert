@@ -21,7 +21,6 @@
 #include "crypto-helpers.hpp"
 
 #include <boost/endian/conversion.hpp>
-#include <cmath>
 #include <ndn-cxx/encoding/buffer-stream.hpp>
 #include <ndn-cxx/security/transform/base64-decode.hpp>
 #include <ndn-cxx/security/transform/base64-encode.hpp>
@@ -116,14 +115,14 @@ ECDHState::deriveSecret(const std::vector<uint8_t>& peerKey)
   // prepare self private key
   auto privECKey = EVP_PKEY_get1_EC_KEY(m_privkey);
   if (privECKey == nullptr) {
-    NDN_THROW(std::runtime_error("Could not get key when calling EVP_PKEY_get1_EC_KEY()"));
+    NDN_THROW(std::runtime_error("Cannot not get key when calling EVP_PKEY_get1_EC_KEY()"));
   }
   auto group = EC_KEY_get0_group(privECKey);
   EC_KEY_free(privECKey);
   // prepare the peer public key
   auto peerPoint = EC_POINT_new(group);
   if (peerPoint == nullptr) {
-    NDN_THROW(std::runtime_error("TBD"));
+    NDN_THROW(std::runtime_error("Cannot create the EC_POINT for peer key when calling EC_POINT_new()"));
   }
   if (EC_POINT_oct2point(group, peerPoint, peerKey.data(), peerKey.size(), nullptr) == 0) {
     EC_POINT_free(peerPoint);
@@ -132,22 +131,22 @@ ECDHState::deriveSecret(const std::vector<uint8_t>& peerKey)
   EC_KEY* ecPeerkey = EC_KEY_new();
   if (ecPeerkey == nullptr) {
     EC_POINT_free(peerPoint);
-    NDN_THROW(std::runtime_error("TBD"));
+    NDN_THROW(std::runtime_error("Cannot create EC_KEY for peer key when calling EC_KEY_new()"));
   }
   if (EC_KEY_set_group(ecPeerkey, group) != 1) {
     EC_POINT_free(peerPoint);
-    NDN_THROW(std::runtime_error("TBD"));
+    NDN_THROW(std::runtime_error("Cannot set group for peer key's EC_KEY when calling EC_KEY_set_group()"));
   }
   if (EC_KEY_set_public_key(ecPeerkey, peerPoint) == 0) {
     EC_KEY_free(ecPeerkey);
     EC_POINT_free(peerPoint);
-    NDN_THROW(std::runtime_error("Cannot initialize peer EC_KEY with the EC_POINT."));
+    NDN_THROW(std::runtime_error("Cannot initialize peer EC_KEY with the EC_POINT when calling EC_KEY_set_public_key()"));
   }
   EVP_PKEY* evpPeerkey = EVP_PKEY_new();
   if (EVP_PKEY_set1_EC_KEY(evpPeerkey, ecPeerkey) == 0) {
     EC_KEY_free(ecPeerkey);
     EC_POINT_free(peerPoint);
-    NDN_THROW(std::runtime_error("TBD."));
+    NDN_THROW(std::runtime_error("Cannot create EVP_PKEY for peer key when calling EVP_PKEY_new()"));
   }
   EC_KEY_free(ecPeerkey);
   EC_POINT_free(peerPoint);
@@ -155,33 +154,33 @@ ECDHState::deriveSecret(const std::vector<uint8_t>& peerKey)
   EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(m_privkey, nullptr);
   if (ctx == nullptr) {
     EVP_PKEY_free(evpPeerkey);
-    NDN_THROW(std::runtime_error("TBD"));
+    NDN_THROW(std::runtime_error("Cannot create context for ECDH when calling EVP_PKEY_CTX_new()"));
   }
   // Initialize
   if (1 != EVP_PKEY_derive_init(ctx)) {
     EVP_PKEY_CTX_free(ctx);
     EVP_PKEY_free(evpPeerkey);
-    NDN_THROW(std::runtime_error("TBD"));
+    NDN_THROW(std::runtime_error("Cannot initialize context for ECDH when calling EVP_PKEY_derive_init()"));
   }
   // Provide the peer public key
   if (1 != EVP_PKEY_derive_set_peer(ctx, evpPeerkey)) {
     EVP_PKEY_CTX_free(ctx);
     EVP_PKEY_free(evpPeerkey);
-    NDN_THROW(std::runtime_error("TBD"));
+    NDN_THROW(std::runtime_error("Cannot set peer key for ECDH when calling EVP_PKEY_derive_set_peer()"));
   }
   // Determine buffer length for shared secret
   size_t secretLen = 0;
   if (1 != EVP_PKEY_derive(ctx, nullptr, &secretLen)) {
     EVP_PKEY_CTX_free(ctx);
     EVP_PKEY_free(evpPeerkey);
-    NDN_THROW(std::runtime_error("TBD"));
+    NDN_THROW(std::runtime_error("Cannot determine the needed buffer length when calling EVP_PKEY_derive()"));
   }
   m_secret.resize(secretLen);
   // Derive the shared secret
   if (1 != (EVP_PKEY_derive(ctx, m_secret.data(), &secretLen))) {
     EVP_PKEY_CTX_free(ctx);
     EVP_PKEY_free(evpPeerkey);
-    NDN_THROW(std::runtime_error("TBD"));
+    NDN_THROW(std::runtime_error("Cannot derive ECDH secret when calling EVP_PKEY_derive()"));
   }
   EVP_PKEY_CTX_free(ctx);
   EVP_PKEY_free(evpPeerkey);
@@ -190,12 +189,11 @@ ECDHState::deriveSecret(const std::vector<uint8_t>& peerKey)
 
 void
 hmacSha256(const uint8_t* data, size_t dataLen,
-            const uint8_t* key, size_t keyLen,
-            uint8_t* result)
+           const uint8_t* key, size_t keyLen,
+           uint8_t* result)
 {
   auto ret = HMAC(EVP_sha256(), key, keyLen,
-                  static_cast<const unsigned char*>(data), dataLen,
-                  static_cast<unsigned char*>(result), nullptr);
+                  data, dataLen, result, nullptr);
   if (ret == nullptr) {
     NDN_THROW(std::runtime_error("Error computing HMAC when calling HMAC()"));
   }
@@ -248,7 +246,7 @@ aesGcm128Encrypt(const uint8_t* plaintext, size_t plaintextLen, const uint8_t* a
   }
   if (1 != EVP_EncryptInit_ex(ctx, EVP_aes_128_gcm(), nullptr, nullptr, nullptr)) {
     EVP_CIPHER_CTX_free(ctx);
-    NDN_THROW(std::runtime_error("Cannot initialise the encryption operation when calling EVP_EncryptInit_ex()"));
+    NDN_THROW(std::runtime_error("Cannot initialize the encryption operation when calling EVP_EncryptInit_ex()"));
   }
   if (1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, 12, nullptr)) {
     EVP_CIPHER_CTX_free(ctx);
@@ -314,7 +312,7 @@ aesGcm128Decrypt(const uint8_t* ciphertext, size_t ciphertextLen, const uint8_t*
   plaintextLen = len;
   if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, 16, (void*)tag)) {
     EVP_CIPHER_CTX_free(ctx);
-    NDN_THROW(std::runtime_error("Cannot set tag value when calling EVP_CIPHER_CTX_ctrl"));
+    NDN_THROW(std::runtime_error("Cannot set tag value when calling EVP_CIPHER_CTX_ctrl()"));
   }
   ret = EVP_DecryptFinal_ex(ctx, plaintext + len, &len);
   EVP_CIPHER_CTX_free(ctx);
@@ -323,7 +321,7 @@ aesGcm128Decrypt(const uint8_t* ciphertext, size_t ciphertextLen, const uint8_t*
     return plaintextLen;
   }
   else {
-    return -1;
+    NDN_THROW(std::runtime_error("Cannot finalize the decryption when calling EVP_DecryptFinal_ex()"));
   }
 }
 
@@ -332,7 +330,7 @@ encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key, const uint8_t* pa
                          const uint8_t* associatedData, size_t associatedDataSize, uint32_t& counter)
 {
   Buffer iv(12);
-  random::generateSecureBytes(iv.data(), iv.size());
+  random::generateSecureBytes(iv.data(), 8);
   if (tlvType == ndn::tlv::ApplicationParameters) {
     // requester
     iv[0] &= ~(1UL << 7);
@@ -343,7 +341,7 @@ encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key, const uint8_t* pa
   }
   uint32_t temp = boost::endian::native_to_big(counter);
   std::memcpy(&iv[8], reinterpret_cast<const uint8_t*>(&temp), 4);
-  uint32_t increment = std::ceil((payloadSize + 16 - 1)/16);
+  uint32_t increment = (payloadSize + 15) / 16;
   if (std::numeric_limits<uint32_t>::max() - counter < increment) {
     // simply set counter to be 0. Will not hurt the property of being unique.
     counter = 0;
