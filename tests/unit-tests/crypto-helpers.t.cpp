@@ -25,7 +25,7 @@ namespace ndn {
 namespace ndncert {
 namespace tests {
 
-BOOST_AUTO_TEST_SUITE(TestCryptoHelper)
+BOOST_AUTO_TEST_SUITE(TestCryptoHelpers)
 
 BOOST_AUTO_TEST_CASE(EcdhWithRawKey)
 {
