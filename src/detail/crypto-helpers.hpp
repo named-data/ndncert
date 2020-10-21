@@ -95,10 +95,10 @@ hmacSha256(const uint8_t* data, size_t dataLen,
  * @param iv 12 bytes IV.
  * @param ciphertext The output and enough memory must be allocated beforehands.
  * @param tag 16 bytes tag.
- * @return int The size of ciphertext.
+ * @return size_t The size of ciphertext.
  * @throw runtime_error When there is an error in the process of encryption.
  */
-int
+size_t
 aesGcm128Encrypt(const uint8_t* plaintext, size_t plaintextLen, const uint8_t* associated, size_t associatedLen,
                  const uint8_t* key, const uint8_t* iv, uint8_t* ciphertext, uint8_t* tag);
 
@@ -113,10 +113,10 @@ aesGcm128Encrypt(const uint8_t* plaintext, size_t plaintextLen, const uint8_t* a
  * @param key 16 bytes AES key.
  * @param iv 12 bytes IV.
  * @param plaintext The output and enough memory must be allocated beforehands.
- * @return int The size of plaintext or -1 if the verification fails.
- * @throw runtime_error When there is an error in the process of encryption.
+ * @return size_t The size of plaintext.
+ * @throw runtime_error When there is an error in the process of decryption.
  */
-int
+size_t
 aesGcm128Decrypt(const uint8_t* ciphertext, size_t ciphertextLen, const uint8_t* associated, size_t associatedLen,
                  const uint8_t* tag, const uint8_t* key, const uint8_t* iv, uint8_t* plaintext);
 

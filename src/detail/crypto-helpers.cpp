@@ -234,13 +234,13 @@ hkdf(const uint8_t* secret, size_t secretLen, const uint8_t* salt,
   return outLen;
 }
 
-int
+size_t
 aesGcm128Encrypt(const uint8_t* plaintext, size_t plaintextLen, const uint8_t* associated, size_t associatedLen,
                     const uint8_t* key, const uint8_t* iv, uint8_t* ciphertext, uint8_t* tag)
 {
   EVP_CIPHER_CTX* ctx;
   int len;
-  int ciphertextLen;
+  size_t ciphertextLen;
   if (!(ctx = EVP_CIPHER_CTX_new())) {
     NDN_THROW(std::runtime_error("Cannot create and initialise the context when calling EVP_CIPHER_CTX_new()"));
   }
@@ -278,14 +278,13 @@ aesGcm128Encrypt(const uint8_t* plaintext, size_t plaintextLen, const uint8_t* a
   return ciphertextLen;
 }
 
-int
+size_t
 aesGcm128Decrypt(const uint8_t* ciphertext, size_t ciphertextLen, const uint8_t* associated, size_t associatedLen,
                     const uint8_t* tag, const uint8_t* key, const uint8_t* iv, uint8_t* plaintext)
 {
   EVP_CIPHER_CTX* ctx;
   int len;
-  int plaintextLen;
-  int ret;
+  size_t plaintextLen;
   if (!(ctx = EVP_CIPHER_CTX_new())) {
     NDN_THROW(std::runtime_error("Cannot create and initialise the context when calling EVP_CIPHER_CTX_new()"));
   }
@@ -314,7 +313,7 @@ aesGcm128Decrypt(const uint8_t* ciphertext, size_t ciphertextLen, const uint8_t*
     EVP_CIPHER_CTX_free(ctx);
     NDN_THROW(std::runtime_error("Cannot set tag value when calling EVP_CIPHER_CTX_ctrl()"));
   }
-  ret = EVP_DecryptFinal_ex(ctx, plaintext + len, &len);
+  auto ret = EVP_DecryptFinal_ex(ctx, plaintext + len, &len);
   EVP_CIPHER_CTX_free(ctx);
   if (ret > 0) {
     plaintextLen += len;
