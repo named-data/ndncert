@@ -374,7 +374,7 @@ decodeBlockWithAesGcm128(const Block& block, const uint8_t* key, const uint8_t* 
                                     block.get(tlv::EncryptedPayload).value_size(),
                                     associatedData, associatedDataSize, block.get(tlv::AuthenticationTag).value(),
                                     key, block.get(tlv::InitializationVector).value(), result.data());
-  if (resultLen == -1 || resultLen != block.get(tlv::EncryptedPayload).value_size()) {
+  if (resultLen != block.get(tlv::EncryptedPayload).value_size()) {
     return Buffer();
   }
   return result;
