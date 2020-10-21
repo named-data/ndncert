@@ -113,12 +113,6 @@ ECDHState::getSelfPubKey()
 const std::vector<uint8_t>&
 ECDHState::deriveSecret(const std::vector<uint8_t>& peerKey)
 {
-  return deriveSecret(peerKey.data(), peerKey.size());
-}
-
-const std::vector<uint8_t>&
-ECDHState::deriveSecret(const uint8_t* peerKey, size_t peerKeySize)
-{
   // prepare self private key
   auto privECKey = EVP_PKEY_get1_EC_KEY(m_privkey);
   if (privECKey == nullptr) {
@@ -131,7 +125,7 @@ ECDHState::deriveSecret(const uint8_t* peerKey, size_t peerKeySize)
   if (peerPoint == nullptr) {
     NDN_THROW(std::runtime_error("TBD"));
   }
-  if (EC_POINT_oct2point(group, peerPoint, peerKey, peerKeySize, nullptr) == 0) {
+  if (EC_POINT_oct2point(group, peerPoint, peerKey.data(), peerKey.size(), nullptr) == 0) {
     EC_POINT_free(peerPoint);
     NDN_THROW(std::runtime_error("Cannot convert peer's key into a EC point when calling EC_POINT_oct2point()"));
   }

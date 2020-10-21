@@ -49,8 +49,8 @@ BOOST_AUTO_TEST_CASE(EcdhWithRawKeyWrongInput)
   ECDHState aliceState;
   auto alicePub = aliceState.getSelfPubKey();
   BOOST_CHECK(!alicePub.empty());
-  uint8_t fakePub[] = {0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b};
-  BOOST_CHECK_THROW(aliceState.deriveSecret(fakePub, sizeof(fakePub)), std::runtime_error);
+  std::vector<uint8_t> fakePub(10, 0x0b);
+  BOOST_CHECK_THROW(aliceState.deriveSecret(fakePub), std::runtime_error);
 }
 
 BOOST_AUTO_TEST_CASE(HmacSha256)

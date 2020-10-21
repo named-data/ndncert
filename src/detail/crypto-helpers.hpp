@@ -39,9 +39,6 @@ public:
   ~ECDHState();
 
   const std::vector<uint8_t>&
-  deriveSecret(const uint8_t* peerkey, size_t peerKeySize);
-
-  const std::vector<uint8_t>&
   deriveSecret(const std::vector<uint8_t>& peerkey);
 
   const std::vector<uint8_t>&
