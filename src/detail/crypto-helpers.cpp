@@ -42,21 +42,21 @@ ECDHState::ECDHState()
   // params context
   EVP_PKEY_CTX* ctx_params = EVP_PKEY_CTX_new_id(EVP_PKEY_EC, nullptr);
   if (ctx_params == nullptr) {
-    NDN_THROW(std::runtime_error("Could not create context."));
+    NDN_THROW(std::runtime_error("Could not create context"));
   }
   if (EVP_PKEY_paramgen_init(ctx_params) != 1) {
     EVP_PKEY_CTX_free(ctx_params);
-    NDN_THROW(std::runtime_error("Could not initialize parameter generation."));
+    NDN_THROW(std::runtime_error("Could not initialize parameter generation"));
   }
   if (1 != EVP_PKEY_CTX_set_ec_paramgen_curve_nid(ctx_params, EC_NID)) {
     EVP_PKEY_CTX_free(ctx_params);
-    NDN_THROW(std::runtime_error("Likely unknown elliptical curve ID specified."));
+    NDN_THROW(std::runtime_error("Likely unknown elliptical curve ID specified"));
   }
   // generate params
   EVP_PKEY* params = nullptr;
   if (!EVP_PKEY_paramgen(ctx_params, &params)) {
     EVP_PKEY_CTX_free(ctx_params);
-    NDN_THROW(std::runtime_error("Could not create parameter object parameters."));
+    NDN_THROW(std::runtime_error("Could not create parameter object parameters"));
   }
   // key generation context
   EVP_PKEY_CTX *ctx_keygen = EVP_PKEY_CTX_new(params, nullptr);
@@ -69,7 +69,7 @@ ECDHState::ECDHState()
     EVP_PKEY_CTX_free(ctx_keygen);
     EVP_PKEY_free(params);
     EVP_PKEY_CTX_free(ctx_params);
-    NDN_THROW(std::runtime_error("Could not init context for key generation."));
+    NDN_THROW(std::runtime_error("Could not init context for key generation"));
   }
   if (1 != EVP_PKEY_keygen(ctx_keygen, &m_privkey)) {
     EVP_PKEY_CTX_free(ctx_keygen);
@@ -94,17 +94,17 @@ ECDHState::getSelfPubKey()
 {
   auto privECKey = EVP_PKEY_get1_EC_KEY(m_privkey);
   if (privECKey == nullptr) {
-    NDN_THROW(std::runtime_error("Could not get key when calling EVP_PKEY_get1_EC_KEY()."));
+    NDN_THROW(std::runtime_error("Could not get key when calling EVP_PKEY_get1_EC_KEY()"));
   }
   auto ecPoint = EC_KEY_get0_public_key(privECKey);
   auto group = EC_KEY_get0_group(privECKey);
-  auto requiredBufLen = EC_POINT_point2oct(group, ecPoint, POINT_CONVERSION_COMPRESSED, nullptr, 0, nullptr);
+  auto requiredBufLen = EC_POINT_point2oct(group, ecPoint, POINT_CONVERSION_UNCOMPRESSED, nullptr, 0, nullptr);
   m_pubKey.resize(requiredBufLen);
-  auto rev = EC_POINT_point2oct(group, ecPoint, POINT_CONVERSION_COMPRESSED,
+  auto rev = EC_POINT_point2oct(group, ecPoint, POINT_CONVERSION_UNCOMPRESSED,
                                 m_pubKey.data(), requiredBufLen, nullptr);
   EC_KEY_free(privECKey);
   if (rev == 0) {
-    NDN_THROW(std::runtime_error("Could not convert EC_POINTS to octet string when calling EC_POINT_point2oct."));
+    NDN_THROW(std::runtime_error("Could not convert EC_POINTS to octet string when calling EC_POINT_point2oct()"));
   }
   return m_pubKey;
 }
@@ -207,28 +207,28 @@ hkdf(const uint8_t* secret, size_t secretLen, const uint8_t* salt,
   EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, nullptr);
   if (EVP_PKEY_derive_init(pctx) <= 0) {
     EVP_PKEY_CTX_free(pctx);
-    NDN_THROW(std::runtime_error("HKDF: Cannot init ctx when calling EVP_PKEY_derive_init()."));
+    NDN_THROW(std::runtime_error("HKDF: Cannot init ctx when calling EVP_PKEY_derive_init()"));
   }
   if (EVP_PKEY_CTX_set_hkdf_md(pctx, EVP_sha256()) <= 0) {
     EVP_PKEY_CTX_free(pctx);
-    NDN_THROW(std::runtime_error("HKDF: Cannot set md when calling EVP_PKEY_CTX_set_hkdf_md()."));
+    NDN_THROW(std::runtime_error("HKDF: Cannot set md when calling EVP_PKEY_CTX_set_hkdf_md()"));
   }
   if (EVP_PKEY_CTX_set1_hkdf_salt(pctx, salt, saltLen) <= 0) {
     EVP_PKEY_CTX_free(pctx);
-    NDN_THROW(std::runtime_error("HKDF: Cannot set salt when calling EVP_PKEY_CTX_set1_hkdf_salt()."));
+    NDN_THROW(std::runtime_error("HKDF: Cannot set salt when calling EVP_PKEY_CTX_set1_hkdf_salt()"));
   }
   if (EVP_PKEY_CTX_set1_hkdf_key(pctx, secret, secretLen) <= 0) {
     EVP_PKEY_CTX_free(pctx);
-    NDN_THROW(std::runtime_error("HKDF: Cannot set secret when calling EVP_PKEY_CTX_set1_hkdf_key()."));
+    NDN_THROW(std::runtime_error("HKDF: Cannot set secret when calling EVP_PKEY_CTX_set1_hkdf_key()"));
   }
   if (EVP_PKEY_CTX_add1_hkdf_info(pctx, info, infoLen) <= 0) {
     EVP_PKEY_CTX_free(pctx);
-    NDN_THROW(std::runtime_error("HKDF: Cannot set info when calling EVP_PKEY_CTX_add1_hkdf_info()."));
+    NDN_THROW(std::runtime_error("HKDF: Cannot set info when calling EVP_PKEY_CTX_add1_hkdf_info()"));
   }
   size_t outLen = outputLen;
   if (EVP_PKEY_derive(pctx, output, &outLen) <= 0) {
     EVP_PKEY_CTX_free(pctx);
-    NDN_THROW(std::runtime_error("HKDF: Cannot derive result when calling EVP_PKEY_derive()."));
+    NDN_THROW(std::runtime_error("HKDF: Cannot derive result when calling EVP_PKEY_derive()"));
   }
   EVP_PKEY_CTX_free(pctx);
   return outLen;
@@ -309,7 +309,7 @@ aesGcm128Decrypt(const uint8_t* ciphertext, size_t ciphertextLen, const uint8_t*
     NDN_THROW(std::runtime_error("Cannot decrypt when calling EVP_DecryptUpdate()"));
   }
   plaintextLen = len;
-  if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, 16, (void*)tag)) {
+  if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, 16, const_cast<void*>(reinterpret_cast<const void*>(tag)))) {
     EVP_CIPHER_CTX_free(ctx);
     NDN_THROW(std::runtime_error("Cannot set tag value when calling EVP_CIPHER_CTX_ctrl()"));
   }
@@ -349,6 +349,8 @@ encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key, const uint8_t* pa
     counter += increment;
   }
 
+  // The spec of AES encrypted payload TLV used in NDNCERT:
+  //   https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3#242-aes-gcm-encryption
   Buffer encryptedPayload(payloadSize);
   uint8_t tag[16];
   size_t encryptedPayloadLen = aesGcm128Encrypt(payload, payloadSize, associatedData, associatedDataSize,
@@ -364,6 +366,8 @@ encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key, const uint8_t* pa
 Buffer
 decodeBlockWithAesGcm128(const Block& block, const uint8_t* key, const uint8_t* associatedData, size_t associatedDataSize)
 {
+  // The spec of AES encrypted payload TLV used in NDNCERT:
+  //   https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3#242-aes-gcm-encryption
   block.parse();
   Buffer result(block.get(tlv::EncryptedPayload).value_size());
   int resultLen = aesGcm128Decrypt(block.get(tlv::EncryptedPayload).value(),

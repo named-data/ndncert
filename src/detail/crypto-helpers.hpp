@@ -38,9 +38,22 @@ public:
   ECDHState();
   ~ECDHState();
 
+  /**
+   * @brief Derive ECDH secret from peer's EC public key and self's private key.
+   *
+   * @param peerkey Peer's EC public key in the uncompressed octet string format.
+   *                See details in https://www.openssl.org/docs/man1.1.1/man3/EC_POINT_point2oct.html.
+   * @return const std::vector<uint8_t>& the derived secret.
+   */
   const std::vector<uint8_t>&
   deriveSecret(const std::vector<uint8_t>& peerkey);
 
+  /**
+   * @brief Get the Self Pub Key object
+   *
+   * @return const std::vector<uint8_t>& the Self public key in the uncompressed oct string format.
+   *         See details in https://www.openssl.org/docs/man1.1.1/man3/EC_POINT_point2oct.html.
+   */
   const std::vector<uint8_t>&
   getSelfPubKey();
 
@@ -123,6 +136,8 @@ aesGcm128Decrypt(const uint8_t* ciphertext, size_t ciphertextLen, const uint8_t*
 /**
  * @brief Encode the payload into TLV block with Authenticated GCM 128 Encryption.
  *
+ * The TLV spec: https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3#242-aes-gcm-encryption.
+ *
  * @param tlv_type The TLV TYPE of the encoded block, either ApplicationParameters or Content.
  * @param key The AES key used for encryption.
  * @param payload The plaintext payload.
@@ -139,6 +154,8 @@ encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key, const uint8_t* pa
 
 /**
  * @brief Decode the payload from TLV block with Authenticated GCM 128 Encryption.
+ *
+ * The TLV spec: https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3#242-aes-gcm-encryption.
  *
  * @param block The TLV block in the format of NDNCERT protocol.
  * @param key The AES key used for encryption.
