@@ -83,7 +83,7 @@ main(int argc, char* argv[])
   terminateSignals.add(SIGTERM);
   terminateSignals.async_wait(handleSignal);
 
-  std::string configFilePath(SYSCONFDIR "/ndncert/ca.conf");
+  std::string configFilePath(NDNCERT_SYSCONFDIR "/ndncert/ca.conf");
   bool wantRepoOut = false;
 
   namespace po = boost::program_options;

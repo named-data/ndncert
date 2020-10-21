@@ -21,7 +21,7 @@
 #ifndef NDNCERT_NDNCERT_COMMON_HPP
 #define NDNCERT_NDNCERT_COMMON_HPP
 
-#include "ndncert-config.hpp"
+#include "detail/ndncert-config.hpp"
 
 #ifdef NDNCERT_HAVE_TESTS
 #define NDNCERT_VIRTUAL_WITH_TESTS virtual

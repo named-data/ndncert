@@ -456,7 +456,7 @@ main(int argc, char* argv[])
   terminateSignals.async_wait(handleSignal);
 
   namespace po = boost::program_options;
-  std::string configFilePath = std::string(SYSCONFDIR) + "/ndncert/client.conf";
+  std::string configFilePath = std::string(NDNCERT_SYSCONFDIR) + "/ndncert/client.conf";
   po::options_description description("General Usage\n ndncert-client [-h] [-c] [-v]\n");
   description.add_options()("help,h", "produce help message")("config-file,c", po::value<std::string>(&configFilePath), "configuration file name");
   po::positional_options_description p;

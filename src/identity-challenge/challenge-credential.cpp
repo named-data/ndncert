@@ -37,7 +37,7 @@ ChallengeCredential::ChallengeCredential(const std::string& configPath)
     : ChallengeModule("Credential", 1, time::seconds(1))
 {
   if (configPath.empty()) {
-    m_configFile = std::string(SYSCONFDIR) + "/ndncert/challenge-credential.conf";
+    m_configFile = std::string(NDNCERT_SYSCONFDIR) + "/ndncert/challenge-credential.conf";
   }
   else {
     m_configFile = configPath;
