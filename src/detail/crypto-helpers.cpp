@@ -129,7 +129,7 @@ ECDHState::deriveSecret(const std::vector<uint8_t>& peerKey)
     EC_POINT_free(peerPoint);
     NDN_THROW(std::runtime_error("Cannot convert peer's key into a EC point when calling EC_POINT_oct2point()"));
   }
-  EC_KEY *ecPeerkey = EC_KEY_new();
+  EC_KEY* ecPeerkey = EC_KEY_new();
   if (ecPeerkey == nullptr) {
     EC_POINT_free(peerPoint);
     NDN_THROW(std::runtime_error("TBD"));
@@ -143,7 +143,7 @@ ECDHState::deriveSecret(const std::vector<uint8_t>& peerKey)
     EC_POINT_free(peerPoint);
     NDN_THROW(std::runtime_error("Cannot initialize peer EC_KEY with the EC_POINT."));
   }
-  EVP_PKEY *evpPeerkey = EVP_PKEY_new();
+  EVP_PKEY* evpPeerkey = EVP_PKEY_new();
   if (EVP_PKEY_set1_EC_KEY(evpPeerkey, ecPeerkey) == 0) {
     EC_KEY_free(ecPeerkey);
     EC_POINT_free(peerPoint);
@@ -152,33 +152,33 @@ ECDHState::deriveSecret(const std::vector<uint8_t>& peerKey)
   EC_KEY_free(ecPeerkey);
   EC_POINT_free(peerPoint);
   // ECDH context
-  EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(m_privkey, NULL);
+  EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(m_privkey, nullptr);
   if (ctx == nullptr) {
     EVP_PKEY_free(evpPeerkey);
     NDN_THROW(std::runtime_error("TBD"));
   }
-	/* Initialise */
-	if(1 != EVP_PKEY_derive_init(ctx)) {
+  // Initialize
+  if (1 != EVP_PKEY_derive_init(ctx)) {
     EVP_PKEY_CTX_free(ctx);
     EVP_PKEY_free(evpPeerkey);
     NDN_THROW(std::runtime_error("TBD"));
   }
-	/* Provide the peer public key */
-	if(1 != EVP_PKEY_derive_set_peer(ctx, evpPeerkey)) {
+  // Provide the peer public key
+  if (1 != EVP_PKEY_derive_set_peer(ctx, evpPeerkey)) {
     EVP_PKEY_CTX_free(ctx);
     EVP_PKEY_free(evpPeerkey);
     NDN_THROW(std::runtime_error("TBD"));
   }
-	/* Determine buffer length for shared secret */
+  // Determine buffer length for shared secret
   size_t secretLen = 0;
-	if(1 != EVP_PKEY_derive(ctx, NULL, &secretLen)) {
+  if (1 != EVP_PKEY_derive(ctx, nullptr, &secretLen)) {
     EVP_PKEY_CTX_free(ctx);
     EVP_PKEY_free(evpPeerkey);
     NDN_THROW(std::runtime_error("TBD"));
   }
-	m_secret.resize(secretLen);
-	/* Derive the shared secret */
-	if(1 != (EVP_PKEY_derive(ctx, m_secret.data(), &secretLen))) {
+  m_secret.resize(secretLen);
+  // Derive the shared secret
+  if (1 != (EVP_PKEY_derive(ctx, m_secret.data(), &secretLen))) {
     EVP_PKEY_CTX_free(ctx);
     EVP_PKEY_free(evpPeerkey);
     NDN_THROW(std::runtime_error("TBD"));

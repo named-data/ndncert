@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_DETAIL_CRYPTO_HELPER_HPP
-#define NDNCERT_DETAIL_CRYPTO_HELPER_HPP
+#ifndef NDNCERT_DETAIL_CRYPTO_HELPERS_HPP
+#define NDNCERT_DETAIL_CRYPTO_HELPERS_HPP
 
 #include "ndncert-common.hpp"
 #include <openssl/evp.h>
@@ -153,4 +153,4 @@ decodeBlockWithAesGcm128(const Block& block, const uint8_t* key,
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_DETAIL_CRYPTO_HELPER_HPP
+#endif // NDNCERT_DETAIL_CRYPTO_HELPERS_HPP
