@@ -342,8 +342,8 @@ encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key, const uint8_t* pa
   std::memcpy(&iv[8], reinterpret_cast<const uint8_t*>(&temp), 4);
   uint32_t increment = (payloadSize + 15) / 16;
   if (std::numeric_limits<uint32_t>::max() - counter < increment) {
-    // simply set counter to be 0. Will not hurt the property of being unique.
-    counter = 0;
+    NDN_THROW(std::runtime_error("Error incrementing the AES block counter:"
+                                 "too many blocks have been encrypted for the same request instance"));
   }
   else {
     counter += increment;
