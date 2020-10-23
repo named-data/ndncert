@@ -6,6 +6,7 @@ If you would like to become a contributor to the official repository, please fol
 
 * Alexander Afanasyev <https://users.cs.fiu.edu/~afanasyev/>
 * Ashlesh Gawande <https://www.linkedin.com/in/agawande>
+* Siqi Liu <https://github.com/tylerliu>
 * Eric Newberry <https://ericnewberry.com>
 * Davide Pesavento <https://github.com/Pesa>
 * Md Ashiqur Rahman <https://ashiqrahman.com>
