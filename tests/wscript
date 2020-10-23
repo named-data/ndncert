@@ -6,6 +6,7 @@ def build(bld):
         return
 
     tmp_path = 'TMP_TESTS_PATH="%s"' % bld.bldnode.make_node('tmp-tests')
+
     bld.program(
         target='../unit-tests',
         name='unit-tests',

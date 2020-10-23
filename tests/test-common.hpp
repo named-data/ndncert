@@ -26,7 +26,6 @@
 #include "database-fixture.hpp"
 #include "identity-management-fixture.hpp"
 #include "unit-test-time-fixture.hpp"
-#include <iostream>
 #include <ndn-cxx/metadata-object.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/transform/base64-encode.hpp>

@@ -423,7 +423,6 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
       auto secret = request->m_challengeState->m_secrets.get(ChallengePin::PARAMETER_KEY_CODE, "");
       std::get<1>(paramList[0]) = secret;
       challengeInterest3 = Requester::genChallengeInterest(state, std::move(paramList));
-      std::cout << "CHALLENGE Interest Size: " << challengeInterest3->wireEncode().size() << std::endl;
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 2) {
       count++;

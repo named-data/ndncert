@@ -42,13 +42,13 @@ BOOST_AUTO_TEST_CASE(PacketSize0)
   auto profileData = ca.getCaProfileData();
 
   Interest interest = MetadataObject::makeDiscoveryInterest(Name("/ndn/CA/INFO"));
-  std::cout << "CA Config discovery Interest Size: " << interest.wireEncode().size() << std::endl;
+  // std::cout << "CA Config discovery Interest Size: " << interest.wireEncode().size() << std::endl;
   shared_ptr<Interest> infoInterest = nullptr;
 
   face.setInterestFilter(
       InterestFilter("/ndn/CA/INFO"),
       [&](const auto&, const Interest& interest) {
-        std::cout << interest.getName() << std::endl;
+        // std::cout << interest.getName() << std::endl;
         if (interest.getName() == profileData.getName()) {
           face.put(profileData);
         }
@@ -60,16 +60,16 @@ BOOST_AUTO_TEST_CASE(PacketSize0)
   face.onSendData.connect([&](const Data& response) {
     if (count == 0) {
       count++;
-      std::cout << "CA Config MetaData Size: " << response.wireEncode().size() << std::endl;
+      // std::cout << "CA Config MetaData Size: " << response.wireEncode().size() << std::endl;
       auto block = response.getContent();
       block.parse();
       infoInterest =std::make_shared<Interest>(Name(block.get(ndn::tlv::Name)).appendSegment(0));
       infoInterest->setCanBePrefix(false);
-      std::cout << "CA Config fetch Interest Size: " << infoInterest->wireEncode().size() << std::endl;
+      // std::cout << "CA Config fetch Interest Size: " << infoInterest->wireEncode().size() << std::endl;
     }
     else {
       count++;
-      std::cout << "CA Config Data Size: " << response.wireEncode().size() << std::endl;
+      // std::cout << "CA Config Data Size: " << response.wireEncode().size() << std::endl;
       BOOST_CHECK(security::verifySignature(response, cert));
       auto contentBlock = response.getContent();
       contentBlock.parse();
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
                                                time::system_clock::now(),
                                                time::system_clock::now() + time::days(1));
 
-  std::cout << "New Interest Size: " << newInterest->wireEncode().size() << std::endl;
+  // std::cout << "New Interest Size: " << newInterest->wireEncode().size() << std::endl;
 
   // generate CHALLENGE Interest
   shared_ptr<Interest> challengeInterest = nullptr;
@@ -118,7 +118,7 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
   int count = 0;
   face.onSendData.connect([&](const Data& response) {
     if (Name("/ndn/CA/NEW").isPrefixOf(response.getName())) {
-      std::cout << "NEW Data Size: " << response.wireEncode().size() << std::endl;
+      // std::cout << "NEW Data Size: " << response.wireEncode().size() << std::endl;
       auto challengeList = Requester::onNewRenewRevokeResponse(state, response);
       auto paramList = Requester::selectOrContinueChallenge(state, "pin");
       challengeInterest = Requester::genChallengeInterest(state, std::move(paramList));
@@ -146,10 +146,10 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
       auto secret = request->m_challengeState->m_secrets.get(ChallengePin::PARAMETER_KEY_CODE, "");
       std::get<1>(paramList[0]) = secret;
       challengeInterest3 = Requester::genChallengeInterest(state, std::move(paramList));
-      std::cout << "CHALLENGE Interest Size: " << challengeInterest3->wireEncode().size() << std::endl;
+      // std::cout << "CHALLENGE Interest Size: " << challengeInterest3->wireEncode().size() << std::endl;
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 2) {
-      std::cout << "CHALLENGE Data Size: " << response.wireEncode().size() << std::endl;
+      // std::cout << "CHALLENGE Data Size: " << response.wireEncode().size() << std::endl;
       count++;
       BOOST_CHECK(security::verifySignature(response, cert));
       Requester::onChallengeResponse(state, response);

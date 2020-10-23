@@ -21,6 +21,7 @@
 #include "detail/crypto-helpers.hpp"
 
 #include <boost/endian/conversion.hpp>
+#include <cstring>
 #include <ndn-cxx/encoding/buffer-stream.hpp>
 #include <ndn-cxx/security/transform/base64-decode.hpp>
 #include <ndn-cxx/security/transform/base64-encode.hpp>
@@ -342,7 +343,7 @@ encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key, const uint8_t* pa
   std::memcpy(&iv[8], reinterpret_cast<const uint8_t*>(&temp), 4);
   uint32_t increment = (payloadSize + 15) / 16;
   if (std::numeric_limits<uint32_t>::max() - counter < increment) {
-    NDN_THROW(std::runtime_error("Error incrementing the AES block counter:"
+    NDN_THROW(std::runtime_error("Error incrementing the AES block counter: "
                                  "too many blocks have been encrypted for the same request instance"));
   }
   else {
@@ -369,13 +370,15 @@ decodeBlockWithAesGcm128(const Block& block, const uint8_t* key, const uint8_t* 
   // The spec of AES encrypted payload TLV used in NDNCERT:
   //   https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3#242-aes-gcm-encryption
   block.parse();
-  Buffer result(block.get(tlv::EncryptedPayload).value_size());
-  auto resultLen = aesGcm128Decrypt(block.get(tlv::EncryptedPayload).value(),
-                                    block.get(tlv::EncryptedPayload).value_size(),
+  const auto& encryptedPayloadBlock = block.get(tlv::EncryptedPayload);
+  Buffer result(encryptedPayloadBlock.value_size());
+  auto resultLen = aesGcm128Decrypt(encryptedPayloadBlock.value(), encryptedPayloadBlock.value_size(),
                                     associatedData, associatedDataSize, block.get(tlv::AuthenticationTag).value(),
                                     key, block.get(tlv::InitializationVector).value(), result.data());
-  if (resultLen != block.get(tlv::EncryptedPayload).value_size()) {
+  if (resultLen != encryptedPayloadBlock.value_size()) {
     return Buffer();
+    NDN_THROW(std::runtime_error("Error when decrypting the AES Encrypted Block: "
+                                 "Decrypted payload is of an unexpected size"));
   }
   return result;
 }

@@ -18,7 +18,6 @@
  */
 
 #include "challenge-credential.hpp"
-#include <iostream>
 #include <ndn-cxx/security/verification-helpers.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/transform/public-key.hpp>

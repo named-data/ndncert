@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_NDNCERT_COMMON_HPP
-#define NDNCERT_NDNCERT_COMMON_HPP
+#ifndef NDNCERT_DETAIL_NDNCERT_COMMON_HPP
+#define NDNCERT_DETAIL_NDNCERT_COMMON_HPP
 
 #include "detail/ndncert-config.hpp"
 
@@ -37,19 +37,18 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <tuple>
-#include <ndn-cxx/encoding/tlv.hpp>
 #include <ndn-cxx/data.hpp>
-#include <ndn-cxx/encoding/block.hpp>
 #include <ndn-cxx/encoding/block-helpers.hpp>
+#include <ndn-cxx/encoding/block.hpp>
+#include <ndn-cxx/encoding/tlv.hpp>
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/interest.hpp>
-#include <ndn-cxx/link.hpp>
 #include <ndn-cxx/lp/nack.hpp>
 #include <ndn-cxx/name.hpp>
-#include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/security/certificate.hpp>
+#include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/util/logger.hpp>
+#include <tuple>
 #include <boost/algorithm/string.hpp>
 #include <boost/assert.hpp>
 #include <boost/noncopyable.hpp>
@@ -129,4 +128,4 @@ operator<<(std::ostream& out, RequestType type);
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_NDNCERT_COMMON_HPP
+#endif // NDNCERT_DETAIL_NDNCERT_COMMON_HPP
