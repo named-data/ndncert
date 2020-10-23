@@ -376,7 +376,6 @@ decodeBlockWithAesGcm128(const Block& block, const uint8_t* key, const uint8_t* 
                                     associatedData, associatedDataSize, block.get(tlv::AuthenticationTag).value(),
                                     key, block.get(tlv::InitializationVector).value(), result.data());
   if (resultLen != encryptedPayloadBlock.value_size()) {
-    return Buffer();
     NDN_THROW(std::runtime_error("Error when decrypting the AES Encrypted Block: "
                                  "Decrypted payload is of an unexpected size"));
   }
