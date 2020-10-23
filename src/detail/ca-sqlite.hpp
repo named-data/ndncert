@@ -21,7 +21,7 @@
 #ifndef NDNCERT_CA_DETAIL_CA_SQLITE_HPP
 #define NDNCERT_CA_DETAIL_CA_SQLITE_HPP
 
-#include "ca-storage.hpp"
+#include "detail/ca-storage.hpp"
 
 struct sqlite3;
 

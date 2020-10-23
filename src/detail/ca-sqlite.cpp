@@ -18,10 +18,9 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "ca-sqlite.hpp"
+#include "detail/ca-sqlite.hpp"
 
 #include <sqlite3.h>
-
 #include <boost/filesystem.hpp>
 #include <ndn-cxx/security/validation-policy.hpp>
 #include <ndn-cxx/util/sqlite3-statement.hpp>

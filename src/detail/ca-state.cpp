@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "ca-state.hpp"
+#include "detail/ca-state.hpp"
 #include <ndn-cxx/util/indented-stream.hpp>
 
 namespace ndn {

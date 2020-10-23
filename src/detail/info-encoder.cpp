@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "info-encoder.hpp"
+#include "detail/info-encoder.hpp"
 
 namespace ndn {
 namespace ndncert {

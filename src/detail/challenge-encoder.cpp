@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "challenge-encoder.hpp"
+#include "detail/challenge-encoder.hpp"
 
 namespace ndn {
 namespace ndncert {

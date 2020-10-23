@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "ndncert-common.hpp"
+#include "detail/ndncert-common.hpp"
 
 namespace ndn {
 namespace ndncert {

@@ -21,7 +21,7 @@
 #ifndef NDNCERT_DETAIL_CRYPTO_HELPERS_HPP
 #define NDNCERT_DETAIL_CRYPTO_HELPERS_HPP
 
-#include "ndncert-common.hpp"
+#include "detail/ndncert-common.hpp"
 #include <openssl/evp.h>
 
 namespace ndn {

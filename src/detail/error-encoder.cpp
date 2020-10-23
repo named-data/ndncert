@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "error-encoder.hpp"
+#include "detail/error-encoder.hpp"
 
 namespace ndn {
 namespace ndncert {

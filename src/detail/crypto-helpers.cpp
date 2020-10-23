@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "crypto-helpers.hpp"
+#include "detail/crypto-helpers.hpp"
 
 #include <boost/endian/conversion.hpp>
 #include <ndn-cxx/encoding/buffer-stream.hpp>

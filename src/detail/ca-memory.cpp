@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "ca-memory.hpp"
+#include "detail/ca-memory.hpp"
 #include <ndn-cxx/security/validation-policy.hpp>
 
 namespace ndn {

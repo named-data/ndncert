@@ -21,7 +21,7 @@
 #ifndef NDNCERT_PROTOCOL_DETAIL_PROBE_ENCODER_HPP
 #define NDNCERT_PROTOCOL_DETAIL_PROBE_ENCODER_HPP
 
-#include "../configuration.hpp"
+#include "configuration.hpp"
 
 namespace ndn {
 namespace ndncert {

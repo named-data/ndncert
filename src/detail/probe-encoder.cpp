@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "probe-encoder.hpp"
+#include "detail/probe-encoder.hpp"
 
 namespace ndn {
 namespace ndncert {

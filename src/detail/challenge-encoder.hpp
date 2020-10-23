@@ -21,8 +21,8 @@
 #ifndef NDNCERT_PROTOCOL_DETAIL_CHALLENGE_STEP_HPP
 #define NDNCERT_PROTOCOL_DETAIL_CHALLENGE_STEP_HPP
 
-#include "../detail/ca-state.hpp"
-#include "../requester-state.hpp"
+#include "detail/ca-state.hpp"
+#include "requester-state.hpp"
 
 namespace ndn {
 namespace ndncert {
