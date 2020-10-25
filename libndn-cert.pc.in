@@ -5,5 +5,5 @@ includedir=@INCLUDEDIR@
 Name: libndn-cert
 Description: ndncert library
 Version: @VERSION@
-Libs: -L${libdir} -lndn-cert -lndn-cxx @EXTRA_LINKFLAGS@ @EXTRA_LDFLAGS@ @EXTRA_LIBS@ @EXTRA_FRAMEWORKS@
-Cflags: -I${includedir} @EXTRA_CXXFLAGS@ @EXTRA_INCLUDES@
+Libs: -L${libdir} -lndn-cert
+Cflags: -I${includedir}
