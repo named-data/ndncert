@@ -58,12 +58,6 @@ ChallengeState::ChallengeState(const std::string& challengeStatus,
 {
 }
 
-CaState::CaState()
-    : m_requestType(RequestType::NOTINITIALIZED)
-    , m_status(Status::NOT_STARTED)
-{
-}
-
 CaState::CaState(const Name& caName, const RequestID& requestId, RequestType requestType, Status status,
                  const security::Certificate& cert, Block encryptionKey, uint32_t aesBlockCounter)
     : m_caPrefix(caName)

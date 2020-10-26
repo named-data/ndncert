@@ -29,7 +29,6 @@ namespace ndncert {
 
 typedef std::array<uint8_t, 8> RequestID;
 
-// NDNCERT Request status enumeration
 enum class Status : uint16_t {
   BEFORE_CHALLENGE = 0,
   CHALLENGE = 1,
@@ -40,36 +39,59 @@ enum class Status : uint16_t {
   ENDED = 6
 };
 
-// Convert request status to string
+/**
+ * @brief Convert request status to string.
+ */
 std::string
 statusToString(Status status);
 
 /**
- * @brief The state maintained by the Challenge modules
+ * @brief The state maintained by the Challenge module.
  */
 struct ChallengeState
 {
   ChallengeState(const std::string& challengeStatus, const time::system_clock::TimePoint& challengeTp,
                  size_t remainingTries, time::seconds remainingTime,
                  JsonSection&& challengeSecrets);
+  /**
+   * @brief The status of the challenge.
+   */
   std::string m_challengeStatus;
+  /**
+   * @brief The timestamp of the last update of the challenge state.
+   */
   time::system_clock::TimePoint m_timestamp;
+  /**
+   * @brief Remaining tries of the challenge.
+   */
   size_t m_remainingTries;
+  /**
+   * @brief Remaining time of the challenge.
+   */
   time::seconds m_remainingTime;
+  /**
+   * @brief The secret for the challenge.
+   */
   JsonSection m_secrets;
 };
 
 /**
  * @brief Represents a certificate request instance kept by the CA.
  *
- * ChallengeModule should take use of ChallengeState to keep state.
+ * ChallengeModule should take use of CaState.ChallengeState to keep the challenge state.
  */
 class CaState
 {
 public:
-  CaState();
+  CaState() = default;
+  /**
+   * @brief Used to instantiate a CaState when challenge is not started.
+   */
   CaState(const Name& caName, const RequestID& requestId, RequestType requestType, Status status,
           const security::Certificate& cert, Block m_encryptionKey, uint32_t aesBlockCounter = 0);
+  /**
+   * @brief Used to instantiate a CaState after challenge not started.
+   */
   CaState(const Name& caName, const RequestID& requestId, RequestType requestType, Status status,
           const security::Certificate& cert, const std::string& challengeType,
           const std::string& challengeStatus, const time::system_clock::TimePoint& challengeTp,
@@ -77,15 +99,42 @@ public:
           Block m_encryptionKey, uint32_t aesBlockCounter);
 
 public:
+  /**
+   * @brief The CA that the request is under.
+   */
   Name m_caPrefix;
+  /**
+   * @brief The ID of the request.
+   */
   RequestID m_requestId;
-  RequestType m_requestType;
-  Status m_status;
+  /**
+   * @brief The type of the request.
+   */
+  RequestType m_requestType = RequestType::NOTINITIALIZED;
+  /**
+   * @brief The status of the request.
+   */
+  Status m_status = Status::NOT_STARTED;
+  /**
+   * @brief The self-signed certificate in the request.
+   */
   security::Certificate m_cert;
+  /**
+   * @brief The encryption key for the requester.
+   */
   Block m_encryptionKey;
+  /**
+   * @brief The AES block counter for the requester.
+   */
   uint32_t m_aesBlockCounter = 0;
 
+  /**
+   * @brief The challenge type.
+   */
   std::string m_challengeType;
+  /**
+   * @brief The challenge state.
+   */
   boost::optional<ChallengeState> m_challengeState;
 };
 
