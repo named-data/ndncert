@@ -323,7 +323,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
   result.setContent(NewRenewRevokeEncoder::encodeDataContent(myEcdhPubKeyBase64,
                                                              salt,
-                                                             requestState,
+                                                             requestState.m_requestId, requestState.m_status,
                                                              m_config.m_caItem.m_supportedChallenges));
   m_keyChain.sign(result, signingByIdentity(m_config.m_caItem.m_caPrefix));
   m_face.put(result);

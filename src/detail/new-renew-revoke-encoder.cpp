@@ -80,14 +80,14 @@ NewRenewRevokeEncoder::decodeApplicationParameters(const Block& payload, Request
 
 Block
 NewRenewRevokeEncoder::encodeDataContent(const std::vector<uint8_t>& ecdhKey, const std::array<uint8_t, 32>& salt,
-                                         const CaState& request,
+                                         const RequestID& requestId, const Status& status,
                                          const std::list<std::string>& challenges)
 {
   Block response = makeEmptyBlock(ndn::tlv::Content);
   response.push_back(makeBinaryBlock(tlv::EcdhPub, ecdhKey.data(), ecdhKey.size()));
   response.push_back(makeBinaryBlock(tlv::Salt, salt.data(), salt.size()));
-  response.push_back(makeBinaryBlock(tlv::RequestId, request.m_requestId.data(), request.m_requestId.size()));
-  response.push_back(makeNonNegativeIntegerBlock(tlv::Status, static_cast<size_t>(request.m_status)));
+  response.push_back(makeBinaryBlock(tlv::RequestId, requestId.data(), requestId.size()));
+  response.push_back(makeNonNegativeIntegerBlock(tlv::Status, static_cast<size_t>(status)));
   for (const auto& entry: challenges) {
     response.push_back(makeStringBlock(tlv::Challenge, entry));
   }

@@ -38,9 +38,8 @@ public:
                               shared_ptr<security::Certificate>& certRequest);
 
   static Block
-  encodeDataContent(const std::vector<uint8_t>& ecdhKey,
-                    const std::array<uint8_t, 32>& salt,
-                    const CaState& request,
+  encodeDataContent(const std::vector<uint8_t>& ecdhKey, const std::array<uint8_t, 32>& salt,
+                    const RequestID& requestId, const Status& status,
                     const std::list<std::string>& challenges);
 
   static std::list<std::string>
