@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_CA_STORAGE_HPP
-#define NDNCERT_CA_STORAGE_HPP
+#ifndef NDNCERT_DETAIL_CA_STORAGE_HPP
+#define NDNCERT_DETAIL_CA_STORAGE_HPP
 
 #include "detail/ca-state.hpp"
 
@@ -92,4 +92,4 @@ public:                                                          \
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_CA_STORAGE_HPP
+#endif // NDNCERT_DETAIL_CA_STORAGE_HPP

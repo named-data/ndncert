@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_CA_DETAIL_CA_MEMORY_HPP
-#define NDNCERT_CA_DETAIL_CA_MEMORY_HPP
+#ifndef NDNCERT_DETAIL_CA_MEMORY_HPP
+#define NDNCERT_DETAIL_CA_MEMORY_HPP
 
 #include "detail/ca-storage.hpp"
 
@@ -64,4 +64,4 @@ private:
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_CA_DETAIL_CA_MEMORY_HPP
+#endif // NDNCERT_DETAIL_CA_MEMORY_HPP

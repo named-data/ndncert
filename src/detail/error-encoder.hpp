@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_PROTOCOL_DETAIL_ERROR_ENCODER_HPP
-#define NDNCERT_PROTOCOL_DETAIL_ERROR_ENCODER_HPP
+#ifndef NDNCERT_DETAIL_ERROR_ENCODER_HPP
+#define NDNCERT_DETAIL_ERROR_ENCODER_HPP
 
 #include "configuration.hpp"
 
@@ -45,4 +45,4 @@ public:
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_PROTOCOL_DETAIL_ERROR_ENCODER_HPP
+#endif // NDNCERT_DETAIL_ERROR_ENCODER_HPP

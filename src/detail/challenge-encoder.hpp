@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_PROTOCOL_DETAIL_CHALLENGE_STEP_HPP
-#define NDNCERT_PROTOCOL_DETAIL_CHALLENGE_STEP_HPP
+#ifndef NDNCERT_DETAIL_CHALLENGE_STEP_HPP
+#define NDNCERT_DETAIL_CHALLENGE_STEP_HPP
 
 #include "detail/ca-state.hpp"
 #include "requester-state.hpp"
@@ -40,4 +40,4 @@ public:
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_PROTOCOL_DETAIL_CHALLENGE_STEP_HPP
+#endif // NDNCERT_DETAIL_CHALLENGE_STEP_HPP
