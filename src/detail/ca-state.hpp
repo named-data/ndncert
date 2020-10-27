@@ -90,7 +90,7 @@ public:
   CaState(const Name& caName, const RequestID& requestId, RequestType requestType, Status status,
           const security::Certificate& cert, Block m_encryptionKey, uint32_t aesBlockCounter = 0);
   /**
-   * @brief Used to instantiate a CaState after challenge not started.
+   * @brief Used to instantiate a CaState after challenge is started.
    */
   CaState(const Name& caName, const RequestID& requestId, RequestType requestType, Status status,
           const security::Certificate& cert, const std::string& challengeType,
