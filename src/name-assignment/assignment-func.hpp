@@ -21,7 +21,7 @@
 #ifndef NDNCERT_ASSIGNMENT_FUNCS_HPP
 #define NDNCERT_ASSIGNMENT_FUNCS_HPP
 
-#include "../detail/ca-state.hpp"
+#include "detail/ca-state.hpp"
 
 namespace ndn {
 namespace ndncert {

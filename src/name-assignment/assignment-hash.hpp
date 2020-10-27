@@ -38,9 +38,8 @@ public:
   assignName(const std::vector<std::tuple<std::string, std::string>>& params) override;
 
 };
-}
-}
 
-
+} // namespace ndncert
+} // namespace ndn
 
 #endif //NDNCERT_ASSIGNMENT_HASH_HPP
