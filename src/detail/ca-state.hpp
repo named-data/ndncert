@@ -83,7 +83,6 @@ struct ChallengeState
 class CaState
 {
 public:
-  CaState() = default;
   /**
    * @brief Used to instantiate a CaState when challenge is not started.
    */

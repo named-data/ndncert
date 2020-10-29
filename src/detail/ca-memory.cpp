@@ -49,7 +49,7 @@ CaMemory::addRequest(const CaState& request)
 {
   auto search = m_requests.find(request.m_requestId);
   if (search == m_requests.end()) {
-    m_requests[request.m_requestId] = request;
+    m_requests.insert(std::make_pair(request.m_requestId, request));
   }
   else {
     NDN_THROW(std::runtime_error("Request " + toHex(request.m_requestId.data(), request.m_requestId.size()) + " already exists"));
@@ -59,8 +59,13 @@ CaMemory::addRequest(const CaState& request)
 void
 CaMemory::updateRequest(const CaState& request)
 {
-  m_requests[request.m_requestId].m_status = request.m_status;
-  m_requests[request.m_requestId].m_challengeState = request.m_challengeState;
+  auto search = m_requests.find(request.m_requestId);
+  if (search == m_requests.end()) {
+    m_requests.insert(std::make_pair(request.m_requestId, request));
+  }
+  else {
+    search->second = request;
+  }
 }
 
 void

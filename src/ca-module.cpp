@@ -337,7 +337,7 @@ CaModule::onChallenge(const Interest& request)
 {
   // get certificate request state
   auto requestState = getCertificateRequest(request);
-  if (requestState== nullptr) {
+  if (requestState == nullptr) {
     NDN_LOG_ERROR("No certificate request state can be found.");
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
                                        "No certificate request state can be found."));
