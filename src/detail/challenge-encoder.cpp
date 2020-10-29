@@ -24,7 +24,7 @@ namespace ndn {
 namespace ndncert {
 
 Block
-ChallengeEncoder::encodeDataContent(const CaState& request)
+ChallengeEncoder::encodeDataContent(const ca::RequestState& request)
 {
   Block response = makeEmptyBlock(tlv::EncryptedPayload);
   response.push_back(makeNonNegativeIntegerBlock(tlv::Status, static_cast<size_t>(request.m_status)));

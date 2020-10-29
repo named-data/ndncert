@@ -31,6 +31,7 @@
 
 namespace ndn {
 namespace ndncert {
+namespace ca {
 
 Face face;
 security::KeyChain keyChain;
@@ -122,14 +123,14 @@ main(int argc, char* argv[])
 
   if (wantRepoOut) {
     writeDataToRepo(profileData);
-    ca.setStatusUpdateCallback([&](const CaState& request) {
+    ca.setStatusUpdateCallback([&](const RequestState& request) {
       if (request.m_status == Status::SUCCESS && request.m_requestType == RequestType::NEW) {
         writeDataToRepo(request.m_cert);
       }
     });
   }
   else {
-    ca.setStatusUpdateCallback([&](const CaState& request) {
+    ca.setStatusUpdateCallback([&](const RequestState& request) {
       if (request.m_status == Status::SUCCESS && request.m_requestType == RequestType::NEW) {
         cachedCertificates[request.m_cert.getName()] = request.m_cert;
       }
@@ -152,11 +153,12 @@ main(int argc, char* argv[])
   return 0;
 }
 
+} // namespace ca
 } // namespace ndncert
 } // namespace ndn
 
 int
 main(int argc, char* argv[])
 {
-  return ndn::ndncert::main(argc, argv);
+  return ndn::ndncert::ca::main(argc, argv);
 }

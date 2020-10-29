@@ -132,6 +132,8 @@ CaProfile::toJson() const
   return caItem;
 }
 
+namespace ca {
+
 void
 CaConfig::load(const std::string& fileName)
 {
@@ -180,6 +182,8 @@ CaConfig::load(const std::string& fileName)
     }
   }
 }
+
+} // namespace ca
 
 void
 RequesterCaCache::load(const std::string& fileName)

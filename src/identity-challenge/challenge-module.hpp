@@ -51,7 +51,7 @@ public:
 
   // For CA
   virtual std::tuple<ErrorCode, std::string>
-  handleChallengeRequest(const Block& params, CaState& request) = 0;
+  handleChallengeRequest(const Block& params, ca::RequestState& request) = 0;
 
   // For Client
   virtual std::vector<std::tuple<std::string, std::string>>
@@ -68,14 +68,14 @@ public:
 protected:
   // used by challenge modules
   std::tuple<ErrorCode, std::string>
-  returnWithError(CaState& request, ErrorCode errorCode, std::string&& errorInfo);
+  returnWithError(ca::RequestState& request, ErrorCode errorCode, std::string&& errorInfo);
 
   std::tuple<ErrorCode, std::string>
-  returnWithNewChallengeStatus(CaState& request, const std::string& challengeStatus,
+  returnWithNewChallengeStatus(ca::RequestState& request, const std::string& challengeStatus,
                                JsonSection&& challengeSecret, size_t remainingTries, time::seconds remainingTime);
 
   std::tuple<ErrorCode, std::string>
-  returnWithSuccess(CaState& request);
+  returnWithSuccess(ca::RequestState& request);
 
 public:
   const std::string CHALLENGE_TYPE;

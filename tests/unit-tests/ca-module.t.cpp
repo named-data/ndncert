@@ -30,6 +30,8 @@ namespace ndn {
 namespace ndncert {
 namespace tests {
 
+using namespace ca;
+
 BOOST_FIXTURE_TEST_SUITE(TestCaModule, DatabaseFixture)
 
 BOOST_AUTO_TEST_CASE(Initialization)
@@ -466,7 +468,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
                                                            time::system_clock::now() + time::hours(10)));
   m_keyChain.sign(clientCert, signingByKey(clientKey.getName()).setSignatureInfo(signatureInfo));
   RequestID requestId = {1,2,3,4,5,6,7,8};
-  CaState certRequest(Name("/ndn"), requestId, RequestType::NEW, Status::SUCCESS, clientCert, makeEmptyBlock(ndn::tlv::ContentType_Key));
+  RequestState certRequest(Name("/ndn"), requestId, RequestType::NEW, Status::SUCCESS, clientCert, makeEmptyBlock(ndn::tlv::ContentType_Key));
   auto issuedCert = ca.issueCertificate(certRequest);
 
   CaProfile item;

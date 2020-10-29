@@ -36,6 +36,7 @@
 
 namespace ndn {
 namespace ndncert {
+namespace ca {
 
 static const time::seconds DEFAULT_DATA_FRESHNESS_PERIOD = 1_s;
 static const time::seconds REQUEST_VALIDITY_PERIOD_NOT_BEFORE_GRACE_PERIOD = 120_s;
@@ -306,7 +307,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   }
   RequestID id;
   std::memcpy(id.data(), requestIdData, id.size());
-  CaState requestState(m_config.m_caItem.m_caPrefix, id,
+  RequestState requestState(m_config.m_caItem.m_caPrefix, id,
                        requestType, Status::BEFORE_CHALLENGE, *clientCert,
                        makeBinaryBlock(ndn::tlv::ContentType_Key, aesKey, sizeof(aesKey)));
   try {
@@ -439,7 +440,7 @@ CaModule::onChallenge(const Interest& request)
 }
 
 security::Certificate
-CaModule::issueCertificate(const CaState& requestState)
+CaModule::issueCertificate(const RequestState& requestState)
 {
   auto expectedPeriod = requestState.m_cert.getValidityPeriod().getPeriod();
   security::ValidityPeriod period(expectedPeriod.first, expectedPeriod.second);
@@ -460,7 +461,7 @@ CaModule::issueCertificate(const CaState& requestState)
   return newCert;
 }
 
-std::unique_ptr<CaState>
+std::unique_ptr<RequestState>
 CaModule::getCertificateRequest(const Interest& request)
 {
   RequestID requestId;
@@ -474,7 +475,7 @@ CaModule::getCertificateRequest(const Interest& request)
   }
   try {
     NDN_LOG_TRACE("Request Id to query the database " << toHex(requestId.data(), requestId.size()));
-    return std::make_unique<CaState>(m_storage->getRequest(requestId));
+    return std::make_unique<RequestState>(m_storage->getRequest(requestId));
   }
   catch (const std::exception& e) {
     NDN_LOG_ERROR("Cannot get certificate request record from the storage: " << e.what());
@@ -499,5 +500,6 @@ CaModule::generateErrorDataPacket(const Name& name, ErrorCode error, const std::
   return result;
 }
 
+} // namespace ca
 } // namespace ndncert
 } // namespace ndn

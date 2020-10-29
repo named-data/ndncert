@@ -27,6 +27,7 @@ struct sqlite3;
 
 namespace ndn {
 namespace ndncert {
+namespace ca {
 
 class CaSqlite : public CaStorage
 {
@@ -42,31 +43,32 @@ public:
   /**
    * @throw if request cannot be fetched from underlying data storage
    */
-  CaState
+  RequestState
   getRequest(const RequestID& requestId) override;
 
   /**
    * @throw if there is an existing request with the same request ID
    */
   void
-  addRequest(const CaState& request) override;
+  addRequest(const RequestState& request) override;
 
   void
-  updateRequest(const CaState& request) override;
+  updateRequest(const RequestState& request) override;
 
   void
   deleteRequest(const RequestID& requestId) override;
 
-  std::list<CaState>
+  std::list<RequestState>
   listAllRequests() override;
 
-  std::list<CaState>
+  std::list<RequestState>
   listAllRequests(const Name& caName) override;
 
 private:
   sqlite3* m_database;
 };
 
+} // namespace ca
 } // namespace ndncert
 } // namespace ndn
 

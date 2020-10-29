@@ -25,6 +25,7 @@
 
 namespace ndn {
 namespace ndncert {
+namespace ca {
 
 class CaStorage : noncopyable
 {
@@ -32,25 +33,25 @@ public: // request related
   /**
    * @throw if request cannot be fetched from underlying data storage
    */
-  virtual CaState
+  virtual RequestState
   getRequest(const RequestID& requestId) = 0;
 
   /**
    * @throw if there is an existing request with the same request ID
    */
   virtual void
-  addRequest(const CaState& request) = 0;
+  addRequest(const RequestState& request) = 0;
 
   virtual void
-  updateRequest(const CaState& request) = 0;
+  updateRequest(const RequestState& request) = 0;
 
   virtual void
   deleteRequest(const RequestID& requestId) = 0;
 
-  virtual std::list<CaState>
+  virtual std::list<RequestState>
   listAllRequests() = 0;
 
-  virtual std::list<CaState>
+  virtual std::list<RequestState>
   listAllRequests(const Name& caName) = 0;
 
 public: // factory
@@ -85,10 +86,11 @@ static class NdnCert ## C ## CaStorageRegistrationClass          \
 public:                                                          \
   NdnCert ## C ## CaStorageRegistrationClass()                   \
   {                                                              \
-    ::ndn::ndncert::CaStorage::registerCaStorage<C>();           \
+    ::ndn::ndncert::ca::CaStorage::registerCaStorage<C>();       \
   }                                                              \
 } g_NdnCert ## C ## CaStorageRegistrationVariable
 
+} // namespace ca
 } // namespace ndncert
 } // namespace ndn
 

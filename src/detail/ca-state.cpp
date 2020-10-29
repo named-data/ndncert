@@ -46,6 +46,8 @@ std::string statusToString(Status status) {
   }
 }
 
+namespace ca {
+
 ChallengeState::ChallengeState(const std::string& challengeStatus,
                                const time::system_clock::TimePoint& challengeTp,
                                size_t remainingTries, time::seconds remainingTime,
@@ -58,7 +60,7 @@ ChallengeState::ChallengeState(const std::string& challengeStatus,
 {
 }
 
-CaState::CaState(const Name& caName, const RequestID& requestId, RequestType requestType, Status status,
+RequestState::RequestState(const Name& caName, const RequestID& requestId, RequestType requestType, Status status,
                  const security::Certificate& cert, Block encryptionKey, uint32_t aesBlockCounter)
     : m_caPrefix(caName)
     , m_requestId(requestId)
@@ -70,7 +72,7 @@ CaState::CaState(const Name& caName, const RequestID& requestId, RequestType req
 {
 }
 
-CaState::CaState(const Name& caName, const RequestID& requestId, RequestType requestType, Status status,
+RequestState::RequestState(const Name& caName, const RequestID& requestId, RequestType requestType, Status status,
                  const security::Certificate& cert, const std::string& challengeType,
                  const std::string& challengeStatus, const time::system_clock::TimePoint& challengeTp,
                  size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
@@ -88,7 +90,7 @@ CaState::CaState(const Name& caName, const RequestID& requestId, RequestType req
 }
 
 std::ostream&
-operator<<(std::ostream& os, const CaState& request)
+operator<<(std::ostream& os, const RequestState& request)
 {
   os << "Request's CA name: " << request.m_caPrefix << "\n";
   os << "Request's request ID: " << toHex(request.m_requestId.data(), request.m_requestId.size()) << "\n";
@@ -109,5 +111,6 @@ operator<<(std::ostream& os, const CaState& request)
   return os;
 }
 
+} // namespace ca
 } // namespace ndncert
 } // namespace ndn

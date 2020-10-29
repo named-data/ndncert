@@ -53,7 +53,7 @@ public:
 
   // For CA
   std::tuple<ErrorCode, std::string>
-  handleChallengeRequest(const Block& params, CaState& request) override;
+  handleChallengeRequest(const Block& params, ca::RequestState& request) override;
 
   // For Client
   std::vector<std::tuple<std::string, std::string>>

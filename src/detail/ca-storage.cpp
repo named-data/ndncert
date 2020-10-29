@@ -22,6 +22,7 @@
 
 namespace ndn {
 namespace ndncert {
+namespace ca {
 
 unique_ptr<CaStorage>
 CaStorage::createCaStorage(const std::string& caStorageType, const Name& caName, const std::string& path)
@@ -38,5 +39,6 @@ CaStorage::getFactory()
   return factory;
 }
 
+} // namespace ca
 } // namespace ndncert
 } // namespace ndn

@@ -27,6 +27,7 @@
 
 namespace ndn {
 namespace ndncert {
+namespace ca {
 
 int
 main(int argc, char* argv[])
@@ -61,7 +62,7 @@ main(int argc, char* argv[])
   }
 
   CaSqlite storage(Name(caNameString), "");
-  std::list<CaState> requestList;
+  std::list<RequestState> requestList;
   requestList = storage.listAllRequests();
   std::cerr << "The pending requests are :" << std::endl;
   for (const auto& entry : requestList) {
@@ -72,11 +73,12 @@ main(int argc, char* argv[])
   return 0;
 }
 
+} // namespace ca
 } // namespace ndncert
 } // namespace ndn
 
 int
 main(int argc, char* argv[])
 {
-  return ndn::ndncert::main(argc, argv);
+  return ndn::ndncert::ca::main(argc, argv);
 }

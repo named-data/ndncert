@@ -27,6 +27,7 @@
 
 namespace ndn {
 namespace ndncert {
+namespace ca {
 
 using namespace ndn::util;
 const std::string CaSqlite::STORAGE_TYPE = "ca-storage-sqlite3";
@@ -52,7 +53,7 @@ convertString2Json(const std::string& jsonContent)
 
 static const std::string INITIALIZATION = R"_DBTEXT_(
 CREATE TABLE IF NOT EXISTS
-  CaStates(
+  RequestStates(
     id INTEGER PRIMARY KEY,
     request_id BLOB NOT NULL,
     ca_name BLOB NOT NULL,
@@ -69,7 +70,7 @@ CREATE TABLE IF NOT EXISTS
     aes_block_counter INTEGER
   );
 CREATE UNIQUE INDEX IF NOT EXISTS
-  CaStateIdIndex ON CaStates(request_id);
+  RequestStateIdIndex ON RequestStates(request_id);
 )_DBTEXT_";
 
 CaSqlite::CaSqlite(const Name& caName, const std::string& path)
@@ -121,7 +122,7 @@ CaSqlite::~CaSqlite()
   sqlite3_close(m_database);
 }
 
-CaState
+RequestState
 CaSqlite::getRequest(const RequestID& requestId)
 {
   Sqlite3Statement statement(m_database,
@@ -130,7 +131,7 @@ CaSqlite::getRequest(const RequestID& requestId)
                              challenge_type, challenge_secrets,
                              challenge_tp, remaining_tries, remaining_time,
                              request_type, encryption_key, aes_block_counter
-                             FROM CaStates where request_id = ?)_SQLTEXT_");
+                             FROM RequestStates where request_id = ?)_SQLTEXT_");
   statement.bind(1, requestId.data(), requestId.size(), SQLITE_TRANSIENT);
 
   if (statement.step() == SQLITE_ROW) {
@@ -147,13 +148,13 @@ CaSqlite::getRequest(const RequestID& requestId)
     auto encryptionKey = statement.getBlock(11);
     auto aesCounter = statement.getInt(12);
     if (challengeType != "") {
-      return CaState(caName, requestId, requestType, status, cert,
+      return RequestState(caName, requestId, requestType, status, cert,
                      challengeType, challengeStatus, time::fromIsoString(challengeTp),
                      remainingTries, time::seconds(remainingTime),
                      convertString2Json(challengeSecrets), encryptionKey, aesCounter);
     }
     else {
-      return CaState(caName, requestId, requestType, status, cert, encryptionKey);
+      return RequestState(caName, requestId, requestType, status, cert, encryptionKey);
     }
   }
   else {
@@ -162,11 +163,11 @@ CaSqlite::getRequest(const RequestID& requestId)
 }
 
 void
-CaSqlite::addRequest(const CaState& request)
+CaSqlite::addRequest(const RequestState& request)
 {
   Sqlite3Statement statement(
       m_database,
-      R"_SQLTEXT_(INSERT OR ABORT INTO CaStates (request_id, ca_name, status, request_type,
+      R"_SQLTEXT_(INSERT OR ABORT INTO RequestStates (request_id, ca_name, status, request_type,
                   cert_request, challenge_type, challenge_status, challenge_secrets,
                   challenge_tp, remaining_tries, remaining_time, encryption_key, aes_block_counter)
                   values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
@@ -192,10 +193,10 @@ CaSqlite::addRequest(const CaState& request)
 }
 
 void
-CaSqlite::updateRequest(const CaState& request)
+CaSqlite::updateRequest(const RequestState& request)
 {
   Sqlite3Statement statement(m_database,
-                             R"_SQLTEXT_(UPDATE CaStates
+                             R"_SQLTEXT_(UPDATE RequestStates
                              SET status = ?, challenge_type = ?, challenge_status = ?, challenge_secrets = ?,
                              challenge_tp = ?, remaining_tries = ?, remaining_time = ?, aes_block_counter = ?
                              WHERE request_id = ?)_SQLTEXT_");
@@ -223,15 +224,15 @@ CaSqlite::updateRequest(const CaState& request)
   }
 }
 
-std::list<CaState>
+std::list<RequestState>
 CaSqlite::listAllRequests()
 {
-  std::list<CaState> result;
+  std::list<RequestState> result;
   Sqlite3Statement statement(m_database, R"_SQLTEXT_(SELECT id, request_id, ca_name, status,
                              challenge_status, cert_request, challenge_type, challenge_secrets,
                              challenge_tp, remaining_tries, remaining_time, request_type,
                              encryption_key, aes_block_counter
-                             FROM CaStates)_SQLTEXT_");
+                             FROM RequestStates)_SQLTEXT_");
   while (statement.step() == SQLITE_ROW) {
     RequestID requestId;
     std::memcpy(requestId.data(), statement.getBlob(1), statement.getSize(1));
@@ -248,28 +249,28 @@ CaSqlite::listAllRequests()
     auto encryptionKey = statement.getBlock(12);
     auto aesBlockCounter = statement.getInt(13);
     if (challengeType != "") {
-      result.push_back(CaState(caName, requestId, requestType, status, cert,
+      result.push_back(RequestState(caName, requestId, requestType, status, cert,
                                challengeType, challengeStatus, time::fromIsoString(challengeTp),
                                remainingTries, time::seconds(remainingTime),
                                convertString2Json(challengeSecrets), encryptionKey, aesBlockCounter));
     }
     else {
-      result.push_back(CaState(caName, requestId, requestType, status, cert, encryptionKey, aesBlockCounter));
+      result.push_back(RequestState(caName, requestId, requestType, status, cert, encryptionKey, aesBlockCounter));
     }
   }
   return result;
 }
 
-std::list<CaState>
+std::list<RequestState>
 CaSqlite::listAllRequests(const Name& caName)
 {
-  std::list<CaState> result;
+  std::list<RequestState> result;
   Sqlite3Statement statement(m_database,
                              R"_SQLTEXT_(SELECT id, request_id, ca_name, status,
                              challenge_status, cert_request, challenge_type, challenge_secrets,
                              challenge_tp, remaining_tries, remaining_time, request_type, 
                              encryption_key, aes_block_counter
-                             FROM CaStates WHERE ca_name = ?)_SQLTEXT_");
+                             FROM RequestStates WHERE ca_name = ?)_SQLTEXT_");
   statement.bind(1, caName.wireEncode(), SQLITE_TRANSIENT);
 
   while (statement.step() == SQLITE_ROW) {
@@ -288,13 +289,13 @@ CaSqlite::listAllRequests(const Name& caName)
     auto encryptionKey = statement.getBlock(12);
     auto aesBlockCounter = statement.getInt(13);
     if (challengeType != "") {
-      result.push_back(CaState(caName, requestId, requestType, status, cert,
+      result.push_back(RequestState(caName, requestId, requestType, status, cert,
                                challengeType, challengeStatus, time::fromIsoString(challengeTp),
                                remainingTries, time::seconds(remainingTime),
                                convertString2Json(challengeSecrets), encryptionKey, aesBlockCounter));
     }
     else {
-      result.push_back(CaState(caName, requestId, requestType, status, cert, encryptionKey, aesBlockCounter));
+      result.push_back(RequestState(caName, requestId, requestType, status, cert, encryptionKey, aesBlockCounter));
     }
   }
   return result;
@@ -304,10 +305,11 @@ void
 CaSqlite::deleteRequest(const RequestID& requestId)
 {
   Sqlite3Statement statement(m_database,
-                             R"_SQLTEXT_(DELETE FROM CaStates WHERE request_id = ?)_SQLTEXT_");
+                             R"_SQLTEXT_(DELETE FROM RequestStates WHERE request_id = ?)_SQLTEXT_");
   statement.bind(1, requestId.data(), requestId.size(), SQLITE_TRANSIENT);
   statement.step();
 }
 
+} // namespace ca
 } // namespace ndncert
 } // namespace ndn

@@ -26,6 +26,8 @@ namespace ndn {
 namespace ndncert {
 namespace tests {
 
+using namespace ca;
+
 BOOST_FIXTURE_TEST_SUITE(TestCaMemory, IdentityManagementFixture)
 
 BOOST_AUTO_TEST_CASE(RequestOperations)
@@ -38,7 +40,7 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
 
   // add operation
   RequestID requestId = {1,2,3,4,5,6,7,8};
-  CaState request1(Name("/ndn/site1"), requestId, RequestType::NEW, Status::BEFORE_CHALLENGE, cert1, makeStringBlock(ndn::tlv::ContentType_Key, "PretendItIsAKey"));
+  RequestState request1(Name("/ndn/site1"), requestId, RequestType::NEW, Status::BEFORE_CHALLENGE, cert1, makeStringBlock(ndn::tlv::ContentType_Key, "PretendItIsAKey"));
   BOOST_CHECK_NO_THROW(storage.addRequest(request1));
 
   // get operation
@@ -52,7 +54,7 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   json.put("code", "1234");
 
   // update operation
-  CaState request2(Name("/ndn/site1"), requestId, RequestType::NEW, Status::CHALLENGE, cert1,
+  RequestState request2(Name("/ndn/site1"), requestId, RequestType::NEW, Status::CHALLENGE, cert1,
                    "email", "test", time::system_clock::now(), 3, time::seconds(3600),
                    std::move(json), makeStringBlock(ndn::tlv::ContentType_Key, "PretendItIsAKey"), 0);
   storage.updateRequest(request2);
@@ -65,7 +67,7 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   auto key2 = identity2.getDefaultKey();
   auto cert2 = key2.getDefaultCertificate();
   RequestID requestId2 = {8,7,6,5,4,3,2,1};
-  CaState request3(Name("/ndn/site2"), requestId2, RequestType::NEW, Status::BEFORE_CHALLENGE, cert2, makeStringBlock(ndn::tlv::ContentType_Key, "PretendItIsAKey"));
+  RequestState request3(Name("/ndn/site2"), requestId2, RequestType::NEW, Status::BEFORE_CHALLENGE, cert2, makeStringBlock(ndn::tlv::ContentType_Key, "PretendItIsAKey"));
   storage.addRequest(request3);
 
   // list operation

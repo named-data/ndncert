@@ -45,6 +45,8 @@ enum class Status : uint16_t {
 std::string
 statusToString(Status status);
 
+namespace ca {
+
 /**
  * @brief The state maintained by the Challenge module.
  */
@@ -78,20 +80,20 @@ struct ChallengeState
 /**
  * @brief Represents a certificate request instance kept by the CA.
  *
- * ChallengeModule should take use of CaState.ChallengeState to keep the challenge state.
+ * ChallengeModule should take use of RequestState.ChallengeState to keep the challenge state.
  */
-class CaState
+class RequestState
 {
 public:
   /**
-   * @brief Used to instantiate a CaState when challenge is not started.
+   * @brief Used to instantiate a RequestState when challenge is not started.
    */
-  CaState(const Name& caName, const RequestID& requestId, RequestType requestType, Status status,
+  RequestState(const Name& caName, const RequestID& requestId, RequestType requestType, Status status,
           const security::Certificate& cert, Block m_encryptionKey, uint32_t aesBlockCounter = 0);
   /**
-   * @brief Used to instantiate a CaState after challenge is started.
+   * @brief Used to instantiate a RequestState after challenge is started.
    */
-  CaState(const Name& caName, const RequestID& requestId, RequestType requestType, Status status,
+  RequestState(const Name& caName, const RequestID& requestId, RequestType requestType, Status status,
           const security::Certificate& cert, const std::string& challengeType,
           const std::string& challengeStatus, const time::system_clock::TimePoint& challengeTp,
           size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
@@ -138,8 +140,9 @@ public:
 };
 
 std::ostream&
-operator<<(std::ostream& os, const CaState& request);
+operator<<(std::ostream& os, const RequestState& request);
 
+} // namespace ca
 } // namespace ndncert
 } // namespace ndn
 

@@ -30,7 +30,7 @@ BOOST_FIXTURE_TEST_SUITE(TestConfig, IdentityManagementFixture)
 
 BOOST_AUTO_TEST_CASE(CAConfigFile)
 {
-  CaConfig config;
+  ca::CaConfig config;
   config.load("tests/unit-tests/config-files/config-ca-1");
   BOOST_CHECK_EQUAL(config.m_caItem.m_caPrefix, "/ndn");
   BOOST_CHECK_EQUAL(config.m_caItem.m_caInfo, "ndn testbed ca");
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(CAConfigFile)
 
 BOOST_AUTO_TEST_CASE(CAConfigFileWithErrors)
 {
-  CaConfig config;
+  ca::CaConfig config;
   // nonexistent file
   BOOST_CHECK_THROW(config.load("tests/unit-tests/config-files/Nonexist"), std::runtime_error);
   // missing challenge

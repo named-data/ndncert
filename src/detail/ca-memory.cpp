@@ -23,6 +23,7 @@
 
 namespace ndn {
 namespace ndncert {
+namespace ca {
 
 const std::string
 CaMemory::STORAGE_TYPE = "ca-storage-memory";
@@ -34,7 +35,7 @@ CaMemory::CaMemory(const Name& caName, const std::string& path)
 {
 }
 
-CaState
+RequestState
 CaMemory::getRequest(const RequestID& requestId)
 {
   auto search = m_requests.find(requestId);
@@ -45,7 +46,7 @@ CaMemory::getRequest(const RequestID& requestId)
 }
 
 void
-CaMemory::addRequest(const CaState& request)
+CaMemory::addRequest(const RequestState& request)
 {
   auto search = m_requests.find(request.m_requestId);
   if (search == m_requests.end()) {
@@ -57,7 +58,7 @@ CaMemory::addRequest(const CaState& request)
 }
 
 void
-CaMemory::updateRequest(const CaState& request)
+CaMemory::updateRequest(const RequestState& request)
 {
   auto search = m_requests.find(request.m_requestId);
   if (search == m_requests.end()) {
@@ -78,20 +79,20 @@ CaMemory::deleteRequest(const RequestID& requestId)
   }
 }
 
-std::list<CaState>
+std::list<RequestState>
 CaMemory::listAllRequests()
 {
-  std::list<CaState> result;
+  std::list<RequestState> result;
   for (const auto& entry : m_requests) {
     result.push_back(entry.second);
   }
   return result;
 }
 
-std::list<CaState>
+std::list<RequestState>
 CaMemory::listAllRequests(const Name& caName)
 {
-  std::list<CaState> result;
+  std::list<RequestState> result;
   for (const auto& entry : m_requests) {
     if (entry.second.m_caPrefix == caName) {
       result.push_back(entry.second);
@@ -100,5 +101,6 @@ CaMemory::listAllRequests(const Name& caName)
   return result;
 }
 
+} // namespace ca
 } // namespace ndncert
 } // namespace ndn

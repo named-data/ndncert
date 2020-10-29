@@ -79,15 +79,17 @@ private:
   parseChallengeList(const JsonSection& configSection);
 };
 
+namespace ca {
+
 /**
  * @brief The function would be invoked whenever the certificate request status is updated.
  * The callback is used to notice the CA application or CA command line tool. The callback is
  * fired whenever a request instance is created, challenge status is updated, and when certificate
  * is issued.
  *
- * @param CaState The state of the certificate request whose status is updated.
+ * @param RequestState The state of the certificate request whose status is updated.
  */
-using StatusUpdateCallback = function<void(const CaState&)>;
+using StatusUpdateCallback = function<void(const RequestState&)>;
 
 /**
  * @brief CA's configuration on NDNCERT.
@@ -137,6 +139,8 @@ public:
    */
   std::vector<std::unique_ptr<NameAssignmentFunc>> m_nameAssignmentFuncs;
 };
+
+} // namespace ca
 
 /**
  * @brief Represents Client configuration

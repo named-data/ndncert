@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE(OnProbeResponse){
   availableNames.push_back(Name("/site2"));
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
-  CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-5", "ca-storage-memory");
+  ca::CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-5", "ca-storage-memory");
 
   Data reply;
   reply.setName(Name("/site/CA/PROBE"));

@@ -43,7 +43,7 @@ ChallengeEmail::ChallengeEmail(const std::string& scriptPath,
 
 // For CA
 std::tuple<ErrorCode, std::string>
-ChallengeEmail::handleChallengeRequest(const Block& params, CaState& request)
+ChallengeEmail::handleChallengeRequest(const Block& params, ca::RequestState& request)
 {
   params.parse();
   auto currentTime = time::system_clock::now();
@@ -157,7 +157,7 @@ ChallengeEmail::isValidEmailAddress(const std::string& emailAddress)
 
 void
 ChallengeEmail::sendEmail(const std::string& emailAddress, const std::string& secret,
-                          const CaState& request) const
+                          const ca::RequestState& request) const
 {
   std::string command = m_sendEmailScript;
   command += " \"" + emailAddress + "\" \"" + secret + "\" \"" + request.m_caPrefix.toUri() + "\" \"" + request.m_cert.getName().toUri() + "\"";

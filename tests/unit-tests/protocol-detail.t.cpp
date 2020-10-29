@@ -32,7 +32,7 @@ BOOST_FIXTURE_TEST_SUITE(TestProtocolDetail, IdentityManagementTimeFixture)
 
 BOOST_AUTO_TEST_CASE(TestInfo)
 {
-  CaConfig config;
+  ca::CaConfig config;
   config.load("tests/unit-tests/config-files/config-ca-1");
 
   const auto& identity = addIdentity("/test");
@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(TestProbe)
   BOOST_CHECK_EQUAL(std::get<1>(decodedParameters[0]), "zhiyi@cs.ucla.edu");
   BOOST_CHECK_EQUAL(decodedParameters.size(), 1);
 
-  CaConfig config;
+  ca::CaConfig config;
   config.load("tests/unit-tests/config-files/config-ca-5");
   std::vector<Name> ids;
   ids.push_back(Name("/example"));

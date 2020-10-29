@@ -27,6 +27,7 @@
 
 namespace ndn {
 namespace ndncert {
+namespace ca {
 
 class CaModule : noncopyable
 {
@@ -70,11 +71,11 @@ NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
   onRegisterFailed(const std::string& reason);
 
-  std::unique_ptr<CaState>
+  std::unique_ptr<RequestState>
   getCertificateRequest(const Interest& request);
 
   security::Certificate
-  issueCertificate(const CaState& requestState);
+  issueCertificate(const RequestState& requestState);
 
   void
   registerPrefix();
@@ -94,6 +95,7 @@ NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::list<InterestFilterHandle> m_interestFilterHandles;
 };
 
+} // namespace ca
 } // namespace ndncert
 } // namespace ndn
 

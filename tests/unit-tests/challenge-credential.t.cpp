@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
   auto keyA = identityA.getDefaultKey();
   auto certA = key.getDefaultCertificate();
   RequestID requestId = {1,2,3,4,5,6,7,8};
-  CaState state(Name("/example"), requestId, RequestType::NEW, Status::BEFORE_CHALLENGE, certA, makeEmptyBlock(ndn::tlv::ContentType_Key));
+  ca::RequestState state(Name("/example"), requestId, RequestType::NEW, Status::BEFORE_CHALLENGE, certA, makeEmptyBlock(ndn::tlv::ContentType_Key));
 
   // create requester's credential
   auto identityB = addIdentity(Name("/trust/cert"));

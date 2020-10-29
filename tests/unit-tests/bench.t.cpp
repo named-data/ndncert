@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(PacketSize0)
   auto cert = key.getDefaultCertificate();
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
-  CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
+  ca::CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
   auto profileData = ca.getCaProfileData();
 
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
   auto cert = key.getDefaultCertificate();
 
   util::DummyClientFace face(io, m_keyChain, {true, true});
-  CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
+  ca::CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
   // generate NEW Interest
