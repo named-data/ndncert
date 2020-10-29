@@ -40,8 +40,8 @@ public:
   // For CA use
   static Block
   encodeDataContent(const std::vector<Name>& identifiers,
-                    boost::optional<size_t> maxSuffixLength = boost::none,
-                    boost::optional<std::vector<std::shared_ptr<security::Certificate>>> redirectionItems = boost::none);
+                    optional<size_t> maxSuffixLength = nullopt,
+                    optional<std::vector<std::shared_ptr<security::Certificate>>> redirectionItems = nullopt);
 
   static std::vector<std::tuple<std::string, std::string>>
   decodeApplicationParameters(const Block& block);

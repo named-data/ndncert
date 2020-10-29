@@ -61,7 +61,7 @@ public:
    * @return the CaProfile if decoding is successful
    * @throw std::runtime_error if the decoding fails or receiving an error packet.
    */
-  static boost::optional<CaProfile>
+  static optional<CaProfile>
   onCaProfileResponse(const Data& reply);
 
   /**
@@ -76,7 +76,7 @@ public:
    * @return the CaProfile if decoding is successful
    * @throw std::runtime_error if the decoding fails or receiving an error packet.
    */
-  static boost::optional<CaProfile>
+  static optional<CaProfile>
   onCaProfileResponseAfterRedirection(const Data& reply, const Name& caCertFullName);
 
   /**

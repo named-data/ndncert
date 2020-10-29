@@ -62,7 +62,7 @@ Requester::genCaProfileInterestFromDiscoveryResponse(const Data& reply)
   return interest;
 }
 
-boost::optional<CaProfile>
+optional<CaProfile>
 Requester::onCaProfileResponse(const Data& reply)
 {
   auto caItem = InfoEncoder::decodeDataContent(reply.getContent());
@@ -74,7 +74,7 @@ Requester::onCaProfileResponse(const Data& reply)
 }
 
 
-boost::optional<CaProfile>
+optional<CaProfile>
 Requester::onCaProfileResponseAfterRedirection(const Data& reply, const Name& caCertFullName)
 {
   auto caItem = InfoEncoder::decodeDataContent(reply.getContent());

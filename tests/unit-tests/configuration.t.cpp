@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE(CAConfigFile)
   BOOST_CHECK_EQUAL(config.m_caItem.m_caPrefix, "/ndn");
   BOOST_CHECK_EQUAL(config.m_caItem.m_caInfo, "missing max validity period, max suffix length, and probe");
   BOOST_CHECK_EQUAL(config.m_caItem.m_maxValidityPeriod, time::seconds(86400));
-  BOOST_CHECK(!config.m_caItem.m_maxSuffixLength);
+  BOOST_CHECK(!config.m_caItem.m_maxSuffixLength.has_value());
   BOOST_CHECK_EQUAL(config.m_caItem.m_probeParameterKeys.size(), 0);
   BOOST_CHECK_EQUAL(config.m_caItem.m_supportedChallenges.size(), 2);
   BOOST_CHECK_EQUAL(config.m_caItem.m_supportedChallenges.front(), "pin");

@@ -53,7 +53,11 @@ CaProfile::parse(const JsonSection& configJson)
   // CA max validity period
   m_maxValidityPeriod = time::seconds(configJson.get(CONFIG_MAX_VALIDITY_PERIOD, 86400));
   // CA max suffix length
-  m_maxSuffixLength = configJson.get_optional<size_t>(CONFIG_MAX_SUFFIX_LENGTH);
+  m_maxSuffixLength = nullopt;
+  auto maxSuffixLength = configJson.get_optional<size_t>(CONFIG_MAX_SUFFIX_LENGTH);
+  if (maxSuffixLength.has_value()) {
+    m_maxSuffixLength = *maxSuffixLength;
+  }
   // probe parameter keys
   m_probeParameterKeys.clear();
   auto probeParametersJson = configJson.get_child_optional(CONFIG_PROBE_PARAMETERS);
@@ -99,7 +103,9 @@ CaProfile::toJson() const
   caItem.put(CONFIG_CA_PREFIX, m_caPrefix.toUri());
   caItem.put(CONFIG_CA_INFO, m_caInfo);
   caItem.put(CONFIG_MAX_VALIDITY_PERIOD, m_maxValidityPeriod.count());
-  caItem.put(CONFIG_MAX_SUFFIX_LENGTH, m_maxSuffixLength);
+  if (m_maxSuffixLength) {
+    caItem.put(CONFIG_MAX_SUFFIX_LENGTH, *m_maxSuffixLength);
+  }
   if (!m_probeParameterKeys.empty()) {
     JsonSection probeParametersJson;
     for (const auto& key : m_probeParameterKeys) {
@@ -144,7 +150,7 @@ CaConfig::load(const std::string& fileName)
     NDN_THROW(std::runtime_error("At least one challenge should be specified."));
   }
   // parse redirection section if appears
-  m_redirection = boost::none;
+  m_redirection = nullopt;
   auto redirectionItems = configJson.get_child_optional(CONFIG_REDIRECTION);
   if (redirectionItems) {
     for (const auto& item : *redirectionItems) {

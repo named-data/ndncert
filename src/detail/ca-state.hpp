@@ -135,7 +135,7 @@ public:
   /**
    * @brief The challenge state.
    */
-  boost::optional<ChallengeState> m_challengeState;
+  optional<ChallengeState> m_challengeState;
 };
 
 std::ostream&

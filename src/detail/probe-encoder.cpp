@@ -49,8 +49,8 @@ ProbeEncoder::decodeApplicationParameters(const Block& block)
 }
 
 Block
-ProbeEncoder::encodeDataContent(const std::vector<Name>& identifiers, boost::optional<size_t> maxSuffixLength,
-                         boost::optional<std::vector<std::shared_ptr<security::Certificate>>> redirectionItems)
+ProbeEncoder::encodeDataContent(const std::vector<Name>& identifiers, optional<size_t> maxSuffixLength,
+                         optional<std::vector<std::shared_ptr<security::Certificate>>> redirectionItems)
 {
   Block content = makeEmptyBlock(ndn::tlv::Content);
   for (const auto& name : identifiers) {

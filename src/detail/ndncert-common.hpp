@@ -48,6 +48,7 @@
 #include <ndn-cxx/security/certificate.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/util/logger.hpp>
+#include <ndn-cxx/util/nonstd/optional.hpp>
 #include <tuple>
 #include <boost/algorithm/string.hpp>
 #include <boost/assert.hpp>

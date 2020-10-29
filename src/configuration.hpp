@@ -53,7 +53,7 @@ struct CaProfile {
    * E.g., When its value is 2, at most 2 name components can be assigned after m_caPrefix.
    * Default: none.
    */
-  boost::optional<size_t> m_maxSuffixLength;
+  optional<size_t> m_maxSuffixLength = nullopt;
   /**
    * A list of supported challenges. Only CA side will have m_supportedChallenges.
    * Default: empty list.
@@ -127,7 +127,7 @@ public:
    * Used for CA redirection as specified in
    * https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3-PROBE-Extensions#probe-extension-for-redirection
    */
-  boost::optional<std::vector<std::shared_ptr<security::Certificate>>> m_redirection;
+  optional<std::vector<std::shared_ptr<security::Certificate>>> m_redirection = nullopt;
   /**
    * StatusUpdate Callback function
    */

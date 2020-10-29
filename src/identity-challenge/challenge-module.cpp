@@ -77,7 +77,7 @@ ChallengeModule::returnWithError(CaState& request, ErrorCode errorCode, std::str
 {
   request.m_status = Status::FAILURE;
   request.m_challengeType = "";
-  request.m_challengeState = boost::none;
+  request.m_challengeState = nullopt;
   return std::make_tuple(errorCode, std::move(errorInfo));
 }
 
@@ -96,7 +96,7 @@ ChallengeModule::returnWithSuccess(CaState& request)
 {
   request.m_status = Status::PENDING;
   request.m_challengeType = CHALLENGE_TYPE;
-  request.m_challengeState = boost::none;
+  request.m_challengeState = nullopt;
   return std::make_tuple(ErrorCode::NO_ERROR, "");
 }
 

@@ -190,7 +190,7 @@ newCb(const Data& reply)
 static void
 InfoCb(const Data& reply, const Name& certFullName)
 {
-  boost::optional<CaProfile> profile;
+  optional<CaProfile> profile;
   try {
     if (certFullName.empty()) {
       profile = Requester::onCaProfileResponse(reply);
