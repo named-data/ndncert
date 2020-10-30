@@ -403,10 +403,7 @@ CaModule::onChallenge(const Interest& request)
       requestState->m_status = Status::SUCCESS;
       m_storage->deleteRequest(requestState->m_requestId);
 
-      payload = ChallengeEncoder::encodeDataContent(*requestState);
-      payload.parse();
-      payload.push_back(makeNestedBlock(tlv::IssuedCertName, issuedCert.getName()));
-      payload.encode();
+      payload = ChallengeEncoder::encodeDataContent(*requestState, issuedCert.getName());
       NDN_LOG_TRACE("Challenge succeeded. Certificate has been issued: " << issuedCert.getName());
     }
     else if (requestState->m_requestType == RequestType::REVOKE) {

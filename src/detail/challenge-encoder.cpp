@@ -24,7 +24,7 @@ namespace ndn {
 namespace ndncert {
 
 Block
-ChallengeEncoder::encodeDataContent(const ca::RequestState& request)
+ChallengeEncoder::encodeDataContent(const ca::RequestState& request, optional<Name> issuedCertName)
 {
   Block response = makeEmptyBlock(tlv::EncryptedPayload);
   response.push_back(makeNonNegativeIntegerBlock(tlv::Status, static_cast<size_t>(request.m_status)));
@@ -34,6 +34,9 @@ ChallengeEncoder::encodeDataContent(const ca::RequestState& request)
         makeNonNegativeIntegerBlock(tlv::RemainingTries, request.m_challengeState->m_remainingTries));
     response.push_back(
         makeNonNegativeIntegerBlock(tlv::RemainingTime, request.m_challengeState->m_remainingTime.count()));
+  }
+  if (issuedCertName.has_value()) {
+    response.push_back(makeNestedBlock(tlv::IssuedCertName, *issuedCertName));
   }
   response.encode();
   return response;

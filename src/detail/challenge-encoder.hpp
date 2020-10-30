@@ -31,7 +31,7 @@ class ChallengeEncoder
 {
 public:
   static Block
-  encodeDataContent(const ca::RequestState& request);
+  encodeDataContent(const ca::RequestState& request, optional<Name> issuedCertName = nullopt);
 
   static void
   decodeDataContent(const Block& data, requester::RequestContext& state);
