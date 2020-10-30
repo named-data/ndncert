@@ -39,12 +39,12 @@ public:
 
   static Block
   encodeDataContent(const std::vector<uint8_t>& ecdhKey, const std::array<uint8_t, 32>& salt,
-                    const RequestID& requestId, const Status& status,
+                    const RequestId& requestId, const Status& status,
                     const std::list<std::string>& challenges);
 
   static std::list<std::string>
   decodeDataContent(const Block& content, std::vector<uint8_t>& ecdhKey,
-                    std::array<uint8_t, 32>& salt, RequestID& requestId, Status& status);
+                    std::array<uint8_t, 32>& salt, RequestId& requestId, Status& status);
 };
 
 } // namespace ndncert

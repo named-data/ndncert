@@ -38,7 +38,7 @@ public:
    * @throw if request cannot be fetched from underlying data storage
    */
   RequestState
-  getRequest(const RequestID& requestId) override;
+  getRequest(const RequestId& requestId) override;
 
   /**
    * @throw if there is an existing request with the same request ID
@@ -50,7 +50,7 @@ public:
   updateRequest(const RequestState& request) override;
 
   void
-  deleteRequest(const RequestID& requestId) override;
+  deleteRequest(const RequestId& requestId) override;
 
   std::list<RequestState>
   listAllRequests() override;
@@ -59,7 +59,7 @@ public:
   listAllRequests(const Name& caName) override;
 
 private:
-  std::map<RequestID, RequestState> m_requests;
+  std::map<RequestId, RequestState> m_requests;
 };
 
 } // namespace ca

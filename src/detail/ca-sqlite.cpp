@@ -123,7 +123,7 @@ CaSqlite::~CaSqlite()
 }
 
 RequestState
-CaSqlite::getRequest(const RequestID& requestId)
+CaSqlite::getRequest(const RequestId& requestId)
 {
   Sqlite3Statement statement(m_database,
                              R"_SQLTEXT_(SELECT id, ca_name, status,
@@ -234,7 +234,7 @@ CaSqlite::listAllRequests()
                              encryption_key, aes_block_counter
                              FROM RequestStates)_SQLTEXT_");
   while (statement.step() == SQLITE_ROW) {
-    RequestID requestId;
+    RequestId requestId;
     std::memcpy(requestId.data(), statement.getBlob(1), statement.getSize(1));
     Name caName(statement.getBlock(2));
     auto status = static_cast<Status>(statement.getInt(3));
@@ -274,7 +274,7 @@ CaSqlite::listAllRequests(const Name& caName)
   statement.bind(1, caName.wireEncode(), SQLITE_TRANSIENT);
 
   while (statement.step() == SQLITE_ROW) {
-    RequestID requestId;
+    RequestId requestId;
     std::memcpy(requestId.data(), statement.getBlob(1), statement.getSize(1));
     Name caName(statement.getBlock(2));
     auto status = static_cast<Status>(statement.getInt(3));
@@ -302,7 +302,7 @@ CaSqlite::listAllRequests(const Name& caName)
 }
 
 void
-CaSqlite::deleteRequest(const RequestID& requestId)
+CaSqlite::deleteRequest(const RequestId& requestId)
 {
   Sqlite3Statement statement(m_database,
                              R"_SQLTEXT_(DELETE FROM RequestStates WHERE request_id = ?)_SQLTEXT_");

@@ -257,7 +257,7 @@ BOOST_AUTO_TEST_CASE(HandleNew)
     BOOST_CHECK(challengeBlockCount != 0);
 
     auto challengeList = requester::Requester::onNewRenewRevokeResponse(state, response);
-    RequestID requestId;
+    RequestId requestId;
     std::memcpy(requestId.data(), contentBlock.get(tlv::RequestId).value(), contentBlock.get(tlv::RequestId).value_size());
     auto ca_encryption_key = ca.getCaStorage()->getRequest(requestId).m_encryptionKey;
     BOOST_CHECK_EQUAL_COLLECTIONS(state.m_aesKey, state.m_aesKey + sizeof(state.m_aesKey),
@@ -467,7 +467,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
   signatureInfo.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
                                                            time::system_clock::now() + time::hours(10)));
   m_keyChain.sign(clientCert, signingByKey(clientKey.getName()).setSignatureInfo(signatureInfo));
-  RequestID requestId = {1,2,3,4,5,6,7,8};
+  RequestId requestId = {1,2,3,4,5,6,7,8};
   RequestState certRequest(Name("/ndn"), requestId, RequestType::NEW, Status::SUCCESS, clientCert, makeEmptyBlock(ndn::tlv::ContentType_Key));
   auto issuedCert = ca.issueCertificate(certRequest);
 
@@ -499,7 +499,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
     BOOST_CHECK(challengeBlockCount != 0);
 
     auto challengeList = requester::Requester::onNewRenewRevokeResponse(state, response);
-    RequestID requestId;
+    RequestId requestId;
     std::memcpy(requestId.data(), contentBlock.get(tlv::RequestId).value(), contentBlock.get(tlv::RequestId).value_size());
     auto ca_encryption_key = ca.getCaStorage()->getRequest(requestId).m_encryptionKey;
     BOOST_CHECK_EQUAL_COLLECTIONS(state.m_aesKey, state.m_aesKey + sizeof(state.m_aesKey),

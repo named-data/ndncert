@@ -80,7 +80,7 @@ NewRenewRevokeEncoder::decodeApplicationParameters(const Block& payload, Request
 
 Block
 NewRenewRevokeEncoder::encodeDataContent(const std::vector<uint8_t>& ecdhKey, const std::array<uint8_t, 32>& salt,
-                                         const RequestID& requestId, const Status& status,
+                                         const RequestId& requestId, const Status& status,
                                          const std::list<std::string>& challenges)
 {
   Block response = makeEmptyBlock(ndn::tlv::Content);
@@ -97,7 +97,7 @@ NewRenewRevokeEncoder::encodeDataContent(const std::vector<uint8_t>& ecdhKey, co
 
 std::list<std::string>
 NewRenewRevokeEncoder::decodeDataContent(const Block& content, std::vector<uint8_t>& ecdhKey,
-                                         std::array<uint8_t, 32>& salt, RequestID& requestId, Status& status)
+                                         std::array<uint8_t, 32>& salt, RequestId& requestId, Status& status)
 {
   content.parse();
   status = static_cast<Status>(readNonNegativeInteger(content.get(tlv::Status)));

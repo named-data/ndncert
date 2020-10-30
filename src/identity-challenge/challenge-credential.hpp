@@ -65,7 +65,7 @@ public:
 
   static void
   fulfillParameters(std::vector<std::tuple<std::string, std::string>>& params,
-                    KeyChain& keyChain, const Name& issuedCertName, const RequestID& requestId);
+                    KeyChain& keyChain, const Name& issuedCertName, const RequestId& requestId);
 
   // challenge parameters
   static const std::string PARAMETER_KEY_CREDENTIAL_CERT;

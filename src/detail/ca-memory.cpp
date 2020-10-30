@@ -36,7 +36,7 @@ CaMemory::CaMemory(const Name& caName, const std::string& path)
 }
 
 RequestState
-CaMemory::getRequest(const RequestID& requestId)
+CaMemory::getRequest(const RequestId& requestId)
 {
   auto search = m_requests.find(requestId);
   if (search == m_requests.end()) {
@@ -70,7 +70,7 @@ CaMemory::updateRequest(const RequestState& request)
 }
 
 void
-CaMemory::deleteRequest(const RequestID& requestId)
+CaMemory::deleteRequest(const RequestId& requestId)
 {
   auto search = m_requests.find(requestId);
   auto keyName = search->second.m_cert.getKeyName();

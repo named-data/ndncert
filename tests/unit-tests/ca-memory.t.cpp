@@ -39,7 +39,7 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   auto cert1 = key1.getDefaultCertificate();
 
   // add operation
-  RequestID requestId = {1,2,3,4,5,6,7,8};
+  RequestId requestId = {1,2,3,4,5,6,7,8};
   RequestState request1(Name("/ndn/site1"), requestId, RequestType::NEW, Status::BEFORE_CHALLENGE, cert1, makeStringBlock(ndn::tlv::ContentType_Key, "PretendItIsAKey"));
   BOOST_CHECK_NO_THROW(storage.addRequest(request1));
 
@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   auto identity2 = addIdentity(Name("/ndn/site2"));
   auto key2 = identity2.getDefaultKey();
   auto cert2 = key2.getDefaultCertificate();
-  RequestID requestId2 = {8,7,6,5,4,3,2,1};
+  RequestId requestId2 = {8,7,6,5,4,3,2,1};
   RequestState request3(Name("/ndn/site2"), requestId2, RequestType::NEW, Status::BEFORE_CHALLENGE, cert2, makeStringBlock(ndn::tlv::ContentType_Key, "PretendItIsAKey"));
   storage.addRequest(request3);
 

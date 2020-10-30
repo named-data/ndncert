@@ -171,7 +171,7 @@ ChallengeCredential::genChallengeRequestTLV(Status status, const std::string& ch
 
 void
 ChallengeCredential::fulfillParameters(std::vector<std::tuple<std::string, std::string>>& params,
-                                       KeyChain& keyChain, const Name& issuedCertName, const RequestID& requestId)
+                                       KeyChain& keyChain, const Name& issuedCertName, const RequestId& requestId)
 {
   auto& pib = keyChain.getPib();
   auto id = pib.getIdentity(security::extractIdentityFromCertName(issuedCertName));

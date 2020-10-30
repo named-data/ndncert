@@ -34,7 +34,7 @@ public: // request related
    * @throw if request cannot be fetched from underlying data storage
    */
   virtual RequestState
-  getRequest(const RequestID& requestId) = 0;
+  getRequest(const RequestId& requestId) = 0;
 
   /**
    * @throw if there is an existing request with the same request ID
@@ -46,7 +46,7 @@ public: // request related
   updateRequest(const RequestState& request) = 0;
 
   virtual void
-  deleteRequest(const RequestID& requestId) = 0;
+  deleteRequest(const RequestId& requestId) = 0;
 
   virtual std::list<RequestState>
   listAllRequests() = 0;

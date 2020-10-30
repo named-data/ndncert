@@ -27,7 +27,7 @@
 namespace ndn {
 namespace ndncert {
 
-typedef std::array<uint8_t, 8> RequestID;
+typedef std::array<uint8_t, 8> RequestId;
 
 enum class Status : uint16_t {
   BEFORE_CHALLENGE = 0,
@@ -88,12 +88,12 @@ public:
   /**
    * @brief Used to instantiate a RequestState when challenge is not started.
    */
-  RequestState(const Name& caName, const RequestID& requestId, RequestType requestType, Status status,
+  RequestState(const Name& caName, const RequestId& requestId, RequestType requestType, Status status,
           const security::Certificate& cert, Block m_encryptionKey, uint32_t aesBlockCounter = 0);
   /**
    * @brief Used to instantiate a RequestState after challenge is started.
    */
-  RequestState(const Name& caName, const RequestID& requestId, RequestType requestType, Status status,
+  RequestState(const Name& caName, const RequestId& requestId, RequestType requestType, Status status,
           const security::Certificate& cert, const std::string& challengeType,
           const std::string& challengeStatus, const time::system_clock::TimePoint& challengeTp,
           size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
@@ -107,7 +107,7 @@ public:
   /**
    * @brief The ID of the request.
    */
-  RequestID m_requestId;
+  RequestId m_requestId;
   /**
    * @brief The type of the request.
    */

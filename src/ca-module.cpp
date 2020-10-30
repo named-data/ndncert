@@ -305,7 +305,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
                                        "Error computing the request ID."));
     return;
   }
-  RequestID id;
+  RequestId id;
   std::memcpy(id.data(), requestIdData, id.size());
   RequestState requestState(m_config.m_caItem.m_caPrefix, id,
                        requestType, Status::BEFORE_CHALLENGE, *clientCert,
@@ -464,7 +464,7 @@ CaModule::issueCertificate(const RequestState& requestState)
 std::unique_ptr<RequestState>
 CaModule::getCertificateRequest(const Interest& request)
 {
-  RequestID requestId;
+  RequestId requestId;
   try {
     auto& component = request.getName().at(m_config.m_caItem.m_caPrefix.size() + 2);
     std::memcpy(requestId.data(), component.value(), component.value_size());

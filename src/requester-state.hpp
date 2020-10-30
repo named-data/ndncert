@@ -56,7 +56,7 @@ struct RequestContext {
   /**
    * @brief The CA-generated request ID for the request.
    */
-  RequestID m_requestId;
+  RequestId m_requestId;
   /**
    * @brief The current status of the request.
    */
