@@ -90,7 +90,7 @@ public:
   security::Certificate
   addCertificate(const security::Key& key, const std::string& issuer);
 
-public:
+protected:
   KeyChain m_keyChain;
 };
 
