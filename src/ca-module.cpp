@@ -423,12 +423,7 @@ CaModule::onChallenge(const Interest& request)
   Data result;
   result.setName(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  auto contentBlock = encodeBlockWithAesGcm128(ndn::tlv::Content, requestState->m_encryptionKey.value(),
-                                               payload.value(), payload.value_size(),
-                                               requestState->m_requestId.data(),
-                                               requestState->m_requestId.size(),
-                                               requestState->m_aesBlockCounter);
-  result.setContent(contentBlock);
+  result.setContent(payload);
   m_keyChain.sign(result, signingByIdentity(m_config.m_caItem.m_caPrefix));
   m_face.put(result);
   if (m_config.m_statusUpdateCallback) {

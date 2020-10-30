@@ -24,7 +24,7 @@ namespace ndn {
 namespace ndncert {
 
 Block
-ChallengeEncoder::encodeDataContent(const ca::RequestState& request, optional<Name> issuedCertName)
+ChallengeEncoder::encodeDataContent(ca::RequestState& request, optional<Name> issuedCertName)
 {
   Block response = makeEmptyBlock(tlv::EncryptedPayload);
   response.push_back(makeNonNegativeIntegerBlock(tlv::Status, static_cast<size_t>(request.m_status)));
@@ -39,12 +39,17 @@ ChallengeEncoder::encodeDataContent(const ca::RequestState& request, optional<Na
     response.push_back(makeNestedBlock(tlv::IssuedCertName, *issuedCertName));
   }
   response.encode();
-  return response;
+  return encodeBlockWithAesGcm128(ndn::tlv::Content, request.m_encryptionKey.value(),
+                                  response.value(), response.value_size(),
+                                  request.m_requestId.data(), request.m_requestId.size(), request.m_aesBlockCounter);
 }
 
 void
-ChallengeEncoder::decodeDataContent(const Block& data, requester::RequestContext& state)
+ChallengeEncoder::decodeDataContent(const Block& contentBlock, requester::RequestContext& state)
 {
+  auto result = decodeBlockWithAesGcm128(contentBlock, state.m_aesKey,
+                                         state.m_requestId.data(), state.m_requestId.size());
+  auto data = makeBinaryBlock(tlv::EncryptedPayload, result.data(), result.size());
   data.parse();
   state.m_status = static_cast<Status>(readNonNegativeInteger(data.get(tlv::Status)));
   if (data.find(tlv::ChallengeStatus) != data.elements_end()) {

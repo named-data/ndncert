@@ -261,11 +261,7 @@ Requester::onChallengeResponse(RequestContext& state, const Data& reply)
     NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
   }
   processIfError(reply);
-  auto result = decodeBlockWithAesGcm128(reply.getContent(), state.m_aesKey,
-                                         state.m_requestId.data(),
-                                         state.m_requestId.size());
-  Block contentTLV = makeBinaryBlock(tlv::EncryptedPayload, result.data(), result.size());
-  ChallengeEncoder::decodeDataContent(contentTLV, state);
+  ChallengeEncoder::decodeDataContent(reply.getContent(), state);
 }
 
 shared_ptr<Interest>

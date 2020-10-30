@@ -94,10 +94,10 @@ public:
    * @brief Used to instantiate a RequestState after challenge is started.
    */
   RequestState(const Name& caName, const RequestId& requestId, RequestType requestType, Status status,
-          const security::Certificate& cert, const std::string& challengeType,
-          const std::string& challengeStatus, const time::system_clock::TimePoint& challengeTp,
-          size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
-          Block m_encryptionKey, uint32_t aesBlockCounter);
+               const security::Certificate& cert, const std::string& challengeType,
+               const std::string& challengeStatus, const time::system_clock::TimePoint& challengeTp,
+               size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
+               Block m_encryptionKey, uint32_t aesBlockCounter);
 
 public:
   /**
