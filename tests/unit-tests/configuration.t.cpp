@@ -89,60 +89,60 @@ BOOST_AUTO_TEST_CASE(CAConfigFileWithErrors)
   BOOST_CHECK_THROW(config.load("tests/unit-tests/config-files/config-ca-6"), std::runtime_error);
 }
 
-BOOST_AUTO_TEST_CASE(RequesterCaCacheFile)
+BOOST_AUTO_TEST_CASE(ProfileStorageConfigFile)
 {
-  requester::RequesterCaCache config;
-  config.load("tests/unit-tests/config-files/config-client-1");
-  BOOST_CHECK_EQUAL(config.m_caItems.size(), 2);
+  requester::ProfileStorage profileStorage;
+  profileStorage.load("tests/unit-tests/config-files/config-client-1");
+  BOOST_CHECK_EQUAL(profileStorage.m_caItems.size(), 2);
 
-  auto& config1 = config.m_caItems.front();
-  BOOST_CHECK_EQUAL(config1.m_caPrefix, "/ndn/edu/ucla");
-  BOOST_CHECK_EQUAL(config1.m_caInfo, "ndn testbed ca");
-  BOOST_CHECK_EQUAL(config1.m_maxValidityPeriod, time::seconds(864000));
-  BOOST_CHECK_EQUAL(*config1.m_maxSuffixLength, 3);
-  BOOST_CHECK_EQUAL(config1.m_probeParameterKeys.size(), 1);
-  BOOST_CHECK_EQUAL(config1.m_probeParameterKeys.front(), "email");
-  BOOST_CHECK_EQUAL(config1.m_cert->getName(),
+  auto& profile1 = profileStorage.m_caItems.front();
+  BOOST_CHECK_EQUAL(profile1.m_caPrefix, "/ndn/edu/ucla");
+  BOOST_CHECK_EQUAL(profile1.m_caInfo, "ndn testbed ca");
+  BOOST_CHECK_EQUAL(profile1.m_maxValidityPeriod, time::seconds(864000));
+  BOOST_CHECK_EQUAL(*profile1.m_maxSuffixLength, 3);
+  BOOST_CHECK_EQUAL(profile1.m_probeParameterKeys.size(), 1);
+  BOOST_CHECK_EQUAL(profile1.m_probeParameterKeys.front(), "email");
+  BOOST_CHECK_EQUAL(profile1.m_cert->getName(),
                     "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
 
-  auto& config2 = config.m_caItems.back();
-  BOOST_CHECK_EQUAL(config2.m_caPrefix, "/ndn/edu/ucla/zhiyi");
-  BOOST_CHECK_EQUAL(config2.m_caInfo, "");
-  BOOST_CHECK_EQUAL(config2.m_maxValidityPeriod, time::seconds(86400));
-  BOOST_CHECK(!config2.m_maxSuffixLength);
-  BOOST_CHECK_EQUAL(config2.m_probeParameterKeys.size(), 0);
-  BOOST_CHECK_EQUAL(config2.m_cert->getName(),
+  auto& profile2 = profileStorage.m_caItems.back();
+  BOOST_CHECK_EQUAL(profile2.m_caPrefix, "/ndn/edu/ucla/zhiyi");
+  BOOST_CHECK_EQUAL(profile2.m_caInfo, "");
+  BOOST_CHECK_EQUAL(profile2.m_maxValidityPeriod, time::seconds(86400));
+  BOOST_CHECK(!profile2.m_maxSuffixLength);
+  BOOST_CHECK_EQUAL(profile2.m_probeParameterKeys.size(), 0);
+  BOOST_CHECK_EQUAL(profile2.m_cert->getName(),
                     "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
 }
 
-BOOST_AUTO_TEST_CASE(RequesterCaCacheFileWithErrors)
+BOOST_AUTO_TEST_CASE(ProfileStorageWithErrors)
 {
-  requester::RequesterCaCache config;
+  requester::ProfileStorage profileStorage;
   // nonexistent file
-  BOOST_CHECK_THROW(config.load("tests/unit-tests/config-files/Nonexist"), std::runtime_error);
+  BOOST_CHECK_THROW(profileStorage.load("tests/unit-tests/config-files/Nonexist"), std::runtime_error);
   // missing certificate
-  BOOST_CHECK_THROW(config.load("tests/unit-tests/config-files/config-client-2"), std::runtime_error);
+  BOOST_CHECK_THROW(profileStorage.load("tests/unit-tests/config-files/config-client-2"), std::runtime_error);
   // missing ca prefix
-  BOOST_CHECK_THROW(config.load("tests/unit-tests/config-files/config-client-3"), std::runtime_error);
+  BOOST_CHECK_THROW(profileStorage.load("tests/unit-tests/config-files/config-client-3"), std::runtime_error);
 }
 
-BOOST_AUTO_TEST_CASE(RequesterCaCacheFileAddAndremoveCaProfile)
+BOOST_AUTO_TEST_CASE(ProfileStorageAddAndRemoveProfile)
 {
-  requester::RequesterCaCache config;
-  config.load("tests/unit-tests/config-files/config-client-1");
+  requester::ProfileStorage profileStorage;
+  profileStorage.load("tests/unit-tests/config-files/config-client-1");
 
   CaProfile item;
   item.m_caPrefix = Name("/test");
   item.m_caInfo = "test";
 
-  config.m_caItems.push_back(item);
-  BOOST_CHECK_EQUAL(config.m_caItems.size(), 3);
-  auto lastItem = config.m_caItems.back();
+  profileStorage.m_caItems.push_back(item);
+  BOOST_CHECK_EQUAL(profileStorage.m_caItems.size(), 3);
+  auto lastItem = profileStorage.m_caItems.back();
   BOOST_CHECK_EQUAL(lastItem.m_caPrefix, "/test");
 
-  config.removeCaProfile(Name("/test"));
-  BOOST_CHECK_EQUAL(config.m_caItems.size(), 2);
-  lastItem = config.m_caItems.back();
+  profileStorage.removeCaProfile(Name("/test"));
+  BOOST_CHECK_EQUAL(profileStorage.m_caItems.size(), 2);
+  lastItem = profileStorage.m_caItems.back();
   BOOST_CHECK_EQUAL(lastItem.m_caPrefix, "/ndn/edu/ucla/zhiyi");
 }
 

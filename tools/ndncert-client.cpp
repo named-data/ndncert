@@ -289,9 +289,9 @@ probeCb(const Data& reply, CaProfile profile)
 static void
 selectCaProfile(std::string configFilePath)
 {
-  RequesterCaCache caCache;
+  ProfileStorage profileStorage;
   try {
-    caCache.load(configFilePath);
+    profileStorage.load(configFilePath);
   }
   catch (const std::exception& e) {
     std::cerr << "Cannot load the configuration file: " << e.what() << std::endl;
@@ -300,7 +300,7 @@ selectCaProfile(std::string configFilePath)
   size_t count = 0;
   std::cerr << "***************************************\n"
             << "Step " << nStep++ << ": CA SELECTION" << std::endl;
-  for (auto item : caCache.m_caItems) {
+  for (auto item : profileStorage.m_caItems) {
     std::cerr << "> Index: " << count++ << std::endl
               << ">> CA prefix:" << item.m_caPrefix << std::endl
               << ">> Introduction: " << item.m_caInfo << std::endl;
@@ -341,7 +341,7 @@ selectCaProfile(std::string configFilePath)
       std::cerr << "Your input is not an existing index. Exit" << std::endl;
       return;
     }
-    auto itemIterator = caCache.m_caItems.cbegin();
+    auto itemIterator = profileStorage.m_caItems.cbegin();
     std::advance(itemIterator, caIndex);
     auto targetCaItem = *itemIterator;
     runProbe(targetCaItem);

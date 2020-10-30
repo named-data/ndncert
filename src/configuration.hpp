@@ -150,7 +150,7 @@ namespace requester {
  * For Client configuration format, please refer to:
  *   https://github.com/named-data/ndncert/wiki/Client-Configuration-Sample
  */
-class RequesterCaCache
+class ProfileStorage
 {
 public:
   /**

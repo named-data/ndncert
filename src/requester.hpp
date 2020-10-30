@@ -52,7 +52,7 @@ public:
    * @brief Decodes the CA profile from the replied CA profile Data packet.
    *
    * Will first verify the signature of the packet using the key provided inside the profile.
-   * The application should be cautious whether to add CaProfile into the RequesterCaCache.
+   * The application should be cautious whether to add CaProfile into the ProfileStorage.
    *
    * @param reply The Data packet replied from CA profile fetching Interest.
    * @return the CaProfile if decoding is successful
@@ -66,7 +66,7 @@ public:
    *
    * Will first verify the signature of the packet using the key provided inside the profile and
    * verify the certificate's digest matches the one obtained from the original CA.
-   * The application should be cautious whether to add CaProfile into the RequesterCaCache.
+   * The application should be cautious whether to add CaProfile into the ProfileStorage.
    *
    * @param reply The Data packet replied from CA profile fetching Interest.
    * @param caCertFullName The full name obtained from original CA's probe response.

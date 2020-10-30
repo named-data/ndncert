@@ -188,7 +188,7 @@ CaConfig::load(const std::string& fileName)
 namespace requester {
 
 void
-RequesterCaCache::load(const std::string& fileName)
+ProfileStorage::load(const std::string& fileName)
 {
   JsonSection configJson;
   try {
@@ -204,7 +204,7 @@ RequesterCaCache::load(const std::string& fileName)
 }
 
 void
-RequesterCaCache::load(const JsonSection& configSection)
+ProfileStorage::load(const JsonSection& configSection)
 {
   m_caItems.clear();
   auto caList = configSection.get_child("ca-list");
@@ -219,7 +219,7 @@ RequesterCaCache::load(const JsonSection& configSection)
 }
 
 void
-RequesterCaCache::save(const std::string& fileName) const
+ProfileStorage::save(const std::string& fileName) const
 {
   JsonSection configJson;
   for (const auto& caItem : m_caItems) {
@@ -234,13 +234,13 @@ RequesterCaCache::save(const std::string& fileName) const
 }
 
 void
-RequesterCaCache::removeCaProfile(const Name& caName)
+ProfileStorage::removeCaProfile(const Name& caName)
 {
   m_caItems.remove_if([&](const CaProfile& item) { return item.m_caPrefix == caName; });
 }
 
 void
-RequesterCaCache::addCaProfile(const CaProfile& profile)
+ProfileStorage::addCaProfile(const CaProfile& profile)
 {
   for (auto& item : m_caItems) {
     if (item.m_caPrefix == profile.m_caPrefix) {
