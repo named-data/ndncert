@@ -29,9 +29,9 @@ namespace ndn {
 namespace ndncert {
 namespace requester {
 
-struct RequesterState {
+struct RequestContext {
   explicit
-  RequesterState(security::KeyChain& keyChain, const CaProfile& caItem, RequestType requestType);
+  RequestContext(security::KeyChain& keyChain, const CaProfile& caItem, RequestType requestType);
 
   /**
    * @brief The CA profile for this request.

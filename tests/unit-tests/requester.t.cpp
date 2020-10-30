@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(ErrorHandling)
   CaProfile item;
   item.m_caPrefix = Name("/site");
   item.m_cert = std::make_shared<security::Certificate>(cert);
-  RequesterState state(m_keyChain, item, RequestType::NEW);
+  RequestContext state(m_keyChain, item, RequestType::NEW);
 
   Data errorPacket;
   errorPacket.setName(Name("/site/pretend/this/is/error/packet"));

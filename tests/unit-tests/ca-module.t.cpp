@@ -231,7 +231,7 @@ BOOST_AUTO_TEST_CASE(HandleNew)
   CaProfile item;
   item.m_caPrefix = Name("/ndn");
   item.m_cert = std::make_shared<security::Certificate>(cert);
-  requester::RequesterState state(m_keyChain, item, RequestType::NEW);
+  requester::RequestContext state(m_keyChain, item, RequestType::NEW);
   auto interest = requester::Requester::genNewInterest(state, Name("/ndn/zhiyi"),
                                             time::system_clock::now(),
                                             time::system_clock::now() + time::days(1));
@@ -282,7 +282,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidValidityPeriod1)
   CaProfile item;
   item.m_caPrefix = Name("/ndn");
   item.m_cert = std::make_shared<security::Certificate>(cert);
-  requester::RequesterState state(m_keyChain, item, RequestType::NEW);
+  requester::RequestContext state(m_keyChain, item, RequestType::NEW);
   auto current_tp = time::system_clock::now();
   auto interest1 = requester::Requester::genNewInterest(state, Name("/ndn/zhiyi"), current_tp, current_tp - time::hours(1));
   auto interest2 = requester::Requester::genNewInterest(state, Name("/ndn/zhiyi"), current_tp, current_tp + time::days(361));
@@ -313,7 +313,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithLongSuffix)
   CaProfile item;
   item.m_caPrefix = Name("/ndn");
   item.m_cert = std::make_shared<security::Certificate>(cert);
-  requester::RequesterState state(m_keyChain, item, RequestType::NEW);
+  requester::RequestContext state(m_keyChain, item, RequestType::NEW);
 
   auto interest1 = requester::Requester::genNewInterest(state, Name("/ndn/a"), time::system_clock::now(),
                                               time::system_clock::now() + time::days(1));
@@ -354,7 +354,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidLength1)
   CaProfile item;
   item.m_caPrefix = Name("/ndn");
   item.m_cert = std::make_shared<security::Certificate>(cert);
-  requester::RequesterState state(m_keyChain, item, RequestType::NEW);
+  requester::RequestContext state(m_keyChain, item, RequestType::NEW);
 
   auto current_tp = time::system_clock::now();
   auto interest1 = requester::Requester::genNewInterest(state, Name("/ndn"), current_tp, current_tp + time::days(1));
@@ -385,7 +385,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
   CaProfile item;
   item.m_caPrefix = Name("/ndn");
   item.m_cert = std::make_shared<security::Certificate>(cert);
-  requester::RequesterState state(m_keyChain, item, RequestType::NEW);
+  requester::RequestContext state(m_keyChain, item, RequestType::NEW);
 
   auto newInterest = requester::Requester::genNewInterest(state, Name("/ndn/zhiyi"), time::system_clock::now(),
                                                 time::system_clock::now() + time::days(1));
@@ -474,7 +474,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
   CaProfile item;
   item.m_caPrefix = Name("/ndn");
   item.m_cert = std::make_shared<security::Certificate>(cert);
-  requester::RequesterState state(m_keyChain, item, RequestType::REVOKE);
+  requester::RequestContext state(m_keyChain, item, RequestType::REVOKE);
 
   auto interest = requester::Requester::genRevokeInterest(state, issuedCert);
 
@@ -537,7 +537,7 @@ BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
   CaProfile item;
   item.m_caPrefix = Name("/ndn");
   item.m_cert = std::make_shared<security::Certificate>(cert);
-  requester::RequesterState state(m_keyChain, item, RequestType::NEW);
+  requester::RequestContext state(m_keyChain, item, RequestType::NEW);
 
   auto interest = requester::Requester::genRevokeInterest(state, clientCert);
 

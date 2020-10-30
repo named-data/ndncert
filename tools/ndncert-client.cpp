@@ -43,7 +43,7 @@ runChallenge(const std::string& challengeType);
 size_t nStep = 1;
 Face face;
 security::KeyChain keyChain;
-shared_ptr<RequesterState> requesterState = nullptr;
+shared_ptr<RequestContext> requesterState = nullptr;
 
 static void
 captureParams(std::vector<std::tuple<std::string, std::string>>& requirement)
@@ -394,7 +394,7 @@ runNew(CaProfile profile, Name identityName)
   int validityPeriod = captureValidityPeriod();
   auto now = time::system_clock::now();
   std::cerr << "The validity period of your certificate will be: " << validityPeriod << " hours" << std::endl;
-  requesterState =std::make_shared<RequesterState>(keyChain, profile, RequestType::NEW);
+  requesterState =std::make_shared<RequestContext>(keyChain, profile, RequestType::NEW);
   auto interest = Requester::genNewInterest(*requesterState, identityName, now, now + time::hours(validityPeriod));
   if (interest != nullptr) {
     face.expressInterest(*interest, bind(&newCb, _2), bind(&onNackCb), bind(&timeoutCb));

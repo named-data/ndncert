@@ -113,7 +113,7 @@ Requester::onProbeResponse(const Data& reply, const CaProfile& ca,
 }
 
 shared_ptr<Interest>
-Requester::genNewInterest(RequesterState& state, const Name& identityName,
+Requester::genNewInterest(RequestContext& state, const Name& identityName,
                           const time::system_clock::TimePoint& notBefore,
                           const time::system_clock::TimePoint& notAfter)
 {
@@ -173,7 +173,7 @@ Requester::genNewInterest(RequesterState& state, const Name& identityName,
 }
 
 shared_ptr<Interest>
-Requester::genRevokeInterest(RequesterState& state, const security::Certificate& certificate)
+Requester::genRevokeInterest(RequestContext& state, const security::Certificate& certificate)
 {
   if (!state.m_caItem.m_caPrefix.isPrefixOf(certificate.getName())) {
     return nullptr;
@@ -190,7 +190,7 @@ Requester::genRevokeInterest(RequesterState& state, const security::Certificate&
 }
 
 std::list<std::string>
-Requester::onNewRenewRevokeResponse(RequesterState& state, const Data& reply)
+Requester::onNewRenewRevokeResponse(RequestContext& state, const Data& reply)
 {
   if (!security::verifySignature(reply, *state.m_caItem.m_cert)) {
     NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
@@ -213,7 +213,7 @@ Requester::onNewRenewRevokeResponse(RequesterState& state, const Data& reply)
 }
 
 std::vector<std::tuple<std::string, std::string>>
-Requester::selectOrContinueChallenge(RequesterState& state, const std::string& challengeSelected)
+Requester::selectOrContinueChallenge(RequestContext& state, const std::string& challengeSelected)
 {
   auto challenge = ChallengeModule::createChallengeModule(challengeSelected);
   if (challenge == nullptr) {
@@ -224,7 +224,7 @@ Requester::selectOrContinueChallenge(RequesterState& state, const std::string& c
 }
 
 shared_ptr<Interest>
-Requester::genChallengeInterest(RequesterState& state,
+Requester::genChallengeInterest(RequestContext& state,
                                 std::vector<std::tuple<std::string, std::string>>&& parameters)
 {
   if (state.m_challengeType == "") {
@@ -254,7 +254,7 @@ Requester::genChallengeInterest(RequesterState& state,
 }
 
 void
-Requester::onChallengeResponse(RequesterState& state, const Data& reply)
+Requester::onChallengeResponse(RequestContext& state, const Data& reply)
 {
   if (!security::verifySignature(reply, *state.m_caItem.m_cert)) {
     NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
@@ -269,7 +269,7 @@ Requester::onChallengeResponse(RequesterState& state, const Data& reply)
 }
 
 shared_ptr<Interest>
-Requester::genCertFetchInterest(const RequesterState& state)
+Requester::genCertFetchInterest(const RequestContext& state)
 {
   Name interestName = state.m_issuedCertName;
   auto interest =std::make_shared<Interest>(interestName);
@@ -292,7 +292,7 @@ Requester::onCertFetchResponse(const Data& reply)
 }
 
 void
-Requester::endSession(RequesterState& state)
+Requester::endSession(RequestContext& state)
 {
   if (state.m_status == Status::SUCCESS || state.m_status == Status::ENDED) {
     return;

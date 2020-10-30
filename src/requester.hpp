@@ -112,7 +112,7 @@ public:
    * @return The shared pointer to the encoded interest.
    */
   static shared_ptr<Interest>
-  genNewInterest(RequesterState& state, const Name& identityName,
+  genNewInterest(RequestContext& state, const Name& identityName,
                  const time::system_clock::TimePoint& notBefore,
                  const time::system_clock::TimePoint& notAfter);
 
@@ -124,7 +124,7 @@ public:
    * @return The shared pointer to the encoded interest.
    */
   static shared_ptr<Interest>
-  genRevokeInterest(RequesterState& state, const security::Certificate& certificate);
+  genRevokeInterest(RequestContext& state, const security::Certificate& certificate);
 
   /**
    * @brief Decodes the replied data of NEW, RENEW, or REVOKE interest from the CA.
@@ -135,7 +135,7 @@ public:
    * @throw std::runtime_error if the decoding fails or receiving an error packet.
    */
   static std::list<std::string>
-  onNewRenewRevokeResponse(RequesterState& state, const Data& reply);
+  onNewRenewRevokeResponse(RequestContext& state, const Data& reply);
 
   // CHALLENGE helpers
   /**
@@ -148,7 +148,7 @@ public:
    * @throw std::runtime_error if the challenge is not supported.
    */
   static std::vector<std::tuple<std::string, std::string>>
-  selectOrContinueChallenge(RequesterState& state, const std::string& challengeSelected);
+  selectOrContinueChallenge(RequestContext& state, const std::string& challengeSelected);
 
   /**
    * @brief Generates the CHALLENGE interest for the request.
@@ -159,7 +159,7 @@ public:
    * @throw std::runtime_error if the challenge is not selected or is not supported.
    */
   static shared_ptr<Interest>
-  genChallengeInterest(RequesterState& state,
+  genChallengeInterest(RequestContext& state,
                        std::vector<std::tuple<std::string, std::string>>&& parameters);
 
   /**
@@ -170,7 +170,7 @@ public:
    * @throw std::runtime_error if the decoding fails or receiving an error packet.
    */
   static void
-  onChallengeResponse(RequesterState& state, const Data& reply);
+  onChallengeResponse(RequestContext& state, const Data& reply);
 
   /**
    * @brief Generate the interest to fetch the issued certificate
@@ -179,7 +179,7 @@ public:
    * @return The shared pointer to the encoded interest
    */
   static shared_ptr<Interest>
-  genCertFetchInterest(const RequesterState& state);
+  genCertFetchInterest(const RequestContext& state);
 
   /**
    * @brief Decoded and installs the response certificate from the certificate fetch.
@@ -196,7 +196,7 @@ public:
    * @param state, the requester state for the request.
    */
   static void
-  endSession(RequesterState& state);
+  endSession(RequestContext& state);
 
 private:
   static void

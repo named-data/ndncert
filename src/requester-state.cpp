@@ -24,7 +24,7 @@ namespace ndn {
 namespace ndncert {
 namespace requester {
 
-RequesterState::RequesterState(security::KeyChain& keyChain, const CaProfile& caItem, RequestType requestType)
+RequestContext::RequestContext(security::KeyChain& keyChain, const CaProfile& caItem, RequestType requestType)
   : m_caItem(caItem)
   , m_keyChain(keyChain)
   , m_type(requestType)
