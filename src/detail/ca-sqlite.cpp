@@ -145,16 +145,17 @@ CaSqlite::getRequest(const RequestId& requestId)
     auto remainingTries = statement.getInt(8);
     auto remainingTime = statement.getInt(9);
     auto requestType = static_cast<RequestType>(statement.getInt(10));
-    auto encryptionKey = statement.getBlock(11);
+    std::array<uint8_t, 16> encryptionKey;
+    std::memcpy(encryptionKey.data(), statement.getBlob(11), statement.getSize(11));
     auto aesCounter = statement.getInt(12);
     if (challengeType != "") {
       return RequestState(caName, requestId, requestType, status, cert,
-                     challengeType, challengeStatus, time::fromIsoString(challengeTp),
-                     remainingTries, time::seconds(remainingTime),
-                     convertString2Json(challengeSecrets), encryptionKey, aesCounter);
+                          challengeType, challengeStatus, time::fromIsoString(challengeTp),
+                          remainingTries, time::seconds(remainingTime),
+                          convertString2Json(challengeSecrets), std::move(encryptionKey), aesCounter);
     }
     else {
-      return RequestState(caName, requestId, requestType, status, cert, encryptionKey);
+      return RequestState(caName, requestId, requestType, status, cert, std::move(encryptionKey));
     }
   }
   else {
@@ -176,7 +177,7 @@ CaSqlite::addRequest(const RequestState& request)
   statement.bind(3, static_cast<int>(request.m_status));
   statement.bind(4, static_cast<int>(request.m_requestType));
   statement.bind(5, request.m_cert.wireEncode(), SQLITE_TRANSIENT);
-  statement.bind(12, request.m_encryptionKey, SQLITE_TRANSIENT);
+  statement.bind(12, request.m_encryptionKey.data(), request.m_encryptionKey.size(), SQLITE_TRANSIENT);
   statement.bind(13, request.m_aesBlockCounter);
   if (request.m_challengeState) {
     statement.bind(6, request.m_challengeType, SQLITE_TRANSIENT);
@@ -246,16 +247,19 @@ CaSqlite::listAllRequests()
     auto remainingTries = statement.getInt(9);
     auto remainingTime = statement.getInt(10);
     auto requestType = static_cast<RequestType>(statement.getInt(11));
-    auto encryptionKey = statement.getBlock(12);
+    std::array<uint8_t, 16> encryptionKey;
+    std::memcpy(encryptionKey.data(), statement.getBlob(12), statement.getSize(12));
     auto aesBlockCounter = statement.getInt(13);
     if (challengeType != "") {
       result.push_back(RequestState(caName, requestId, requestType, status, cert,
-                               challengeType, challengeStatus, time::fromIsoString(challengeTp),
-                               remainingTries, time::seconds(remainingTime),
-                               convertString2Json(challengeSecrets), encryptionKey, aesBlockCounter));
+                                    challengeType, challengeStatus, time::fromIsoString(challengeTp),
+                                    remainingTries, time::seconds(remainingTime),
+                                    convertString2Json(challengeSecrets),
+                                    std::move(encryptionKey), aesBlockCounter));
     }
     else {
-      result.push_back(RequestState(caName, requestId, requestType, status, cert, encryptionKey, aesBlockCounter));
+      result.push_back(RequestState(caName, requestId, requestType,
+                                    status, cert, std::move(encryptionKey), aesBlockCounter));
     }
   }
   return result;
@@ -268,7 +272,7 @@ CaSqlite::listAllRequests(const Name& caName)
   Sqlite3Statement statement(m_database,
                              R"_SQLTEXT_(SELECT id, request_id, ca_name, status,
                              challenge_status, cert_request, challenge_type, challenge_secrets,
-                             challenge_tp, remaining_tries, remaining_time, request_type, 
+                             challenge_tp, remaining_tries, remaining_time, request_type,
                              encryption_key, aes_block_counter
                              FROM RequestStates WHERE ca_name = ?)_SQLTEXT_");
   statement.bind(1, caName.wireEncode(), SQLITE_TRANSIENT);
@@ -286,16 +290,19 @@ CaSqlite::listAllRequests(const Name& caName)
     auto remainingTries = statement.getInt(9);
     auto remainingTime = statement.getInt(10);
     auto requestType = static_cast<RequestType>(statement.getInt(11));
-    auto encryptionKey = statement.getBlock(12);
+    std::array<uint8_t, 16> encryptionKey;
+    std::memcpy(encryptionKey.data(), statement.getBlob(12), statement.getSize(12));
     auto aesBlockCounter = statement.getInt(13);
     if (challengeType != "") {
       result.push_back(RequestState(caName, requestId, requestType, status, cert,
-                               challengeType, challengeStatus, time::fromIsoString(challengeTp),
-                               remainingTries, time::seconds(remainingTime),
-                               convertString2Json(challengeSecrets), encryptionKey, aesBlockCounter));
+                                    challengeType, challengeStatus, time::fromIsoString(challengeTp),
+                                    remainingTries, time::seconds(remainingTime),
+                                    convertString2Json(challengeSecrets),
+                                    std::move(encryptionKey), aesBlockCounter));
     }
     else {
-      result.push_back(RequestState(caName, requestId, requestType, status, cert, encryptionKey, aesBlockCounter));
+      result.push_back(RequestState(caName, requestId, requestType, status,
+                                    cert, std::move(encryptionKey), aesBlockCounter));
     }
   }
   return result;

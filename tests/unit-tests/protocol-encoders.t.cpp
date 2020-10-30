@@ -141,29 +141,33 @@ BOOST_AUTO_TEST_CASE(NewRevokeEncodingData)
   BOOST_CHECK_EQUAL(static_cast<size_t>(s), static_cast<size_t>(Status::BEFORE_CHALLENGE));
 }
 
-// BOOST_AUTO_TEST_CASE(ChallengeEncoding)
-// {
-//   time::system_clock::TimePoint t = time::system_clock::now();
-//   requester::ProfileStorage caCache;
-//   caCache.load("tests/unit-tests/config-files/config-client-1");
-//   security::Certificate certRequest = *caCache.m_caItems.front().m_cert;
-//   RequestId id = {102};
-//   ca::RequestState state(Name("/ndn/ucla"), id, RequestType::NEW, Status::PENDING,
-//                          certRequest, "hahaha", "Just a test", t, 3, time::seconds(321), JsonSection(),
-//                          Block(), 0);
-//   auto b = ChallengeEncoder::encodeDataContent(state);
-//   b.push_back(makeNestedBlock(tlv::IssuedCertName, Name("/ndn/ucla/a/b/c")));
+BOOST_AUTO_TEST_CASE(ChallengeEncoding)
+{
+  const uint8_t key[] = {0x23, 0x70, 0xe3, 0x20, 0xd4, 0x34, 0x42, 0x08,
+                         0xe0, 0xff, 0x56, 0x83, 0xf2, 0x43, 0xb2, 0x13};
+  time::system_clock::TimePoint t = time::system_clock::now();
+  requester::ProfileStorage caCache;
+  caCache.load("tests/unit-tests/config-files/config-client-1");
+  security::Certificate certRequest = *caCache.m_caItems.front().m_cert;
+  RequestId id = {102};
+  std::array<uint8_t, 16> aesKey;
+  std::memcpy(aesKey.data(), key, sizeof(key));
+  ca::RequestState state(Name("/ndn/ucla"), id, RequestType::NEW, Status::PENDING,
+                         certRequest, "pin", "test", t, 3, time::seconds(321), JsonSection(),
+                         std::move(aesKey), 0);
+  auto b = ChallengeEncoder::encodeDataContent(state, Name("/ndn/ucla/a/b/c"));
 
-//   requester::RequestContext context(m_keyChain, caCache.m_caItems.front(), RequestType::NEW);
-//   ChallengeEncoder::decodeDataContent(b, context);
+  requester::RequestContext context(m_keyChain, caCache.m_caItems.front(), RequestType::NEW);
+  std::memcpy(context.m_aesKey.data(), key, sizeof(key));
+  ChallengeEncoder::decodeDataContent(b, context);
 
-//   BOOST_CHECK_EQUAL(static_cast<size_t>(context.m_status), static_cast<size_t>(Status::PENDING));
-//   BOOST_CHECK_EQUAL(context.m_challengeStatus, "Just a test");
-//   BOOST_CHECK_EQUAL(context.m_remainingTries, 3);
-//   BOOST_ASSERT(context.m_freshBefore > time::system_clock::now() + time::seconds(321) - time::milliseconds(100));
-//   BOOST_ASSERT(context.m_freshBefore < time::system_clock::now() + time::seconds(321) + time::milliseconds(100));
-//   BOOST_CHECK_EQUAL(context.m_issuedCertName, "/ndn/ucla/a/b/c");
-// }
+  BOOST_CHECK_EQUAL(static_cast<size_t>(context.m_status), static_cast<size_t>(Status::PENDING));
+  BOOST_CHECK_EQUAL(context.m_challengeStatus, "test");
+  BOOST_CHECK_EQUAL(context.m_remainingTries, 3);
+  BOOST_ASSERT(context.m_freshBefore > time::system_clock::now() + time::seconds(321) - time::milliseconds(100));
+  BOOST_ASSERT(context.m_freshBefore < time::system_clock::now() + time::seconds(321) + time::milliseconds(100));
+  BOOST_CHECK_EQUAL(context.m_issuedCertName, "/ndn/ucla/a/b/c");
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 

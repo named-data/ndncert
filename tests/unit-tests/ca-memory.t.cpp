@@ -40,7 +40,9 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
 
   // add operation
   RequestId requestId = {1,2,3,4,5,6,7,8};
-  RequestState request1(Name("/ndn/site1"), requestId, RequestType::NEW, Status::BEFORE_CHALLENGE, cert1, makeStringBlock(ndn::tlv::ContentType_Key, "PretendItIsAKey"));
+  std::array<uint8_t, 16> aesKey1;
+  RequestState request1(Name("/ndn/site1"), requestId, RequestType::NEW,
+                        Status::BEFORE_CHALLENGE, cert1, std::move(aesKey1));
   BOOST_CHECK_NO_THROW(storage.addRequest(request1));
 
   // get operation
@@ -48,15 +50,17 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   BOOST_CHECK_EQUAL(request1.m_cert, result.m_cert);
   BOOST_CHECK(request1.m_status == result.m_status);
   BOOST_CHECK_EQUAL(request1.m_caPrefix, result.m_caPrefix);
-  BOOST_CHECK_EQUAL(request1.m_encryptionKey, result.m_encryptionKey);
+  BOOST_CHECK_EQUAL_COLLECTIONS(request1.m_encryptionKey.begin(), request1.m_encryptionKey.end(),
+                                result.m_encryptionKey.begin(), result.m_encryptionKey.end());
 
   JsonSection json;
   json.put("code", "1234");
 
   // update operation
+  std::array<uint8_t, 16> aesKey2;
   RequestState request2(Name("/ndn/site1"), requestId, RequestType::NEW, Status::CHALLENGE, cert1,
                    "email", "test", time::system_clock::now(), 3, time::seconds(3600),
-                   std::move(json), makeStringBlock(ndn::tlv::ContentType_Key, "PretendItIsAKey"), 0);
+                   std::move(json), std::move(aesKey2), 0);
   storage.updateRequest(request2);
   result = storage.getRequest(requestId);
   BOOST_CHECK_EQUAL(request2.m_cert, result.m_cert);
@@ -67,7 +71,9 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   auto key2 = identity2.getDefaultKey();
   auto cert2 = key2.getDefaultCertificate();
   RequestId requestId2 = {8,7,6,5,4,3,2,1};
-  RequestState request3(Name("/ndn/site2"), requestId2, RequestType::NEW, Status::BEFORE_CHALLENGE, cert2, makeStringBlock(ndn::tlv::ContentType_Key, "PretendItIsAKey"));
+  std::array<uint8_t, 16> aesKey3;
+  RequestState request3(Name("/ndn/site2"), requestId2, RequestType::NEW, Status::BEFORE_CHALLENGE,
+                        cert2, std::move(aesKey3));
   storage.addRequest(request3);
 
   // list operation

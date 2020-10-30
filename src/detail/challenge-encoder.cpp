@@ -39,7 +39,7 @@ ChallengeEncoder::encodeDataContent(ca::RequestState& request, optional<Name> is
     response.push_back(makeNestedBlock(tlv::IssuedCertName, *issuedCertName));
   }
   response.encode();
-  return encodeBlockWithAesGcm128(ndn::tlv::Content, request.m_encryptionKey.value(),
+  return encodeBlockWithAesGcm128(ndn::tlv::Content, request.m_encryptionKey.data(),
                                   response.value(), response.value_size(),
                                   request.m_requestId.data(), request.m_requestId.size(), request.m_aesBlockCounter);
 }
@@ -47,7 +47,7 @@ ChallengeEncoder::encodeDataContent(ca::RequestState& request, optional<Name> is
 void
 ChallengeEncoder::decodeDataContent(const Block& contentBlock, requester::RequestContext& state)
 {
-  auto result = decodeBlockWithAesGcm128(contentBlock, state.m_aesKey,
+  auto result = decodeBlockWithAesGcm128(contentBlock, state.m_aesKey.data(),
                                          state.m_requestId.data(), state.m_requestId.size());
   auto data = makeBinaryBlock(tlv::EncryptedPayload, result.data(), result.size());
   data.parse();

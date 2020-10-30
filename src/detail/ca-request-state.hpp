@@ -89,7 +89,7 @@ public:
    * @brief Used to instantiate a RequestState when challenge is not started.
    */
   RequestState(const Name& caName, const RequestId& requestId, RequestType requestType, Status status,
-          const security::Certificate& cert, Block m_encryptionKey, uint32_t aesBlockCounter = 0);
+               const security::Certificate& cert, std::array<uint8_t, 16>&& m_encryptionKey, uint32_t aesBlockCounter = 0);
   /**
    * @brief Used to instantiate a RequestState after challenge is started.
    */
@@ -97,7 +97,7 @@ public:
                const security::Certificate& cert, const std::string& challengeType,
                const std::string& challengeStatus, const time::system_clock::TimePoint& challengeTp,
                size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
-               Block m_encryptionKey, uint32_t aesBlockCounter);
+               std::array<uint8_t, 16>&& m_encryptionKey, uint32_t aesBlockCounter);
 
 public:
   /**
@@ -123,7 +123,7 @@ public:
   /**
    * @brief The encryption key for the requester.
    */
-  Block m_encryptionKey;
+  std::array<uint8_t, 16> m_encryptionKey;
   /**
    * @brief The AES block counter for the requester.
    */

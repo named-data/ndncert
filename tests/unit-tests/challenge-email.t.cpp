@@ -45,8 +45,9 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmail)
   auto identity = addIdentity(Name("/ndn/site1"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
-  RequestId requestId = {1,2,3,4,5,6,7,8};
-  ca::RequestState request(Name("/ndn/site1"), requestId, RequestType::NEW, Status::BEFORE_CHALLENGE, cert, makeEmptyBlock(ndn::tlv::ContentType_Key));
+  RequestId requestId = {1, 2, 3, 4, 5, 6, 7, 8};
+  std::array<uint8_t, 16> aesKey;
+  ca::RequestState request(Name("/ndn/site1"), requestId, RequestType::NEW, Status::BEFORE_CHALLENGE, cert, std::move(aesKey));
 
   Block paramTLV = makeEmptyBlock(tlv::EncryptedPayload);
   paramTLV.push_back(makeStringBlock(tlv::ParameterKey, ChallengeEmail::PARAMETER_KEY_EMAIL));
@@ -95,8 +96,9 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithInvalidEmail)
   auto identity = addIdentity(Name("/ndn/site1"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
-  RequestId requestId = {1,2,3,4,5,6,7,8};
-  ca::RequestState request(Name("/ndn/site1"), requestId, RequestType::NEW, Status::BEFORE_CHALLENGE, cert, makeEmptyBlock(ndn::tlv::ContentType_Key));
+  RequestId requestId = {1, 2, 3, 4, 5, 6, 7, 8};
+  std::array<uint8_t, 16> aesKey;
+  ca::RequestState request(Name("/ndn/site1"), requestId, RequestType::NEW, Status::BEFORE_CHALLENGE, cert, std::move(aesKey));
 
   Block paramTLV = makeEmptyBlock(tlv::EncryptedPayload);
   paramTLV.push_back(makeStringBlock(tlv::ParameterKey, ChallengeEmail::PARAMETER_KEY_EMAIL));
@@ -117,10 +119,11 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
   auto cert = key.getDefaultCertificate();
   JsonSection json;
   json.put(ChallengeEmail::PARAMETER_KEY_CODE, "4567");
-  RequestId requestId = {1,2,3,4,5,6,7,8};
+  RequestId requestId = {1, 2, 3, 4, 5, 6, 7, 8};
+  std::array<uint8_t, 16> aesKey;
   ca::RequestState request(Name("/ndn/site1"), requestId, RequestType::NEW, Status::CHALLENGE, cert,
-                  "email", ChallengeEmail::NEED_CODE, time::system_clock::now(),
-                  3, time::seconds(3600), std::move(json), makeEmptyBlock(ndn::tlv::ContentType_Key), 0);
+                           "email", ChallengeEmail::NEED_CODE, time::system_clock::now(),
+                           3, time::seconds(3600), std::move(json), std::move(aesKey), 0);
 
   Block paramTLV = makeEmptyBlock(tlv::EncryptedPayload);
   paramTLV.push_back(makeStringBlock(tlv::ParameterKey, ChallengeEmail::PARAMETER_KEY_CODE));
@@ -140,10 +143,11 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithWrongCode)
   auto cert = key.getDefaultCertificate();
   JsonSection json;
   json.put(ChallengeEmail::PARAMETER_KEY_CODE, "4567");
-  RequestId requestId = {1,2,3,4,5,6,7,8};
+  RequestId requestId = {1, 2, 3, 4, 5, 6, 7, 8};
+  std::array<uint8_t, 16> aesKey;
   ca::RequestState request(Name("/ndn/site1"), requestId, RequestType::NEW, Status::CHALLENGE, cert,
-                  "email", ChallengeEmail::NEED_CODE, time::system_clock::now(),
-                  3, time::seconds(3600), std::move(json), makeEmptyBlock(ndn::tlv::ContentType_Key), 0);
+                           "email", ChallengeEmail::NEED_CODE, time::system_clock::now(),
+                           3, time::seconds(3600), std::move(json), std::move(aesKey), 0);
 
   Block paramTLV = makeEmptyBlock(tlv::EncryptedPayload);
   paramTLV.push_back(makeStringBlock(tlv::ParameterKey, ChallengeEmail::PARAMETER_KEY_CODE));

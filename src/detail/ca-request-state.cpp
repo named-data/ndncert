@@ -61,7 +61,7 @@ ChallengeState::ChallengeState(const std::string& challengeStatus,
 }
 
 RequestState::RequestState(const Name& caName, const RequestId& requestId, RequestType requestType, Status status,
-                 const security::Certificate& cert, Block encryptionKey, uint32_t aesBlockCounter)
+                           const security::Certificate& cert, std::array<uint8_t, 16>&& encryptionKey, uint32_t aesBlockCounter)
     : m_caPrefix(caName)
     , m_requestId(requestId)
     , m_requestType(requestType)
@@ -73,10 +73,10 @@ RequestState::RequestState(const Name& caName, const RequestId& requestId, Reque
 }
 
 RequestState::RequestState(const Name& caName, const RequestId& requestId, RequestType requestType, Status status,
-                 const security::Certificate& cert, const std::string& challengeType,
-                 const std::string& challengeStatus, const time::system_clock::TimePoint& challengeTp,
-                 size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
-                 Block encryptionKey, uint32_t aesBlockCounter)
+                           const security::Certificate& cert, const std::string& challengeType,
+                           const std::string& challengeStatus, const time::system_clock::TimePoint& challengeTp,
+                           size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
+                           std::array<uint8_t, 16>&& encryptionKey, uint32_t aesBlockCounter)
     : m_caPrefix(caName)
     , m_requestId(requestId)
     , m_requestType(requestType)

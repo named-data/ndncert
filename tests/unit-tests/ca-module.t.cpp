@@ -260,8 +260,8 @@ BOOST_AUTO_TEST_CASE(HandleNew)
     RequestId requestId;
     std::memcpy(requestId.data(), contentBlock.get(tlv::RequestId).value(), contentBlock.get(tlv::RequestId).value_size());
     auto ca_encryption_key = ca.getCaStorage()->getRequest(requestId).m_encryptionKey;
-    BOOST_CHECK_EQUAL_COLLECTIONS(state.m_aesKey, state.m_aesKey + sizeof(state.m_aesKey),
-                                  ca_encryption_key.value(), ca_encryption_key.value() + ca_encryption_key.value_size());
+    BOOST_CHECK_EQUAL_COLLECTIONS(state.m_aesKey.begin(), state.m_aesKey.end(),
+                                  ca_encryption_key.begin(), ca_encryption_key.end());
   });
   face.receive(*interest);
 
@@ -468,7 +468,8 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
                                                            time::system_clock::now() + time::hours(10)));
   m_keyChain.sign(clientCert, signingByKey(clientKey.getName()).setSignatureInfo(signatureInfo));
   RequestId requestId = {1,2,3,4,5,6,7,8};
-  RequestState certRequest(Name("/ndn"), requestId, RequestType::NEW, Status::SUCCESS, clientCert, makeEmptyBlock(ndn::tlv::ContentType_Key));
+  std::array<uint8_t, 16> aesKey;
+  RequestState certRequest(Name("/ndn"), requestId, RequestType::NEW, Status::SUCCESS, clientCert, std::move(aesKey));
   auto issuedCert = ca.issueCertificate(certRequest);
 
   CaProfile item;
@@ -502,8 +503,8 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
     RequestId requestId;
     std::memcpy(requestId.data(), contentBlock.get(tlv::RequestId).value(), contentBlock.get(tlv::RequestId).value_size());
     auto ca_encryption_key = ca.getCaStorage()->getRequest(requestId).m_encryptionKey;
-    BOOST_CHECK_EQUAL_COLLECTIONS(state.m_aesKey, state.m_aesKey + sizeof(state.m_aesKey),
-                                  ca_encryption_key.value(), ca_encryption_key.value() + ca_encryption_key.value_size());
+    BOOST_CHECK_EQUAL_COLLECTIONS(state.m_aesKey.begin(), state.m_aesKey.end(),
+                                  ca_encryption_key.begin(), ca_encryption_key.end());
   });
   face.receive(*interest);
 

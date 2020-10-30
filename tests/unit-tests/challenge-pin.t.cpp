@@ -38,8 +38,9 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmptyInfo)
   auto identity = addIdentity(Name("/ndn/site1"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
-  RequestId requestId = {1,2,3,4,5,6,7,8};
-  ca::RequestState request(Name("/ndn/site1"), requestId, RequestType::NEW, Status::BEFORE_CHALLENGE, cert, makeEmptyBlock(ndn::tlv::ContentType_Key));
+  RequestId requestId = {1, 2, 3, 4, 5, 6, 7, 8};
+  std::array<uint8_t, 16> aesKey;
+  ca::RequestState request(Name("/ndn/site1"), requestId, RequestType::NEW, Status::BEFORE_CHALLENGE, cert, std::move(aesKey));
 
   ChallengePin challenge;
   challenge.handleChallengeRequest(makeEmptyBlock(tlv::EncryptedPayload), request);
@@ -56,10 +57,11 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
   auto cert = key.getDefaultCertificate();
   JsonSection secret;
   secret.add(ChallengePin::PARAMETER_KEY_CODE, "12345");
-  RequestId requestId = {1,2,3,4,5,6,7,8};
+  RequestId requestId = {1, 2, 3, 4, 5, 6, 7, 8};
+  std::array<uint8_t, 16> aesKey;
   ca::RequestState request(Name("/ndn/site1"), requestId, RequestType::NEW, Status::CHALLENGE, cert,
-                  "pin", ChallengePin::NEED_CODE, time::system_clock::now(),
-                  3, time::seconds(3600), std::move(secret), makeEmptyBlock(ndn::tlv::ContentType_Key), 0);
+                           "pin", ChallengePin::NEED_CODE, time::system_clock::now(),
+                           3, time::seconds(3600), std::move(secret), std::move(aesKey), 0);
 
   Block paramTLV = makeEmptyBlock(tlv::EncryptedPayload);
   paramTLV.push_back(makeStringBlock(tlv::ParameterKey, ChallengePin::PARAMETER_KEY_CODE));
@@ -79,10 +81,11 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithWrongCode)
   auto cert = key.getDefaultCertificate();
   JsonSection secret;
   secret.add(ChallengePin::PARAMETER_KEY_CODE, "12345");
-  RequestId requestId = {1,2,3,4,5,6,7,8};
+  RequestId requestId = {1, 2, 3, 4, 5, 6, 7, 8};
+  std::array<uint8_t, 16> aesKey;
   ca::RequestState request(Name("/ndn/site1"), requestId, RequestType::NEW, Status::CHALLENGE, cert,
-                  "pin", ChallengePin::NEED_CODE, time::system_clock::now(),
-                  3, time::seconds(3600), std::move(secret), makeEmptyBlock(ndn::tlv::ContentType_Key), 0);
+                           "pin", ChallengePin::NEED_CODE, time::system_clock::now(),
+                           3, time::seconds(3600), std::move(secret), std::move(aesKey), 0);
 
   Block paramTLV = makeEmptyBlock(tlv::EncryptedPayload);
   paramTLV.push_back(makeStringBlock(tlv::ParameterKey, ChallengePin::PARAMETER_KEY_CODE));

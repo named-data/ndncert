@@ -88,7 +88,7 @@ struct RequestContext {
   /**
    * @brief AES key derived from the ecdh shared secret.
    */
-  uint8_t m_aesKey[16] = {0};
+  std::array<uint8_t, 16> m_aesKey = {0};
   /**
    * @brief The counter of AES blocks that have been encrypted.
    */

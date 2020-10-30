@@ -206,7 +206,7 @@ Requester::onNewRenewRevokeResponse(RequestContext& state, const Data& reply)
   // ECDH and HKDF
   auto sharedSecret = state.m_ecdh.deriveSecret(ecdhKey);
   hkdf(sharedSecret.data(), sharedSecret.size(),
-       salt.data(), salt.size(), state.m_aesKey, sizeof(state.m_aesKey));
+       salt.data(), salt.size(), state.m_aesKey.data(), state.m_aesKey.size());
 
   // update state
   return challenges;
@@ -243,7 +243,7 @@ Requester::genChallengeInterest(RequestContext& state,
   interest->setCanBePrefix(false);
 
   // encrypt the Interest parameters
-  auto paramBlock = encodeBlockWithAesGcm128(ndn::tlv::ApplicationParameters, state.m_aesKey,
+  auto paramBlock = encodeBlockWithAesGcm128(ndn::tlv::ApplicationParameters, state.m_aesKey.data(),
                                              challengeParams.value(), challengeParams.value_size(),
                                              state.m_requestId.data(),
                                              state.m_requestId.size(),

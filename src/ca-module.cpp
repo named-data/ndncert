@@ -234,8 +234,8 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   std::array<uint8_t, 32> salt;
   random::generateSecureBytes(salt.data(), salt.size());
   // hkdf
-  uint8_t aesKey[AES_128_KEY_LEN];
-  hkdf(sharedSecret.data(), sharedSecret.size(), salt.data(), salt.size(), aesKey, sizeof(aesKey));
+  std::array<uint8_t, 16> aesKey;
+  hkdf(sharedSecret.data(), sharedSecret.size(), salt.data(), salt.size(), aesKey.data(), aesKey.size());
 
   // verify identity name
   if (!m_config.m_caItem.m_caPrefix.isPrefixOf(clientCert->getIdentity())
@@ -307,9 +307,8 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   }
   RequestId id;
   std::memcpy(id.data(), requestIdData, id.size());
-  RequestState requestState(m_config.m_caItem.m_caPrefix, id,
-                       requestType, Status::BEFORE_CHALLENGE, *clientCert,
-                       makeBinaryBlock(ndn::tlv::ContentType_Key, aesKey, sizeof(aesKey)));
+  RequestState requestState(m_config.m_caItem.m_caPrefix, id, requestType,
+                            Status::BEFORE_CHALLENGE, *clientCert, std::move(aesKey));
   try {
     m_storage->addRequest(requestState);
   }
@@ -355,7 +354,7 @@ CaModule::onChallenge(const Interest& request)
   Buffer paramTLVPayload;
   try {
     paramTLVPayload = decodeBlockWithAesGcm128(request.getApplicationParameters(),
-                                               requestState->m_encryptionKey.value(),
+                                               requestState->m_encryptionKey.data(),
                                                requestState->m_requestId.data(),
                                                requestState->m_requestId.size());
   }
