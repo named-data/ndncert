@@ -21,7 +21,7 @@
 #ifndef NDNCERT_REQUESTER_STATE_HPP
 #define NDNCERT_REQUESTER_STATE_HPP
 
-#include "detail/ca-state.hpp"
+#include "detail/ca-request-state.hpp"
 #include "detail/crypto-helpers.hpp"
 #include "configuration.hpp"
 

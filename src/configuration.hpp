@@ -21,7 +21,7 @@
 #ifndef NDNCERT_CONFIGURATION_HPP
 #define NDNCERT_CONFIGURATION_HPP
 
-#include "detail/ca-state.hpp"
+#include "detail/ca-request-state.hpp"
 #include "name-assignment/assignment-func.hpp"
 
 namespace ndn {

@@ -21,7 +21,7 @@
 #ifndef NDNCERT_DETAIL_CHALLENGE_STEP_HPP
 #define NDNCERT_DETAIL_CHALLENGE_STEP_HPP
 
-#include "detail/ca-state.hpp"
+#include "detail/ca-request-state.hpp"
 #include "requester-state.hpp"
 
 namespace ndn {

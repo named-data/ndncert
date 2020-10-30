@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "detail/ca-state.hpp"
+#include "detail/ca-request-state.hpp"
 #include <ndn-cxx/util/indented-stream.hpp>
 
 namespace ndn {
@@ -101,9 +101,6 @@ operator<<(std::ostream& os, const RequestState& request)
     os << "Challenge remaining tries:" << request.m_challengeState->m_remainingTries << " times\n";
     os << "Challenge remaining time: " << request.m_challengeState->m_remainingTime.count() << " seconds\n";
     os << "Challenge last update: " << time::toIsoString(request.m_challengeState->m_timestamp) << "\n";
-    std::stringstream ss;
-    boost::property_tree::write_json(ss, request.m_challengeState->m_secrets);
-    os << "Challenge secret:\n" << ss.str() << "\n";
   }
   os << "Certificate:\n";
   util::IndentedStream os2(os, "  ");

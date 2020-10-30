@@ -21,7 +21,7 @@
 #ifndef NDNCERT_CHALLENGE_MODULE_HPP
 #define NDNCERT_CHALLENGE_MODULE_HPP
 
-#include "detail/ca-state.hpp"
+#include "detail/ca-request-state.hpp"
 
 namespace ndn {
 namespace ndncert {
