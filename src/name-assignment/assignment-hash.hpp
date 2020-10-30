@@ -42,4 +42,4 @@ public:
 } // namespace ndncert
 } // namespace ndn
 
-#endif //NDNCERT_ASSIGNMENT_HASH_HPP
+#endif // NDNCERT_ASSIGNMENT_HASH_HPP

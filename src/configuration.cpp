@@ -20,9 +20,9 @@
 
 #include "configuration.hpp"
 #include "identity-challenge/challenge-module.hpp"
+#include "name-assignment/assignment-func.hpp"
 #include <ndn-cxx/util/io.hpp>
 #include <boost/filesystem.hpp>
-#include "name-assignment/assignment-func.hpp"
 
 namespace ndn {
 namespace ndncert {

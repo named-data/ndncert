@@ -41,4 +41,4 @@ public:
 } // namespace ndncert
 } // namespace ndn
 
-#endif //NDNCERT_ASSIGNMENT_RANDOM_HPP
+#endif // NDNCERT_ASSIGNMENT_RANDOM_HPP

@@ -87,7 +87,8 @@ ProbeEncoder::decodeDataContent(const Block& block,
                   NDN_THROW(std::runtime_error("Invalid probe format"));
               }
               elementName.wireDecode(subBlock);
-          } else if (subBlock.type() == tlv::MaxSuffixLength) {
+          }
+          else if (subBlock.type() == tlv::MaxSuffixLength) {
               maxSuffixLength = readNonNegativeInteger(subBlock);
           }
       }

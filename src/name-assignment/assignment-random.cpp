@@ -38,5 +38,5 @@ AssignmentRandom::assignName(const std::vector<std::tuple<std::string, std::stri
   return resultList;
 }
 
-}
-}
+} // namespace ndncert
+} // namespace ndn

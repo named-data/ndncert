@@ -40,4 +40,4 @@ public:
 } // namespace ndncert
 } // namespace ndn
 
-#endif //NDNCERT_ASSIGNMENT_PARAM_HPP
+#endif // NDNCERT_ASSIGNMENT_PARAM_HPP

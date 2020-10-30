@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_ASSIGNMENT_FUNCS_HPP
-#define NDNCERT_ASSIGNMENT_FUNCS_HPP
+#ifndef NDNCERT_ASSIGNMENT_FUNC_HPP
+#define NDNCERT_ASSIGNMENT_FUNC_HPP
 
 #include "detail/ca-request-state.hpp"
 
@@ -82,4 +82,4 @@ private:
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_ASSIGNMENT_FUNCS_HPP
+#endif // NDNCERT_ASSIGNMENT_FUNC_HPP

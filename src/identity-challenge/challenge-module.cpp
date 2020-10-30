@@ -87,7 +87,8 @@ ChallengeModule::returnWithNewChallengeStatus(ca::RequestState& request, const s
 {
   request.m_status = Status::CHALLENGE;
   request.m_challengeType = CHALLENGE_TYPE;
-  request.m_challengeState = ca::ChallengeState(challengeStatus, time::system_clock::now(), remainingTries, remainingTime, std::move(challengeSecret));
+  request.m_challengeState = ca::ChallengeState(challengeStatus, time::system_clock::now(), remainingTries, remainingTime,
+                                                std::move(challengeSecret));
   return std::make_tuple(ErrorCode::NO_ERROR, "");
 }
 

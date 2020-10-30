@@ -47,7 +47,8 @@ NewRenewRevokeEncoder::encodeApplicationParameters(RequestType requestType, cons
   request.push_back(makeBinaryBlock(tlv::EcdhPub, ecdhPub.data(), ecdhPub.size()));
   if (requestType == RequestType::NEW || requestType == RequestType::RENEW) {
     request.push_back(makeNestedBlock(tlv::CertRequest, certRequest));
-  } else if (requestType == RequestType::REVOKE) {
+  }
+  else if (requestType == RequestType::REVOKE) {
     request.push_back(makeNestedBlock(tlv::CertToRevoke, certRequest));
   }
   request.encode();

@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_DETAIL_CA_STATE_HPP
-#define NDNCERT_DETAIL_CA_STATE_HPP
+#ifndef NDNCERT_DETAIL_CA_REQUEST_STATE_HPP
+#define NDNCERT_DETAIL_CA_REQUEST_STATE_HPP
 
 #include "detail/ndncert-common.hpp"
 #include <array>
@@ -146,4 +146,4 @@ operator<<(std::ostream& os, const RequestState& request);
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_DETAIL_CA_STATE_HPP
+#endif // NDNCERT_DETAIL_CA_REQUEST_STATE_HPP

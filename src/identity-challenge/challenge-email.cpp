@@ -55,7 +55,8 @@ ChallengeEmail::handleChallengeRequest(const Block& params, ca::RequestState& re
     }
     auto lastComponentRequested = readString(request.m_cert.getIdentity().get(-1));
     if (lastComponentRequested != emailAddress) {
-      NDN_LOG_TRACE("Email and requested name do not match. Email " << emailAddress << "requested last component " << lastComponentRequested);
+      NDN_LOG_TRACE("Email and requested name do not match. Email " << emailAddress << "requested last component "
+                    << lastComponentRequested);
     }
     std::string emailCode = generateSecretCode();
     JsonSection secretJson;
