@@ -48,11 +48,8 @@ BOOST_AUTO_TEST_CASE(InfoEncoding)
   BOOST_CHECK_EQUAL(*item.m_cert, *cert);
   BOOST_CHECK_EQUAL(item.m_caInfo, config.m_caItem.m_caInfo);
   BOOST_CHECK_EQUAL(item.m_caPrefix, config.m_caItem.m_caPrefix);
-  BOOST_CHECK_EQUAL(item.m_probeParameterKeys.size(), config.m_caItem.m_probeParameterKeys.size());
-  for (auto it1 = item.m_probeParameterKeys.begin(), it2 = config.m_caItem.m_probeParameterKeys.begin();
-       it1 != item.m_probeParameterKeys.end() && it2 != config.m_caItem.m_probeParameterKeys.end(); it1++, it2++) {
-    BOOST_CHECK_EQUAL(*it1, *it2);
-  }
+  BOOST_CHECK_EQUAL_COLLECTIONS(item.m_probeParameterKeys.begin(), item.m_probeParameterKeys.end(),
+          config.m_caItem.m_probeParameterKeys.begin(), config.m_caItem.m_probeParameterKeys.end())
   BOOST_CHECK_EQUAL(item.m_maxValidityPeriod, config.m_caItem.m_maxValidityPeriod);
 }
 
@@ -138,21 +135,9 @@ BOOST_AUTO_TEST_CASE(NewRevokeEncodingData)
   RequestId returnedId;
   Status s;
   auto retlist = NewRenewRevokeEncoder::decodeDataContent(b, returnedPub, returnedSalt, returnedId, s);
-  BOOST_CHECK_EQUAL(returnedPub.size(), pub.size());
-  for (auto it1 = returnedPub.begin(), it2 = pub.begin();
-       it1 != returnedPub.end() && it2 != pub.end(); it1++, it2++) {
-    BOOST_CHECK_EQUAL(*it1, *it2);
-  }
-  BOOST_CHECK_EQUAL(returnedSalt.size(), salt.size());
-  for (auto it1 = returnedSalt.begin(), it2 = salt.begin();
-       it1 != returnedSalt.end() && it2 != salt.end(); it1++, it2++) {
-    BOOST_CHECK_EQUAL(*it1, *it2);
-  }
-  BOOST_CHECK_EQUAL(returnedId.size(), id.size());
-  for (auto it1 = returnedId.begin(), it2 = id.begin();
-       it1 != returnedId.end() && it2 != id.end(); it1++, it2++) {
-    BOOST_CHECK_EQUAL(*it1, *it2);
-  }
+  BOOST_CHECK_EQUAL_COLLECTIONS(returnedPub.begin(), returnedPub.end(), pub.begin(), pub.end());
+  BOOST_CHECK_EQUAL_COLLECTIONS(returnedSalt.begin(), returnedSalt.end(), salt.begin(), salt.end());
+  BOOST_CHECK_EQUAL_COLLECTIONS(returnedId.begin(), returnedId.end(), id.begin(), id.end());
   BOOST_CHECK_EQUAL(static_cast<size_t>(s), static_cast<size_t>(Status::BEFORE_CHALLENGE));
 }
 
