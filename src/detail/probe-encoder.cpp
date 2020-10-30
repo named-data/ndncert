@@ -24,7 +24,7 @@ namespace ndn {
 namespace ndncert {
 
 Block
-ProbeEncoder::encodeApplicationParameters(std::vector<std::tuple<std::string, std::string>>&& parameters)
+ProbeEncoder::encodeApplicationParameters(const std::vector<std::tuple<std::string, std::string>>& parameters)
 {
   auto content = makeEmptyBlock(ndn::tlv::ApplicationParameters);
   for (size_t i = 0; i < parameters.size(); ++i) {
