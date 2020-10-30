@@ -29,6 +29,7 @@
 
 namespace ndn {
 namespace ndncert {
+namespace requester {
 
 static void
 selectCaProfile(std::string configFilePath);
@@ -479,11 +480,12 @@ main(int argc, char* argv[])
   return 0;
 }
 
+} // namespace requester
 } // namespace ndncert
 } // namespace ndn
 
 int
 main(int argc, char* argv[])
 {
-  return ndn::ndncert::main(argc, argv);
+  return ndn::ndncert::requester::main(argc, argv);
 }

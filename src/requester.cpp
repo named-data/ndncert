@@ -38,6 +38,7 @@
 
 namespace ndn {
 namespace ndncert {
+namespace requester {
 
 NDN_LOG_INIT(ndncert.client);
 
@@ -72,7 +73,6 @@ Requester::onCaProfileResponse(const Data& reply)
   }
   return caItem;
 }
-
 
 optional<CaProfile>
 Requester::onCaProfileResponseAfterRedirection(const Data& reply, const Name& caCertFullName)
@@ -324,5 +324,6 @@ Requester::processIfError(const Data& data)
                                " and Error Info: " + std::get<1>(errorInfo)));
 }
 
+} // namespace requester
 } // namespace ndncert
 } // namespace ndn

@@ -40,7 +40,7 @@ ChallengeEncoder::encodeDataContent(const ca::RequestState& request)
 }
 
 void
-ChallengeEncoder::decodeDataContent(const Block& data, RequesterState& state)
+ChallengeEncoder::decodeDataContent(const Block& data, requester::RequesterState& state)
 {
   data.parse();
   state.m_status = static_cast<Status>(readNonNegativeInteger(data.get(tlv::Status)));

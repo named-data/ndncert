@@ -29,6 +29,8 @@ namespace ndn {
 namespace ndncert {
 namespace tests {
 
+using namespace requester;
+
 BOOST_FIXTURE_TEST_SUITE(TestRequester, IdentityManagementTimeFixture)
 
 /* PROBE */

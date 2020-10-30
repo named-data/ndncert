@@ -27,6 +27,7 @@
 
 namespace ndn {
 namespace ndncert {
+namespace requester {
 
 struct RequesterState {
   explicit
@@ -99,6 +100,7 @@ struct RequesterState {
   bool m_isNewlyCreatedKey = false;
 };
 
+} // namespace requester
 } // namespace ndncert
 } // namespace ndn
 

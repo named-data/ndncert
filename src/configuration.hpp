@@ -142,6 +142,8 @@ public:
 
 } // namespace ca
 
+namespace requester {
+
 /**
  * @brief Represents Client configuration
  *
@@ -178,6 +180,7 @@ public:
   std::list<CaProfile> m_caItems;
 };
 
+} // namespace requester
 } // namespace ndncert
 } // namespace ndn
 

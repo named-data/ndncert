@@ -34,7 +34,7 @@ public:
   encodeDataContent(const ca::RequestState& request);
 
   static void
-  decodeDataContent(const Block& data, RequesterState& state);
+  decodeDataContent(const Block& data, requester::RequesterState& state);
 };
 
 } // namespace ndncert

@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(CAConfigFileWithErrors)
 
 BOOST_AUTO_TEST_CASE(RequesterCaCacheFile)
 {
-  RequesterCaCache config;
+  requester::RequesterCaCache config;
   config.load("tests/unit-tests/config-files/config-client-1");
   BOOST_CHECK_EQUAL(config.m_caItems.size(), 2);
 
@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE(RequesterCaCacheFile)
 
 BOOST_AUTO_TEST_CASE(RequesterCaCacheFileWithErrors)
 {
-  RequesterCaCache config;
+  requester::RequesterCaCache config;
   // nonexistent file
   BOOST_CHECK_THROW(config.load("tests/unit-tests/config-files/Nonexist"), std::runtime_error);
   // missing certificate
@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE(RequesterCaCacheFileWithErrors)
 
 BOOST_AUTO_TEST_CASE(RequesterCaCacheFileAddAndremoveCaProfile)
 {
-  RequesterCaCache config;
+  requester::RequesterCaCache config;
   config.load("tests/unit-tests/config-files/config-client-1");
 
   CaProfile item;

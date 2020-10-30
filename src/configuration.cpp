@@ -185,6 +185,8 @@ CaConfig::load(const std::string& fileName)
 
 } // namespace ca
 
+namespace requester {
+
 void
 RequesterCaCache::load(const std::string& fileName)
 {
@@ -249,5 +251,6 @@ RequesterCaCache::addCaProfile(const CaProfile& profile)
   m_caItems.push_back(profile);
 }
 
+} // namespace requester
 } // namespace ndncert
 } // namespace ndn

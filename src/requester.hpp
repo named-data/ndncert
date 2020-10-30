@@ -25,10 +25,7 @@
 
 namespace ndn {
 namespace ndncert {
-
-// TODO
-// For each RequesterState, create a validator instance and initialize it with CA's cert
-// The validator instance should be in CaProfile
+namespace requester {
 
 class Requester : noncopyable
 {
@@ -206,6 +203,7 @@ private:
   processIfError(const Data& data);
 };
 
+} // namespace requester
 } // namespace ndncert
 } // namespace ndn
 
