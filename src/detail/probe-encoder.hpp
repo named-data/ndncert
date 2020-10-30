@@ -31,7 +31,7 @@ class ProbeEncoder
 public:
   // For Client use
   static Block
-  encodeApplicationParameters(const std::vector<std::tuple<std::string, std::string>>& parameters);
+  encodeApplicationParameters(std::vector<std::tuple<std::string, std::string>>&& parameters);
 
   static void
   decodeDataContent(const Block& block, std::vector<std::pair<Name, int>>& availableNames,

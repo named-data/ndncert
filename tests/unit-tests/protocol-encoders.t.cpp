@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE(ProbeEncodingAppParam)
     std::vector<std::tuple<std::string, std::string>> parameters;
     parameters.emplace_back("key1", "value1");
     parameters.emplace_back("key2", "value2");
-    auto appParam = ProbeEncoder::encodeApplicationParameters(parameters);
+    auto appParam = ProbeEncoder::encodeApplicationParameters(std::move(parameters));
     auto param1 = ProbeEncoder::decodeApplicationParameters(appParam);
     BOOST_CHECK_EQUAL(parameters.size(),  param1.size());
     BOOST_CHECK_EQUAL(std::get<0>(parameters[0]),  std::get<0>(param1[0]));

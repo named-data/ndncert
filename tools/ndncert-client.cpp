@@ -379,7 +379,7 @@ runProbe(CaProfile profile)
       std::cerr << "\n***************************************\n"
                 << "Step " << nStep++ << ": Please provide information for name assignment" << std::endl;
       auto capturedParams = captureParams(profile.m_probeParameterKeys);
-      face.expressInterest(*Requester::genProbeInterest(profile, capturedParams),
+      face.expressInterest(*Requester::genProbeInterest(profile, std::move(capturedParams)),
                            bind(&probeCb, _2, profile), bind(&onNackCb), bind(&timeoutCb));
     }
     else {

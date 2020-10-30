@@ -88,14 +88,14 @@ Requester::onCaProfileResponseAfterRedirection(const Data& reply, const Name& ca
 }
 
 shared_ptr<Interest>
-Requester::genProbeInterest(const CaProfile& ca,const std::vector<std::tuple<std::string, std::string>>& probeInfo)
+Requester::genProbeInterest(const CaProfile& ca, std::vector<std::tuple<std::string, std::string>>&& probeInfo)
 {
   Name interestName = ca.m_caPrefix;
   interestName.append("CA").append("PROBE");
   auto interest =std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
-  interest->setApplicationParameters(ProbeEncoder::encodeApplicationParameters(probeInfo));
+  interest->setApplicationParameters(ProbeEncoder::encodeApplicationParameters(std::move(probeInfo)));
   return interest;
 }
 

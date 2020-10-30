@@ -84,7 +84,7 @@ public:
    * @return A shared pointer of to the encoded interest, ready to be sent.
    */
   static shared_ptr<Interest>
-  genProbeInterest(const CaProfile& ca,const std::vector<std::tuple<std::string, std::string>>& probeInfo);
+  genProbeInterest(const CaProfile& ca, std::vector<std::tuple<std::string, std::string>>&& probeInfo);
 
   /**
    * @brief Decodes the replied data for PROBE process from the CA.
