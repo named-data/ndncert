@@ -55,7 +55,7 @@ CaProfile::parse(const JsonSection& configJson)
   // CA max suffix length
   m_maxSuffixLength = nullopt;
   auto maxSuffixLength = configJson.get_optional<size_t>(CONFIG_MAX_SUFFIX_LENGTH);
-  if (maxSuffixLength.has_value()) {
+  if (maxSuffixLength) {
     m_maxSuffixLength = *maxSuffixLength;
   }
   // probe parameter keys
