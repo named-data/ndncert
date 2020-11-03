@@ -122,7 +122,8 @@ ChallengeEmail::getRequestedParameterList(Status status, const std::string& chal
 }
 
 Block
-ChallengeEmail::genChallengeRequestTLV(Status status, const std::string& challengeStatus, std::vector<std::tuple<std::string, std::string>>&& params)
+ChallengeEmail::genChallengeRequestTLV(Status status, const std::string& challengeStatus,
+                                       std::vector<std::tuple<std::string, std::string>>&& params)
 {
   Block request = makeEmptyBlock(tlv::EncryptedPayload);
   if (status == Status::BEFORE_CHALLENGE) {
@@ -161,7 +162,9 @@ ChallengeEmail::sendEmail(const std::string& emailAddress, const std::string& se
                           const ca::RequestState& request) const
 {
   std::string command = m_sendEmailScript;
-  command += " \"" + emailAddress + "\" \"" + secret + "\" \"" + request.m_caPrefix.toUri() + "\" \"" + request.m_cert.getName().toUri() + "\"";
+  command += " \"" + emailAddress + "\" \"" + secret + "\" \"" +
+             request.m_caPrefix.toUri() + "\" \"" +
+             request.m_cert.getName().toUri() + "\"";
   int result = system(command.c_str());
   if (result == -1) {
     NDN_LOG_TRACE("EmailSending Script " + m_sendEmailScript + " fails.");
