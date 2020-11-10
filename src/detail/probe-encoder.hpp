@@ -25,28 +25,25 @@
 
 namespace ndn {
 namespace ndncert {
+namespace probeEncoder {
 
-class ProbeEncoder
-{
-public:
   // For Client use
-  static Block
+  Block
   encodeApplicationParameters(std::vector<std::tuple<std::string, std::string>>&& parameters);
 
-  static void
+  void
   decodeDataContent(const Block& block, std::vector<std::pair<Name, int>>& availableNames,
                     std::vector<Name>& availableRedirection);
 
   // For CA use
-  static Block
+  Block
   encodeDataContent(const std::vector<Name>& identifiers,
                     optional<size_t> maxSuffixLength = nullopt,
                     optional<std::vector<std::shared_ptr<security::Certificate>>> redirectionItems = nullopt);
 
-  static std::vector<std::tuple<std::string, std::string>>
+  std::vector<std::tuple<std::string, std::string>>
   decodeApplicationParameters(const Block& block);
-};
-
+} // namespace ProbeEncoder
 } // namespace ndncert
 } // namespace ndn
 

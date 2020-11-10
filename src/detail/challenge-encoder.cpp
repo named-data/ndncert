@@ -24,7 +24,7 @@ namespace ndn {
 namespace ndncert {
 
 Block
-ChallengeEncoder::encodeDataContent(ca::RequestState& request, const Name& issuedCertName)
+challengeEncoder::encodeDataContent(ca::RequestState& request, const Name& issuedCertName)
 {
   Block response = makeEmptyBlock(tlv::EncryptedPayload);
   response.push_back(makeNonNegativeIntegerBlock(tlv::Status, static_cast<uint64_t>(request.m_status)));
@@ -45,7 +45,7 @@ ChallengeEncoder::encodeDataContent(ca::RequestState& request, const Name& issue
 }
 
 void
-ChallengeEncoder::decodeDataContent(const Block& contentBlock, requester::RequestState& state)
+challengeEncoder::decodeDataContent(const Block& contentBlock, requester::RequestState& state)
 {
   auto result = decodeBlockWithAesGcm128(contentBlock, state.m_aesKey.data(),
                                          state.m_requestId.data(), state.m_requestId.size());

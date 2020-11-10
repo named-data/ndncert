@@ -24,7 +24,7 @@ namespace ndn {
 namespace ndncert {
 
 Block
-ProbeEncoder::encodeApplicationParameters(std::vector<std::tuple<std::string, std::string>>&& parameters)
+probeEncoder::encodeApplicationParameters(std::vector<std::tuple<std::string, std::string>>&& parameters)
 {
   auto content = makeEmptyBlock(ndn::tlv::ApplicationParameters);
   for (size_t i = 0; i < parameters.size(); ++i) {
@@ -36,7 +36,7 @@ ProbeEncoder::encodeApplicationParameters(std::vector<std::tuple<std::string, st
 }
 
 std::vector<std::tuple<std::string, std::string>>
-ProbeEncoder::decodeApplicationParameters(const Block& block)
+probeEncoder::decodeApplicationParameters(const Block& block)
 {
   std::vector<std::tuple<std::string, std::string>> result;
   block.parse();
@@ -49,8 +49,8 @@ ProbeEncoder::decodeApplicationParameters(const Block& block)
 }
 
 Block
-ProbeEncoder::encodeDataContent(const std::vector<Name>& identifiers, optional<size_t> maxSuffixLength,
-                         optional<std::vector<std::shared_ptr<security::Certificate>>> redirectionItems)
+probeEncoder::encodeDataContent(const std::vector<Name>& identifiers, optional<size_t> maxSuffixLength,
+                                optional<std::vector<std::shared_ptr<security::Certificate>>> redirectionItems)
 {
   Block content = makeEmptyBlock(ndn::tlv::Content);
   for (const auto& name : identifiers) {
@@ -71,9 +71,9 @@ ProbeEncoder::encodeDataContent(const std::vector<Name>& identifiers, optional<s
 }
 
 void
-ProbeEncoder::decodeDataContent(const Block& block,
-                         std::vector<std::pair<Name, int>>& availableNames,
-                         std::vector<Name>& availableRedirection)
+probeEncoder::decodeDataContent(const Block& block,
+                                std::vector<std::pair<Name, int>>& availableNames,
+                                std::vector<Name>& availableRedirection)
 {
   block.parse();
   for (const auto& item : block.elements()) {

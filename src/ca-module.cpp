@@ -122,7 +122,7 @@ CaModule::getCaProfileData()
     const auto& pib = m_keyChain.getPib();
     const auto& identity = pib.getIdentity(m_config.m_caItem.m_caPrefix);
     const auto& cert = identity.getDefaultKey().getDefaultCertificate();
-    Block contentTLV = InfoEncoder::encodeDataContent(m_config.m_caItem, cert);
+    Block contentTLV = infoEncoder::encodeDataContent(m_config.m_caItem, cert);
 
     Name infoPacketName(m_config.m_caItem.m_caPrefix);
     infoPacketName.append("CA").append("INFO").appendVersion().appendSegment(0);
@@ -156,7 +156,7 @@ CaModule::onProbe(const Interest& request)
   NDN_LOG_TRACE("Received PROBE request");
 
   // process PROBE requests: collect probe parameters
-  auto parameters = ProbeEncoder::decodeApplicationParameters(request.getApplicationParameters());
+  auto parameters = probeEncoder::decodeApplicationParameters(request.getApplicationParameters());
   std::vector<PartialName> availableComponents;
   for (auto& item : m_config.m_nameAssignmentFuncs) {
     auto names = item->assignName(parameters);
@@ -176,7 +176,7 @@ CaModule::onProbe(const Interest& request)
 
   Data result;
   result.setName(request.getName());
-  result.setContent(ProbeEncoder::encodeDataContent(availableNames, m_config.m_caItem.m_maxSuffixLength, m_config.m_redirection));
+  result.setContent(probeEncoder::encodeDataContent(availableNames, m_config.m_caItem.m_maxSuffixLength, m_config.m_redirection));
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
   m_keyChain.sign(result, signingByIdentity(m_config.m_caItem.m_caPrefix));
   m_face.put(result);
@@ -193,7 +193,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   std::vector<uint8_t> ecdhPub;
   shared_ptr<security::Certificate> clientCert;
   try {
-    NewRenewRevokeEncoder::decodeApplicationParameters(parameterTLV, requestType, ecdhPub, clientCert);
+    newRenewRevokeEncoder::decodeApplicationParameters(parameterTLV, requestType, ecdhPub, clientCert);
   }
   catch (const std::exception& e) {
     if (!parameterTLV.hasValue()) {
@@ -320,7 +320,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   Data result;
   result.setName(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  result.setContent(NewRenewRevokeEncoder::encodeDataContent(myEcdhPubKeyBase64,
+  result.setContent(newRenewRevokeEncoder::encodeDataContent(myEcdhPubKeyBase64,
                                                              salt,
                                                              requestState.m_requestId, requestState.m_status,
                                                              m_config.m_caItem.m_supportedChallenges));
@@ -401,20 +401,20 @@ CaModule::onChallenge(const Interest& request)
       requestState->m_status = Status::SUCCESS;
       m_storage->deleteRequest(requestState->m_requestId);
 
-      payload = ChallengeEncoder::encodeDataContent(*requestState, issuedCert.getName());
+      payload = challengeEncoder::encodeDataContent(*requestState, issuedCert.getName());
       NDN_LOG_TRACE("Challenge succeeded. Certificate has been issued: " << issuedCert.getName());
     }
     else if (requestState->m_requestType == RequestType::REVOKE) {
       requestState->m_status = Status::SUCCESS;
       m_storage->deleteRequest(requestState->m_requestId);
 
-      payload = ChallengeEncoder::encodeDataContent(*requestState);
+      payload = challengeEncoder::encodeDataContent(*requestState);
       NDN_LOG_TRACE("Challenge succeeded. Certificate has been revoked");
     }
   }
   else {
     m_storage->updateRequest(*requestState);
-    payload = ChallengeEncoder::encodeDataContent(*requestState);
+    payload = challengeEncoder::encodeDataContent(*requestState);
     NDN_LOG_TRACE("No failure no success. Challenge moves on");
   }
 
@@ -485,7 +485,7 @@ CaModule::generateErrorDataPacket(const Name& name, ErrorCode error, const std::
   Data result;
   result.setName(name);
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  result.setContent(ErrorEncoder::encodeDataContent(error, errorInfo));
+  result.setContent(errorEncoder::encodeDataContent(error, errorInfo));
   m_keyChain.sign(result, signingByIdentity(m_config.m_caItem.m_caPrefix));
   return result;
 }

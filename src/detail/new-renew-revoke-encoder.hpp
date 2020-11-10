@@ -25,28 +25,26 @@
 
 namespace ndn {
 namespace ndncert {
+namespace newRenewRevokeEncoder {
 
-class NewRenewRevokeEncoder
-{
-public:
-  static Block
+  Block
   encodeApplicationParameters(RequestType requestType, const std::vector<uint8_t>& ecdhPub,
                               const security::Certificate& certRequest);
 
-  static void
+  void
   decodeApplicationParameters(const Block& block, RequestType requestType, std::vector<uint8_t>& ecdhPub,
                               shared_ptr<security::Certificate>& certRequest);
 
-  static Block
+  Block
   encodeDataContent(const std::vector<uint8_t>& ecdhKey, const std::array<uint8_t, 32>& salt,
                     const RequestId& requestId, const Status& status,
                     const std::list<std::string>& challenges);
 
-  static std::list<std::string>
+  std::list<std::string>
   decodeDataContent(const Block& content, std::vector<uint8_t>& ecdhKey,
                     std::array<uint8_t, 32>& salt, RequestId& requestId, Status& status);
-};
 
+} // namespace NewRenewRevokeEncoder
 } // namespace ndncert
 } // namespace ndn
 

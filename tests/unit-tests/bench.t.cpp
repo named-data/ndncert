@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(PacketSize0)
       BOOST_CHECK(security::verifySignature(response, cert));
       auto contentBlock = response.getContent();
       contentBlock.parse();
-      auto caItem = InfoEncoder::decodeDataContent(contentBlock);
+      auto caItem = infoEncoder::decodeDataContent(contentBlock);
       BOOST_CHECK_EQUAL(caItem.m_caPrefix, "/ndn");
       BOOST_CHECK_EQUAL(caItem.m_probeParameterKeys.size(), 1);
       BOOST_CHECK_EQUAL(caItem.m_probeParameterKeys.front(), "full name");

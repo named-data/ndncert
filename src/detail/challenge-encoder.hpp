@@ -26,17 +26,15 @@
 
 namespace ndn {
 namespace ndncert {
+namespace challengeEncoder {
 
-class ChallengeEncoder
-{
-public:
-  static Block
+  Block
   encodeDataContent(ca::RequestState& request, const Name& issuedCertName = Name());
 
-  static void
+  void
   decodeDataContent(const Block& contentBlock, requester::RequestState& state);
-};
 
+} // namespace ChallengeEncoder
 } // namespace ndncert
 } // namespace ndn
 
