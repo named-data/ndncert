@@ -137,7 +137,7 @@ Block
 ChallengeCredential::genChallengeRequestTLV(Status status, const std::string& challengeStatus,
                                             std::vector<std::tuple<std::string, std::string>>&& params)
 {
-  Block request = makeEmptyBlock(tlv::EncryptedPayload);
+  Block request(tlv::EncryptedPayload);
   if (status == Status::BEFORE_CHALLENGE) {
     if (params.size() != 2) {
       NDN_THROW(std::runtime_error("Wrong parameter provided."));
@@ -146,7 +146,7 @@ ChallengeCredential::genChallengeRequestTLV(Status status, const std::string& ch
     for (const auto& item : params) {
       if (std::get<0>(item) == PARAMETER_KEY_CREDENTIAL_CERT) {
         request.push_back(makeStringBlock(tlv::ParameterKey, PARAMETER_KEY_CREDENTIAL_CERT));
-        Block valueBlock = makeEmptyBlock(tlv::ParameterValue);
+        Block valueBlock(tlv::ParameterValue);
         auto& certTlvStr = std::get<1>(item);
         valueBlock.push_back(Block((uint8_t*)certTlvStr.c_str(), certTlvStr.size()));
         request.push_back(valueBlock);

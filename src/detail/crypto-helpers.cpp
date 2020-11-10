@@ -356,7 +356,7 @@ encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key, const uint8_t* pa
   uint8_t tag[16];
   size_t encryptedPayloadLen = aesGcm128Encrypt(payload, payloadSize, associatedData, associatedDataSize,
                                                 key, iv.data(), encryptedPayload.data(), tag);
-  auto content = makeEmptyBlock(tlvType);
+  Block content(tlvType);
   content.push_back(makeBinaryBlock(tlv::InitializationVector, iv.data(), iv.size()));
   content.push_back(makeBinaryBlock(tlv::AuthenticationTag, tag, 16));
   content.push_back(makeBinaryBlock(tlv::EncryptedPayload, encryptedPayload.data(), encryptedPayloadLen));

@@ -93,9 +93,9 @@ BOOST_AUTO_TEST_CASE(ProfileStorageConfigFile)
 {
   requester::ProfileStorage profileStorage;
   profileStorage.load("tests/unit-tests/config-files/config-client-1");
-  BOOST_CHECK_EQUAL(profileStorage.m_caItems.size(), 2);
+  BOOST_CHECK_EQUAL(profileStorage.getCaItems().size(), 2);
 
-  auto& profile1 = profileStorage.m_caItems.front();
+  auto& profile1 = profileStorage.getCaItems().front();
   BOOST_CHECK_EQUAL(profile1.m_caPrefix, "/ndn/edu/ucla");
   BOOST_CHECK_EQUAL(profile1.m_caInfo, "ndn testbed ca");
   BOOST_CHECK_EQUAL(profile1.m_maxValidityPeriod, time::seconds(864000));
@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE(ProfileStorageConfigFile)
   BOOST_CHECK_EQUAL(profile1.m_cert->getName(),
                     "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
 
-  auto& profile2 = profileStorage.m_caItems.back();
+  auto& profile2 = profileStorage.getCaItems().back();
   BOOST_CHECK_EQUAL(profile2.m_caPrefix, "/ndn/edu/ucla/zhiyi");
   BOOST_CHECK_EQUAL(profile2.m_caInfo, "");
   BOOST_CHECK_EQUAL(profile2.m_maxValidityPeriod, time::seconds(86400));
@@ -135,14 +135,14 @@ BOOST_AUTO_TEST_CASE(ProfileStorageAddAndRemoveProfile)
   item.m_caPrefix = Name("/test");
   item.m_caInfo = "test";
 
-  profileStorage.m_caItems.push_back(item);
-  BOOST_CHECK_EQUAL(profileStorage.m_caItems.size(), 3);
-  auto lastItem = profileStorage.m_caItems.back();
+  profileStorage.addCaProfile(item);
+  BOOST_CHECK_EQUAL(profileStorage.getCaItems().size(), 3);
+  auto lastItem = profileStorage.getCaItems().back();
   BOOST_CHECK_EQUAL(lastItem.m_caPrefix, "/test");
 
   profileStorage.removeCaProfile(Name("/test"));
-  BOOST_CHECK_EQUAL(profileStorage.m_caItems.size(), 2);
-  lastItem = profileStorage.m_caItems.back();
+  BOOST_CHECK_EQUAL(profileStorage.getCaItems().size(), 2);
+  lastItem = profileStorage.getCaItems().back();
   BOOST_CHECK_EQUAL(lastItem.m_caPrefix, "/ndn/edu/ucla/zhiyi");
 }
 

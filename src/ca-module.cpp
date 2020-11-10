@@ -112,7 +112,7 @@ CaModule::registerPrefix()
 void
 CaModule::setStatusUpdateCallback(const StatusUpdateCallback& onUpdateCallback)
 {
-  m_config.m_statusUpdateCallback = onUpdateCallback;
+  m_statusUpdateCallback = onUpdateCallback;
 }
 
 Data
@@ -326,8 +326,8 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
                                                              m_config.m_caItem.m_supportedChallenges));
   m_keyChain.sign(result, signingByIdentity(m_config.m_caItem.m_caPrefix));
   m_face.put(result);
-  if (m_config.m_statusUpdateCallback) {
-    m_config.m_statusUpdateCallback(requestState);
+  if (m_statusUpdateCallback) {
+    m_statusUpdateCallback(requestState);
   }
 }
 
@@ -424,8 +424,8 @@ CaModule::onChallenge(const Interest& request)
   result.setContent(payload);
   m_keyChain.sign(result, signingByIdentity(m_config.m_caItem.m_caPrefix));
   m_face.put(result);
-  if (m_config.m_statusUpdateCallback) {
-    m_config.m_statusUpdateCallback(*requestState);
+  if (m_statusUpdateCallback) {
+    m_statusUpdateCallback(*requestState);
   }
 }
 

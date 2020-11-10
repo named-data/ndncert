@@ -26,7 +26,7 @@ namespace ndncert {
 Block
 infoEncoder::encodeDataContent(const CaProfile& caConfig, const security::Certificate& certificate)
 {
-  auto content = makeEmptyBlock(ndn::tlv::Content);
+  Block content(ndn::tlv::Content);
   content.push_back(makeNestedBlock(tlv::CaPrefix, caConfig.m_caPrefix));
   std::string caInfo = "";
   if (caConfig.m_caInfo == "") {

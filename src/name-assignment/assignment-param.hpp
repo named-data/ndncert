@@ -36,6 +36,7 @@ public:
 
   std::vector<PartialName>
   assignName(const std::vector<std::tuple<std::string, std::string>>& params) override;
+
 };
 
 } // namespace ndncert

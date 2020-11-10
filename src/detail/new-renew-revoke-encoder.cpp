@@ -32,7 +32,7 @@ Block
 newRenewRevokeEncoder::encodeApplicationParameters(RequestType requestType, const std::vector<uint8_t>& ecdhPub,
                                                    const security::Certificate& certRequest)
 {
-  Block request = makeEmptyBlock(ndn::tlv::ApplicationParameters);
+  Block request(ndn::tlv::ApplicationParameters);
   std::stringstream ss;
   try {
     security::transform::bufferSource(certRequest.wireEncode().wire(), certRequest.wireEncode().size())
@@ -84,7 +84,7 @@ newRenewRevokeEncoder::encodeDataContent(const std::vector<uint8_t>& ecdhKey, co
                                          const RequestId& requestId, const Status& status,
                                          const std::list<std::string>& challenges)
 {
-  Block response = makeEmptyBlock(ndn::tlv::Content);
+  Block response(ndn::tlv::Content);
   response.push_back(makeBinaryBlock(tlv::EcdhPub, ecdhKey.data(), ecdhKey.size()));
   response.push_back(makeBinaryBlock(tlv::Salt, salt.data(), salt.size()));
   response.push_back(makeBinaryBlock(tlv::RequestId, requestId.data(), requestId.size()));

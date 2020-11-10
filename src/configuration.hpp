@@ -28,6 +28,21 @@ namespace ndn {
 namespace ndncert {
 
 struct CaProfile {
+public:
+  /**
+   * Parse the configuration json and modify current struct to the result.
+   * @param configJson the configuration json to parse
+   */
+  void
+  parse(const JsonSection& configJson);
+
+  /**
+   * @return the JSON representation of this profile.
+   */
+  JsonSection
+  toJson() const;
+
+public:
   /**
    * CA Name prefix (without /CA suffix).
    */
@@ -65,12 +80,6 @@ struct CaProfile {
    */
   std::shared_ptr<security::Certificate> m_cert;
 
-  void
-  parse(const JsonSection& configJson);
-
-  JsonSection
-  toJson() const;
-
 private:
   void
   parseProbeParameters(const JsonSection& section);
@@ -82,19 +91,8 @@ private:
 namespace ca {
 
 /**
- * @brief The function would be invoked whenever the certificate request status is updated.
- * The callback is used to notice the CA application or CA command line tool. The callback is
- * fired whenever a request instance is created, challenge status is updated, and when certificate
- * is issued.
- *
- * @param RequestState The state of the certificate request whose status is updated.
- */
-using StatusUpdateCallback = function<void(const RequestState&)>;
-
-/**
  * @brief CA's configuration on NDNCERT.
- * For CA configuration format, please refer to:
- *   https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3#213-ca-profile
+ * @sa https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3#213-ca-profile
  *
  * The format of CA configuration in JSON
  * {
@@ -124,16 +122,13 @@ public:
   void
   load(const std::string& fileName);
 
+public:
   CaProfile m_caItem;
   /**
-   * Used for CA redirection as specified in
-   * https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3-PROBE-Extensions#probe-extension-for-redirection
+   * Used for CA redirection
+   * @sa https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3-PROBE-Extensions#probe-extension-for-redirection
    */
   optional<std::vector<std::shared_ptr<security::Certificate>>> m_redirection = nullopt;
-  /**
-   * StatusUpdate Callback function
-   */
-  StatusUpdateCallback m_statusUpdateCallback;
   /**
    * Name Assignment Functions
    */
@@ -146,9 +141,7 @@ namespace requester {
 
 /**
  * @brief Represents Client configuration
- *
- * For Client configuration format, please refer to:
- *   https://github.com/named-data/ndncert/wiki/Client-Configuration-Sample
+ * @sa https://github.com/named-data/ndncert/wiki/Client-Configuration-Sample
  */
 class ProfileStorage
 {
@@ -177,6 +170,10 @@ public:
   void
   addCaProfile(const CaProfile& profile);
 
+  const std::list<CaProfile>&
+  getCaItems() const;
+
+private:
   std::list<CaProfile> m_caItems;
 };
 

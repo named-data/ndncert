@@ -43,15 +43,15 @@ NameAssignmentFunc::NameAssignmentFunc(const std::string& factoryType, const std
 unique_ptr<NameAssignmentFunc>
 NameAssignmentFunc::createNameAssignmentFunc(const std::string& challengeType, const std::string& format)
 {
-  FuncFactoryFactory& factory = getFactory();
+  CurriedFuncFactory& factory = getFactory();
   auto i = factory.find(challengeType);
   return i == factory.end() ? nullptr : i->second(format);
 }
 
-NameAssignmentFunc::FuncFactoryFactory&
+NameAssignmentFunc::CurriedFuncFactory&
 NameAssignmentFunc::getFactory()
 {
-  static NameAssignmentFunc::FuncFactoryFactory factory;
+  static NameAssignmentFunc::CurriedFuncFactory factory;
   return factory;
 }
 

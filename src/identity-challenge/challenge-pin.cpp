@@ -107,7 +107,7 @@ Block
 ChallengePin::genChallengeRequestTLV(Status status, const std::string& challengeStatus,
                                      std::vector<std::tuple<std::string, std::string>>&& params)
 {
-  Block request = makeEmptyBlock(tlv::EncryptedPayload);
+  Block request(tlv::EncryptedPayload);
   if (status == Status::BEFORE_CHALLENGE) {
     request.push_back(makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
   }

@@ -29,6 +29,16 @@ namespace ndn {
 namespace ndncert {
 namespace ca {
 
+/**
+ * @brief The function would be invoked whenever the certificate request status is updated.
+ * The callback is used to notice the CA application or CA command line tool. The callback is
+ * fired whenever a request instance is created, challenge status is updated, and when certificate
+ * is issued.
+ *
+ * @param RequestState The state of the certificate request whose status is updated.
+ */
+using StatusUpdateCallback = function<void(const RequestState&)>;
+
 class CaModule : noncopyable
 {
 public:
@@ -90,6 +100,10 @@ NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   security::KeyChain& m_keyChain;
   uint8_t m_requestIdGenKey[32];
   std::unique_ptr<Data> m_profileData;
+  /**
+   * StatusUpdate Callback function
+   */
+  StatusUpdateCallback m_statusUpdateCallback;
 
   std::list<RegisteredPrefixHandle> m_registeredPrefixHandles;
   std::list<InterestFilterHandle> m_interestFilterHandles;

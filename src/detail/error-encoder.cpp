@@ -26,7 +26,7 @@ namespace ndncert {
 Block
 errorEncoder::encodeDataContent(ErrorCode errorCode, const std::string& description)
 {
-  Block response = makeEmptyBlock(ndn::tlv::Content);
+  Block response(ndn::tlv::Content);
   response.push_back(makeNonNegativeIntegerBlock(tlv::ErrorCode, static_cast<size_t>(errorCode)));
   response.push_back(makeStringBlock(tlv::ErrorInfo, description));
   response.encode();

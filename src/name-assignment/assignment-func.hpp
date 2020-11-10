@@ -28,9 +28,10 @@ namespace ndncert {
 
 class NameAssignmentFunc : noncopyable
 {
-public:
+protected:
   explicit NameAssignmentFunc(const std::string& factoryType, const std::string& format = "");
 
+public:
   virtual ~NameAssignmentFunc() = default;
 
   /**
@@ -47,26 +48,28 @@ public:
   assignName(const std::vector<std::tuple<std::string, std::string>>& params) = 0;
 
   const std::string FACTORY_TYPE;
-  std::vector<std::string> m_nameFormat;
 
 public:
-  template <class ChallengeType>
+  template <class AssignmentType>
   static void
   registerNameAssignmentFunc(const std::string& typeName)
   {
-    FuncFactoryFactory& factory = getFactory();
+    CurriedFuncFactory& factory = getFactory();
     BOOST_ASSERT(factory.count(typeName) == 0);
-    factory[typeName] = [](const std::string& format) { return std::make_unique<ChallengeType>(format); };
+    factory[typeName] = [](const std::string& format) { return std::make_unique<AssignmentType>(format); };
   }
 
   static unique_ptr<NameAssignmentFunc>
   createNameAssignmentFunc(const std::string& challengeType, const std::string& format = "");
 
+NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+    std::vector<std::string> m_nameFormat;
+    
 private:
   typedef function<unique_ptr<NameAssignmentFunc>(const std::string&)> FactoryCreateFunc;
-  typedef std::map<std::string, FactoryCreateFunc> FuncFactoryFactory;
+  typedef std::map<std::string, FactoryCreateFunc> CurriedFuncFactory;
 
-  static FuncFactoryFactory&
+  static CurriedFuncFactory&
   getFactory();
 };
 

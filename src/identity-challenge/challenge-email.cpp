@@ -20,6 +20,7 @@
 
 #include "challenge-email.hpp"
 #include <regex>
+#include <boost/process.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -125,7 +126,7 @@ Block
 ChallengeEmail::genChallengeRequestTLV(Status status, const std::string& challengeStatus,
                                        std::vector<std::tuple<std::string, std::string>>&& params)
 {
-  Block request = makeEmptyBlock(tlv::EncryptedPayload);
+  Block request(tlv::EncryptedPayload);
   if (status == Status::BEFORE_CHALLENGE) {
     if (params.size() != 1 || std::get<0>(params[0]) != PARAMETER_KEY_EMAIL) {
       NDN_THROW(std::runtime_error("Wrong parameter provided."));
@@ -165,13 +166,13 @@ ChallengeEmail::sendEmail(const std::string& emailAddress, const std::string& se
   command += " \"" + emailAddress + "\" \"" + secret + "\" \"" +
              request.m_caPrefix.toUri() + "\" \"" +
              request.m_cert.getName().toUri() + "\"";
-  int result = system(command.c_str());
-  if (result == -1) {
+  boost::process::child child(command);
+  child.wait();
+  if (child.exit_code() != 0) {
     NDN_LOG_TRACE("EmailSending Script " + m_sendEmailScript + " fails.");
   }
   NDN_LOG_TRACE("EmailSending Script " + m_sendEmailScript +
-             " was executed successfully with return value" + std::to_string(result) + ".");
-  return;
+             " was executed successfully with return value 0.");
 }
 
 } // namespace ndncert

@@ -26,7 +26,7 @@ namespace ndncert {
 Block
 probeEncoder::encodeApplicationParameters(std::vector<std::tuple<std::string, std::string>>&& parameters)
 {
-  auto content = makeEmptyBlock(ndn::tlv::ApplicationParameters);
+  Block content(ndn::tlv::ApplicationParameters);
   for (size_t i = 0; i < parameters.size(); ++i) {
     content.push_back(makeStringBlock(tlv::ParameterKey, std::get<0>(parameters[i])));
     content.push_back(makeStringBlock(tlv::ParameterValue, std::get<1>(parameters[i])));
@@ -40,9 +40,10 @@ probeEncoder::decodeApplicationParameters(const Block& block)
 {
   std::vector<std::tuple<std::string, std::string>> result;
   block.parse();
-  for (size_t i = 0; i < block.elements().size() - 1; ++i) {
-    if (block.elements().at(i).type() == tlv::ParameterKey && block.elements().at(i + 1).type() == tlv::ParameterValue) {
-      result.push_back(std::make_tuple(readString(block.elements().at(i)), readString(block.elements().at(i + 1))));
+  for (size_t i = 0; i < block.elements().size() - 1; i++) {
+    if (block.elements()[i].type() == tlv::ParameterKey && block.elements()[i + 1].type() == tlv::ParameterValue) {
+      result.emplace_back(readString(block.elements().at(i)), readString(block.elements().at(i + 1)));
+      i ++;
     }
   }
   return result;
@@ -52,7 +53,7 @@ Block
 probeEncoder::encodeDataContent(const std::vector<Name>& identifiers, optional<size_t> maxSuffixLength,
                                 optional<std::vector<std::shared_ptr<security::Certificate>>> redirectionItems)
 {
-  Block content = makeEmptyBlock(ndn::tlv::Content);
+  Block content(ndn::tlv::Content);
   for (const auto& name : identifiers) {
     Block item(tlv::ProbeResponse);
     item.push_back(name.wireEncode());
@@ -81,7 +82,7 @@ probeEncoder::decodeDataContent(const Block& block,
       item.parse();
       Name elementName;
       int maxSuffixLength = 0;
-      for (const auto& subBlock: item.elements()) {
+      for (const auto& subBlock : item.elements()) {
           if (subBlock.type() == ndn::tlv::Name) {
               if (!elementName.empty()) {
                   NDN_THROW(std::runtime_error("Invalid probe format"));

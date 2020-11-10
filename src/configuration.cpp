@@ -251,6 +251,12 @@ ProfileStorage::addCaProfile(const CaProfile& profile)
   m_caItems.push_back(profile);
 }
 
+const std::list<CaProfile>&
+ProfileStorage::getCaItems() const
+{
+  return m_caItems;
+}
+
 } // namespace requester
 } // namespace ndncert
 } // namespace ndn

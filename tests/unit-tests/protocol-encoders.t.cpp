@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE(InfoEncoding)
 
   requester::ProfileStorage caCache;
   caCache.load("tests/unit-tests/config-files/config-client-1");
-  auto& cert = caCache.m_caItems.front().m_cert;
+  auto& cert = caCache.getCaItems().front().m_cert;
 
   auto b = infoEncoder::encodeDataContent(config.m_caItem, *cert);
   auto item = infoEncoder::decodeDataContent(b);
@@ -106,7 +106,7 @@ BOOST_AUTO_TEST_CASE(NewRevokeEncodingParam)
 {
   requester::ProfileStorage caCache;
   caCache.load("tests/unit-tests/config-files/config-client-1");
-  auto& certRequest = caCache.m_caItems.front().m_cert;
+  auto& certRequest = caCache.getCaItems().front().m_cert;
   std::vector<uint8_t> pub = ECDHState().getSelfPubKey();
   auto b = newRenewRevokeEncoder::encodeApplicationParameters(RequestType::REVOKE, pub, *certRequest);
   std::vector<uint8_t> returnedPub;
@@ -147,7 +147,7 @@ BOOST_AUTO_TEST_CASE(ChallengeEncoding)
                          0xe0, 0xff, 0x56, 0x83, 0xf2, 0x43, 0xb2, 0x13};
   requester::ProfileStorage caCache;
   caCache.load("tests/unit-tests/config-files/config-client-1");
-  security::Certificate certRequest = *caCache.m_caItems.front().m_cert;
+  security::Certificate certRequest = *caCache.getCaItems().front().m_cert;
   RequestId id = {102};
   std::array<uint8_t, 16> aesKey;
   std::memcpy(aesKey.data(), key, sizeof(key));
@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE(ChallengeEncoding)
                          std::move(aesKey), 0);
   auto contentBlock = challengeEncoder::encodeDataContent(state, Name("/ndn/ucla/a/b/c"));
 
-  requester::RequestState context(m_keyChain, caCache.m_caItems.front(), RequestType::NEW);
+  requester::RequestState context(m_keyChain, caCache.getCaItems().front(), RequestType::NEW);
   context.m_requestId = id;
   std::memcpy(context.m_aesKey.data(), key, sizeof(key));
   challengeEncoder::decodeDataContent(contentBlock, context);
