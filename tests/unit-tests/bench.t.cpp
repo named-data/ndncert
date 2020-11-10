@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
   CaProfile item;
   item.m_caPrefix = Name("/ndn");
   item.m_cert = std::make_shared<security::Certificate>(cert);
-  requester::RequestContext state(m_keyChain, item, RequestType::NEW);
+  requester::RequestState state(m_keyChain, item, RequestType::NEW);
   auto newInterest = requester::Requester::genNewInterest(state, Name("/ndn/alice"),
                                                time::system_clock::now(),
                                                time::system_clock::now() + time::days(1));

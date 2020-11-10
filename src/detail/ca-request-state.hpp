@@ -45,6 +45,12 @@ enum class Status : uint16_t {
 std::string
 statusToString(Status status);
 
+/**
+ * @brief Convert request status to string.
+ */
+Status
+statusFromBlock(const Block& block);
+
 namespace ca {
 
 /**

@@ -21,7 +21,7 @@
 #ifndef NDNCERT_REQUESTER_HPP
 #define NDNCERT_REQUESTER_HPP
 
-#include "requester-state.hpp"
+#include "requester-request-state.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -112,7 +112,7 @@ public:
    * @return The shared pointer to the encoded interest.
    */
   static shared_ptr<Interest>
-  genNewInterest(RequestContext& state, const Name& identityName,
+  genNewInterest(RequestState& state, const Name& identityName,
                  const time::system_clock::TimePoint& notBefore,
                  const time::system_clock::TimePoint& notAfter);
 
@@ -124,7 +124,7 @@ public:
    * @return The shared pointer to the encoded interest.
    */
   static shared_ptr<Interest>
-  genRevokeInterest(RequestContext& state, const security::Certificate& certificate);
+  genRevokeInterest(RequestState& state, const security::Certificate& certificate);
 
   /**
    * @brief Decodes the replied data of NEW, RENEW, or REVOKE interest from the CA.
@@ -135,7 +135,7 @@ public:
    * @throw std::runtime_error if the decoding fails or receiving an error packet.
    */
   static std::list<std::string>
-  onNewRenewRevokeResponse(RequestContext& state, const Data& reply);
+  onNewRenewRevokeResponse(RequestState& state, const Data& reply);
 
   // CHALLENGE helpers
   /**
@@ -148,7 +148,7 @@ public:
    * @throw std::runtime_error if the challenge is not supported.
    */
   static std::vector<std::tuple<std::string, std::string>>
-  selectOrContinueChallenge(RequestContext& state, const std::string& challengeSelected);
+  selectOrContinueChallenge(RequestState& state, const std::string& challengeSelected);
 
   /**
    * @brief Generates the CHALLENGE interest for the request.
@@ -159,7 +159,7 @@ public:
    * @throw std::runtime_error if the challenge is not selected or is not supported.
    */
   static shared_ptr<Interest>
-  genChallengeInterest(RequestContext& state,
+  genChallengeInterest(RequestState& state,
                        std::vector<std::tuple<std::string, std::string>>&& parameters);
 
   /**
@@ -170,7 +170,7 @@ public:
    * @throw std::runtime_error if the decoding fails or receiving an error packet.
    */
   static void
-  onChallengeResponse(RequestContext& state, const Data& reply);
+  onChallengeResponse(RequestState& state, const Data& reply);
 
   /**
    * @brief Generate the interest to fetch the issued certificate
@@ -179,7 +179,7 @@ public:
    * @return The shared pointer to the encoded interest
    */
   static shared_ptr<Interest>
-  genCertFetchInterest(const RequestContext& state);
+  genCertFetchInterest(const RequestState& state);
 
   /**
    * @brief Decoded and installs the response certificate from the certificate fetch.
@@ -196,7 +196,7 @@ public:
    * @param state, the requester state for the request.
    */
   static void
-  endSession(RequestContext& state);
+  endSession(RequestState& state);
 
 private:
   static void

@@ -24,7 +24,8 @@
 namespace ndn {
 namespace ndncert {
 
-std::string statusToString(Status status) {
+std::string statusToString(Status status)
+{
   switch (status)
   {
   case Status::BEFORE_CHALLENGE:
@@ -44,6 +45,15 @@ std::string statusToString(Status status) {
   default:
     return "Unrecognized status";
   }
+}
+
+Status
+statusFromBlock(const Block& block)
+{
+  auto status_int = readNonNegativeInteger(block);
+  if (status_int > 6)
+      NDN_THROW(std::runtime_error("Unrecognized Status"));
+  return static_cast<Status>(status_int);
 }
 
 namespace ca {

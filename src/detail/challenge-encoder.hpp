@@ -22,7 +22,7 @@
 #define NDNCERT_DETAIL_CHALLENGE_ENCODER_HPP
 
 #include "detail/ca-request-state.hpp"
-#include "requester-state.hpp"
+#include "requester-request-state.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -31,10 +31,10 @@ class ChallengeEncoder
 {
 public:
   static Block
-  encodeDataContent(ca::RequestState& request, optional<Name> issuedCertName = nullopt);
+  encodeDataContent(ca::RequestState& request, const Name& issuedCertName = Name());
 
   static void
-  decodeDataContent(const Block& data, requester::RequestContext& state);
+  decodeDataContent(const Block& contentBlock, requester::RequestState& state);
 };
 
 } // namespace ndncert

@@ -101,7 +101,7 @@ NewRenewRevokeEncoder::decodeDataContent(const Block& content, std::vector<uint8
                                          std::array<uint8_t, 32>& salt, RequestId& requestId, Status& status)
 {
   content.parse();
-  status = static_cast<Status>(readNonNegativeInteger(content.get(tlv::Status)));
+  status = statusFromBlock(content.get(tlv::Status));
 
   const auto& ecdhBlock = content.get(tlv::EcdhPub);
   ecdhKey.resize(ecdhBlock.value_size());

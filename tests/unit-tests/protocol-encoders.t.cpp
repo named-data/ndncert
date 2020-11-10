@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE(ChallengeEncoding)
                          std::move(aesKey), 0);
   auto contentBlock = ChallengeEncoder::encodeDataContent(state, Name("/ndn/ucla/a/b/c"));
 
-  requester::RequestContext context(m_keyChain, caCache.m_caItems.front(), RequestType::NEW);
+  requester::RequestState context(m_keyChain, caCache.m_caItems.front(), RequestType::NEW);
   context.m_requestId = id;
   std::memcpy(context.m_aesKey.data(), key, sizeof(key));
   ChallengeEncoder::decodeDataContent(contentBlock, context);

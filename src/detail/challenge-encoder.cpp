@@ -24,10 +24,10 @@ namespace ndn {
 namespace ndncert {
 
 Block
-ChallengeEncoder::encodeDataContent(ca::RequestState& request, optional<Name> issuedCertName)
+ChallengeEncoder::encodeDataContent(ca::RequestState& request, const Name& issuedCertName)
 {
   Block response = makeEmptyBlock(tlv::EncryptedPayload);
-  response.push_back(makeNonNegativeIntegerBlock(tlv::Status, static_cast<size_t>(request.m_status)));
+  response.push_back(makeNonNegativeIntegerBlock(tlv::Status, static_cast<uint64_t>(request.m_status)));
   if (request.m_challengeState) {
     response.push_back(makeStringBlock(tlv::ChallengeStatus, request.m_challengeState->m_challengeStatus));
     response.push_back(
@@ -35,8 +35,8 @@ ChallengeEncoder::encodeDataContent(ca::RequestState& request, optional<Name> is
     response.push_back(
         makeNonNegativeIntegerBlock(tlv::RemainingTime, request.m_challengeState->m_remainingTime.count()));
   }
-  if (issuedCertName.has_value()) {
-    response.push_back(makeNestedBlock(tlv::IssuedCertName, *issuedCertName));
+  if (!issuedCertName.empty()) {
+    response.push_back(makeNestedBlock(tlv::IssuedCertName, issuedCertName));
   }
   response.encode();
   return encodeBlockWithAesGcm128(ndn::tlv::Content, request.m_encryptionKey.data(),
@@ -45,13 +45,13 @@ ChallengeEncoder::encodeDataContent(ca::RequestState& request, optional<Name> is
 }
 
 void
-ChallengeEncoder::decodeDataContent(const Block& contentBlock, requester::RequestContext& state)
+ChallengeEncoder::decodeDataContent(const Block& contentBlock, requester::RequestState& state)
 {
   auto result = decodeBlockWithAesGcm128(contentBlock, state.m_aesKey.data(),
                                          state.m_requestId.data(), state.m_requestId.size());
   auto data = makeBinaryBlock(tlv::EncryptedPayload, result.data(), result.size());
   data.parse();
-  state.m_status = static_cast<Status>(readNonNegativeInteger(data.get(tlv::Status)));
+  state.m_status = statusFromBlock(data.get(tlv::Status));
   if (data.find(tlv::ChallengeStatus) != data.elements_end()) {
     state.m_challengeStatus = readString(data.get(tlv::ChallengeStatus));
   }

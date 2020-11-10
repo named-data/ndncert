@@ -18,13 +18,13 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "requester-state.hpp"
+#include "requester-request-state.hpp"
 
 namespace ndn {
 namespace ndncert {
 namespace requester {
 
-RequestContext::RequestContext(security::KeyChain& keyChain, const CaProfile& caItem, RequestType requestType)
+RequestState::RequestState(security::KeyChain& keyChain, const CaProfile& caItem, RequestType requestType)
   : m_caItem(caItem)
   , m_keyChain(keyChain)
   , m_type(requestType)

@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_REQUESTER_STATE_HPP
-#define NDNCERT_REQUESTER_STATE_HPP
+#ifndef NDNCERT_REQUESTER_REQUEST_STATE_HPP
+#define NDNCERT_REQUESTER_REQUEST_STATE_HPP
 
 #include "detail/ca-request-state.hpp"
 #include "detail/crypto-helpers.hpp"
@@ -29,9 +29,9 @@ namespace ndn {
 namespace ndncert {
 namespace requester {
 
-struct RequestContext {
+struct RequestState {
   explicit
-  RequestContext(security::KeyChain& keyChain, const CaProfile& caItem, RequestType requestType);
+  RequestState(security::KeyChain& keyChain, const CaProfile& caItem, RequestType requestType);
 
   /**
    * @brief The CA profile for this request.
@@ -104,4 +104,4 @@ struct RequestContext {
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_REQUESTER_STATE_HPP
+#endif // NDNCERT_REQUESTER_REQUEST_STATE_HPP
