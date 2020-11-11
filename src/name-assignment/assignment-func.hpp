@@ -22,6 +22,7 @@
 #define NDNCERT_ASSIGNMENT_FUNC_HPP
 
 #include "detail/ca-request-state.hpp"
+#include <map>
 
 namespace ndn {
 namespace ndncert {
@@ -29,7 +30,7 @@ namespace ndncert {
 class NameAssignmentFunc : noncopyable
 {
 protected:
-  explicit NameAssignmentFunc(const std::string& factoryType, const std::string& format = "");
+  explicit NameAssignmentFunc(const std::string& format = "");
 
 public:
   virtual ~NameAssignmentFunc() = default;
@@ -45,9 +46,7 @@ public:
    * @return a vector containing the possible namespaces derived from the parameters.
    */
   virtual std::vector<PartialName>
-  assignName(const std::vector<std::tuple<std::string, std::string>>& params) = 0;
-
-  const std::string FACTORY_TYPE;
+  assignName(const std::multimap<std::string, std::string> &params) = 0;
 
 public:
   template <class AssignmentType>
@@ -62,7 +61,7 @@ public:
   static unique_ptr<NameAssignmentFunc>
   createNameAssignmentFunc(const std::string& challengeType, const std::string& format = "");
 
-NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+NDNCERT_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
     std::vector<std::string> m_nameFormat;
     
 private:

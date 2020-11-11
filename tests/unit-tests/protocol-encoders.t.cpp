@@ -64,16 +64,14 @@ BOOST_AUTO_TEST_CASE(ErrorEncoding)
 
 BOOST_AUTO_TEST_CASE(ProbeEncodingAppParam)
 {
-  std::vector<std::tuple<std::string, std::string>> parameters;
-  parameters.emplace_back("key1", "value1");
-  parameters.emplace_back("key2", "value2");
+  std::multimap<std::string, std::string> parameters;
+  parameters.emplace("key1", "value1");
+  parameters.emplace("key2", "value2");
   auto appParam = probeEncoder::encodeApplicationParameters(std::move(parameters));
   auto param1 = probeEncoder::decodeApplicationParameters(appParam);
-  BOOST_CHECK_EQUAL(parameters.size(), param1.size());
-  BOOST_CHECK_EQUAL(std::get<0>(parameters[0]), std::get<0>(param1[0]));
-  BOOST_CHECK_EQUAL(std::get<1>(parameters[0]), std::get<1>(param1[0]));
-  BOOST_CHECK_EQUAL(std::get<0>(parameters[1]), std::get<0>(param1[1]));
-  BOOST_CHECK_EQUAL(std::get<1>(parameters[1]), std::get<1>(param1[1]));
+  BOOST_CHECK_EQUAL(param1.size(), 2);
+  BOOST_CHECK_EQUAL(param1.find("key1")->second, "value1");
+  BOOST_CHECK_EQUAL(param1.find("key2")->second, "value2");
 }
 
 BOOST_AUTO_TEST_CASE(ProbeEncodingData)

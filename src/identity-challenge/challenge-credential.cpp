@@ -121,13 +121,13 @@ ChallengeCredential::handleChallengeRequest(const Block& params, ca::RequestStat
 }
 
 // For Client
-std::vector<std::tuple<std::string, std::string>>
+std::multimap<std::string, std::string>
 ChallengeCredential::getRequestedParameterList(Status status, const std::string& challengeStatus)
 {
-  std::vector<std::tuple<std::string, std::string>> result;
+  std::multimap<std::string, std::string> result;
   if (status == Status::BEFORE_CHALLENGE) {
-    result.push_back(std::make_tuple(PARAMETER_KEY_CREDENTIAL_CERT, "Please provide the certificate issued by a trusted CA."));
-    result.push_back(std::make_tuple(PARAMETER_KEY_PROOF_OF_PRIVATE_KEY, "Please sign a Data packet with request ID as the content."));
+    result.emplace(PARAMETER_KEY_CREDENTIAL_CERT, "Please provide the certificate issued by a trusted CA.");
+    result.emplace(PARAMETER_KEY_PROOF_OF_PRIVATE_KEY, "Please sign a Data packet with request ID as the content.");
     return result;
   }
   NDN_THROW(std::runtime_error("Unexpected status or challenge status."));
@@ -135,7 +135,7 @@ ChallengeCredential::getRequestedParameterList(Status status, const std::string&
 
 Block
 ChallengeCredential::genChallengeRequestTLV(Status status, const std::string& challengeStatus,
-                                            std::vector<std::tuple<std::string, std::string>>&& params)
+                                            std::multimap<std::string, std::string>&& params)
 {
   Block request(tlv::EncryptedPayload);
   if (status == Status::BEFORE_CHALLENGE) {
@@ -170,7 +170,7 @@ ChallengeCredential::genChallengeRequestTLV(Status status, const std::string& ch
 }
 
 void
-ChallengeCredential::fulfillParameters(std::vector<std::tuple<std::string, std::string>>& params,
+ChallengeCredential::fulfillParameters(std::multimap<std::string, std::string>& params,
                                        KeyChain& keyChain, const Name& issuedCertName, const RequestId& requestId)
 {
   auto& pib = keyChain.getPib();

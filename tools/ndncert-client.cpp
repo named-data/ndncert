@@ -46,7 +46,7 @@ security::KeyChain keyChain;
 shared_ptr<RequestState> requesterState = nullptr;
 
 static void
-captureParams(std::vector<std::tuple<std::string, std::string>>& requirement)
+captureParams(std::multimap<std::string, std::string>& requirement)
 {
   std::list<std::string> results;
   for (auto& item : requirement) {
@@ -61,12 +61,12 @@ captureParams(std::vector<std::tuple<std::string, std::string>>& requirement)
   }
 }
 
-static std::vector<std::tuple<std::string, std::string>>
+static std::multimap<std::string, std::string>
 captureParams(const std::list<std::string>& requirement)
 {
-  std::vector<std::tuple<std::string, std::string>> results;
+  std::multimap<std::string, std::string> results;
   for (const auto& r : requirement) {
-    results.emplace_back(r, "Please input: " + r);
+    results.emplace(r, "Please input: " + r);
   }
   captureParams(results);
   return results;
@@ -300,7 +300,7 @@ selectCaProfile(std::string configFilePath)
   size_t count = 0;
   std::cerr << "***************************************\n"
             << "Step " << nStep++ << ": CA SELECTION" << std::endl;
-  for (auto item : profileStorage.m_caItems) {
+  for (auto item : profileStorage.getCaItems()) {
     std::cerr << "> Index: " << count++ << std::endl
               << ">> CA prefix:" << item.m_caPrefix << std::endl
               << ">> Introduction: " << item.m_caInfo << std::endl;
@@ -341,7 +341,7 @@ selectCaProfile(std::string configFilePath)
       std::cerr << "Your input is not an existing index. Exit" << std::endl;
       return;
     }
-    auto itemIterator = profileStorage.m_caItems.cbegin();
+    auto itemIterator = profileStorage.getCaItems().cbegin();
     std::advance(itemIterator, caIndex);
     auto targetCaItem = *itemIterator;
     runProbe(targetCaItem);
@@ -407,7 +407,7 @@ runNew(CaProfile profile, Name identityName)
 static void
 runChallenge(const std::string& challengeType)
 {
-  std::vector<std::tuple<std::string, std::string>> requirement;
+  std::multimap<std::string, std::string> requirement;
   try {
     requirement = Requester::selectOrContinueChallenge(*requesterState, challengeType);
   }

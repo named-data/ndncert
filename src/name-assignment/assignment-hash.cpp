@@ -27,20 +27,19 @@ namespace ndncert {
 NDNCERT_REGISTER_FUNCFACTORY(AssignmentHash, "hash");
 
 AssignmentHash::AssignmentHash(const std::string& format)
-  : NameAssignmentFunc("hash", format)
+  : NameAssignmentFunc(format)
 {}
 
 std::vector<PartialName>
-AssignmentHash::assignName(const std::vector<std::tuple<std::string, std::string>>& params)
+AssignmentHash::assignName(const std::multimap<std::string, std::string> &params)
 {
   std::vector<PartialName> resultList;
   Name result;
   for (const auto& item : m_nameFormat) {
-    auto it = std::find_if(params.begin(), params.end(),
-                           [&](const std::tuple<std::string, std::string>& e) { return std::get<0>(e) == item; });
+    auto it = params.find(item);
     if (it != params.end()) {
       util::Sha256 digest;
-      digest << std::get<1>(*it);
+      digest << it->second;
       result.append(digest.toString());
     }
     else {

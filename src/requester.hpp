@@ -84,7 +84,7 @@ public:
    * @return A shared pointer of to the encoded interest, ready to be sent.
    */
   static shared_ptr<Interest>
-  genProbeInterest(const CaProfile& ca, std::vector<std::tuple<std::string, std::string>>&& probeInfo);
+  genProbeInterest(const CaProfile& ca, std::multimap<std::string, std::string>&& probeInfo);
 
   /**
    * @brief Decodes the replied data for PROBE process from the CA.
@@ -147,7 +147,7 @@ public:
    * @return The requirement list for the current stage of the challenge, in name, prompt mapping.
    * @throw std::runtime_error if the challenge is not supported.
    */
-  static std::vector<std::tuple<std::string, std::string>>
+  static std::multimap<std::string, std::string>
   selectOrContinueChallenge(RequestState& state, const std::string& challengeSelected);
 
   /**
@@ -160,7 +160,7 @@ public:
    */
   static shared_ptr<Interest>
   genChallengeInterest(RequestState& state,
-                       std::vector<std::tuple<std::string, std::string>>&& parameters);
+                       std::multimap<std::string, std::string>&& parameters);
 
   /**
    * @brief Decodes the responded data from the CHALLENGE interest.

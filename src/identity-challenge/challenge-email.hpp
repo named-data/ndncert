@@ -60,12 +60,12 @@ public:
   handleChallengeRequest(const Block& params, ca::RequestState& request) override;
 
   // For Client
-  std::vector<std::tuple<std::string, std::string>>
+  std::multimap<std::string, std::string>
   getRequestedParameterList(Status status, const std::string& challengeStatus) override;
 
   Block
   genChallengeRequestTLV(Status status, const std::string& challengeStatus,
-                         std::vector<std::tuple<std::string, std::string>>&& params) override;
+                         std::multimap<std::string, std::string>&& params) override;
 
   // challenge status
   static const std::string NEED_CODE;

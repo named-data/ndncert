@@ -29,7 +29,7 @@ namespace probeEncoder {
 
   // For Client use
   Block
-  encodeApplicationParameters(std::vector<std::tuple<std::string, std::string>>&& parameters);
+  encodeApplicationParameters(std::multimap<std::string, std::string>&& parameters);
 
   void
   decodeDataContent(const Block& block, std::vector<std::pair<Name, int>>& availableNames,
@@ -41,7 +41,7 @@ namespace probeEncoder {
                     optional<size_t> maxSuffixLength = nullopt,
                     optional<std::vector<std::shared_ptr<security::Certificate>>> redirectionItems = nullopt);
 
-  std::vector<std::tuple<std::string, std::string>>
+  std::multimap<std::string, std::string>
   decodeApplicationParameters(const Block& block);
 } // namespace ProbeEncoder
 } // namespace ndncert

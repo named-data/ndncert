@@ -55,15 +55,12 @@ BOOST_AUTO_TEST_CASE(CAConfigFile)
   BOOST_CHECK_EQUAL(config.m_redirection->at(0)->getName(),
                     "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
   BOOST_CHECK_EQUAL(config.m_nameAssignmentFuncs.size(), 3);
-  BOOST_CHECK_EQUAL(config.m_nameAssignmentFuncs[0]->FACTORY_TYPE, "param");
-  BOOST_CHECK_EQUAL(config.m_nameAssignmentFuncs[1]->FACTORY_TYPE, "param");
-  BOOST_CHECK_EQUAL(config.m_nameAssignmentFuncs[2]->FACTORY_TYPE, "random");
   BOOST_CHECK_EQUAL(config.m_nameAssignmentFuncs[0]->m_nameFormat[0], "group");
   BOOST_CHECK_EQUAL(config.m_nameAssignmentFuncs[0]->m_nameFormat[1], "email");
-  std::vector<std::tuple<std::string, std::string>> params;
-  params.emplace_back("email", "1@1.edu");
-  params.emplace_back("group", "irl");
-  params.emplace_back("name", "ndncert");
+  std::multimap<std::string, std::string> params;
+  params.emplace("email", "1@1.edu");
+  params.emplace("group", "irl");
+  params.emplace("name", "ndncert");
   std::vector<Name> names;
   for (auto& assignment : config.m_nameAssignmentFuncs) {
     auto results = assignment->assignName(params);

@@ -54,12 +54,12 @@ public:
   handleChallengeRequest(const Block& params, ca::RequestState& request) = 0;
 
   // For Client
-  virtual std::vector<std::tuple<std::string, std::string>>
+  virtual std::multimap<std::string, std::string>
   getRequestedParameterList(Status status, const std::string& challengeStatus) = 0;
 
   virtual Block
   genChallengeRequestTLV(Status status, const std::string& challengeStatus,
-                         std::vector<std::tuple<std::string, std::string>>&& params) = 0;
+                         std::multimap<std::string, std::string>&& params) = 0;
 
   // helpers
   static std::string

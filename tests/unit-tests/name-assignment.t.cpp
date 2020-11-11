@@ -31,39 +31,39 @@ BOOST_AUTO_TEST_SUITE(TestNameAssignment)
 BOOST_AUTO_TEST_CASE(NameAssignmentRandom)
 {
   AssignmentRandom assignment;
-  BOOST_CHECK_EQUAL(assignment.assignName(std::vector<std::tuple<std::string, std::string>>()).size(), 1);
-  BOOST_CHECK_EQUAL(assignment.assignName(std::vector<std::tuple<std::string, std::string>>()).begin()->size(), 1);
+  BOOST_CHECK_EQUAL(assignment.assignName(std::multimap<std::string, std::string>()).size(), 1);
+  BOOST_CHECK_EQUAL(assignment.assignName(std::multimap<std::string, std::string>()).begin()->size(), 1);
 }
 
 BOOST_AUTO_TEST_CASE(NameAssignmentParam)
 {
   AssignmentParam assignment("/abc/xyz");
-  std::vector<std::tuple<std::string, std::string>> params;
-  params.emplace_back("abc", "123");
+  std::multimap<std::string, std::string> params;
+  params.emplace("abc", "123");
   BOOST_CHECK_EQUAL(assignment.assignName(params).size(), 0);
-  params.emplace_back("xyz", "789");
+  params.emplace("xyz", "789");
   BOOST_CHECK_EQUAL(assignment.assignName(params).size(), 1);
   BOOST_CHECK_EQUAL(*assignment.assignName(params).begin(), Name("/123/789"));
-  params.emplace_back("fake", "456");
+  params.emplace("fake", "456");
   BOOST_CHECK_EQUAL(assignment.assignName(params).size(), 1);
   BOOST_CHECK_EQUAL(*assignment.assignName(params).begin(), Name("/123/789"));
-  params[1] = std::tuple<std::string, std::string>("xyz", "");
+  params.find("xyz")->second = "";
   BOOST_CHECK_EQUAL(assignment.assignName(params).size(), 0);
 }
 
 BOOST_AUTO_TEST_CASE(NameAssignmentHash)
 {
   AssignmentHash assignment("/abc/xyz");
-  std::vector<std::tuple<std::string, std::string>> params;
-  params.emplace_back("abc", "123");
+  std::multimap<std::string, std::string> params;
+  params.emplace("abc", "123");
   BOOST_CHECK_EQUAL(assignment.assignName(params).size(), 0);
-  params.emplace_back("xyz", "789");
+  params.emplace("xyz", "789");
   BOOST_CHECK_EQUAL(assignment.assignName(params).size(), 1);
   BOOST_CHECK_EQUAL(assignment.assignName(params).begin()->size(), 2);
-  params.emplace_back("fake", "456");
+  params.emplace("fake", "456");
   BOOST_CHECK_EQUAL(assignment.assignName(params).size(), 1);
   BOOST_CHECK_EQUAL(assignment.assignName(params).begin()->size(), 2);
-  params[1] = std::tuple<std::string, std::string>("xyz", "");
+  params.find("xyz")->second = "";
   BOOST_CHECK_EQUAL(assignment.assignName(params).size(), 1);
   BOOST_CHECK_EQUAL(assignment.assignName(params).begin()->size(), 2);
 }

@@ -24,8 +24,7 @@
 namespace ndn {
 namespace ndncert {
 
-NameAssignmentFunc::NameAssignmentFunc(const std::string& factoryType, const std::string& format)
-  : FACTORY_TYPE(factoryType)
+NameAssignmentFunc::NameAssignmentFunc(const std::string& format)
 {
   size_t index = 0, startIndex = 0;
   while ((index = format.find("/", startIndex)) != std::string::npos) {

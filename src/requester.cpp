@@ -88,7 +88,7 @@ Requester::onCaProfileResponseAfterRedirection(const Data& reply, const Name& ca
 }
 
 shared_ptr<Interest>
-Requester::genProbeInterest(const CaProfile& ca, std::vector<std::tuple<std::string, std::string>>&& probeInfo)
+Requester::genProbeInterest(const CaProfile& ca, std::multimap<std::string, std::string>&& probeInfo)
 {
   Name interestName = ca.m_caPrefix;
   interestName.append("CA").append("PROBE");
@@ -212,7 +212,7 @@ Requester::onNewRenewRevokeResponse(RequestState& state, const Data& reply)
   return challenges;
 }
 
-std::vector<std::tuple<std::string, std::string>>
+std::multimap<std::string, std::string>
 Requester::selectOrContinueChallenge(RequestState& state, const std::string& challengeSelected)
 {
   auto challenge = ChallengeModule::createChallengeModule(challengeSelected);
@@ -225,7 +225,7 @@ Requester::selectOrContinueChallenge(RequestState& state, const std::string& cha
 
 shared_ptr<Interest>
 Requester::genChallengeInterest(RequestState& state,
-                                std::vector<std::tuple<std::string, std::string>>&& parameters)
+                                std::multimap<std::string, std::string>&& parameters)
 {
   if (state.m_challengeType == "") {
     NDN_THROW(std::runtime_error("The challenge has not been selected."));

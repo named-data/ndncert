@@ -84,18 +84,18 @@ ChallengePin::handleChallengeRequest(const Block& params, ca::RequestState& requ
 }
 
 // For Client
-std::vector<std::tuple<std::string, std::string>>
+std::multimap<std::string, std::string>
 ChallengePin::getRequestedParameterList(Status status, const std::string& challengeStatus)
 {
-  std::vector<std::tuple<std::string, std::string>> result;
+  std::multimap<std::string, std::string> result;
   if (status == Status::BEFORE_CHALLENGE) {
     // do nothing
   }
   else if (status == Status::CHALLENGE && challengeStatus == NEED_CODE) {
-    result.push_back(std::make_tuple(PARAMETER_KEY_CODE, "Please input your PIN code"));
+    result.emplace(PARAMETER_KEY_CODE, "Please input your PIN code");
   }
   else if (status == Status::CHALLENGE && challengeStatus == WRONG_CODE) {
-    result.push_back(std::make_tuple(PARAMETER_KEY_CODE, "Incorrect PIN code, please try again"));
+    result.emplace(PARAMETER_KEY_CODE, "Incorrect PIN code, please try again");
   }
   else {
     NDN_THROW(std::runtime_error("Unexpected status or challenge status."));
@@ -105,19 +105,19 @@ ChallengePin::getRequestedParameterList(Status status, const std::string& challe
 
 Block
 ChallengePin::genChallengeRequestTLV(Status status, const std::string& challengeStatus,
-                                     std::vector<std::tuple<std::string, std::string>>&& params)
+                                     std::multimap<std::string, std::string>&& params)
 {
   Block request(tlv::EncryptedPayload);
   if (status == Status::BEFORE_CHALLENGE) {
     request.push_back(makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
   }
   else if (status == Status::CHALLENGE && (challengeStatus == NEED_CODE || challengeStatus == WRONG_CODE)) {
-    if (params.size() != 1 || std::get<0>(params[0]) != PARAMETER_KEY_CODE) {
+    if (params.size() != 1 || params.find(PARAMETER_KEY_CODE) == params.end()) {
       NDN_THROW(std::runtime_error("Wrong parameter provided."));
     }
     request.push_back(makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
     request.push_back(makeStringBlock(tlv::ParameterKey, PARAMETER_KEY_CODE));
-    request.push_back(makeStringBlock(tlv::ParameterValue, std::get<1>(params[0])));
+    request.push_back(makeStringBlock(tlv::ParameterValue, params.find(PARAMETER_KEY_CODE)->second));
   }
   else {
     NDN_THROW(std::runtime_error("Unexpected status or challenge status."));

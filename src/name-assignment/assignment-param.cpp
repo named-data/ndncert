@@ -26,19 +26,19 @@ namespace ndncert {
 NDNCERT_REGISTER_FUNCFACTORY(AssignmentParam, "param");
 
 AssignmentParam::AssignmentParam(const std::string& format)
-  : NameAssignmentFunc("param", format)
+  : NameAssignmentFunc(format)
 {}
 
 std::vector<PartialName>
-AssignmentParam::assignName(const std::vector<std::tuple<std::string, std::string>>& params)
+AssignmentParam::assignName(const std::multimap<std::string, std::string> &params)
 {
   std::vector<PartialName> resultList;
   Name result;
   for (const auto& item : m_nameFormat) {
     auto it = std::find_if(params.begin(), params.end(),
                            [&](const std::tuple<std::string, std::string>& e) { return std::get<0>(e) == item; });
-    if (it != params.end() && !std::get<1>(*it).empty()) {
-      result.append(std::get<1>(*it));
+    if (it != params.end() && !it->second.empty()) {
+      result.append(it->second);
     }
     else {
       return resultList;

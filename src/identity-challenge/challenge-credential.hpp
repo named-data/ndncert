@@ -56,15 +56,15 @@ public:
   handleChallengeRequest(const Block& params, ca::RequestState& request) override;
 
   // For Client
-  std::vector<std::tuple<std::string, std::string>>
+  std::multimap<std::string, std::string>
   getRequestedParameterList(Status status, const std::string& challengeStatus) override;
 
   Block
   genChallengeRequestTLV(Status status, const std::string& challengeStatus,
-                         std::vector<std::tuple<std::string, std::string>>&& params) override;
+                         std::multimap<std::string, std::string>&& params) override;
 
   static void
-  fulfillParameters(std::vector<std::tuple<std::string, std::string>>& params,
+  fulfillParameters(std::multimap<std::string, std::string>& params,
                     KeyChain& keyChain, const Name& issuedCertName, const RequestId& requestId);
 
   // challenge parameters

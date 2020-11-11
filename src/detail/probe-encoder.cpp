@@ -24,25 +24,25 @@ namespace ndn {
 namespace ndncert {
 
 Block
-probeEncoder::encodeApplicationParameters(std::vector<std::tuple<std::string, std::string>>&& parameters)
+probeEncoder::encodeApplicationParameters(std::multimap<std::string, std::string>&& parameters)
 {
   Block content(ndn::tlv::ApplicationParameters);
-  for (size_t i = 0; i < parameters.size(); ++i) {
-    content.push_back(makeStringBlock(tlv::ParameterKey, std::get<0>(parameters[i])));
-    content.push_back(makeStringBlock(tlv::ParameterValue, std::get<1>(parameters[i])));
+  for (const auto& items : parameters) {
+    content.push_back(makeStringBlock(tlv::ParameterKey, items.first));
+    content.push_back(makeStringBlock(tlv::ParameterValue, items.second));
   }
   content.encode();
   return content;
 }
 
-std::vector<std::tuple<std::string, std::string>>
+std::multimap<std::string, std::string>
 probeEncoder::decodeApplicationParameters(const Block& block)
 {
-  std::vector<std::tuple<std::string, std::string>> result;
+  std::multimap<std::string, std::string> result;
   block.parse();
   for (size_t i = 0; i < block.elements().size() - 1; i++) {
     if (block.elements()[i].type() == tlv::ParameterKey && block.elements()[i + 1].type() == tlv::ParameterValue) {
-      result.emplace_back(readString(block.elements().at(i)), readString(block.elements().at(i + 1)));
+      result.emplace(readString(block.elements().at(i)), readString(block.elements().at(i + 1)));
       i ++;
     }
   }

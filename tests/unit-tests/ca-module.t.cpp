@@ -423,7 +423,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
       auto paramList = requester::Requester::selectOrContinueChallenge(state, "pin");
       auto request = ca.getCertificateRequest(*challengeInterest2);
       auto secret = request->m_challengeState->m_secrets.get(ChallengePin::PARAMETER_KEY_CODE, "");
-      std::get<1>(paramList[0]) = secret;
+      paramList.begin()->second = secret;
       challengeInterest3 = requester::Requester::genChallengeInterest(state, std::move(paramList));
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 2) {
