@@ -31,7 +31,7 @@ AssignmentHash::AssignmentHash(const std::string& format)
 {}
 
 std::vector<PartialName>
-AssignmentHash::assignName(const std::multimap<std::string, std::string> &params)
+AssignmentHash::assignName(const std::multimap<std::string, std::string>& params)
 {
   std::vector<PartialName> resultList;
   Name result;

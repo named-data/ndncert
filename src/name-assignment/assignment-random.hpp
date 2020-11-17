@@ -35,7 +35,7 @@ public:
   AssignmentRandom(const std::string& format = "");
 
   std::vector<PartialName>
-  assignName(const std::multimap<std::string, std::string> &params) override;
+  assignName(const std::multimap<std::string, std::string>& params) override;
 };
 
 } // namespace ndncert

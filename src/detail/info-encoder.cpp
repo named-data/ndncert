@@ -24,7 +24,7 @@ namespace ndn {
 namespace ndncert {
 
 Block
-infoEncoder::encodeDataContent(const CaProfile& caConfig, const security::Certificate& certificate)
+infotlv::encodeDataContent(const CaProfile& caConfig, const security::Certificate& certificate)
 {
   Block content(ndn::tlv::Content);
   content.push_back(makeNestedBlock(tlv::CaPrefix, caConfig.m_caPrefix));
@@ -46,7 +46,7 @@ infoEncoder::encodeDataContent(const CaProfile& caConfig, const security::Certif
 }
 
 CaProfile
-infoEncoder::decodeDataContent(const Block& block)
+infotlv::decodeDataContent(const Block& block)
 {
   CaProfile result;
   block.parse();

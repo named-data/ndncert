@@ -25,18 +25,19 @@
 
 namespace ndn {
 namespace ndncert {
-namespace infoEncoder {
-  /**
-   * Encode CA configuration and its certificate into a TLV block as INFO Data packet content.
-   */
-  Block
-  encodeDataContent(const CaProfile& caConfig, const security::Certificate& certificate);
+namespace infotlv {
 
-  /**
-   * Decode CA configuration from the TLV block of INFO Data packet content.
-   */
-  CaProfile
-  decodeDataContent(const Block& block);
+/**
+ * Encode CA configuration and its certificate into a TLV block as INFO Data packet content.
+ */
+Block
+encodeDataContent(const CaProfile& caConfig, const security::Certificate& certificate);
+
+/**
+ * Decode CA configuration from the TLV block of INFO Data packet content.
+ */
+CaProfile
+decodeDataContent(const Block& block);
 
 } // namespace InfoEncoder
 } // namespace ndncert

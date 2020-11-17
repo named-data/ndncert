@@ -26,13 +26,13 @@
 
 namespace ndn {
 namespace ndncert {
-namespace challengeEncoder {
+namespace challengetlv {
 
-  Block
-  encodeDataContent(ca::RequestState& request, const Name& issuedCertName = Name());
+Block
+encodeDataContent(ca::RequestState& request, const Name& issuedCertName = Name());
 
-  void
-  decodeDataContent(const Block& contentBlock, requester::RequestState& state);
+void
+decodeDataContent(const Block& contentBlock, requester::RequestState& state);
 
 } // namespace ChallengeEncoder
 } // namespace ndncert

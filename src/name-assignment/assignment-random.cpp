@@ -31,7 +31,7 @@ AssignmentRandom::AssignmentRandom(const std::string& format)
 {}
 
 std::vector<PartialName>
-AssignmentRandom::assignName(const std::multimap<std::string, std::string> &params)
+AssignmentRandom::assignName(const std::multimap<std::string, std::string>& params)
 {
   std::vector<PartialName> resultList;
   resultList.emplace_back(to_string(random::generateSecureWord64()));

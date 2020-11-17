@@ -25,26 +25,26 @@
 
 namespace ndn {
 namespace ndncert {
-namespace newRenewRevokeEncoder {
+namespace requesttlv {
 
-  Block
-  encodeApplicationParameters(RequestType requestType, const std::vector<uint8_t>& ecdhPub,
-                              const security::Certificate& certRequest);
+Block
+encodeApplicationParameters(RequestType requestType, const std::vector<uint8_t>& ecdhPub,
+                            const security::Certificate& certRequest);
 
-  void
-  decodeApplicationParameters(const Block& block, RequestType requestType, std::vector<uint8_t>& ecdhPub,
-                              shared_ptr<security::Certificate>& certRequest);
+void
+decodeApplicationParameters(const Block& block, RequestType requestType, std::vector<uint8_t>& ecdhPub,
+                            shared_ptr<security::Certificate>& certRequest);
 
-  Block
-  encodeDataContent(const std::vector<uint8_t>& ecdhKey, const std::array<uint8_t, 32>& salt,
-                    const RequestId& requestId, const Status& status,
-                    const std::list<std::string>& challenges);
+Block
+encodeDataContent(const std::vector<uint8_t>& ecdhKey, const std::array<uint8_t, 32>& salt,
+                  const RequestId& requestId, const Status& status,
+                  const std::list<std::string>& challenges);
 
-  std::list<std::string>
-  decodeDataContent(const Block& content, std::vector<uint8_t>& ecdhKey,
-                    std::array<uint8_t, 32>& salt, RequestId& requestId, Status& status);
+std::list<std::string>
+decodeDataContent(const Block& content, std::vector<uint8_t>& ecdhKey,
+                  std::array<uint8_t, 32>& salt, RequestId& requestId, Status& status);
 
-} // namespace NewRenewRevokeEncoder
+} // namespace requesttlv
 } // namespace ndncert
 } // namespace ndn
 

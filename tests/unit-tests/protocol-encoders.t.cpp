@@ -42,8 +42,8 @@ BOOST_AUTO_TEST_CASE(InfoEncoding)
   caCache.load("tests/unit-tests/config-files/config-client-1");
   auto& cert = caCache.getCaItems().front().m_cert;
 
-  auto b = infoEncoder::encodeDataContent(config.m_caItem, *cert);
-  auto item = infoEncoder::decodeDataContent(b);
+  auto b = infotlv::encodeDataContent(config.m_caItem, *cert);
+  auto item = infotlv::decodeDataContent(b);
 
   BOOST_CHECK_EQUAL(*item.m_cert, *cert);
   BOOST_CHECK_EQUAL(item.m_caInfo, config.m_caItem.m_caInfo);
@@ -56,8 +56,8 @@ BOOST_AUTO_TEST_CASE(InfoEncoding)
 BOOST_AUTO_TEST_CASE(ErrorEncoding)
 {
   std::string msg = "Just to test";
-  auto b = errorEncoder::encodeDataContent(ErrorCode::NAME_NOT_ALLOWED, msg);
-  auto item = errorEncoder::decodefromDataContent(b);
+  auto b = errortlv::encodeDataContent(ErrorCode::NAME_NOT_ALLOWED, msg);
+  auto item = errortlv::decodefromDataContent(b);
   BOOST_CHECK_EQUAL(std::get<0>(item), ErrorCode::NAME_NOT_ALLOWED);
   BOOST_CHECK_EQUAL(std::get<1>(item), msg);
 }
@@ -67,8 +67,8 @@ BOOST_AUTO_TEST_CASE(ProbeEncodingAppParam)
   std::multimap<std::string, std::string> parameters;
   parameters.emplace("key1", "value1");
   parameters.emplace("key2", "value2");
-  auto appParam = probeEncoder::encodeApplicationParameters(std::move(parameters));
-  auto param1 = probeEncoder::decodeApplicationParameters(appParam);
+  auto appParam = probetlv::encodeApplicationParameters(std::move(parameters));
+  auto param1 = probetlv::decodeApplicationParameters(appParam);
   BOOST_CHECK_EQUAL(param1.size(), 2);
   BOOST_CHECK_EQUAL(param1.find("key1")->second, "value1");
   BOOST_CHECK_EQUAL(param1.find("key2")->second, "value2");
@@ -81,10 +81,10 @@ BOOST_AUTO_TEST_CASE(ProbeEncodingData)
   std::vector<Name> names;
   names.emplace_back("/ndn/1");
   names.emplace_back("/ndn/2");
-  auto b = probeEncoder::encodeDataContent(names, 2, config.m_redirection);
+  auto b = probetlv::encodeDataContent(names, 2, config.m_redirection);
   std::vector<std::pair<Name, int>> retNames;
   std::vector<Name> redirection;
-  probeEncoder::decodeDataContent(b, retNames, redirection);
+  probetlv::decodeDataContent(b, retNames, redirection);
   BOOST_CHECK_EQUAL(retNames.size(), names.size());
   auto it1 = retNames.begin();
   auto it2 = names.begin();
@@ -106,10 +106,10 @@ BOOST_AUTO_TEST_CASE(NewRevokeEncodingParam)
   caCache.load("tests/unit-tests/config-files/config-client-1");
   auto& certRequest = caCache.getCaItems().front().m_cert;
   std::vector<uint8_t> pub = ECDHState().getSelfPubKey();
-  auto b = newRenewRevokeEncoder::encodeApplicationParameters(RequestType::REVOKE, pub, *certRequest);
+  auto b = requesttlv::encodeApplicationParameters(RequestType::REVOKE, pub, *certRequest);
   std::vector<uint8_t> returnedPub;
   std::shared_ptr<security::Certificate> returnedCert;
-  newRenewRevokeEncoder::decodeApplicationParameters(b, RequestType::REVOKE, returnedPub, returnedCert);
+  requesttlv::decodeApplicationParameters(b, RequestType::REVOKE, returnedPub, returnedCert);
 
   BOOST_CHECK_EQUAL(returnedPub.size(), pub.size());
   for (auto it1 = returnedPub.begin(), it2 = pub.begin();
@@ -127,12 +127,12 @@ BOOST_AUTO_TEST_CASE(NewRevokeEncodingData)
   std::list<std::string> list;
   list.emplace_back("abc");
   list.emplace_back("def");
-  auto b = newRenewRevokeEncoder::encodeDataContent(pub, salt, id, Status::BEFORE_CHALLENGE, list);
+  auto b = requesttlv::encodeDataContent(pub, salt, id, Status::BEFORE_CHALLENGE, list);
   std::vector<uint8_t> returnedPub;
   std::array<uint8_t, 32> returnedSalt;
   RequestId returnedId;
   Status s;
-  auto retlist = newRenewRevokeEncoder::decodeDataContent(b, returnedPub, returnedSalt, returnedId, s);
+  auto retlist = requesttlv::decodeDataContent(b, returnedPub, returnedSalt, returnedId, s);
   BOOST_CHECK_EQUAL_COLLECTIONS(returnedPub.begin(), returnedPub.end(), pub.begin(), pub.end());
   BOOST_CHECK_EQUAL_COLLECTIONS(returnedSalt.begin(), returnedSalt.end(), salt.begin(), salt.end());
   BOOST_CHECK_EQUAL_COLLECTIONS(returnedId.begin(), returnedId.end(), id.begin(), id.end());
@@ -152,12 +152,12 @@ BOOST_AUTO_TEST_CASE(ChallengeEncoding)
   ca::RequestState state(Name("/ndn/ucla"), id, RequestType::NEW, Status::PENDING,
                          certRequest, "pin", "test", time::system_clock::now(), 3, time::seconds(321), JsonSection(),
                          std::move(aesKey), 0);
-  auto contentBlock = challengeEncoder::encodeDataContent(state, Name("/ndn/ucla/a/b/c"));
+  auto contentBlock = challengetlv::encodeDataContent(state, Name("/ndn/ucla/a/b/c"));
 
   requester::RequestState context(m_keyChain, caCache.getCaItems().front(), RequestType::NEW);
   context.m_requestId = id;
   std::memcpy(context.m_aesKey.data(), key, sizeof(key));
-  challengeEncoder::decodeDataContent(contentBlock, context);
+  challengetlv::decodeDataContent(contentBlock, context);
 
   BOOST_CHECK_EQUAL(static_cast<size_t>(context.m_status), static_cast<size_t>(Status::PENDING));
   BOOST_CHECK_EQUAL(context.m_challengeStatus, "test");

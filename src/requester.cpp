@@ -66,7 +66,7 @@ Requester::genCaProfileInterestFromDiscoveryResponse(const Data& reply)
 optional<CaProfile>
 Requester::onCaProfileResponse(const Data& reply)
 {
-  auto caItem = infoEncoder::decodeDataContent(reply.getContent());
+  auto caItem = infotlv::decodeDataContent(reply.getContent());
   if (!security::verifySignature(reply, *caItem.m_cert)) {
     NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
     NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
@@ -77,7 +77,7 @@ Requester::onCaProfileResponse(const Data& reply)
 optional<CaProfile>
 Requester::onCaProfileResponseAfterRedirection(const Data& reply, const Name& caCertFullName)
 {
-  auto caItem = infoEncoder::decodeDataContent(reply.getContent());
+  auto caItem = infotlv::decodeDataContent(reply.getContent());
   auto certBlock = caItem.m_cert->wireEncode();
   caItem.m_cert = std::make_shared<security::Certificate>(certBlock);
   if (caItem.m_cert->getFullName() != caCertFullName) {
@@ -95,7 +95,7 @@ Requester::genProbeInterest(const CaProfile& ca, std::multimap<std::string, std:
   auto interest =std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
-  interest->setApplicationParameters(probeEncoder::encodeApplicationParameters(std::move(probeInfo)));
+  interest->setApplicationParameters(probetlv::encodeApplicationParameters(std::move(probeInfo)));
   return interest;
 }
 
@@ -109,7 +109,7 @@ Requester::onProbeResponse(const Data& reply, const CaProfile& ca,
     return;
   }
   processIfError(reply);
-  probeEncoder::decodeDataContent(reply.getContent(), identityNames, otherCas);
+  probetlv::decodeDataContent(reply.getContent(), identityNames, otherCas);
 }
 
 shared_ptr<Interest>
@@ -165,7 +165,7 @@ Requester::genNewInterest(RequestState& state, const Name& identityName,
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
   interest->setApplicationParameters(
-          newRenewRevokeEncoder::encodeApplicationParameters(RequestType::NEW, state.m_ecdh.getSelfPubKey(), certRequest));
+          requesttlv::encodeApplicationParameters(RequestType::NEW, state.m_ecdh.getSelfPubKey(), certRequest));
 
   // sign the Interest packet
   state.m_keyChain.sign(*interest, signingByKey(keyName));
@@ -185,7 +185,7 @@ Requester::genRevokeInterest(RequestState& state, const security::Certificate& c
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
   interest->setApplicationParameters(
-          newRenewRevokeEncoder::encodeApplicationParameters(RequestType::REVOKE, state.m_ecdh.getSelfPubKey(), certificate));
+          requesttlv::encodeApplicationParameters(RequestType::REVOKE, state.m_ecdh.getSelfPubKey(), certificate));
   return interest;
 }
 
@@ -201,7 +201,7 @@ Requester::onNewRenewRevokeResponse(RequestState& state, const Data& reply)
   auto contentTLV = reply.getContent();
   std::vector<uint8_t> ecdhKey;
   std::array<uint8_t, 32> salt;
-  auto challenges = newRenewRevokeEncoder::decodeDataContent(contentTLV, ecdhKey, salt, state.m_requestId, state.m_status);
+  auto challenges = requesttlv::decodeDataContent(contentTLV, ecdhKey, salt, state.m_requestId, state.m_status);
 
   // ECDH and HKDF
   auto sharedSecret = state.m_ecdh.deriveSecret(ecdhKey);
@@ -261,7 +261,7 @@ Requester::onChallengeResponse(RequestState& state, const Data& reply)
     NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
   }
   processIfError(reply);
-  challengeEncoder::decodeDataContent(reply.getContent(), state);
+  challengetlv::decodeDataContent(reply.getContent(), state);
 }
 
 shared_ptr<Interest>
@@ -309,7 +309,7 @@ Requester::endSession(RequestState& state)
 void
 Requester::processIfError(const Data& data)
 {
-  auto errorInfo = errorEncoder::decodefromDataContent(data.getContent());
+  auto errorInfo = errortlv::decodefromDataContent(data.getContent());
   if (std::get<0>(errorInfo) == ErrorCode::NO_ERROR) {
     return;
   }

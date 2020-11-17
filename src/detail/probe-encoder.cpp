@@ -24,7 +24,7 @@ namespace ndn {
 namespace ndncert {
 
 Block
-probeEncoder::encodeApplicationParameters(std::multimap<std::string, std::string>&& parameters)
+probetlv::encodeApplicationParameters(std::multimap<std::string, std::string>&& parameters)
 {
   Block content(ndn::tlv::ApplicationParameters);
   for (const auto& items : parameters) {
@@ -36,7 +36,7 @@ probeEncoder::encodeApplicationParameters(std::multimap<std::string, std::string
 }
 
 std::multimap<std::string, std::string>
-probeEncoder::decodeApplicationParameters(const Block& block)
+probetlv::decodeApplicationParameters(const Block& block)
 {
   std::multimap<std::string, std::string> result;
   block.parse();
@@ -50,7 +50,7 @@ probeEncoder::decodeApplicationParameters(const Block& block)
 }
 
 Block
-probeEncoder::encodeDataContent(const std::vector<Name>& identifiers, optional<size_t> maxSuffixLength,
+probetlv::encodeDataContent(const std::vector<Name>& identifiers, optional<size_t> maxSuffixLength,
                                 optional<std::vector<std::shared_ptr<security::Certificate>>> redirectionItems)
 {
   Block content(ndn::tlv::Content);
@@ -72,7 +72,7 @@ probeEncoder::encodeDataContent(const std::vector<Name>& identifiers, optional<s
 }
 
 void
-probeEncoder::decodeDataContent(const Block& block,
+probetlv::decodeDataContent(const Block& block,
                                 std::vector<std::pair<Name, int>>& availableNames,
                                 std::vector<Name>& availableRedirection)
 {

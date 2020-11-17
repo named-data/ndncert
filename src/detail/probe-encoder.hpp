@@ -25,24 +25,25 @@
 
 namespace ndn {
 namespace ndncert {
-namespace probeEncoder {
+namespace probetlv {
 
-  // For Client use
-  Block
-  encodeApplicationParameters(std::multimap<std::string, std::string>&& parameters);
+// For Client use
+Block
+encodeApplicationParameters(std::multimap<std::string, std::string>&& parameters);
 
-  void
-  decodeDataContent(const Block& block, std::vector<std::pair<Name, int>>& availableNames,
-                    std::vector<Name>& availableRedirection);
+void
+decodeDataContent(const Block& block, std::vector<std::pair<Name, int>>& availableNames,
+                  std::vector<Name>& availableRedirection);
 
-  // For CA use
-  Block
-  encodeDataContent(const std::vector<Name>& identifiers,
-                    optional<size_t> maxSuffixLength = nullopt,
-                    optional<std::vector<std::shared_ptr<security::Certificate>>> redirectionItems = nullopt);
+// For CA use
+Block
+encodeDataContent(const std::vector<Name>& identifiers,
+                  optional<size_t> maxSuffixLength = nullopt,
+                  optional<std::vector<std::shared_ptr<security::Certificate>>> redirectionItems = nullopt);
 
-  std::multimap<std::string, std::string>
-  decodeApplicationParameters(const Block& block);
+std::multimap<std::string, std::string>
+decodeApplicationParameters(const Block& block);
+
 } // namespace ProbeEncoder
 } // namespace ndncert
 } // namespace ndn

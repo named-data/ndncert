@@ -29,7 +29,7 @@ namespace ndncert {
 NDN_LOG_INIT(ndncert.encoding.new_renew_revoke);
 
 Block
-newRenewRevokeEncoder::encodeApplicationParameters(RequestType requestType, const std::vector<uint8_t>& ecdhPub,
+requesttlv::encodeApplicationParameters(RequestType requestType, const std::vector<uint8_t>& ecdhPub,
                                                    const security::Certificate& certRequest)
 {
   Block request(ndn::tlv::ApplicationParameters);
@@ -56,7 +56,7 @@ newRenewRevokeEncoder::encodeApplicationParameters(RequestType requestType, cons
 }
 
 void
-newRenewRevokeEncoder::decodeApplicationParameters(const Block& payload, RequestType requestType,
+requesttlv::decodeApplicationParameters(const Block& payload, RequestType requestType,
                                                    std::vector<uint8_t>& ecdhPub,
                                                    shared_ptr<security::Certificate>& clientCert)
 {
@@ -80,7 +80,7 @@ newRenewRevokeEncoder::decodeApplicationParameters(const Block& payload, Request
 }
 
 Block
-newRenewRevokeEncoder::encodeDataContent(const std::vector<uint8_t>& ecdhKey, const std::array<uint8_t, 32>& salt,
+requesttlv::encodeDataContent(const std::vector<uint8_t>& ecdhKey, const std::array<uint8_t, 32>& salt,
                                          const RequestId& requestId, const Status& status,
                                          const std::list<std::string>& challenges)
 {
@@ -97,7 +97,7 @@ newRenewRevokeEncoder::encodeDataContent(const std::vector<uint8_t>& ecdhKey, co
 }
 
 std::list<std::string>
-newRenewRevokeEncoder::decodeDataContent(const Block& content, std::vector<uint8_t>& ecdhKey,
+requesttlv::decodeDataContent(const Block& content, std::vector<uint8_t>& ecdhKey,
                                          std::array<uint8_t, 32>& salt, RequestId& requestId, Status& status)
 {
   content.parse();

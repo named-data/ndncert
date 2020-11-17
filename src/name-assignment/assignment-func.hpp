@@ -46,7 +46,7 @@ public:
    * @return a vector containing the possible namespaces derived from the parameters.
    */
   virtual std::vector<PartialName>
-  assignName(const std::multimap<std::string, std::string> &params) = 0;
+  assignName(const std::multimap<std::string, std::string>& params) = 0;
 
 public:
   template <class AssignmentType>
@@ -63,7 +63,7 @@ public:
 
 NDNCERT_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
     std::vector<std::string> m_nameFormat;
-    
+
 private:
   typedef function<unique_ptr<NameAssignmentFunc>(const std::string&)> FactoryCreateFunc;
   typedef std::map<std::string, FactoryCreateFunc> CurriedFuncFactory;

@@ -25,22 +25,22 @@
 
 namespace ndn {
 namespace ndncert {
-namespace errorEncoder {
+namespace errortlv {
 
-  /**
-   * Encode error information into a Data content TLV
-   */
-  Block
-  encodeDataContent(ErrorCode errorCode, const std::string& description);
+/**
+ * Encode error information into a Data content TLV
+ */
+Block
+encodeDataContent(ErrorCode errorCode, const std::string& description);
 
-  /**
-   * Decode error information from Data content TLV
-   */
-  std::tuple<ErrorCode, std::string>
-  decodefromDataContent(const Block& block);
+/**
+ * Decode error information from Data content TLV
+ */
+std::tuple<ErrorCode, std::string>
+decodefromDataContent(const Block& block);
 
-} // namespace ErrorEncoder
-} // namespace ndncert
-} // namespace ndn
+}  // namespace errortlv
+}  // namespace ndncert
+}  // namespace ndn
 
-#endif // NDNCERT_DETAIL_ERROR_ENCODER_HPP
+#endif  // NDNCERT_DETAIL_ERROR_ENCODER_HPP

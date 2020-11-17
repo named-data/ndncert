@@ -30,7 +30,7 @@ AssignmentParam::AssignmentParam(const std::string& format)
 {}
 
 std::vector<PartialName>
-AssignmentParam::assignName(const std::multimap<std::string, std::string> &params)
+AssignmentParam::assignName(const std::multimap<std::string, std::string>& params)
 {
   std::vector<PartialName> resultList;
   Name result;

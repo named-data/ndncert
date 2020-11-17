@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE(OnProbeResponse){
   Data reply;
   reply.setName(Name("/site/CA/PROBE"));
   reply.setFreshnessPeriod(time::seconds(100));
-  reply.setContent(probeEncoder::encodeDataContent(availableNames, 3, ca.m_config.m_redirection));
+  reply.setContent(probetlv::encodeDataContent(availableNames, 3, ca.m_config.m_redirection));
   m_keyChain.sign(reply, signingByIdentity(identity));
 
   std::vector<std::pair<Name, int>> names;
@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_CASE(ErrorHandling)
   Data errorPacket;
   errorPacket.setName(Name("/site/pretend/this/is/error/packet"));
   errorPacket.setFreshnessPeriod(time::seconds(100));
-  errorPacket.setContent(errorEncoder::encodeDataContent(ErrorCode::INVALID_PARAMETER, "This is a test."));
+  errorPacket.setContent(errortlv::encodeDataContent(ErrorCode::INVALID_PARAMETER, "This is a test."));
   m_keyChain.sign(errorPacket, signingByIdentity(identity));
 
   std::vector<std::pair<Name, int>> ids;
