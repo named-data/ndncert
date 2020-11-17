@@ -34,7 +34,7 @@ encodeDataContent(ca::RequestState& request, const Name& issuedCertName = Name()
 void
 decodeDataContent(const Block& contentBlock, requester::RequestState& state);
 
-} // namespace ChallengeEncoder
+} // namespace challengetlv
 } // namespace ndncert
 } // namespace ndn
 

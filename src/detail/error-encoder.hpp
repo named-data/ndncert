@@ -39,8 +39,8 @@ encodeDataContent(ErrorCode errorCode, const std::string& description);
 std::tuple<ErrorCode, std::string>
 decodefromDataContent(const Block& block);
 
-}  // namespace errortlv
-}  // namespace ndncert
-}  // namespace ndn
+} // namespace errortlv
+} // namespace ndncert
+} // namespace ndn
 
-#endif  // NDNCERT_DETAIL_ERROR_ENCODER_HPP
+#endif // NDNCERT_DETAIL_ERROR_ENCODER_HPP

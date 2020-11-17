@@ -39,7 +39,7 @@ encodeDataContent(const CaProfile& caConfig, const security::Certificate& certif
 CaProfile
 decodeDataContent(const Block& block);
 
-} // namespace InfoEncoder
+} // namespace infotlv
 } // namespace ndncert
 } // namespace ndn
 

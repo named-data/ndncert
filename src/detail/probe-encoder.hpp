@@ -44,7 +44,7 @@ encodeDataContent(const std::vector<Name>& identifiers,
 std::multimap<std::string, std::string>
 decodeApplicationParameters(const Block& block);
 
-} // namespace ProbeEncoder
+} // namespace probetlv
 } // namespace ndncert
 } // namespace ndn
 
