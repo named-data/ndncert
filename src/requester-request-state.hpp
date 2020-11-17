@@ -88,7 +88,7 @@ struct RequestState {
   /**
    * @brief AES key derived from the ecdh shared secret.
    */
-  std::array<uint8_t, 16> m_aesKey = {{0}};
+  std::array<uint8_t, 16> m_aesKey = {};
   /**
    * @brief The counter of AES blocks that have been encrypted.
    */
