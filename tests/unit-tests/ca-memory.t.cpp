@@ -39,7 +39,7 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   auto cert1 = key1.getDefaultCertificate();
 
   // add operation
-  RequestId requestId = {1,2,3,4,5,6,7,8};
+  RequestId requestId = {{1,2,3,4,5,6,7,8}};
   std::array<uint8_t, 16> aesKey1;
   RequestState request1(Name("/ndn/site1"), requestId, RequestType::NEW,
                         Status::BEFORE_CHALLENGE, cert1, std::move(aesKey1));
@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   auto identity2 = addIdentity(Name("/ndn/site2"));
   auto key2 = identity2.getDefaultKey();
   auto cert2 = key2.getDefaultCertificate();
-  RequestId requestId2 = {8,7,6,5,4,3,2,1};
+  RequestId requestId2 = {{8,7,6,5,4,3,2,1}};
   std::array<uint8_t, 16> aesKey3;
   RequestState request3(Name("/ndn/site2"), requestId2, RequestType::NEW, Status::BEFORE_CHALLENGE,
                         cert2, std::move(aesKey3));

@@ -122,8 +122,8 @@ BOOST_AUTO_TEST_CASE(NewRevokeEncodingParam)
 BOOST_AUTO_TEST_CASE(NewRevokeEncodingData)
 {
   std::vector<uint8_t> pub = ECDHState().getSelfPubKey();
-  std::array<uint8_t, 32> salt = {101};
-  RequestId id = {102};
+  std::array<uint8_t, 32> salt = {{101}};
+  RequestId id = {{102}};
   std::list<std::string> list;
   list.emplace_back("abc");
   list.emplace_back("def");
@@ -146,7 +146,7 @@ BOOST_AUTO_TEST_CASE(ChallengeEncoding)
   requester::ProfileStorage caCache;
   caCache.load("tests/unit-tests/config-files/config-client-1");
   security::Certificate certRequest = *caCache.getCaItems().front().m_cert;
-  RequestId id = {102};
+  RequestId id = {{102}};
   std::array<uint8_t, 16> aesKey;
   std::memcpy(aesKey.data(), key, sizeof(key));
   ca::RequestState state(Name("/ndn/ucla"), id, RequestType::NEW, Status::PENDING,
