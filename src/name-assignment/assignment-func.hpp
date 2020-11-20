@@ -62,7 +62,7 @@ public:
   createNameAssignmentFunc(const std::string& challengeType, const std::string& format = "");
 
 NDNCERT_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
-    std::vector<std::string> m_nameFormat;
+  std::vector<std::string> m_nameFormat;
 
 private:
   typedef function<unique_ptr<NameAssignmentFunc>(const std::string&)> FactoryCreateFunc;

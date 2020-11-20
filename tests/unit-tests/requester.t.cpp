@@ -21,7 +21,7 @@
 #include "requester.hpp"
 #include "detail/error-encoder.hpp"
 #include "detail/probe-encoder.hpp"
-#include "identity-challenge/challenge-module.hpp"
+#include "challenge/challenge-module.hpp"
 #include "ca-module.hpp"
 #include "test-common.hpp"
 

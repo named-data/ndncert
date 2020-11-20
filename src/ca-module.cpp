@@ -20,7 +20,7 @@
 
 #include "ca-module.hpp"
 #include "detail/crypto-helpers.hpp"
-#include "identity-challenge/challenge-module.hpp"
+#include "challenge/challenge-module.hpp"
 #include "name-assignment/assignment-func.hpp"
 #include "detail/challenge-encoder.hpp"
 #include "detail/error-encoder.hpp"
@@ -306,7 +306,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   }
   RequestId id;
   std::memcpy(id.data(), requestIdData, id.size());
-  RequestState requestState( m_config.m_caProfile.m_caPrefix, id, requestType,
+  RequestState requestState(m_config.m_caProfile.m_caPrefix, id, requestType,
                             Status::BEFORE_CHALLENGE, *clientCert, std::move(aesKey));
   try {
     m_storage->addRequest(requestState);

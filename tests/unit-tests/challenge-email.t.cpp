@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "identity-challenge/challenge-email.hpp"
+#include "challenge/challenge-email.hpp"
 #include "test-common.hpp"
 
 namespace ndn {

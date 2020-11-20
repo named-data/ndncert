@@ -60,7 +60,7 @@ struct RequestState {
   /**
    * @brief The current status of the request.
    */
-  Status m_status = Status::NOT_STARTED;
+  Status m_status = Status::BEFORE_CHALLENGE;
   /**
    * @brief The type of challenge chosen.
    */

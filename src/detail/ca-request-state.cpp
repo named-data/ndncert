@@ -38,10 +38,6 @@ std::string statusToString(Status status)
     return "Success";
   case Status::FAILURE:
     return "Failure";
-  case Status::NOT_STARTED:
-    return "Not started";
-  case Status::ENDED:
-    return "Ended";
   default:
     return "Unrecognized status";
   }

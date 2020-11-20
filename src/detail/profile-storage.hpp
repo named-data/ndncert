@@ -28,7 +28,7 @@ namespace ndncert {
 namespace requester {
 
 /**
- * @brief Represents Client configuration
+ * @brief CA profiles kept by a requester.
  * @sa https://github.com/named-data/ndncert/wiki/Client-Configuration-Sample
  */
 class ProfileStorage
@@ -53,13 +53,15 @@ public:
   removeCaProfile(const Name& caName);
 
   /**
+   * @brief Add a new CA profile
+   *
    * Be cautious. This will add a new trust anchor for requesters.
    */
   void
   addCaProfile(const CaProfile& profile);
 
   const std::list<CaProfile>&
-  getCaProfiles() const;
+  getKnownProfiles() const;
 
 private:
   std::list<CaProfile> m_caProfiles;

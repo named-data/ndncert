@@ -57,39 +57,37 @@ public:
 
 public:
   /**
-   * CA Name prefix (without /CA suffix).
+   * @brief CA Name prefix (without /CA suffix).
    */
   Name m_caPrefix;
   /**
-   * CA Information.
-   * Default: "".
+   * @brief CA Information.
    */
   std::string m_caInfo;
   /**
-   * A list of parameter-keys for PROBE.
-   * Default: empty list.
+   * @brief A list of parameter-keys for PROBE.
    */
   std::list<std::string> m_probeParameterKeys;
   /**
-   * Maximum allowed validity period of the certificate being requested.
+   * @brief  Maximum allowed validity period of the certificate being requested.
+   *
    * The value is in the unit of second.
    * Default: one day (86400 seconds).
    */
   time::seconds m_maxValidityPeriod;
   /**
-   * Maximum allowed suffix length of requested name.
+   * @brief Maximum allowed suffix length of requested name.
+   *
    * E.g., When its value is 2, at most 2 name components can be assigned after m_caPrefix.
    * Default: none.
    */
   optional<size_t> m_maxSuffixLength = nullopt;
   /**
-   * A list of supported challenges. Only CA side will have m_supportedChallenges.
-   * Default: empty list.
+   * @brief A list of supported challenges. Only CA side will have m_supportedChallenges.
    */
   std::list<std::string> m_supportedChallenges;
   /**
-   * CA's certificate. Only Client side will have m_cert.
-   * Default: nullptr.
+   * @brief CA's certificate. Only Client side will have m_cert.
    */
   std::shared_ptr<security::Certificate> m_cert;
 };

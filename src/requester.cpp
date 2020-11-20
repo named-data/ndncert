@@ -19,7 +19,7 @@
  */
 
 #include "requester.hpp"
-#include "identity-challenge/challenge-module.hpp"
+#include "challenge/challenge-module.hpp"
 #include "detail/crypto-helpers.hpp"
 #include "detail/challenge-encoder.hpp"
 #include "detail/error-encoder.hpp"
@@ -290,7 +290,7 @@ Requester::onCertFetchResponse(const Data& reply)
 void
 Requester::endSession(RequestState& state)
 {
-  if (state.m_status == Status::SUCCESS || state.m_status == Status::ENDED) {
+  if (state.m_status == Status::SUCCESS) {
     return;
   }
   if (state.m_isNewlyCreatedIdentity) {
@@ -303,7 +303,6 @@ Requester::endSession(RequestState& state)
     auto identity = state.m_keyChain.getPib().getIdentity(state.m_identityName);
     state.m_keyChain.deleteKey(identity, state.m_keyPair);
   }
-  state.m_status = Status::ENDED;
 }
 
 void

@@ -19,7 +19,7 @@
  */
 
 #include "detail/ca-profile.hpp"
-#include "identity-challenge/challenge-module.hpp"
+#include "challenge/challenge-module.hpp"
 #include <ndn-cxx/util/io.hpp>
 #include <boost/filesystem.hpp>
 

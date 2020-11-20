@@ -90,7 +90,7 @@ ProfileStorage::addCaProfile(const CaProfile& profile)
 }
 
 const std::list<CaProfile>&
-ProfileStorage::getCaProfiles() const
+ProfileStorage::getKnownProfiles() const
 {
   return m_caProfiles;
 }

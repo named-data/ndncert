@@ -34,9 +34,7 @@ enum class Status : uint16_t {
   CHALLENGE = 1,
   PENDING = 2,
   SUCCESS = 3,
-  FAILURE = 4,
-  NOT_STARTED = 5,
-  ENDED = 6
+  FAILURE = 4
 };
 
 /**
@@ -121,7 +119,7 @@ public:
   /**
    * @brief The status of the request.
    */
-  Status m_status = Status::NOT_STARTED;
+  Status m_status;
   /**
    * @brief The self-signed certificate in the request.
    */
