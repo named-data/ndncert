@@ -20,34 +20,34 @@
 
 #include "detail/ca-profile.hpp"
 #include "identity-challenge/challenge-module.hpp"
-#include "name-assignment/assignment-func.hpp"
 #include <ndn-cxx/util/io.hpp>
 #include <boost/filesystem.hpp>
 
 namespace ndn {
 namespace ndncert {
 
-void
-CaProfile::parse(const JsonSection& configJson)
+CaProfile
+CaProfile::fromJson(const JsonSection& json)
 {
+  CaProfile profile;
   // CA prefix
-  m_caPrefix = Name(configJson.get(CONFIG_CA_PREFIX, ""));
-  if (m_caPrefix.empty()) {
+  profile.m_caPrefix = Name(json.get(CONFIG_CA_PREFIX, ""));
+  if (profile.m_caPrefix.empty()) {
     NDN_THROW(std::runtime_error("Cannot parse ca-prefix from the config file"));
   }
   // CA info
-  m_caInfo = configJson.get(CONFIG_CA_INFO, "");
+  profile.m_caInfo = json.get(CONFIG_CA_INFO, "");
   // CA max validity period
-  m_maxValidityPeriod = time::seconds(configJson.get(CONFIG_MAX_VALIDITY_PERIOD, 86400));
+  profile.m_maxValidityPeriod = time::seconds(json.get(CONFIG_MAX_VALIDITY_PERIOD, 86400));
   // CA max suffix length
-  m_maxSuffixLength = nullopt;
-  auto maxSuffixLength = configJson.get_optional<size_t>(CONFIG_MAX_SUFFIX_LENGTH);
+  profile.m_maxSuffixLength = nullopt;
+  auto maxSuffixLength = json.get_optional<size_t>(CONFIG_MAX_SUFFIX_LENGTH);
   if (maxSuffixLength) {
-    m_maxSuffixLength = *maxSuffixLength;
+    profile.m_maxSuffixLength = *maxSuffixLength;
   }
   // probe parameter keys
-  m_probeParameterKeys.clear();
-  auto probeParametersJson = configJson.get_child_optional(CONFIG_PROBE_PARAMETERS);
+  profile.m_probeParameterKeys.clear();
+  auto probeParametersJson = json.get_child_optional(CONFIG_PROBE_PARAMETERS);
   if (probeParametersJson) {
     for (const auto& item : *probeParametersJson) {
       auto probeParameter = item.second.get(CONFIG_PROBE_PARAMETER, "");
@@ -55,12 +55,12 @@ CaProfile::parse(const JsonSection& configJson)
       if (probeParameter == "") {
         NDN_THROW(std::runtime_error("Probe parameter key cannot be empty."));
       }
-      m_probeParameterKeys.push_back(probeParameter);
+      profile.m_probeParameterKeys.push_back(probeParameter);
     }
   }
   // supported challenges
-  m_supportedChallenges.clear();
-  auto challengeListJson = configJson.get_child_optional(CONFIG_SUPPORTED_CHALLENGES);
+  profile.m_supportedChallenges.clear();
+  auto challengeListJson = json.get_child_optional(CONFIG_SUPPORTED_CHALLENGES);
   if (challengeListJson) {
     for (const auto& item : *challengeListJson) {
       auto challengeType = item.second.get(CONFIG_CHALLENGE, "");
@@ -71,16 +71,17 @@ CaProfile::parse(const JsonSection& configJson)
       if (!ChallengeModule::isChallengeSupported(challengeType)) {
         NDN_THROW(std::runtime_error("Challenge " + challengeType + " is not supported."));
       }
-      m_supportedChallenges.push_back(challengeType);
+      profile.m_supportedChallenges.push_back(challengeType);
     }
   }
   // anchor certificate
-  m_cert = nullptr;
-  auto certificateStr = configJson.get(CONFIG_CERTIFICATE, "");
+  profile.m_cert = nullptr;
+  auto certificateStr = json.get(CONFIG_CERTIFICATE, "");
   if (certificateStr != "") {
     std::istringstream ss(certificateStr);
-    m_cert = io::load<security::Certificate>(ss);
+    profile.m_cert = io::load<security::Certificate>(ss);
   }
+  return profile;
 }
 
 JsonSection

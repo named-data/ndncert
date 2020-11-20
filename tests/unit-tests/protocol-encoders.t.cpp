@@ -40,17 +40,17 @@ BOOST_AUTO_TEST_CASE(InfoEncoding)
 
   requester::ProfileStorage caCache;
   caCache.load("tests/unit-tests/config-files/config-client-1");
-  auto& cert = caCache.getCaItems().front().m_cert;
+  auto& cert = caCache.getCaProfiles().front().m_cert;
 
-  auto b = infotlv::encodeDataContent(config.m_caItem, *cert);
+  auto b = infotlv::encodeDataContent(config.m_caProfile, *cert);
   auto item = infotlv::decodeDataContent(b);
 
   BOOST_CHECK_EQUAL(*item.m_cert, *cert);
-  BOOST_CHECK_EQUAL(item.m_caInfo, config.m_caItem.m_caInfo);
-  BOOST_CHECK_EQUAL(item.m_caPrefix, config.m_caItem.m_caPrefix);
+  BOOST_CHECK_EQUAL(item.m_caInfo, config.m_caProfile.m_caInfo);
+  BOOST_CHECK_EQUAL(item.m_caPrefix, config.m_caProfile.m_caPrefix);
   BOOST_CHECK_EQUAL_COLLECTIONS(item.m_probeParameterKeys.begin(), item.m_probeParameterKeys.end(),
-                                config.m_caItem.m_probeParameterKeys.begin(), config.m_caItem.m_probeParameterKeys.end());
-  BOOST_CHECK_EQUAL(item.m_maxValidityPeriod, config.m_caItem.m_maxValidityPeriod);
+                                config.m_caProfile.m_probeParameterKeys.begin(), config.m_caProfile.m_probeParameterKeys.end());
+  BOOST_CHECK_EQUAL(item.m_maxValidityPeriod, config.m_caProfile.m_maxValidityPeriod);
 }
 
 BOOST_AUTO_TEST_CASE(ErrorEncoding)
@@ -92,10 +92,10 @@ BOOST_AUTO_TEST_CASE(ProbeEncodingData)
     BOOST_CHECK_EQUAL(it1->first, *it2);
     BOOST_CHECK_EQUAL(it1->second, 2);
   }
-  BOOST_CHECK_EQUAL(redirection.size(), config.m_redirection->size());
+  BOOST_CHECK_EQUAL(redirection.size(), config.m_redirection.size());
   auto it3 = redirection.begin();
-  auto it4 = config.m_redirection->begin();
-  for (; it3 != redirection.end() && it4 != config.m_redirection->end(); it3++, it4++) {
+  auto it4 = config.m_redirection.begin();
+  for (; it3 != redirection.end() && it4 != config.m_redirection.end(); it3++, it4++) {
     BOOST_CHECK_EQUAL(*it3, (*it4)->getFullName());
   }
 }
@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE(NewRevokeEncodingParam)
 {
   requester::ProfileStorage caCache;
   caCache.load("tests/unit-tests/config-files/config-client-1");
-  auto& certRequest = caCache.getCaItems().front().m_cert;
+  auto& certRequest = caCache.getCaProfiles().front().m_cert;
   std::vector<uint8_t> pub = ECDHState().getSelfPubKey();
   auto b = requesttlv::encodeApplicationParameters(RequestType::REVOKE, pub, *certRequest);
   std::vector<uint8_t> returnedPub;
@@ -145,7 +145,7 @@ BOOST_AUTO_TEST_CASE(ChallengeEncoding)
                          0xe0, 0xff, 0x56, 0x83, 0xf2, 0x43, 0xb2, 0x13};
   requester::ProfileStorage caCache;
   caCache.load("tests/unit-tests/config-files/config-client-1");
-  security::Certificate certRequest = *caCache.getCaItems().front().m_cert;
+  security::Certificate certRequest = *caCache.getCaProfiles().front().m_cert;
   RequestId id = {{102}};
   std::array<uint8_t, 16> aesKey;
   std::memcpy(aesKey.data(), key, sizeof(key));
@@ -154,7 +154,7 @@ BOOST_AUTO_TEST_CASE(ChallengeEncoding)
                          std::move(aesKey), 0);
   auto contentBlock = challengetlv::encodeDataContent(state, Name("/ndn/ucla/a/b/c"));
 
-  requester::RequestState context(m_keyChain, caCache.getCaItems().front(), RequestType::NEW);
+  requester::RequestState context(m_keyChain, caCache.getCaProfiles().front(), RequestType::NEW);
   context.m_requestId = id;
   std::memcpy(context.m_aesKey.data(), key, sizeof(key));
   challengetlv::decodeDataContent(contentBlock, context);

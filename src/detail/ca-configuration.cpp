@@ -19,8 +19,6 @@
  */
 
 #include "detail/ca-configuration.hpp"
-#include "identity-challenge/challenge-module.hpp"
-#include "name-assignment/assignment-func.hpp"
 #include <ndn-cxx/util/io.hpp>
 #include <boost/filesystem.hpp>
 
@@ -41,12 +39,12 @@ CaConfig::load(const std::string& fileName)
   if (configJson.begin() == configJson.end()) {
     NDN_THROW(std::runtime_error("No JSON configuration found in file: " + fileName));
   }
-  m_caItem.parse(configJson);
-  if (m_caItem.m_supportedChallenges.size() == 0) {
+  m_caProfile = CaProfile::fromJson(configJson);
+  if (m_caProfile.m_supportedChallenges.size() == 0) {
     NDN_THROW(std::runtime_error("At least one challenge should be specified."));
   }
   // parse redirection section if appears
-  m_redirection = nullopt;
+  m_redirection.clear();
   auto redirectionItems = configJson.get_child_optional(CONFIG_REDIRECTION);
   if (redirectionItems) {
     for (const auto& item : *redirectionItems) {
@@ -57,10 +55,7 @@ CaConfig::load(const std::string& fileName)
       }
       std::istringstream ss(caCertStr);
       auto caCert = io::load<security::Certificate>(ss);
-      if (!m_redirection) {
-        m_redirection = std::vector<std::shared_ptr<security::Certificate>>();
-      }
-      m_redirection->push_back(caCert);
+      m_redirection.push_back(caCert);
     }
   }
   // parse name assignment if appears

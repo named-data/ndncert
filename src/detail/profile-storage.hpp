@@ -18,11 +18,10 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_CONFIGURATION_HPP
-#define NDNCERT_CONFIGURATION_HPP
+#ifndef NDNCERT_DETAIL_PROFILE_STORAGE_HPP
+#define NDNCERT_DETAIL_PROFILE_STORAGE_HPP
 
 #include "detail/ca-profile.hpp"
-#include "name-assignment/assignment-func.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -45,7 +44,7 @@ public:
    * @throw std::runtime_error when config file cannot be correctly parsed.
    */
   void
-  load(const JsonSection& configSection);
+  load(const JsonSection& json);
 
   void
   save(const std::string& fileName) const;
@@ -60,14 +59,14 @@ public:
   addCaProfile(const CaProfile& profile);
 
   const std::list<CaProfile>&
-  getCaItems() const;
+  getCaProfiles() const;
 
 private:
-  std::list<CaProfile> m_caItems;
+  std::list<CaProfile> m_caProfiles;
 };
 
 } // namespace requester
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_CONFIGURATION_HPP
+#endif // NDNCERT_DETAIL_PROFILE_STORAGE_HPP

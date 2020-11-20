@@ -300,7 +300,7 @@ selectCaProfile(std::string configFilePath)
   size_t count = 0;
   std::cerr << "***************************************\n"
             << "Step " << nStep++ << ": CA SELECTION" << std::endl;
-  for (auto item : profileStorage.getCaItems()) {
+  for (auto item : profileStorage.getCaProfiles()) {
     std::cerr << "> Index: " << count++ << std::endl
               << ">> CA prefix:" << item.m_caPrefix << std::endl
               << ">> Introduction: " << item.m_caInfo << std::endl;
@@ -341,7 +341,7 @@ selectCaProfile(std::string configFilePath)
       std::cerr << "Your input is not an existing index. Exit" << std::endl;
       return;
     }
-    auto itemIterator = profileStorage.getCaItems().cbegin();
+    auto itemIterator = profileStorage.getCaProfiles().cbegin();
     std::advance(itemIterator, caIndex);
     auto targetCaItem = *itemIterator;
     runProbe(targetCaItem);

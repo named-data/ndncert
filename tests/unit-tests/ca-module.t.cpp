@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(Initialization)
 {
   util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
-  BOOST_CHECK_EQUAL(ca.getCaConf().m_caItem.m_caPrefix, "/ndn");
+  BOOST_CHECK_EQUAL(ca.getCaConf().m_caProfile.m_caPrefix, "/ndn");
 
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK_EQUAL(ca.m_registeredPrefixHandles.size(), 1); // removed local discovery registration

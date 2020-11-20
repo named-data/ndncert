@@ -19,9 +19,6 @@
  */
 
 #include "detail/profile-storage.hpp"
-#include "identity-challenge/challenge-module.hpp"
-#include "name-assignment/assignment-func.hpp"
-#include <ndn-cxx/util/io.hpp>
 #include <boost/filesystem.hpp>
 
 namespace ndn {
@@ -45,17 +42,17 @@ ProfileStorage::load(const std::string& fileName)
 }
 
 void
-ProfileStorage::load(const JsonSection& configSection)
+ProfileStorage::load(const JsonSection& json)
 {
-  m_caItems.clear();
-  auto caList = configSection.get_child("ca-list");
+  m_caProfiles.clear();
+  auto caList = json.get_child("ca-list");
   for (auto item : caList) {
     CaProfile caItem;
-    caItem.parse(item.second);
+    caItem = CaProfile::fromJson(item.second);
     if (caItem.m_cert == nullptr) {
       NDN_THROW(std::runtime_error("No CA certificate is loaded from JSON configuration."));
     }
-    m_caItems.push_back(std::move(caItem));
+    m_caProfiles.push_back(std::move(caItem));
   }
 }
 
@@ -63,7 +60,7 @@ void
 ProfileStorage::save(const std::string& fileName) const
 {
   JsonSection configJson;
-  for (const auto& caItem : m_caItems) {
+  for (const auto& caItem : m_caProfiles) {
     configJson.push_back(std::make_pair("", caItem.toJson()));
   }
   std::stringstream ss;
@@ -77,25 +74,25 @@ ProfileStorage::save(const std::string& fileName) const
 void
 ProfileStorage::removeCaProfile(const Name& caName)
 {
-  m_caItems.remove_if([&](const CaProfile& item) { return item.m_caPrefix == caName; });
+  m_caProfiles.remove_if([&](const CaProfile& item) { return item.m_caPrefix == caName; });
 }
 
 void
 ProfileStorage::addCaProfile(const CaProfile& profile)
 {
-  for (auto& item : m_caItems) {
+  for (auto& item : m_caProfiles) {
     if (item.m_caPrefix == profile.m_caPrefix) {
       item = profile;
       return;
     }
   }
-  m_caItems.push_back(profile);
+  m_caProfiles.push_back(profile);
 }
 
 const std::list<CaProfile>&
-ProfileStorage::getCaItems() const
+ProfileStorage::getCaProfiles() const
 {
-  return m_caItems;
+  return m_caProfiles;
 }
 
 } // namespace requester

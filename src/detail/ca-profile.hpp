@@ -21,7 +21,7 @@
 #ifndef NDNCERT_DETAIL_CA_PROFILE_HPP
 #define NDNCERT_DETAIL_CA_PROFILE_HPP
 
-#include "name-assignment/assignment-func.hpp"
+#include "detail/ndncert-common.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -46,8 +46,8 @@ public:
    * Parse the configuration json and modify current struct to the result.
    * @param configJson the configuration json to parse
    */
-  void
-  parse(const JsonSection& configJson);
+  static CaProfile
+  fromJson(const JsonSection& json);
 
   /**
    * @return the JSON representation of this profile.

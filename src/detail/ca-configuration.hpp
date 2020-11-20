@@ -22,6 +22,7 @@
 #define NDNCERT_DETAIL_CA_CONFIGURATION_HPP
 
 #include "detail/ca-profile.hpp"
+#include "name-assignment/assignment-func.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -29,7 +30,6 @@ namespace ca {
 
 /**
  * @brief CA's configuration on NDNCERT.
- * @sa https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3
  *
  * The format of CA configuration in JSON
  * {
@@ -53,21 +53,23 @@ class CaConfig
 {
 public:
   /**
-   * Load CA configuration from the file.
+   * @brief Load CA configuration from the file.
    * @throw std::runtime_error when config file cannot be correctly parsed.
    */
   void
   load(const std::string& fileName);
 
 public:
-  CaProfile m_caItem;
   /**
-   * Used for CA redirection
-   * @sa https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3-PROBE-Extensions#probe-extension-for-redirection
+   * @brief the CA's profile
    */
-  optional<std::vector<std::shared_ptr<security::Certificate>>> m_redirection = nullopt;
+  CaProfile m_caProfile;
   /**
-   * Name Assignment Functions
+   * @brief Used for CA redirection
+   */
+  std::vector<std::shared_ptr<security::Certificate>> m_redirection;
+  /**
+   * @brief Name Assignment Functions
    */
   std::vector<std::unique_ptr<NameAssignmentFunc>> m_nameAssignmentFuncs;
 };
