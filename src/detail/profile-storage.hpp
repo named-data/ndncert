@@ -18,29 +18,56 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_DETAIL_ERROR_ENCODER_HPP
-#define NDNCERT_DETAIL_ERROR_ENCODER_HPP
+#ifndef NDNCERT_CONFIGURATION_HPP
+#define NDNCERT_CONFIGURATION_HPP
 
 #include "detail/ca-profile.hpp"
+#include "name-assignment/assignment-func.hpp"
 
 namespace ndn {
 namespace ndncert {
-namespace errortlv {
+namespace requester {
 
 /**
- * Encode error information into a Data content TLV
+ * @brief Represents Client configuration
+ * @sa https://github.com/named-data/ndncert/wiki/Client-Configuration-Sample
  */
-Block
-encodeDataContent(ErrorCode errorCode, const std::string& description);
+class ProfileStorage
+{
+public:
+  /**
+   * @throw std::runtime_error when config file cannot be correctly parsed.
+   */
+  void
+  load(const std::string& fileName);
 
-/**
- * Decode error information from Data content TLV
- */
-std::tuple<ErrorCode, std::string>
-decodefromDataContent(const Block& block);
+  /**
+   * @throw std::runtime_error when config file cannot be correctly parsed.
+   */
+  void
+  load(const JsonSection& configSection);
 
-} // namespace errortlv
+  void
+  save(const std::string& fileName) const;
+
+  void
+  removeCaProfile(const Name& caName);
+
+  /**
+   * Be cautious. This will add a new trust anchor for requesters.
+   */
+  void
+  addCaProfile(const CaProfile& profile);
+
+  const std::list<CaProfile>&
+  getCaItems() const;
+
+private:
+  std::list<CaProfile> m_caItems;
+};
+
+} // namespace requester
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_DETAIL_ERROR_ENCODER_HPP
+#endif // NDNCERT_CONFIGURATION_HPP

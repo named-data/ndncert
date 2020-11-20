@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "configuration.hpp"
+#include "detail/ca-profile.hpp"
 #include "identity-challenge/challenge-module.hpp"
 #include "name-assignment/assignment-func.hpp"
 #include <ndn-cxx/util/io.hpp>
@@ -26,19 +26,6 @@
 
 namespace ndn {
 namespace ndncert {
-
-// Parse CA Configuration file
-const std::string CONFIG_CA_PREFIX = "ca-prefix";
-const std::string CONFIG_CA_INFO = "ca-info";
-const std::string CONFIG_MAX_VALIDITY_PERIOD = "max-validity-period";
-const std::string CONFIG_MAX_SUFFIX_LENGTH = "max-suffix-length";
-const std::string CONFIG_PROBE_PARAMETERS = "probe-parameters";
-const std::string CONFIG_PROBE_PARAMETER = "probe-parameter-key";
-const std::string CONFIG_SUPPORTED_CHALLENGES = "supported-challenges";
-const std::string CONFIG_CHALLENGE = "challenge";
-const std::string CONFIG_CERTIFICATE = "certificate";
-const std::string CONFIG_REDIRECTION = "redirect-to";
-const std::string CONFIG_NAME_ASSIGNMENT = "name-assignment";
 
 void
 CaProfile::parse(const JsonSection& configJson)
@@ -132,131 +119,5 @@ CaProfile::toJson() const
   return caItem;
 }
 
-namespace ca {
-
-void
-CaConfig::load(const std::string& fileName)
-{
-  JsonSection configJson;
-  try {
-    boost::property_tree::read_json(fileName, configJson);
-  }
-  catch (const std::exception& error) {
-    NDN_THROW(std::runtime_error("Failed to parse configuration file " + fileName + ", " + error.what()));
-  }
-  if (configJson.begin() == configJson.end()) {
-    NDN_THROW(std::runtime_error("No JSON configuration found in file: " + fileName));
-  }
-  m_caItem.parse(configJson);
-  if (m_caItem.m_supportedChallenges.size() == 0) {
-    NDN_THROW(std::runtime_error("At least one challenge should be specified."));
-  }
-  // parse redirection section if appears
-  m_redirection = nullopt;
-  auto redirectionItems = configJson.get_child_optional(CONFIG_REDIRECTION);
-  if (redirectionItems) {
-    for (const auto& item : *redirectionItems) {
-      auto caPrefixStr = item.second.get(CONFIG_CA_PREFIX, "");
-      auto caCertStr = item.second.get(CONFIG_CERTIFICATE, "");
-      if (caCertStr == "") {
-        NDN_THROW(std::runtime_error("Redirect-to item's ca-prefix or certificate cannot be empty."));
-      }
-      std::istringstream ss(caCertStr);
-      auto caCert = io::load<security::Certificate>(ss);
-      if (!m_redirection) {
-        m_redirection = std::vector<std::shared_ptr<security::Certificate>>();
-      }
-      m_redirection->push_back(caCert);
-    }
-  }
-  //parse name assignment if appears
-  m_nameAssignmentFuncs.clear();
-  auto nameAssignmentItems = configJson.get_child_optional(CONFIG_NAME_ASSIGNMENT);
-  if (nameAssignmentItems) {
-    for (const auto& item : *nameAssignmentItems) {
-      auto func = NameAssignmentFunc::createNameAssignmentFunc(item.first, item.second.data());
-      if (func == nullptr) {
-        NDN_THROW(std::runtime_error("Error on creating name assignment function"));
-      }
-      m_nameAssignmentFuncs.push_back(std::move(func));
-    }
-  }
-}
-
-} // namespace ca
-
-namespace requester {
-
-void
-ProfileStorage::load(const std::string& fileName)
-{
-  JsonSection configJson;
-  try {
-    boost::property_tree::read_json(fileName, configJson);
-  }
-  catch (const std::exception& error) {
-    NDN_THROW(std::runtime_error("Failed to parse configuration file " + fileName + ", " + error.what()));
-  }
-  if (configJson.begin() == configJson.end()) {
-    NDN_THROW(std::runtime_error("No JSON configuration found in file: " + fileName));
-  }
-  load(configJson);
-}
-
-void
-ProfileStorage::load(const JsonSection& configSection)
-{
-  m_caItems.clear();
-  auto caList = configSection.get_child("ca-list");
-  for (auto item : caList) {
-    CaProfile caItem;
-    caItem.parse(item.second);
-    if (caItem.m_cert == nullptr) {
-      NDN_THROW(std::runtime_error("No CA certificate is loaded from JSON configuration."));
-    }
-    m_caItems.push_back(std::move(caItem));
-  }
-}
-
-void
-ProfileStorage::save(const std::string& fileName) const
-{
-  JsonSection configJson;
-  for (const auto& caItem : m_caItems) {
-    configJson.push_back(std::make_pair("", caItem.toJson()));
-  }
-  std::stringstream ss;
-  boost::property_tree::write_json(ss, configJson);
-  std::ofstream configFile;
-  configFile.open(fileName);
-  configFile << ss.str();
-  configFile.close();
-}
-
-void
-ProfileStorage::removeCaProfile(const Name& caName)
-{
-  m_caItems.remove_if([&](const CaProfile& item) { return item.m_caPrefix == caName; });
-}
-
-void
-ProfileStorage::addCaProfile(const CaProfile& profile)
-{
-  for (auto& item : m_caItems) {
-    if (item.m_caPrefix == profile.m_caPrefix) {
-      item = profile;
-      return;
-    }
-  }
-  m_caItems.push_back(profile);
-}
-
-const std::list<CaProfile>&
-ProfileStorage::getCaItems() const
-{
-  return m_caItems;
-}
-
-} // namespace requester
 } // namespace ndncert
 } // namespace ndn

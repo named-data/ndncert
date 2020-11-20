@@ -18,7 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "configuration.hpp"
+#include "detail/ca-configuration.hpp"
+#include "detail/profile-storage.hpp"
 #include "detail/info-encoder.hpp"
 #include "test-common.hpp"
 

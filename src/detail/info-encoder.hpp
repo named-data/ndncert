@@ -21,7 +21,7 @@
 #ifndef NDNCERT_DETAIL_INFO_ENCODER_HPP
 #define NDNCERT_DETAIL_INFO_ENCODER_HPP
 
-#include "configuration.hpp"
+#include "detail/ca-profile.hpp"
 
 namespace ndn {
 namespace ndncert {

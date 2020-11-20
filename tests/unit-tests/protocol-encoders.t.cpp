@@ -23,9 +23,9 @@
 #include "detail/info-encoder.hpp"
 #include "detail/new-renew-revoke-encoder.hpp"
 #include "detail/probe-encoder.hpp"
+#include "detail/ca-configuration.hpp"
 #include "test-common.hpp"
-#include <configuration.hpp>
-#include <identity-management-fixture.hpp>
+#include "identity-management-fixture.hpp"
 
 namespace ndn {
 namespace ndncert {

@@ -18,16 +18,29 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_CONFIGURATION_HPP
-#define NDNCERT_CONFIGURATION_HPP
+#ifndef NDNCERT_DETAIL_CA_PROFILE_HPP
+#define NDNCERT_DETAIL_CA_PROFILE_HPP
 
-#include "detail/ca-request-state.hpp"
 #include "name-assignment/assignment-func.hpp"
 
 namespace ndn {
 namespace ndncert {
 
-struct CaProfile {
+// used in parsing CA configuration file and Client CA profile storage file
+const std::string CONFIG_CA_PREFIX = "ca-prefix";
+const std::string CONFIG_CA_INFO = "ca-info";
+const std::string CONFIG_MAX_VALIDITY_PERIOD = "max-validity-period";
+const std::string CONFIG_MAX_SUFFIX_LENGTH = "max-suffix-length";
+const std::string CONFIG_PROBE_PARAMETERS = "probe-parameters";
+const std::string CONFIG_PROBE_PARAMETER = "probe-parameter-key";
+const std::string CONFIG_SUPPORTED_CHALLENGES = "supported-challenges";
+const std::string CONFIG_CHALLENGE = "challenge";
+const std::string CONFIG_CERTIFICATE = "certificate";
+const std::string CONFIG_REDIRECTION = "redirect-to";
+const std::string CONFIG_NAME_ASSIGNMENT = "name-assignment";
+
+struct CaProfile
+{
 public:
   /**
    * Parse the configuration json and modify current struct to the result.
@@ -79,106 +92,9 @@ public:
    * Default: nullptr.
    */
   std::shared_ptr<security::Certificate> m_cert;
-
-private:
-  void
-  parseProbeParameters(const JsonSection& section);
-
-  void
-  parseChallengeList(const JsonSection& configSection);
 };
 
-namespace ca {
-
-/**
- * @brief CA's configuration on NDNCERT.
- * @sa https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3#213-ca-profile
- *
- * The format of CA configuration in JSON
- * {
- *  "ca-prefix": "",
- *  "ca-info": "",
- *  "max-validity-period": "",
- *  "max-suffix-length": "",
- *  "probe-parameters":
- *  [
- *    {"probe-parameter-key": ""},
- *    {"probe-parameter-key": ""}
- *  ]
- *  "supported-challenges":
- *  [
- *    {"challenge": ""},
- *    {"challenge": ""}
- *  ]
- * }
- */
-class CaConfig
-{
-public:
-  /**
-   * Load CA configuration from the file.
-   * @throw std::runtime_error when config file cannot be correctly parsed.
-   */
-  void
-  load(const std::string& fileName);
-
-public:
-  CaProfile m_caItem;
-  /**
-   * Used for CA redirection
-   * @sa https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3-PROBE-Extensions#probe-extension-for-redirection
-   */
-  optional<std::vector<std::shared_ptr<security::Certificate>>> m_redirection = nullopt;
-  /**
-   * Name Assignment Functions
-   */
-  std::vector<std::unique_ptr<NameAssignmentFunc>> m_nameAssignmentFuncs;
-};
-
-} // namespace ca
-
-namespace requester {
-
-/**
- * @brief Represents Client configuration
- * @sa https://github.com/named-data/ndncert/wiki/Client-Configuration-Sample
- */
-class ProfileStorage
-{
-public:
-  /**
-   * @throw std::runtime_error when config file cannot be correctly parsed.
-   */
-  void
-  load(const std::string& fileName);
-
-  /**
-   * @throw std::runtime_error when config file cannot be correctly parsed.
-   */
-  void
-  load(const JsonSection& configSection);
-
-  void
-  save(const std::string& fileName) const;
-
-  void
-  removeCaProfile(const Name& caName);
-
-  /**
-   * Be cautious. This will add a new trust anchor for requesters.
-   */
-  void
-  addCaProfile(const CaProfile& profile);
-
-  const std::list<CaProfile>&
-  getCaItems() const;
-
-private:
-  std::list<CaProfile> m_caItems;
-};
-
-} // namespace requester
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_CONFIGURATION_HPP
+#endif // NDNCERT_DETAIL_CA_PROFILE_HPP
