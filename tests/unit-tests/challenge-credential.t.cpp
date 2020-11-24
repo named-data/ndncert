@@ -72,11 +72,11 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
   m_keyChain.addCertificate(keyB, credential);
 
   // using private key to sign cert request
-  auto params = challenge.getRequestedParameterList(state.m_status, "");
+  auto params = challenge.getRequestedParameterList(state.status, "");
   ChallengeCredential::fulfillParameters(params, m_keyChain, credential.getName(), requestId);
-  Block paramsTlv = challenge.genChallengeRequestTLV(state.m_status, "", std::move(params));
+  Block paramsTlv = challenge.genChallengeRequestTLV(state.status, "", std::move(params));
   challenge.handleChallengeRequest(paramsTlv, state);
-  BOOST_CHECK_EQUAL(statusToString(state.m_status), statusToString(Status::PENDING));
+  BOOST_CHECK_EQUAL(statusToString(state.status), statusToString(Status::PENDING));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

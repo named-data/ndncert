@@ -45,11 +45,11 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
 
   // get operation
   auto result = storage.getRequest(requestId);
-  BOOST_CHECK_EQUAL(request1.m_cert, result.m_cert);
-  BOOST_CHECK(request1.m_status == result.m_status);
-  BOOST_CHECK_EQUAL(request1.m_caPrefix, result.m_caPrefix);
-  BOOST_CHECK_EQUAL_COLLECTIONS(request1.m_encryptionKey.begin(), request1.m_encryptionKey.end(),
-                                result.m_encryptionKey.begin(), result.m_encryptionKey.end());
+  BOOST_CHECK_EQUAL(request1.cert, result.cert);
+  BOOST_CHECK(request1.status == result.status);
+  BOOST_CHECK_EQUAL(request1.caPrefix, result.caPrefix);
+  BOOST_CHECK_EQUAL_COLLECTIONS(request1.encryptionKey.begin(), request1.encryptionKey.end(),
+                                result.encryptionKey.begin(), result.encryptionKey.end());
 
   // update operation
   JsonSection json;
@@ -60,9 +60,9 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
                   std::move(json), std::move(aesKey2), 0);
   storage.updateRequest(request2);
   result = storage.getRequest(requestId);
-  BOOST_CHECK_EQUAL(request2.m_cert, result.m_cert);
-  BOOST_CHECK(request2.m_status == result.m_status);
-  BOOST_CHECK_EQUAL(request2.m_caPrefix, result.m_caPrefix);
+  BOOST_CHECK_EQUAL(request2.cert, result.cert);
+  BOOST_CHECK(request2.status == result.status);
+  BOOST_CHECK_EQUAL(request2.caPrefix, result.caPrefix);
 
   auto identity2 = addIdentity(Name("/ndn/site2"));
   auto key2 = identity2.getDefaultKey();

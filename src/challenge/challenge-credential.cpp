@@ -111,7 +111,7 @@ ChallengeCredential::handleChallengeRequest(const Block& params, ca::RequestStat
   for (auto anchor : m_trustAnchors) {
     if (anchor.getKeyName() == signingKeyName) {
       if (security::verifySignature(credential, anchor) &&
-          security::verifySignature(request.m_requestId.data(), request.m_requestId.size(), signature, signatureLen, key)) {
+          security::verifySignature(request.requestId.data(), request.requestId.size(), signature, signatureLen, key)) {
         return returnWithSuccess(request);
       }
     }

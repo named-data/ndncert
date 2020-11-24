@@ -56,12 +56,12 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmail)
   ChallengeEmail challenge("./tests/unit-tests/test-send-email.sh");
   challenge.handleChallengeRequest(paramTLV, request);
 
-  BOOST_CHECK(request.m_status == Status::CHALLENGE);
-  BOOST_CHECK_EQUAL(request.m_challengeState->m_challengeStatus, ChallengeEmail::NEED_CODE);
-  BOOST_CHECK(request.m_challengeState->m_secrets.get<std::string>(ChallengeEmail::PARAMETER_KEY_CODE) != "");
-  BOOST_CHECK(request.m_challengeState->m_remainingTime.count() != 0);
-  BOOST_CHECK(request.m_challengeState->m_remainingTries != 0);
-  BOOST_CHECK_EQUAL(request.m_challengeType, "email");
+  BOOST_CHECK(request.status == Status::CHALLENGE);
+  BOOST_CHECK_EQUAL(request.challengeState->challengeStatus, ChallengeEmail::NEED_CODE);
+  BOOST_CHECK(request.challengeState->secrets.get<std::string>(ChallengeEmail::PARAMETER_KEY_CODE) != "");
+  BOOST_CHECK(request.challengeState->remainingTime.count() != 0);
+  BOOST_CHECK(request.challengeState->remainingTries != 0);
+  BOOST_CHECK_EQUAL(request.challengeType, "email");
 
   std::string line = "";
   std::string delimiter = " ";
@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmail)
 
   end = line.find(delimiter);
   std::string secret = line.substr(0, end);
-  auto stored_secret = request.m_challengeState->m_secrets.get<std::string>(ChallengeEmail::PARAMETER_KEY_CODE);
+  auto stored_secret = request.challengeState->secrets.get<std::string>(ChallengeEmail::PARAMETER_KEY_CODE);
   BOOST_CHECK_EQUAL(secret, stored_secret);
   line = line.substr(end + 1);
 
@@ -107,9 +107,9 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithInvalidEmail)
   ChallengeEmail challenge;
   challenge.handleChallengeRequest(paramTLV, request);
 
-  BOOST_CHECK_EQUAL(request.m_challengeType, "email");
-  BOOST_CHECK_EQUAL(request.m_challengeState->m_challengeStatus, ChallengeEmail::INVALID_EMAIL);
-  BOOST_CHECK_EQUAL(request.m_challengeState->m_remainingTries, 2);
+  BOOST_CHECK_EQUAL(request.challengeType, "email");
+  BOOST_CHECK_EQUAL(request.challengeState->challengeStatus, ChallengeEmail::INVALID_EMAIL);
+  BOOST_CHECK_EQUAL(request.challengeState->remainingTries, 2);
 }
 
 BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
@@ -132,8 +132,8 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
   ChallengeEmail challenge;
   challenge.handleChallengeRequest(paramTLV, request);
 
-  BOOST_CHECK(request.m_status == Status::PENDING);
-  BOOST_CHECK(!request.m_challengeState);
+  BOOST_CHECK(request.status == Status::PENDING);
+  BOOST_CHECK(!request.challengeState);
 }
 
 BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithWrongCode)
@@ -156,9 +156,9 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithWrongCode)
   ChallengeEmail challenge;
   challenge.handleChallengeRequest(paramTLV, request);
 
-  BOOST_CHECK_EQUAL(request.m_challengeState->m_challengeStatus, ChallengeEmail::WRONG_CODE);
-  BOOST_CHECK(request.m_status == Status::CHALLENGE);
-  BOOST_CHECK_EQUAL(request.m_challengeState->m_secrets.empty(), false);
+  BOOST_CHECK_EQUAL(request.challengeState->challengeStatus, ChallengeEmail::WRONG_CODE);
+  BOOST_CHECK(request.status == Status::CHALLENGE);
+  BOOST_CHECK_EQUAL(request.challengeState->secrets.empty(), false);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

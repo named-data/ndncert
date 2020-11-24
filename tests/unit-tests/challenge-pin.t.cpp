@@ -45,9 +45,9 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmptyInfo)
   ChallengePin challenge;
   challenge.handleChallengeRequest(makeEmptyBlock(tlv::EncryptedPayload), request);
 
-  BOOST_CHECK(request.m_status == Status::CHALLENGE);
-  BOOST_CHECK_EQUAL(request.m_challengeState->m_challengeStatus, ChallengePin::NEED_CODE);
-  BOOST_CHECK_EQUAL(request.m_challengeType, "pin");
+  BOOST_CHECK(request.status == Status::CHALLENGE);
+  BOOST_CHECK_EQUAL(request.challengeState->challengeStatus, ChallengePin::NEED_CODE);
+  BOOST_CHECK_EQUAL(request.challengeType, "pin");
 }
 
 BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
@@ -70,8 +70,8 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
   ChallengePin challenge;
   challenge.handleChallengeRequest(paramTLV, request);
 
-  BOOST_CHECK(request.m_status == Status::PENDING);
-  BOOST_CHECK(!request.m_challengeState);
+  BOOST_CHECK(request.status == Status::PENDING);
+  BOOST_CHECK(!request.challengeState);
 }
 
 BOOST_AUTO_TEST_CASE(OnChallengeRequestWithWrongCode)
@@ -94,9 +94,9 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithWrongCode)
   ChallengePin challenge;
   challenge.handleChallengeRequest(paramTLV, request);
 
-  BOOST_CHECK(request.m_status == Status::CHALLENGE);
-  BOOST_CHECK_EQUAL(request.m_challengeState->m_challengeStatus, ChallengePin::WRONG_CODE);
-  BOOST_CHECK_EQUAL(request.m_challengeState->m_secrets.empty(), false);
+  BOOST_CHECK(request.status == Status::CHALLENGE);
+  BOOST_CHECK_EQUAL(request.challengeState->challengeStatus, ChallengePin::WRONG_CODE);
+  BOOST_CHECK_EQUAL(request.challengeState->secrets.empty(), false);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

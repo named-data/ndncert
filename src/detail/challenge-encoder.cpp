@@ -27,21 +27,21 @@ Block
 challengetlv::encodeDataContent(ca::RequestState& request, const Name& issuedCertName)
 {
   Block response(tlv::EncryptedPayload);
-  response.push_back(makeNonNegativeIntegerBlock(tlv::Status, static_cast<uint64_t>(request.m_status)));
-  if (request.m_challengeState) {
-    response.push_back(makeStringBlock(tlv::ChallengeStatus, request.m_challengeState->m_challengeStatus));
+  response.push_back(makeNonNegativeIntegerBlock(tlv::Status, static_cast<uint64_t>(request.status)));
+  if (request.challengeState) {
+    response.push_back(makeStringBlock(tlv::ChallengeStatus, request.challengeState->challengeStatus));
     response.push_back(
-        makeNonNegativeIntegerBlock(tlv::RemainingTries, request.m_challengeState->m_remainingTries));
+        makeNonNegativeIntegerBlock(tlv::RemainingTries, request.challengeState->remainingTries));
     response.push_back(
-        makeNonNegativeIntegerBlock(tlv::RemainingTime, request.m_challengeState->m_remainingTime.count()));
+        makeNonNegativeIntegerBlock(tlv::RemainingTime, request.challengeState->remainingTime.count()));
   }
   if (!issuedCertName.empty()) {
     response.push_back(makeNestedBlock(tlv::IssuedCertName, issuedCertName));
   }
   response.encode();
-  return encodeBlockWithAesGcm128(ndn::tlv::Content, request.m_encryptionKey.data(),
+  return encodeBlockWithAesGcm128(ndn::tlv::Content, request.encryptionKey.data(),
                                   response.value(), response.value_size(),
-                                  request.m_requestId.data(), request.m_requestId.size(), request.m_aesBlockCounter);
+                                  request.requestId.data(), request.requestId.size(), request.aesBlockCounter);
 }
 
 void

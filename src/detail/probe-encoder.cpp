@@ -24,7 +24,7 @@ namespace ndn {
 namespace ndncert {
 
 Block
-probetlv::encodeApplicationParameters(std::multimap<std::string, std::string>&& parameters)
+probetlv::encodeApplicationParameters(const std::multimap<std::string, std::string>& parameters)
 {
   Block content(ndn::tlv::ApplicationParameters);
   for (const auto& items : parameters) {

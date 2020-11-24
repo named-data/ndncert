@@ -48,21 +48,21 @@ CaMemory::getRequest(const RequestId& requestId)
 void
 CaMemory::addRequest(const RequestState& request)
 {
-  auto search = m_requests.find(request.m_requestId);
+  auto search = m_requests.find(request.requestId);
   if (search == m_requests.end()) {
-    m_requests.insert(std::make_pair(request.m_requestId, request));
+    m_requests.insert(std::make_pair(request.requestId, request));
   }
   else {
-    NDN_THROW(std::runtime_error("Request " + toHex(request.m_requestId.data(), request.m_requestId.size()) + " already exists"));
+    NDN_THROW(std::runtime_error("Request " + toHex(request.requestId.data(), request.requestId.size()) + " already exists"));
   }
 }
 
 void
 CaMemory::updateRequest(const RequestState& request)
 {
-  auto search = m_requests.find(request.m_requestId);
+  auto search = m_requests.find(request.requestId);
   if (search == m_requests.end()) {
-    m_requests.insert(std::make_pair(request.m_requestId, request));
+    m_requests.insert(std::make_pair(request.requestId, request));
   }
   else {
     search->second = request;
@@ -73,7 +73,7 @@ void
 CaMemory::deleteRequest(const RequestId& requestId)
 {
   auto search = m_requests.find(requestId);
-  auto keyName = search->second.m_cert.getKeyName();
+  auto keyName = search->second.cert.getKeyName();
   if (search != m_requests.end()) {
     m_requests.erase(search);
   }
@@ -94,7 +94,7 @@ CaMemory::listAllRequests(const Name& caName)
 {
   std::list<RequestState> result;
   for (const auto& entry : m_requests) {
-    if (entry.second.m_caPrefix == caName) {
+    if (entry.second.caPrefix == caName) {
       result.push_back(entry.second);
     }
   }

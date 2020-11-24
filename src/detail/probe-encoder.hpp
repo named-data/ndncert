@@ -29,7 +29,7 @@ namespace probetlv {
 
 // For Client use
 Block
-encodeApplicationParameters(std::multimap<std::string, std::string>&& parameters);
+encodeApplicationParameters(const std::multimap<std::string, std::string>& parameters);
 
 void
 decodeDataContent(const Block& block, std::vector<std::pair<Name, int>>& availableNames,

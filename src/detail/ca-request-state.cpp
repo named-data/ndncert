@@ -58,23 +58,23 @@ ChallengeState::ChallengeState(const std::string& challengeStatus,
                                const time::system_clock::TimePoint& challengeTp,
                                size_t remainingTries, time::seconds remainingTime,
                                JsonSection&& challengeSecrets)
-    : m_challengeStatus(challengeStatus)
-    , m_timestamp(challengeTp)
-    , m_remainingTries(remainingTries)
-    , m_remainingTime(remainingTime)
-    , m_secrets(std::move(challengeSecrets))
+    : challengeStatus(challengeStatus)
+    , timestamp(challengeTp)
+    , remainingTries(remainingTries)
+    , remainingTime(remainingTime)
+    , secrets(std::move(challengeSecrets))
 {
 }
 
 RequestState::RequestState(const Name& caName, const RequestId& requestId, RequestType requestType, Status status,
                            const security::Certificate& cert, std::array<uint8_t, 16>&& encryptionKey, uint32_t aesBlockCounter)
-    : m_caPrefix(caName)
-    , m_requestId(requestId)
-    , m_requestType(requestType)
-    , m_status(status)
-    , m_cert(cert)
-    , m_encryptionKey(std::move(encryptionKey))
-    , m_aesBlockCounter(aesBlockCounter)
+    : caPrefix(caName)
+    , requestId(requestId)
+    , requestType(requestType)
+    , status(status)
+    , cert(cert)
+    , encryptionKey(std::move(encryptionKey))
+    , aesBlockCounter(aesBlockCounter)
 {
 }
 
@@ -83,34 +83,34 @@ RequestState::RequestState(const Name& caName, const RequestId& requestId, Reque
                            const std::string& challengeStatus, const time::system_clock::TimePoint& challengeTp,
                            size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
                            std::array<uint8_t, 16>&& encryptionKey, uint32_t aesBlockCounter)
-    : m_caPrefix(caName)
-    , m_requestId(requestId)
-    , m_requestType(requestType)
-    , m_status(status)
-    , m_cert(cert)
-    , m_encryptionKey(std::move(encryptionKey))
-    , m_aesBlockCounter(aesBlockCounter)
-    , m_challengeType(challengeType)
-    , m_challengeState(ChallengeState(challengeStatus, challengeTp, remainingTries, remainingTime, std::move(challengeSecrets)))
+    : caPrefix(caName)
+    , requestId(requestId)
+    , requestType(requestType)
+    , status(status)
+    , cert(cert)
+    , encryptionKey(std::move(encryptionKey))
+    , aesBlockCounter(aesBlockCounter)
+    , challengeType(challengeType)
+    , challengeState(ChallengeState(challengeStatus, challengeTp, remainingTries, remainingTime, std::move(challengeSecrets)))
 {
 }
 
 std::ostream&
 operator<<(std::ostream& os, const RequestState& request)
 {
-  os << "Request's CA name: " << request.m_caPrefix << "\n";
-  os << "Request's request ID: " << toHex(request.m_requestId.data(), request.m_requestId.size()) << "\n";
-  os << "Request's status: " << statusToString(request.m_status) << "\n";
-  os << "Request's challenge type: " << request.m_challengeType << "\n";
-  if (request.m_challengeState) {
-    os << "Challenge Status: " << request.m_challengeState->m_challengeStatus << "\n";
-    os << "Challenge remaining tries:" << request.m_challengeState->m_remainingTries << " times\n";
-    os << "Challenge remaining time: " << request.m_challengeState->m_remainingTime.count() << " seconds\n";
-    os << "Challenge last update: " << time::toIsoString(request.m_challengeState->m_timestamp) << "\n";
+  os << "Request's CA name: " << request.caPrefix << "\n";
+  os << "Request's request ID: " << toHex(request.requestId.data(), request.requestId.size()) << "\n";
+  os << "Request's status: " << statusToString(request.status) << "\n";
+  os << "Request's challenge type: " << request.challengeType << "\n";
+  if (request.challengeState) {
+    os << "Challenge Status: " << request.challengeState->challengeStatus << "\n";
+    os << "Challenge remaining tries:" << request.challengeState->remainingTries << " times\n";
+    os << "Challenge remaining time: " << request.challengeState->remainingTime.count() << " seconds\n";
+    os << "Challenge last update: " << time::toIsoString(request.challengeState->timestamp) << "\n";
   }
   os << "Certificate:\n";
   util::IndentedStream os2(os, "  ");
-  os2 << request.m_cert;
+  os2 << request.cert;
   return os;
 }
 

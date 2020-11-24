@@ -62,23 +62,23 @@ struct ChallengeState
   /**
    * @brief The status of the challenge.
    */
-  std::string m_challengeStatus;
+  std::string challengeStatus;
   /**
    * @brief The timestamp of the last update of the challenge state.
    */
-  time::system_clock::TimePoint m_timestamp;
+  time::system_clock::TimePoint timestamp;
   /**
    * @brief Remaining tries of the challenge.
    */
-  size_t m_remainingTries;
+  size_t remainingTries;
   /**
    * @brief Remaining time of the challenge.
    */
-  time::seconds m_remainingTime;
+  time::seconds remainingTime;
   /**
    * @brief The secret for the challenge.
    */
-  JsonSection m_secrets;
+  JsonSection secrets;
 };
 
 /**
@@ -107,40 +107,40 @@ public:
   /**
    * @brief The CA that the request is under.
    */
-  Name m_caPrefix;
+  Name caPrefix;
   /**
    * @brief The ID of the request.
    */
-  RequestId m_requestId;
+  RequestId requestId;
   /**
    * @brief The type of the request.
    */
-  RequestType m_requestType = RequestType::NOTINITIALIZED;
+  RequestType requestType = RequestType::NOTINITIALIZED;
   /**
    * @brief The status of the request.
    */
-  Status m_status;
+  Status status;
   /**
    * @brief The self-signed certificate in the request.
    */
-  security::Certificate m_cert;
+  security::Certificate cert;
   /**
    * @brief The encryption key for the requester.
    */
-  std::array<uint8_t, 16> m_encryptionKey;
+  std::array<uint8_t, 16> encryptionKey;
   /**
    * @brief The AES block counter for the requester.
    */
-  uint32_t m_aesBlockCounter = 0;
+  uint32_t aesBlockCounter = 0;
 
   /**
    * @brief The challenge type.
    */
-  std::string m_challengeType;
+  std::string challengeType;
   /**
    * @brief The challenge state.
    */
-  optional<ChallengeState> m_challengeState;
+  optional<ChallengeState> challengeState;
 };
 
 std::ostream&

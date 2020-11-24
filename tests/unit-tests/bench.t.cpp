@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
 
       auto paramList = requester::Requester::selectOrContinueChallenge(state, "pin");
       auto request = ca.getCertificateRequest(*challengeInterest2);
-      auto secret = request->m_challengeState->m_secrets.get(ChallengePin::PARAMETER_KEY_CODE, "");
+      auto secret = request->challengeState->secrets.get(ChallengePin::PARAMETER_KEY_CODE, "");
       paramList.begin()->second = secret;
       challengeInterest3 = requester::Requester::genChallengeInterest(state, std::move(paramList));
       // std::cout << "CHALLENGE Interest Size: " << challengeInterest3->wireEncode().size() << std::endl;

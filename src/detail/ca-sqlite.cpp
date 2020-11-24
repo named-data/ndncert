@@ -172,24 +172,24 @@ CaSqlite::addRequest(const RequestState& request)
                   cert_request, challenge_type, challenge_status, challenge_secrets,
                   challenge_tp, remaining_tries, remaining_time, encryption_key, aes_block_counter)
                   values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
-  statement.bind(1, request.m_requestId.data(), request.m_requestId.size(), SQLITE_TRANSIENT);
-  statement.bind(2, request.m_caPrefix.wireEncode(), SQLITE_TRANSIENT);
-  statement.bind(3, static_cast<int>(request.m_status));
-  statement.bind(4, static_cast<int>(request.m_requestType));
-  statement.bind(5, request.m_cert.wireEncode(), SQLITE_TRANSIENT);
-  statement.bind(12, request.m_encryptionKey.data(), request.m_encryptionKey.size(), SQLITE_TRANSIENT);
-  statement.bind(13, request.m_aesBlockCounter);
-  if (request.m_challengeState) {
-    statement.bind(6, request.m_challengeType, SQLITE_TRANSIENT);
-    statement.bind(7, request.m_challengeState->m_challengeStatus, SQLITE_TRANSIENT);
-    statement.bind(8, convertJson2String(request.m_challengeState->m_secrets),
+  statement.bind(1, request.requestId.data(), request.requestId.size(), SQLITE_TRANSIENT);
+  statement.bind(2, request.caPrefix.wireEncode(), SQLITE_TRANSIENT);
+  statement.bind(3, static_cast<int>(request.status));
+  statement.bind(4, static_cast<int>(request.requestType));
+  statement.bind(5, request.cert.wireEncode(), SQLITE_TRANSIENT);
+  statement.bind(12, request.encryptionKey.data(), request.encryptionKey.size(), SQLITE_TRANSIENT);
+  statement.bind(13, request.aesBlockCounter);
+  if (request.challengeState) {
+    statement.bind(6, request.challengeType, SQLITE_TRANSIENT);
+    statement.bind(7, request.challengeState->challengeStatus, SQLITE_TRANSIENT);
+    statement.bind(8, convertJson2String(request.challengeState->secrets),
                    SQLITE_TRANSIENT);
-    statement.bind(9, time::toIsoString(request.m_challengeState->m_timestamp), SQLITE_TRANSIENT);
-    statement.bind(10, request.m_challengeState->m_remainingTries);
-    statement.bind(11, request.m_challengeState->m_remainingTime.count());
+    statement.bind(9, time::toIsoString(request.challengeState->timestamp), SQLITE_TRANSIENT);
+    statement.bind(10, request.challengeState->remainingTries);
+    statement.bind(11, request.challengeState->remainingTime.count());
   }
   if (statement.step() != SQLITE_DONE) {
-    NDN_THROW(std::runtime_error("Request " + toHex(request.m_requestId.data(), request.m_requestId.size()) + " cannot be added to database"));
+    NDN_THROW(std::runtime_error("Request " + toHex(request.requestId.data(), request.requestId.size()) + " cannot be added to database"));
   }
 }
 
@@ -201,14 +201,14 @@ CaSqlite::updateRequest(const RequestState& request)
                              SET status = ?, challenge_type = ?, challenge_status = ?, challenge_secrets = ?,
                              challenge_tp = ?, remaining_tries = ?, remaining_time = ?, aes_block_counter = ?
                              WHERE request_id = ?)_SQLTEXT_");
-  statement.bind(1, static_cast<int>(request.m_status));
-  statement.bind(2, request.m_challengeType, SQLITE_TRANSIENT);
-  if (request.m_challengeState) {
-    statement.bind(3, request.m_challengeState->m_challengeStatus, SQLITE_TRANSIENT);
-    statement.bind(4, convertJson2String(request.m_challengeState->m_secrets), SQLITE_TRANSIENT);
-    statement.bind(5, time::toIsoString(request.m_challengeState->m_timestamp), SQLITE_TRANSIENT);
-    statement.bind(6, request.m_challengeState->m_remainingTries);
-    statement.bind(7, request.m_challengeState->m_remainingTime.count());
+  statement.bind(1, static_cast<int>(request.status));
+  statement.bind(2, request.challengeType, SQLITE_TRANSIENT);
+  if (request.challengeState) {
+    statement.bind(3, request.challengeState->challengeStatus, SQLITE_TRANSIENT);
+    statement.bind(4, convertJson2String(request.challengeState->secrets), SQLITE_TRANSIENT);
+    statement.bind(5, time::toIsoString(request.challengeState->timestamp), SQLITE_TRANSIENT);
+    statement.bind(6, request.challengeState->remainingTries);
+    statement.bind(7, request.challengeState->remainingTime.count());
   }
   else {
     statement.bind(3, "", SQLITE_TRANSIENT);
@@ -217,8 +217,8 @@ CaSqlite::updateRequest(const RequestState& request)
     statement.bind(6, 0);
     statement.bind(7, 0);
   }
-  statement.bind(8, request.m_aesBlockCounter);
-  statement.bind(9, request.m_requestId.data(), request.m_requestId.size(), SQLITE_TRANSIENT);
+  statement.bind(8, request.aesBlockCounter);
+  statement.bind(9, request.requestId.data(), request.requestId.size(), SQLITE_TRANSIENT);
 
   if (statement.step() != SQLITE_DONE) {
     addRequest(request);

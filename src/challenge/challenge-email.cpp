@@ -48,13 +48,13 @@ ChallengeEmail::handleChallengeRequest(const Block& params, ca::RequestState& re
 {
   params.parse();
   auto currentTime = time::system_clock::now();
-  if (request.m_status == Status::BEFORE_CHALLENGE) {
+  if (request.status == Status::BEFORE_CHALLENGE) {
     // for the first time, init the challenge
     std::string emailAddress = readString(params.get(tlv::ParameterValue));
     if (!isValidEmailAddress(emailAddress)) {
       return returnWithNewChallengeStatus(request, INVALID_EMAIL, JsonSection(), m_maxAttemptTimes - 1, m_secretLifetime);
     }
-    auto lastComponentRequested = readString(request.m_cert.getIdentity().get(-1));
+    auto lastComponentRequested = readString(request.cert.getIdentity().get(-1));
     if (lastComponentRequested != emailAddress) {
       NDN_LOG_TRACE("Email and requested name do not match. Email " << emailAddress << "requested last component "
                     << lastComponentRequested);
@@ -64,18 +64,18 @@ ChallengeEmail::handleChallengeRequest(const Block& params, ca::RequestState& re
     secretJson.add(PARAMETER_KEY_CODE, emailCode);
     // send out the email
     sendEmail(emailAddress, emailCode, request);
-    NDN_LOG_TRACE("Secret for request " << toHex(request.m_requestId.data(), request.m_requestId.size())  << " : " << emailCode);
+    NDN_LOG_TRACE("Secret for request " << toHex(request.requestId.data(), request.requestId.size()) << " : " << emailCode);
     return returnWithNewChallengeStatus(request, NEED_CODE, std::move(secretJson), m_maxAttemptTimes, m_secretLifetime);
   }
-  if (request.m_challengeState) {
-    if (request.m_challengeState->m_challengeStatus == NEED_CODE ||
-        request.m_challengeState->m_challengeStatus == WRONG_CODE) {
-      NDN_LOG_TRACE("Challenge Interest arrives. Challenge Status: " << request.m_challengeState->m_challengeStatus);
+  if (request.challengeState) {
+    if (request.challengeState->challengeStatus == NEED_CODE ||
+        request.challengeState->challengeStatus == WRONG_CODE) {
+      NDN_LOG_TRACE("Challenge Interest arrives. Challenge Status: " << request.challengeState->challengeStatus);
       // the incoming interest should bring the pin code
       std::string givenCode = readString(params.get(tlv::ParameterValue));
-      auto secret = request.m_challengeState->m_secrets;
+      auto secret = request.challengeState->secrets;
       // check if run out of time
-      if (currentTime - request.m_challengeState->m_timestamp >= m_secretLifetime) {
+      if (currentTime - request.challengeState->timestamp >= m_secretLifetime) {
         return returnWithError(request, ErrorCode::OUT_OF_TIME, "Secret expired.");
       }
       // check if provided secret is correct
@@ -85,11 +85,11 @@ ChallengeEmail::handleChallengeRequest(const Block& params, ca::RequestState& re
         return returnWithSuccess(request);
       }
       // otherwise, check remaining attempt times
-      if (request.m_challengeState->m_remainingTries > 1) {
-        auto remainTime = m_secretLifetime - (currentTime - request.m_challengeState->m_timestamp);
+      if (request.challengeState->remainingTries > 1) {
+        auto remainTime = m_secretLifetime - (currentTime - request.challengeState->timestamp);
         NDN_LOG_TRACE("Wrong secret code provided. Remaining Tries - 1.");
         return returnWithNewChallengeStatus(request, WRONG_CODE, std::move(secret),
-                                            request.m_challengeState->m_remainingTries - 1,
+                                            request.challengeState->remainingTries - 1,
                                             time::duration_cast<time::seconds>(remainTime));
       }
       else {
@@ -164,8 +164,8 @@ ChallengeEmail::sendEmail(const std::string& emailAddress, const std::string& se
 {
   std::string command = m_sendEmailScript;
   command += " \"" + emailAddress + "\" \"" + secret + "\" \"" +
-             request.m_caPrefix.toUri() + "\" \"" +
-             request.m_cert.getName().toUri() + "\"";
+             request.caPrefix.toUri() + "\" \"" +
+             request.cert.getName().toUri() + "\"";
   boost::process::child child(command);
   child.wait();
   if (child.exit_code() != 0) {

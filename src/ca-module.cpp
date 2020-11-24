@@ -321,9 +321,9 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   result.setName(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
   result.setContent(requesttlv::encodeDataContent(myEcdhPubKeyBase64,
-                                                             salt,
-                                                             requestState.m_requestId, requestState.m_status,
-                                                             m_config.m_caProfile.m_supportedChallenges));
+                                                  salt,
+                                                  requestState.requestId, requestState.status,
+                                                  m_config.m_caProfile.m_supportedChallenges));
   m_keyChain.sign(result, signingByIdentity( m_config.m_caProfile.m_caPrefix));
   m_face.put(result);
   if (m_statusUpdateCallback) {
@@ -343,7 +343,7 @@ CaModule::onChallenge(const Interest& request)
     return;
   }
   // verify signature
-  if (!security::verifySignature(request, requestState->m_cert)) {
+  if (!security::verifySignature(request, requestState->cert)) {
     NDN_LOG_ERROR("Invalid Signature in the Interest packet.");
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::BAD_SIGNATURE,
                                        "Invalid Signature in the Interest packet."));
@@ -353,20 +353,20 @@ CaModule::onChallenge(const Interest& request)
   Buffer paramTLVPayload;
   try {
     paramTLVPayload = decodeBlockWithAesGcm128(request.getApplicationParameters(),
-                                               requestState->m_encryptionKey.data(),
-                                               requestState->m_requestId.data(),
-                                               requestState->m_requestId.size());
+                                               requestState->encryptionKey.data(),
+                                               requestState->requestId.data(),
+                                               requestState->requestId.size());
   }
   catch (const std::exception& e) {
     NDN_LOG_ERROR("Interest paramaters decryption failed: " << e.what());
-    m_storage->deleteRequest(requestState->m_requestId);
+    m_storage->deleteRequest(requestState->requestId);
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
                                        "Interest paramaters decryption failed."));
     return;
   }
   if (paramTLVPayload.size() == 0) {
     NDN_LOG_ERROR("No parameters are found after decryption.");
-    m_storage->deleteRequest(requestState->m_requestId);
+    m_storage->deleteRequest(requestState->requestId);
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
                                        "No parameters are found after decryption."));
     return;
@@ -379,7 +379,7 @@ CaModule::onChallenge(const Interest& request)
   auto challenge = ChallengeModule::createChallengeModule(challengeType);
   if (challenge == nullptr) {
     NDN_LOG_TRACE("Unrecognized challenge type: " << challengeType);
-    m_storage->deleteRequest(requestState->m_requestId);
+    m_storage->deleteRequest(requestState->requestId);
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER, "Unrecognized challenge type."));
     return;
   }
@@ -387,26 +387,26 @@ CaModule::onChallenge(const Interest& request)
   NDN_LOG_TRACE("CHALLENGE module to be load: " << challengeType);
   auto errorInfo = challenge->handleChallengeRequest(paramTLV, *requestState);
   if (std::get<0>(errorInfo) != ErrorCode::NO_ERROR) {
-    m_storage->deleteRequest(requestState->m_requestId);
+    m_storage->deleteRequest(requestState->requestId);
     m_face.put(generateErrorDataPacket(request.getName(), std::get<0>(errorInfo), std::get<1>(errorInfo)));
     return;
   }
 
   Block payload;
-  if (requestState->m_status == Status::PENDING) {
+  if (requestState->status == Status::PENDING) {
     // if challenge succeeded
-    if (requestState->m_requestType == RequestType::NEW) {
+    if (requestState->requestType == RequestType::NEW) {
       auto issuedCert = issueCertificate(*requestState);
-      requestState->m_cert = issuedCert;
-      requestState->m_status = Status::SUCCESS;
-      m_storage->deleteRequest(requestState->m_requestId);
+      requestState->cert = issuedCert;
+      requestState->status = Status::SUCCESS;
+      m_storage->deleteRequest(requestState->requestId);
 
       payload = challengetlv::encodeDataContent(*requestState, issuedCert.getName());
       NDN_LOG_TRACE("Challenge succeeded. Certificate has been issued: " << issuedCert.getName());
     }
-    else if (requestState->m_requestType == RequestType::REVOKE) {
-      requestState->m_status = Status::SUCCESS;
-      m_storage->deleteRequest(requestState->m_requestId);
+    else if (requestState->requestType == RequestType::REVOKE) {
+      requestState->status = Status::SUCCESS;
+      m_storage->deleteRequest(requestState->requestId);
 
       payload = challengetlv::encodeDataContent(*requestState);
       NDN_LOG_TRACE("Challenge succeeded. Certificate has been revoked");
@@ -432,15 +432,15 @@ CaModule::onChallenge(const Interest& request)
 security::Certificate
 CaModule::issueCertificate(const RequestState& requestState)
 {
-  auto expectedPeriod = requestState.m_cert.getValidityPeriod().getPeriod();
+  auto expectedPeriod = requestState.cert.getValidityPeriod().getPeriod();
   security::ValidityPeriod period(expectedPeriod.first, expectedPeriod.second);
   security::Certificate newCert;
 
-  Name certName = requestState.m_cert.getKeyName();
+  Name certName = requestState.cert.getKeyName();
   certName.append("NDNCERT").append(std::to_string(random::generateSecureWord64()));
   newCert.setName(certName);
-  newCert.setContent(requestState.m_cert.getContent());
-  NDN_LOG_TRACE("cert request content " << requestState.m_cert);
+  newCert.setContent(requestState.cert.getContent());
+  NDN_LOG_TRACE("cert request content " << requestState.cert);
   SignatureInfo signatureInfo;
   signatureInfo.setValidityPeriod(period);
   security::SigningInfo signingInfo(security::SigningInfo::SIGNER_TYPE_ID,
