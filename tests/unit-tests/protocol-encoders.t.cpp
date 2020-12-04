@@ -147,11 +147,17 @@ BOOST_AUTO_TEST_CASE(ChallengeEncoding)
   caCache.load("tests/unit-tests/config-files/config-client-1");
   security::Certificate certRequest = *caCache.getKnownProfiles().front().m_cert;
   RequestId id = {{102}};
-  std::array<uint8_t, 16> aesKey;
-  std::memcpy(aesKey.data(), key, sizeof(key));
-  ca::RequestState state(Name("/ndn/ucla"), id, RequestType::NEW, Status::PENDING,
-                         certRequest, "pin", "test", time::system_clock::now(), 3, time::seconds(321), JsonSection(),
-                         std::move(aesKey), 0);
+  ca::RequestState state;
+  state.caPrefix = Name("/ndn/ucla");
+  state.requestId = id;
+  state.requestType = RequestType::NEW;
+  state.status = Status::PENDING;
+  state.cert = certRequest;
+  std::memcpy(state.encryptionKey.data(), key, sizeof(key));
+  state.challengeType = "pin";
+  state.challengeState = ca::ChallengeState("test", time::system_clock::now(),
+                                            3, time::seconds(3600), JsonSection());
+
   auto contentBlock = challengetlv::encodeDataContent(state, Name("/ndn/ucla/a/b/c"));
 
   requester::RequestState context(m_keyChain, caCache.getKnownProfiles().front(), RequestType::NEW);

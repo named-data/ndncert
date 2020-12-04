@@ -53,10 +53,12 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
   auto identityA = addIdentity(Name("/example"));
   auto keyA = identityA.getDefaultKey();
   auto certA = key.getDefaultCertificate();
-  RequestId requestId = {{1,2,3,4,5,6,7,8}};
-  std::array<uint8_t, 16> aesKey;
-  ca::RequestState state(Name("/example"), requestId, RequestType::NEW,
-                         Status::BEFORE_CHALLENGE, certA, std::move(aesKey));
+  RequestId requestId = {{101}};
+  ca::RequestState state;
+  state.caPrefix = Name("/example");
+  state.requestId = requestId;
+  state.requestType = RequestType::NEW;
+  state.cert = certA;
 
   // create requester's credential
   auto identityB = addIdentity(Name("/trust/cert"));

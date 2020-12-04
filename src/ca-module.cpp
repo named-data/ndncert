@@ -306,8 +306,13 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   }
   RequestId id;
   std::memcpy(id.data(), requestIdData, id.size());
-  RequestState requestState(m_config.m_caProfile.m_caPrefix, id, requestType,
-                            Status::BEFORE_CHALLENGE, *clientCert, std::move(aesKey));
+  // initialize request state
+  RequestState requestState;
+  requestState.caPrefix = m_config.m_caProfile.m_caPrefix;
+  requestState.requestId = id;
+  requestState.requestType = requestType;
+  requestState.cert = *clientCert;
+  requestState.encryptionKey = aesKey;
   try {
     m_storage->addRequest(requestState);
   }

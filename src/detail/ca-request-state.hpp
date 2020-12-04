@@ -86,24 +86,8 @@ struct ChallengeState
  *
  * ChallengeModule should take use of RequestState.ChallengeState to keep the challenge state.
  */
-class RequestState
+struct RequestState
 {
-public:
-  /**
-   * @brief Used to instantiate a RequestState when challenge is not started.
-   */
-  RequestState(const Name& caName, const RequestId& requestId, RequestType requestType, Status status,
-               const security::Certificate& cert, std::array<uint8_t, 16>&& m_encryptionKey, uint32_t aesBlockCounter = 0);
-  /**
-   * @brief Used to instantiate a RequestState after challenge is started.
-   */
-  RequestState(const Name& caName, const RequestId& requestId, RequestType requestType, Status status,
-               const security::Certificate& cert, const std::string& challengeType,
-               const std::string& challengeStatus, const time::system_clock::TimePoint& challengeTp,
-               size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
-               std::array<uint8_t, 16>&& m_encryptionKey, uint32_t aesBlockCounter);
-
-public:
   /**
    * @brief The CA that the request is under.
    */
@@ -119,7 +103,7 @@ public:
   /**
    * @brief The status of the request.
    */
-  Status status;
+  Status status = Status::BEFORE_CHALLENGE;
   /**
    * @brief The self-signed certificate in the request.
    */

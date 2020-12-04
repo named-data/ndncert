@@ -135,31 +135,25 @@ CaSqlite::getRequest(const RequestId& requestId)
   statement.bind(1, requestId.data(), requestId.size(), SQLITE_TRANSIENT);
 
   if (statement.step() == SQLITE_ROW) {
-    Name caName(statement.getBlock(1));
-    auto status = static_cast<Status>(statement.getInt(2));
-    auto challengeStatus = statement.getString(3);
-    security::Certificate cert(statement.getBlock(4));
-    auto challengeType = statement.getString(5);
-    auto challengeSecrets = statement.getString(6);
-    auto challengeTp = statement.getString(7);
-    auto remainingTries = statement.getInt(8);
-    auto remainingTime = statement.getInt(9);
-    auto requestType = static_cast<RequestType>(statement.getInt(10));
-    std::array<uint8_t, 16> encryptionKey;
-    std::memcpy(encryptionKey.data(), statement.getBlob(11), statement.getSize(11));
-    auto aesCounter = statement.getInt(12);
-    if (challengeType != "") {
-      return RequestState(caName, requestId, requestType, status, cert,
-                          challengeType, challengeStatus, time::fromIsoString(challengeTp),
-                          remainingTries, time::seconds(remainingTime),
-                          convertString2Json(challengeSecrets), std::move(encryptionKey), aesCounter);
+    RequestState state;
+    state.caPrefix = Name(statement.getBlock(1));
+    state.status = static_cast<Status>(statement.getInt(2));
+    state.cert = security::Certificate(statement.getBlock(4));
+    state.challengeType = statement.getString(5);
+    state.requestType = static_cast<RequestType>(statement.getInt(10));
+    std::memcpy(state.encryptionKey.data(), statement.getBlob(11), statement.getSize(11));
+    state.aesBlockCounter = statement.getInt(12);
+    if (state.challengeType != "") {
+      ChallengeState challengeState(statement.getString(3), time::fromIsoString(statement.getString(7)),
+                                    statement.getInt(8), time::seconds(statement.getInt(9)),
+                                    convertString2Json(statement.getString(6)));
+      state.challengeState = challengeState;
     }
-    else {
-      return RequestState(caName, requestId, requestType, status, cert, std::move(encryptionKey));
-    }
+    return state;
   }
   else {
-    NDN_THROW(std::runtime_error("Request " + toHex(requestId.data(), requestId.size()) + " cannot be fetched from database"));
+    NDN_THROW(std::runtime_error("Request " + toHex(requestId.data(), requestId.size()) +
+                                 " cannot be fetched from database"));
   }
 }
 
@@ -235,32 +229,22 @@ CaSqlite::listAllRequests()
                              encryption_key, aes_block_counter
                              FROM RequestStates)_SQLTEXT_");
   while (statement.step() == SQLITE_ROW) {
-    RequestId requestId;
-    std::memcpy(requestId.data(), statement.getBlob(1), statement.getSize(1));
-    Name caName(statement.getBlock(2));
-    auto status = static_cast<Status>(statement.getInt(3));
-    auto challengeStatus = statement.getString(4);
-    security::Certificate cert(statement.getBlock(5));
-    auto challengeType = statement.getString(6);
-    auto challengeSecrets = statement.getString(7);
-    auto challengeTp = statement.getString(8);
-    auto remainingTries = statement.getInt(9);
-    auto remainingTime = statement.getInt(10);
-    auto requestType = static_cast<RequestType>(statement.getInt(11));
-    std::array<uint8_t, 16> encryptionKey;
-    std::memcpy(encryptionKey.data(), statement.getBlob(12), statement.getSize(12));
-    auto aesBlockCounter = statement.getInt(13);
-    if (challengeType != "") {
-      result.push_back(RequestState(caName, requestId, requestType, status, cert,
-                                    challengeType, challengeStatus, time::fromIsoString(challengeTp),
-                                    remainingTries, time::seconds(remainingTime),
-                                    convertString2Json(challengeSecrets),
-                                    std::move(encryptionKey), aesBlockCounter));
+    RequestState state;
+    std::memcpy(state.requestId.data(), statement.getBlob(1), statement.getSize(1));
+    state.caPrefix = Name(statement.getBlock(2));
+    state.status = static_cast<Status>(statement.getInt(3));
+    state.challengeType = statement.getString(6);
+    state.cert = security::Certificate(statement.getBlock(5));
+    state.requestType = static_cast<RequestType>(statement.getInt(11));
+    std::memcpy(state.encryptionKey.data(), statement.getBlob(12), statement.getSize(12));
+    state.aesBlockCounter = statement.getInt(13);
+    if (state.challengeType != "") {
+      ChallengeState challengeState(statement.getString(4), time::fromIsoString(statement.getString(8)),
+                                    statement.getInt(9), time::seconds(statement.getInt(10)),
+                                    convertString2Json(statement.getString(7)));
+      state.challengeState = challengeState;
     }
-    else {
-      result.push_back(RequestState(caName, requestId, requestType,
-                                    status, cert, std::move(encryptionKey), aesBlockCounter));
-    }
+    result.push_back(state);
   }
   return result;
 }
@@ -278,32 +262,22 @@ CaSqlite::listAllRequests(const Name& caName)
   statement.bind(1, caName.wireEncode(), SQLITE_TRANSIENT);
 
   while (statement.step() == SQLITE_ROW) {
-    RequestId requestId;
-    std::memcpy(requestId.data(), statement.getBlob(1), statement.getSize(1));
-    Name caName(statement.getBlock(2));
-    auto status = static_cast<Status>(statement.getInt(3));
-    auto challengeStatus = statement.getString(4);
-    security::Certificate cert(statement.getBlock(5));
-    auto challengeType = statement.getString(6);
-    auto challengeSecrets = statement.getString(7);
-    auto challengeTp = statement.getString(8);
-    auto remainingTries = statement.getInt(9);
-    auto remainingTime = statement.getInt(10);
-    auto requestType = static_cast<RequestType>(statement.getInt(11));
-    std::array<uint8_t, 16> encryptionKey;
-    std::memcpy(encryptionKey.data(), statement.getBlob(12), statement.getSize(12));
-    auto aesBlockCounter = statement.getInt(13);
-    if (challengeType != "") {
-      result.push_back(RequestState(caName, requestId, requestType, status, cert,
-                                    challengeType, challengeStatus, time::fromIsoString(challengeTp),
-                                    remainingTries, time::seconds(remainingTime),
-                                    convertString2Json(challengeSecrets),
-                                    std::move(encryptionKey), aesBlockCounter));
+    RequestState state;
+    std::memcpy(state.requestId.data(), statement.getBlob(1), statement.getSize(1));
+    state.caPrefix = Name(statement.getBlock(2));
+    state.status = static_cast<Status>(statement.getInt(3));
+    state.challengeType = statement.getString(6);
+    state.cert = security::Certificate(statement.getBlock(5));
+    state.requestType = static_cast<RequestType>(statement.getInt(11));
+    std::memcpy(state.encryptionKey.data(), statement.getBlob(12), statement.getSize(12));
+    state.aesBlockCounter = statement.getInt(13);
+    if (state.challengeType != "") {
+      ChallengeState challengeState(statement.getString(4), time::fromIsoString(statement.getString(8)),
+                                    statement.getInt(9), time::seconds(statement.getInt(10)),
+                                    convertString2Json(statement.getString(7)));
+      state.challengeState = challengeState;
     }
-    else {
-      result.push_back(RequestState(caName, requestId, requestType, status,
-                                    cert, std::move(encryptionKey), aesBlockCounter));
-    }
+    result.push_back(state);
   }
   return result;
 }

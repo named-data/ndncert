@@ -467,9 +467,13 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
   signatureInfo.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
                                                            time::system_clock::now() + time::hours(10)));
   m_keyChain.sign(clientCert, signingByKey(clientKey.getName()).setSignatureInfo(signatureInfo));
-  RequestId requestId = {{1,2,3,4,5,6,7,8}};
-  std::array<uint8_t, 16> aesKey;
-  RequestState certRequest(Name("/ndn"), requestId, RequestType::NEW, Status::SUCCESS, clientCert, std::move(aesKey));
+  RequestId requestId = {{101}};
+  RequestState certRequest;
+  certRequest.caPrefix = Name("/ndn");
+  certRequest.requestId = requestId;
+  certRequest.requestType = RequestType::NEW;
+  certRequest.status = Status::SUCCESS;
+  certRequest.cert = clientCert;
   auto issuedCert = ca.issueCertificate(certRequest);
 
   CaProfile item;

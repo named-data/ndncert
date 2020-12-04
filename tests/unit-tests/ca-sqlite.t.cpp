@@ -38,9 +38,12 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   auto cert1 = key1.getDefaultCertificate();
 
   // add operation
-  RequestId requestId = {{1,2,3,4,5,6,7,8}};
-  std::array<uint8_t, 16> aesKey1;
-  RequestState request1(Name("/ndn/site1"), requestId, RequestType::NEW, Status::BEFORE_CHALLENGE, cert1, std::move(aesKey1));
+  RequestId requestId = {{101}};
+  RequestState request1;
+  request1.caPrefix = Name("/ndn/site1");
+  request1.requestId = requestId;
+  request1.requestType = RequestType::NEW;
+  request1.cert = cert1;
   storage.addRequest(request1);
 
   // get operation
@@ -52,25 +55,32 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
                                 result.encryptionKey.begin(), result.encryptionKey.end());
 
   // update operation
-  JsonSection json;
-  json.put("test", "4567");
-  std::array<uint8_t, 16> aesKey2;
-  RequestState request2(Name("/ndn/site1"), requestId, RequestType::NEW, Status::CHALLENGE, cert1,
-                   "email", "test", time::system_clock::now(), 3, time::seconds(3600),
-                  std::move(json), std::move(aesKey2), 0);
+  RequestState request2;
+  request2.caPrefix = Name("/ndn/site1");
+  request2.requestId = requestId;
+  request2.requestType = RequestType::NEW;
+  request2.cert = cert1;
+  request2.challengeType = "email";
+  JsonSection secret;
+  secret.add("code", "1234");
+  request2.challengeState = ChallengeState("test", time::system_clock::now(), 3,
+                                           time::seconds(3600), std::move(secret));
   storage.updateRequest(request2);
   result = storage.getRequest(requestId);
   BOOST_CHECK_EQUAL(request2.cert, result.cert);
   BOOST_CHECK(request2.status == result.status);
   BOOST_CHECK_EQUAL(request2.caPrefix, result.caPrefix);
 
+  // another add operation
   auto identity2 = addIdentity(Name("/ndn/site2"));
   auto key2 = identity2.getDefaultKey();
   auto cert2 = key2.getDefaultCertificate();
-  RequestId requestId2 = {{8,7,6,5,4,3,2,1}};
-  std::array<uint8_t, 16> aesKey3;
-  RequestState request3(Name("/ndn/site2"), requestId2, RequestType::NEW,
-                        Status::BEFORE_CHALLENGE, cert2, std::move(aesKey3));
+  RequestId requestId2 = {{102}};
+  RequestState request3;
+  request3.caPrefix = Name("/ndn/site2");
+  request3.requestId = requestId2;
+  request3.requestType = RequestType::NEW;
+  request3.cert = cert2;
   storage.addRequest(request3);
 
   // list operation
@@ -88,20 +98,23 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
 
 BOOST_AUTO_TEST_CASE(DuplicateAdd)
 {
-    CaSqlite storage(Name(), dbDir.string() + "/TestCaSqlite_DuplicateAdd.db");
+  CaSqlite storage(Name(), dbDir.string() + "/TestCaSqlite_DuplicateAdd.db");
 
-    auto identity1 = addIdentity(Name("/ndn/site1"));
-    auto key1 = identity1.getDefaultKey();
-    auto cert1 = key1.getDefaultCertificate();
+  auto identity1 = addIdentity(Name("/ndn/site1"));
+  auto key1 = identity1.getDefaultKey();
+  auto cert1 = key1.getDefaultCertificate();
 
-    // add operation
-    RequestId requestId = {{1,2,3,4,5,6,7,8}};
-    std::array<uint8_t, 16> aesKey;
-    RequestState request1(Name("/ndn/site1"),requestId, RequestType::NEW,
-                          Status::BEFORE_CHALLENGE, cert1, std::move(aesKey));
-    BOOST_CHECK_NO_THROW(storage.addRequest(request1));
-    // add again
-    BOOST_CHECK_THROW(storage.addRequest(request1), std::runtime_error);
+  // add operation
+  RequestId requestId = {{101}};
+  RequestState request1;
+  request1.caPrefix = Name("/ndn/site1");
+  request1.requestId = requestId;
+  request1.requestType = RequestType::NEW;
+  request1.cert = cert1;
+  BOOST_CHECK_NO_THROW(storage.addRequest(request1));
+
+  // add again
+  BOOST_CHECK_THROW(storage.addRequest(request1), std::runtime_error);
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TestCaModule

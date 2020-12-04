@@ -66,35 +66,6 @@ ChallengeState::ChallengeState(const std::string& challengeStatus,
 {
 }
 
-RequestState::RequestState(const Name& caName, const RequestId& requestId, RequestType requestType, Status status,
-                           const security::Certificate& cert, std::array<uint8_t, 16>&& encryptionKey, uint32_t aesBlockCounter)
-    : caPrefix(caName)
-    , requestId(requestId)
-    , requestType(requestType)
-    , status(status)
-    , cert(cert)
-    , encryptionKey(std::move(encryptionKey))
-    , aesBlockCounter(aesBlockCounter)
-{
-}
-
-RequestState::RequestState(const Name& caName, const RequestId& requestId, RequestType requestType, Status status,
-                           const security::Certificate& cert, const std::string& challengeType,
-                           const std::string& challengeStatus, const time::system_clock::TimePoint& challengeTp,
-                           size_t remainingTries, time::seconds remainingTime, JsonSection&& challengeSecrets,
-                           std::array<uint8_t, 16>&& encryptionKey, uint32_t aesBlockCounter)
-    : caPrefix(caName)
-    , requestId(requestId)
-    , requestType(requestType)
-    , status(status)
-    , cert(cert)
-    , encryptionKey(std::move(encryptionKey))
-    , aesBlockCounter(aesBlockCounter)
-    , challengeType(challengeType)
-    , challengeState(ChallengeState(challengeStatus, challengeTp, remainingTries, remainingTime, std::move(challengeSecrets)))
-{
-}
-
 std::ostream&
 operator<<(std::ostream& os, const RequestState& request)
 {

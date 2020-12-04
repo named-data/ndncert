@@ -39,10 +39,12 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   auto cert1 = key1.getDefaultCertificate();
 
   // add operation
-  RequestId requestId = {{1,2,3,4,5,6,7,8}};
-  std::array<uint8_t, 16> aesKey1;
-  RequestState request1(Name("/ndn/site1"), requestId, RequestType::NEW,
-                        Status::BEFORE_CHALLENGE, cert1, std::move(aesKey1));
+  RequestId requestId = {{101}};
+  RequestState request1;
+  request1.caPrefix = Name("/ndn/site1");
+  request1.requestId = requestId;
+  request1.requestType = RequestType::NEW;
+  request1.cert = cert1;
   BOOST_CHECK_NO_THROW(storage.addRequest(request1));
 
   // get operation
@@ -53,27 +55,33 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   BOOST_CHECK_EQUAL_COLLECTIONS(request1.encryptionKey.begin(), request1.encryptionKey.end(),
                                 result.encryptionKey.begin(), result.encryptionKey.end());
 
-  JsonSection json;
-  json.put("code", "1234");
-
   // update operation
-  std::array<uint8_t, 16> aesKey2;
-  RequestState request2(Name("/ndn/site1"), requestId, RequestType::NEW, Status::CHALLENGE, cert1,
-                   "email", "test", time::system_clock::now(), 3, time::seconds(3600),
-                   std::move(json), std::move(aesKey2), 0);
+  RequestState request2;
+  request2.caPrefix = Name("/ndn/site1");
+  request2.requestId = requestId;
+  request2.requestType = RequestType::NEW;
+  request2.cert = cert1;
+  request2.challengeType = "email";
+  JsonSection secret;
+  secret.add("code", "1234");
+  request2.challengeState = ChallengeState("test", time::system_clock::now(), 3,
+                                           time::seconds(3600), std::move(secret));
   storage.updateRequest(request2);
   result = storage.getRequest(requestId);
   BOOST_CHECK_EQUAL(request2.cert, result.cert);
   BOOST_CHECK(request2.status == result.status);
   BOOST_CHECK_EQUAL(request2.caPrefix, result.caPrefix);
 
+  // another add operation
   auto identity2 = addIdentity(Name("/ndn/site2"));
   auto key2 = identity2.getDefaultKey();
   auto cert2 = key2.getDefaultCertificate();
-  RequestId requestId2 = {{8,7,6,5,4,3,2,1}};
-  std::array<uint8_t, 16> aesKey3;
-  RequestState request3(Name("/ndn/site2"), requestId2, RequestType::NEW, Status::BEFORE_CHALLENGE,
-                        cert2, std::move(aesKey3));
+  RequestId requestId2 = {{102}};
+  RequestState request3;
+  request3.caPrefix = Name("/ndn/site2");
+  request3.requestId = requestId2;
+  request3.requestType = RequestType::NEW;
+  request3.cert = cert2;
   storage.addRequest(request3);
 
   // list operation
