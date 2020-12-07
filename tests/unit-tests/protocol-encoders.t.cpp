@@ -155,21 +155,20 @@ BOOST_AUTO_TEST_CASE(ChallengeEncoding)
   state.cert = certRequest;
   std::memcpy(state.encryptionKey.data(), key, sizeof(key));
   state.challengeType = "pin";
-  state.challengeState = ca::ChallengeState("test", time::system_clock::now(),
-                                            3, time::seconds(3600), JsonSection());
-
+  auto tp = time::system_clock::now();
+  state.challengeState = ca::ChallengeState("test", tp, 3, time::seconds(3600), JsonSection());
   auto contentBlock = challengetlv::encodeDataContent(state, Name("/ndn/ucla/a/b/c"));
 
   requester::RequestState context(m_keyChain, caCache.getKnownProfiles().front(), RequestType::NEW);
   context.m_requestId = id;
   std::memcpy(context.m_aesKey.data(), key, sizeof(key));
+  advanceClocks(time::seconds(10));
   challengetlv::decodeDataContent(contentBlock, context);
 
   BOOST_CHECK_EQUAL(static_cast<size_t>(context.m_status), static_cast<size_t>(Status::PENDING));
   BOOST_CHECK_EQUAL(context.m_challengeStatus, "test");
   BOOST_CHECK_EQUAL(context.m_remainingTries, 3);
-  BOOST_ASSERT(context.m_freshBefore > time::system_clock::now() + time::seconds(321) - time::milliseconds(100));
-  BOOST_ASSERT(context.m_freshBefore < time::system_clock::now() + time::seconds(321) + time::milliseconds(100));
+  BOOST_CHECK_EQUAL(context.m_freshBefore, tp + time::seconds(3600) + time::seconds(10));
   BOOST_CHECK_EQUAL(context.m_issuedCertName, "/ndn/ucla/a/b/c");
 }
 
