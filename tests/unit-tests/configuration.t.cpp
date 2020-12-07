@@ -48,9 +48,8 @@ BOOST_AUTO_TEST_CASE(CAConfigFile)
   BOOST_CHECK_EQUAL(config.m_caProfile.m_maxValidityPeriod, time::seconds(86400));
   BOOST_CHECK(!config.m_caProfile.m_maxSuffixLength.has_value());
   BOOST_CHECK_EQUAL(config.m_caProfile.m_probeParameterKeys.size(), 0);
-  BOOST_CHECK_EQUAL(config.m_caProfile.m_supportedChallenges.size(), 2);
+  BOOST_CHECK_EQUAL(config.m_caProfile.m_supportedChallenges.size(), 1);
   BOOST_CHECK_EQUAL(config.m_caProfile.m_supportedChallenges.front(), "pin");
-  BOOST_CHECK_EQUAL(config.m_caProfile.m_supportedChallenges.back(), "email");
 
   config.load("tests/unit-tests/config-files/config-ca-5");
   BOOST_CHECK_EQUAL(config.m_redirection[0]->getName(),
