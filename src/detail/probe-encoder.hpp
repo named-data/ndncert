@@ -39,7 +39,8 @@ decodeDataContent(const Block& block, std::vector<std::pair<Name, int>>& availab
 Block
 encodeDataContent(const std::vector<Name>& identifiers,
                   optional<size_t> maxSuffixLength = nullopt,
-                  optional<std::vector<std::shared_ptr<security::Certificate>>> redirectionItems = nullopt);
+                  std::vector<std::shared_ptr<security::Certificate>> redirectionItems =
+                          std::vector<std::shared_ptr<security::Certificate>>());
 
 std::multimap<std::string, std::string>
 decodeApplicationParameters(const Block& block);

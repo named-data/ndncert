@@ -65,7 +65,7 @@ public:
 
   Block
   genChallengeRequestTLV(Status status, const std::string& challengeStatus,
-                         std::multimap<std::string, std::string>&& params) override;
+                         const std::multimap<std::string, std::string>& params) override;
 
   // challenge status
   static const std::string NEED_CODE;

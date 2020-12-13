@@ -105,7 +105,7 @@ ChallengePin::getRequestedParameterList(Status status, const std::string& challe
 
 Block
 ChallengePin::genChallengeRequestTLV(Status status, const std::string& challengeStatus,
-                                     std::multimap<std::string, std::string>&& params)
+                                     const std::multimap<std::string, std::string>& params)
 {
   Block request(tlv::EncryptedPayload);
   if (status == Status::BEFORE_CHALLENGE) {

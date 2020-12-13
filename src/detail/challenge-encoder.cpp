@@ -47,23 +47,23 @@ challengetlv::encodeDataContent(ca::RequestState& request, const Name& issuedCer
 void
 challengetlv::decodeDataContent(const Block& contentBlock, requester::RequestState& state)
 {
-  auto result = decodeBlockWithAesGcm128(contentBlock, state.m_aesKey.data(),
-                                         state.m_requestId.data(), state.m_requestId.size());
+  auto result = decodeBlockWithAesGcm128(contentBlock, state.aesKey.data(),
+                                         state.requestId.data(), state.requestId.size());
   auto data = makeBinaryBlock(tlv::EncryptedPayload, result.data(), result.size());
   data.parse();
-  state.m_status = statusFromBlock(data.get(tlv::Status));
+  state.status = statusFromBlock(data.get(tlv::Status));
   if (data.find(tlv::ChallengeStatus) != data.elements_end()) {
-    state.m_challengeStatus = readString(data.get(tlv::ChallengeStatus));
+    state.challengeStatus = readString(data.get(tlv::ChallengeStatus));
   }
   if (data.find(tlv::RemainingTries) != data.elements_end()) {
-    state.m_remainingTries = readNonNegativeInteger(data.get(tlv::RemainingTries));
+    state.remainingTries = readNonNegativeInteger(data.get(tlv::RemainingTries));
   }
   if (data.find(tlv::RemainingTime) != data.elements_end()) {
-    state.m_freshBefore = time::system_clock::now() + time::seconds(readNonNegativeInteger(data.get(tlv::RemainingTime)));
+    state.freshBefore = time::system_clock::now() + time::seconds(readNonNegativeInteger(data.get(tlv::RemainingTime)));
   }
   if (data.find(tlv::IssuedCertName) != data.elements_end()) {
     Block issuedCertNameBlock = data.get(tlv::IssuedCertName);
-    state.m_issuedCertName = Name(issuedCertNameBlock.blockFromValue());
+    state.issuedCertName = Name(issuedCertNameBlock.blockFromValue());
   }
 }
 

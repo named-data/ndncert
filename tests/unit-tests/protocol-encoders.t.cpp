@@ -42,15 +42,15 @@ BOOST_AUTO_TEST_CASE(InfoEncoding)
   caCache.load("tests/unit-tests/config-files/config-client-1");
   auto& cert = caCache.getKnownProfiles().front().m_cert;
 
-  auto b = infotlv::encodeDataContent(config.m_caProfile, *cert);
+  auto b = infotlv::encodeDataContent(config.caProfile, *cert);
   auto item = infotlv::decodeDataContent(b);
 
   BOOST_CHECK_EQUAL(*item.m_cert, *cert);
-  BOOST_CHECK_EQUAL(item.m_caInfo, config.m_caProfile.m_caInfo);
-  BOOST_CHECK_EQUAL(item.m_caPrefix, config.m_caProfile.m_caPrefix);
+  BOOST_CHECK_EQUAL(item.m_caInfo, config.caProfile.m_caInfo);
+  BOOST_CHECK_EQUAL(item.m_caPrefix, config.caProfile.m_caPrefix);
   BOOST_CHECK_EQUAL_COLLECTIONS(item.m_probeParameterKeys.begin(), item.m_probeParameterKeys.end(),
-                                config.m_caProfile.m_probeParameterKeys.begin(), config.m_caProfile.m_probeParameterKeys.end());
-  BOOST_CHECK_EQUAL(item.m_maxValidityPeriod, config.m_caProfile.m_maxValidityPeriod);
+                                config.caProfile.m_probeParameterKeys.begin(), config.caProfile.m_probeParameterKeys.end());
+  BOOST_CHECK_EQUAL(item.m_maxValidityPeriod, config.caProfile.m_maxValidityPeriod);
 }
 
 BOOST_AUTO_TEST_CASE(ErrorEncoding)
@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE(ProbeEncodingData)
   std::vector<Name> names;
   names.emplace_back("/ndn/1");
   names.emplace_back("/ndn/2");
-  auto b = probetlv::encodeDataContent(names, 2, config.m_redirection);
+  auto b = probetlv::encodeDataContent(names, 2, config.redirection);
   std::vector<std::pair<Name, int>> retNames;
   std::vector<Name> redirection;
   probetlv::decodeDataContent(b, retNames, redirection);
@@ -92,10 +92,10 @@ BOOST_AUTO_TEST_CASE(ProbeEncodingData)
     BOOST_CHECK_EQUAL(it1->first, *it2);
     BOOST_CHECK_EQUAL(it1->second, 2);
   }
-  BOOST_CHECK_EQUAL(redirection.size(), config.m_redirection.size());
+  BOOST_CHECK_EQUAL(redirection.size(), config.redirection.size());
   auto it3 = redirection.begin();
-  auto it4 = config.m_redirection.begin();
-  for (; it3 != redirection.end() && it4 != config.m_redirection.end(); it3++, it4++) {
+  auto it4 = config.redirection.begin();
+  for (; it3 != redirection.end() && it4 != config.redirection.end(); it3++, it4++) {
     BOOST_CHECK_EQUAL(*it3, (*it4)->getFullName());
   }
 }
@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(NewRevokeEncodingData)
   std::vector<uint8_t> pub = ECDHState().getSelfPubKey();
   std::array<uint8_t, 32> salt = {{101}};
   RequestId id = {{102}};
-  std::list<std::string> list;
+  std::vector<std::string> list;
   list.emplace_back("abc");
   list.emplace_back("def");
   auto b = requesttlv::encodeDataContent(pub, salt, id, Status::BEFORE_CHALLENGE, list);
@@ -160,16 +160,16 @@ BOOST_AUTO_TEST_CASE(ChallengeEncoding)
   auto contentBlock = challengetlv::encodeDataContent(state, Name("/ndn/ucla/a/b/c"));
 
   requester::RequestState context(m_keyChain, caCache.getKnownProfiles().front(), RequestType::NEW);
-  context.m_requestId = id;
-  std::memcpy(context.m_aesKey.data(), key, sizeof(key));
+  context.requestId = id;
+  std::memcpy(context.aesKey.data(), key, sizeof(key));
   advanceClocks(time::seconds(10));
   challengetlv::decodeDataContent(contentBlock, context);
 
-  BOOST_CHECK_EQUAL(static_cast<size_t>(context.m_status), static_cast<size_t>(Status::PENDING));
-  BOOST_CHECK_EQUAL(context.m_challengeStatus, "test");
-  BOOST_CHECK_EQUAL(context.m_remainingTries, 3);
-  BOOST_CHECK_EQUAL(context.m_freshBefore, tp + time::seconds(3600) + time::seconds(10));
-  BOOST_CHECK_EQUAL(context.m_issuedCertName, "/ndn/ucla/a/b/c");
+  BOOST_CHECK_EQUAL(static_cast<size_t>(context.status), static_cast<size_t>(Status::PENDING));
+  BOOST_CHECK_EQUAL(context.challengeStatus, "test");
+  BOOST_CHECK_EQUAL(context.remainingTries, 3);
+  BOOST_CHECK_EQUAL(context.freshBefore, tp + time::seconds(3600) + time::seconds(10));
+  BOOST_CHECK_EQUAL(context.issuedCertName, "/ndn/ucla/a/b/c");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -31,73 +31,73 @@ namespace requester {
 
 struct RequestState {
   explicit
-  RequestState(security::KeyChain& keyChain, const CaProfile& caItem, RequestType requestType);
+  RequestState(security::KeyChain& keyChain, const CaProfile& profile, RequestType requestType);
 
   /**
    * @brief The CA profile for this request.
    */
-  CaProfile m_caItem;
+  CaProfile caProfile;
   /**
    * @brief The local keychain to generate and install identities, keys and certificates
    */
-  security::KeyChain& m_keyChain;
+  security::KeyChain& keyChain;
   /**
    * @brief The type of request. Either NEW, RENEW, or REVOKE.
    */
-  RequestType m_type;
+  RequestType type;
   /**
    * @brief The identity name for the requesting certificate.
    */
-  Name m_identityName;
+  Name identityName;
   /**
    * @brief The keypair for the request.
    */
-  security::Key m_keyPair;
+  security::Key keyPair;
   /**
    * @brief The CA-generated request ID for the request.
    */
-  RequestId m_requestId;
+  RequestId requestId;
   /**
    * @brief The current status of the request.
    */
-  Status m_status = Status::BEFORE_CHALLENGE;
+  Status status = Status::BEFORE_CHALLENGE;
   /**
    * @brief The type of challenge chosen.
    */
-  std::string m_challengeType;
+  std::string challengeType;
   /**
    * @brief The status of the current challenge.
    */
-  std::string m_challengeStatus;
+  std::string challengeStatus;
   /**
    * @brief The remaining number of tries left for the challenge
    */
-  int m_remainingTries = 0;
+  int remainingTries = 0;
   /**
    * @brief The time this challenge will remain fresh
    */
-  time::system_clock::TimePoint m_freshBefore;
+  time::system_clock::TimePoint freshBefore;
   /**
    * @brief the name of the certificate being issued.
    */
-  Name m_issuedCertName;
+  Name issuedCertName;
   /**
    * @brief ecdh state.
    */
-  ECDHState m_ecdh;
+  ECDHState ecdh;
   /**
    * @brief AES key derived from the ecdh shared secret.
    */
-  std::array<uint8_t, 16> m_aesKey = {};
+  std::array<uint8_t, 16> aesKey = {};
   /**
    * @brief The counter of AES blocks that have been encrypted.
    */
-  uint32_t m_aesBlockCounter = 0;
+  uint32_t aesBlockCounter = 0;
   /**
    * @brief State about how identity/key is generated.
    */
-  bool m_isNewlyCreatedIdentity = false;
-  bool m_isNewlyCreatedKey = false;
+  bool isNewlyCreatedIdentity = false;
+  bool isNewlyCreatedKey = false;
 };
 
 } // namespace requester

@@ -129,13 +129,13 @@ challengeCb(const Data& reply)
     std::cerr << "Error when decoding challenge step: " << e.what() << std::endl;
     exit(1);
   }
-  if (requesterState->m_status == Status::SUCCESS) {
+  if (requesterState->status == Status::SUCCESS) {
     std::cerr << "Certificate has already been issued, downloading certificate..." << std::endl;
     face.expressInterest(*Requester::genCertFetchInterest(*requesterState), bind(&certFetchCb, _2),
                          bind(&onNackCb), bind(&timeoutCb));
     return;
   }
-  runChallenge(requesterState->m_challengeType);
+  runChallenge(requesterState->challengeType);
 }
 
 static void

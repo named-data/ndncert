@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(Initialization)
 {
   util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
-  BOOST_CHECK_EQUAL(ca.getCaConf().m_caProfile.m_caPrefix, "/ndn");
+  BOOST_CHECK_EQUAL(ca.getCaConf().caProfile.m_caPrefix, "/ndn");
 
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK_EQUAL(ca.m_registeredPrefixHandles.size(), 1); // removed local discovery registration
@@ -260,7 +260,7 @@ BOOST_AUTO_TEST_CASE(HandleNew)
     RequestId requestId;
     std::memcpy(requestId.data(), contentBlock.get(tlv::RequestId).value(), contentBlock.get(tlv::RequestId).value_size());
     auto ca_encryption_key = ca.getCaStorage()->getRequest(requestId).encryptionKey;
-    BOOST_CHECK_EQUAL_COLLECTIONS(state.m_aesKey.begin(), state.m_aesKey.end(),
+    BOOST_CHECK_EQUAL_COLLECTIONS(state.aesKey.begin(), state.aesKey.end(),
                                   ca_encryption_key.begin(), ca_encryption_key.end());
   });
   face.receive(*interest);
@@ -407,8 +407,8 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
       BOOST_CHECK(security::verifySignature(response, cert));
 
       requester::Requester::onChallengeResponse(state, response);
-      BOOST_CHECK(state.m_status == Status::CHALLENGE);
-      BOOST_CHECK_EQUAL(state.m_challengeStatus, ChallengePin::NEED_CODE);
+      BOOST_CHECK(state.status == Status::CHALLENGE);
+      BOOST_CHECK_EQUAL(state.challengeStatus, ChallengePin::NEED_CODE);
       auto paramList = requester::Requester::selectOrContinueChallenge(state, "pin");
       challengeInterest2 = requester::Requester::genChallengeInterest(state, std::move(paramList));
     }
@@ -417,8 +417,8 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
       BOOST_CHECK(security::verifySignature(response, cert));
 
       requester::Requester::onChallengeResponse(state, response);
-      BOOST_CHECK(state.m_status == Status::CHALLENGE);
-      BOOST_CHECK_EQUAL(state.m_challengeStatus, ChallengePin::WRONG_CODE);
+      BOOST_CHECK(state.status == Status::CHALLENGE);
+      BOOST_CHECK_EQUAL(state.challengeStatus, ChallengePin::WRONG_CODE);
 
       auto paramList = requester::Requester::selectOrContinueChallenge(state, "pin");
       auto request = ca.getCertificateRequest(*challengeInterest2);
@@ -430,7 +430,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
       count++;
       BOOST_CHECK(security::verifySignature(response, cert));
       requester::Requester::onChallengeResponse(state, response);
-      BOOST_CHECK(state.m_status == Status::SUCCESS);
+      BOOST_CHECK(state.status == Status::SUCCESS);
     }
   });
 
@@ -507,7 +507,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
     RequestId requestId;
     std::memcpy(requestId.data(), contentBlock.get(tlv::RequestId).value(), contentBlock.get(tlv::RequestId).value_size());
     auto ca_encryption_key = ca.getCaStorage()->getRequest(requestId).encryptionKey;
-    BOOST_CHECK_EQUAL_COLLECTIONS(state.m_aesKey.begin(), state.m_aesKey.end(),
+    BOOST_CHECK_EQUAL_COLLECTIONS(state.aesKey.begin(), state.aesKey.end(),
                                   ca_encryption_key.begin(), ca_encryption_key.end());
   });
   face.receive(*interest);

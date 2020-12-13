@@ -117,82 +117,82 @@ Requester::genNewInterest(RequestState& state, const Name& identityName,
                           const time::system_clock::TimePoint& notBefore,
                           const time::system_clock::TimePoint& notAfter)
 {
-  if (!state.m_caItem.m_caPrefix.isPrefixOf(identityName)) {
+  if (!state.caProfile.m_caPrefix.isPrefixOf(identityName)) {
     return nullptr;
   }
   if (identityName.empty()) {
     NDN_LOG_TRACE("Randomly create a new name because identityName is empty and the param is empty.");
-    state.m_identityName = state.m_caItem.m_caPrefix;
-    state.m_identityName.append(std::to_string(random::generateSecureWord64()));
+    state.identityName = state.caProfile.m_caPrefix;
+    state.identityName.append(std::to_string(random::generateSecureWord64()));
   }
   else {
-    state.m_identityName = identityName;
+    state.identityName = identityName;
   }
 
   // generate a newly key pair or use an existing key
-  const auto& pib = state.m_keyChain.getPib();
+  const auto& pib = state.keyChain.getPib();
   security::pib::Identity identity;
   try {
-    identity = pib.getIdentity(state.m_identityName);
+    identity = pib.getIdentity(state.identityName);
   }
   catch (const security::Pib::Error& e) {
-    identity = state.m_keyChain.createIdentity(state.m_identityName);
-    state.m_isNewlyCreatedIdentity = true;
-    state.m_isNewlyCreatedKey = true;
+    identity = state.keyChain.createIdentity(state.identityName);
+    state.isNewlyCreatedIdentity = true;
+    state.isNewlyCreatedKey = true;
   }
   try {
-    state.m_keyPair = identity.getDefaultKey();
+    state.keyPair = identity.getDefaultKey();
   }
   catch (const security::Pib::Error& e) {
-    state.m_keyPair = state.m_keyChain.createKey(identity);
-    state.m_isNewlyCreatedKey = true;
+    state.keyPair = state.keyChain.createKey(identity);
+    state.isNewlyCreatedKey = true;
   }
-  auto& keyName = state.m_keyPair.getName();
+  auto& keyName = state.keyPair.getName();
 
   // generate certificate request
   security::Certificate certRequest;
   certRequest.setName(Name(keyName).append("cert-request").appendVersion());
   certRequest.setContentType(ndn::tlv::ContentType_Key);
-  certRequest.setContent(state.m_keyPair.getPublicKey().data(), state.m_keyPair.getPublicKey().size());
+  certRequest.setContent(state.keyPair.getPublicKey().data(), state.keyPair.getPublicKey().size());
   SignatureInfo signatureInfo;
   signatureInfo.setValidityPeriod(security::ValidityPeriod(notBefore, notAfter));
-  state.m_keyChain.sign(certRequest, signingByKey(keyName).setSignatureInfo(signatureInfo));
+  state.keyChain.sign(certRequest, signingByKey(keyName).setSignatureInfo(signatureInfo));
 
   // generate Interest packet
-  Name interestName = state.m_caItem.m_caPrefix;
+  Name interestName = state.caProfile.m_caPrefix;
   interestName.append("CA").append("NEW");
   auto interest =std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
   interest->setApplicationParameters(
-          requesttlv::encodeApplicationParameters(RequestType::NEW, state.m_ecdh.getSelfPubKey(), certRequest));
+          requesttlv::encodeApplicationParameters(RequestType::NEW, state.ecdh.getSelfPubKey(), certRequest));
 
   // sign the Interest packet
-  state.m_keyChain.sign(*interest, signingByKey(keyName));
+  state.keyChain.sign(*interest, signingByKey(keyName));
   return interest;
 }
 
 shared_ptr<Interest>
 Requester::genRevokeInterest(RequestState& state, const security::Certificate& certificate)
 {
-  if (!state.m_caItem.m_caPrefix.isPrefixOf(certificate.getName())) {
+  if (!state.caProfile.m_caPrefix.isPrefixOf(certificate.getName())) {
     return nullptr;
   }
   // generate Interest packet
-  Name interestName = state.m_caItem.m_caPrefix;
+  Name interestName = state.caProfile.m_caPrefix;
   interestName.append("CA").append("REVOKE");
   auto interest =std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
   interest->setApplicationParameters(
-          requesttlv::encodeApplicationParameters(RequestType::REVOKE, state.m_ecdh.getSelfPubKey(), certificate));
+          requesttlv::encodeApplicationParameters(RequestType::REVOKE, state.ecdh.getSelfPubKey(), certificate));
   return interest;
 }
 
 std::list<std::string>
 Requester::onNewRenewRevokeResponse(RequestState& state, const Data& reply)
 {
-  if (!security::verifySignature(reply, *state.m_caItem.m_cert)) {
+  if (!security::verifySignature(reply, *state.caProfile.m_cert)) {
     NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
     NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
   }
@@ -201,12 +201,12 @@ Requester::onNewRenewRevokeResponse(RequestState& state, const Data& reply)
   auto contentTLV = reply.getContent();
   std::vector<uint8_t> ecdhKey;
   std::array<uint8_t, 32> salt;
-  auto challenges = requesttlv::decodeDataContent(contentTLV, ecdhKey, salt, state.m_requestId, state.m_status);
+  auto challenges = requesttlv::decodeDataContent(contentTLV, ecdhKey, salt, state.requestId, state.status);
 
   // ECDH and HKDF
-  auto sharedSecret = state.m_ecdh.deriveSecret(ecdhKey);
+  auto sharedSecret = state.ecdh.deriveSecret(ecdhKey);
   hkdf(sharedSecret.data(), sharedSecret.size(),
-       salt.data(), salt.size(), state.m_aesKey.data(), state.m_aesKey.size());
+       salt.data(), salt.size(), state.aesKey.data(), state.aesKey.size());
 
   // update state
   return challenges;
@@ -219,44 +219,44 @@ Requester::selectOrContinueChallenge(RequestState& state, const std::string& cha
   if (challenge == nullptr) {
     NDN_THROW(std::runtime_error("The challenge selected is not supported by your current version of NDNCERT."));
   }
-  state.m_challengeType = challengeSelected;
-  return challenge->getRequestedParameterList(state.m_status, state.m_challengeStatus);
+  state.challengeType = challengeSelected;
+  return challenge->getRequestedParameterList(state.status, state.challengeStatus);
 }
 
 shared_ptr<Interest>
 Requester::genChallengeInterest(RequestState& state,
                                 std::multimap<std::string, std::string>&& parameters)
 {
-  if (state.m_challengeType == "") {
+  if (state.challengeType == "") {
     NDN_THROW(std::runtime_error("The challenge has not been selected."));
   }
-  auto challenge = ChallengeModule::createChallengeModule(state.m_challengeType);
+  auto challenge = ChallengeModule::createChallengeModule(state.challengeType);
   if (challenge == nullptr) {
     NDN_THROW(std::runtime_error("The challenge selected is not supported by your current version of NDNCERT."));
   }
-  auto challengeParams = challenge->genChallengeRequestTLV(state.m_status, state.m_challengeStatus, std::move(parameters));
+  auto challengeParams = challenge->genChallengeRequestTLV(state.status, state.challengeStatus, std::move(parameters));
 
-  Name interestName = state.m_caItem.m_caPrefix;
-  interestName.append("CA").append("CHALLENGE").append(state.m_requestId.data(), state.m_requestId.size());
+  Name interestName = state.caProfile.m_caPrefix;
+  interestName.append("CA").append("CHALLENGE").append(state.requestId.data(), state.requestId.size());
   auto interest =std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
 
   // encrypt the Interest parameters
-  auto paramBlock = encodeBlockWithAesGcm128(ndn::tlv::ApplicationParameters, state.m_aesKey.data(),
+  auto paramBlock = encodeBlockWithAesGcm128(ndn::tlv::ApplicationParameters, state.aesKey.data(),
                                              challengeParams.value(), challengeParams.value_size(),
-                                             state.m_requestId.data(),
-                                             state.m_requestId.size(),
-                                             state.m_aesBlockCounter);
+                                             state.requestId.data(),
+                                             state.requestId.size(),
+                                             state.aesBlockCounter);
   interest->setApplicationParameters(paramBlock);
-  state.m_keyChain.sign(*interest, signingByKey(state.m_keyPair.getName()));
+  state.keyChain.sign(*interest, signingByKey(state.keyPair.getName()));
   return interest;
 }
 
 void
 Requester::onChallengeResponse(RequestState& state, const Data& reply)
 {
-  if (!security::verifySignature(reply, *state.m_caItem.m_cert)) {
+  if (!security::verifySignature(reply, *state.caProfile.m_cert)) {
     NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
     NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
   }
@@ -267,7 +267,7 @@ Requester::onChallengeResponse(RequestState& state, const Data& reply)
 shared_ptr<Interest>
 Requester::genCertFetchInterest(const RequestState& state)
 {
-  Name interestName = state.m_issuedCertName;
+  Name interestName = state.issuedCertName;
   auto interest =std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(false);
   interest->setCanBePrefix(false);
@@ -290,18 +290,18 @@ Requester::onCertFetchResponse(const Data& reply)
 void
 Requester::endSession(RequestState& state)
 {
-  if (state.m_status == Status::SUCCESS) {
+  if (state.status == Status::SUCCESS) {
     return;
   }
-  if (state.m_isNewlyCreatedIdentity) {
+  if (state.isNewlyCreatedIdentity) {
     // put the identity into the if scope is because it may cause an error
     // outside since when endSession is called, identity may not have been created yet.
-    auto identity = state.m_keyChain.getPib().getIdentity(state.m_identityName);
-    state.m_keyChain.deleteIdentity(identity);
+    auto identity = state.keyChain.getPib().getIdentity(state.identityName);
+    state.keyChain.deleteIdentity(identity);
   }
-  else if (state.m_isNewlyCreatedKey) {
-    auto identity = state.m_keyChain.getPib().getIdentity(state.m_identityName);
-    state.m_keyChain.deleteKey(identity, state.m_keyPair);
+  else if (state.isNewlyCreatedKey) {
+    auto identity = state.keyChain.getPib().getIdentity(state.identityName);
+    state.keyChain.deleteKey(identity, state.keyPair);
   }
 }
 

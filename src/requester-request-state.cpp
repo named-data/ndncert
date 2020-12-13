@@ -24,10 +24,10 @@ namespace ndn {
 namespace ndncert {
 namespace requester {
 
-RequestState::RequestState(security::KeyChain& keyChain, const CaProfile& caItem, RequestType requestType)
-  : m_caItem(caItem)
-  , m_keyChain(keyChain)
-  , m_type(requestType)
+RequestState::RequestState(security::KeyChain& keyChain, const CaProfile& profile, RequestType requestType)
+  : caProfile(profile)
+  , keyChain(keyChain)
+  , type(requestType)
 {
 }
 

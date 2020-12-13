@@ -51,7 +51,7 @@ probetlv::decodeApplicationParameters(const Block& block)
 
 Block
 probetlv::encodeDataContent(const std::vector<Name>& identifiers, optional<size_t> maxSuffixLength,
-                                optional<std::vector<std::shared_ptr<security::Certificate>>> redirectionItems)
+                                std::vector<std::shared_ptr<security::Certificate>> redirectionItems)
 {
   Block content(ndn::tlv::Content);
   for (const auto& name : identifiers) {
@@ -62,10 +62,8 @@ probetlv::encodeDataContent(const std::vector<Name>& identifiers, optional<size_
     }
     content.push_back(item);
   }
-  if (redirectionItems) {
-    for (const auto& item : *redirectionItems) {
-      content.push_back(makeNestedBlock(tlv::ProbeRedirect, item->getFullName()));
-    }
+  for (const auto& item : redirectionItems) {
+    content.push_back(makeNestedBlock(tlv::ProbeRedirect, item->getFullName()));
   }
   content.encode();
   return content;
@@ -83,18 +81,18 @@ probetlv::decodeDataContent(const Block& block,
       Name elementName;
       int maxSuffixLength = 0;
       for (const auto& subBlock : item.elements()) {
-          if (subBlock.type() == ndn::tlv::Name) {
-              if (!elementName.empty()) {
-                  NDN_THROW(std::runtime_error("Invalid probe format"));
-              }
-              elementName.wireDecode(subBlock);
+        if (subBlock.type() == ndn::tlv::Name) {
+          if (!elementName.empty()) {
+            NDN_THROW(std::runtime_error("Invalid probe format"));
           }
-          else if (subBlock.type() == tlv::MaxSuffixLength) {
-              maxSuffixLength = readNonNegativeInteger(subBlock);
-          }
+          elementName.wireDecode(subBlock);
+        }
+        else if (subBlock.type() == tlv::MaxSuffixLength) {
+          maxSuffixLength = readNonNegativeInteger(subBlock);
+        }
       }
       if (elementName.empty()) {
-          NDN_THROW(std::runtime_error("Invalid probe format"));
+        NDN_THROW(std::runtime_error("Invalid probe format"));
       }
       availableNames.emplace_back(elementName, maxSuffixLength);
     }

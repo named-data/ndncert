@@ -39,12 +39,13 @@ const std::string CONFIG_CERTIFICATE = "certificate";
 const std::string CONFIG_REDIRECTION = "redirect-to";
 const std::string CONFIG_NAME_ASSIGNMENT = "name-assignment";
 
-struct CaProfile
+class CaProfile
 {
 public:
   /**
-   * Parse the configuration json and modify current struct to the result.
+   * Parse the configuration json.
    * @param configJson the configuration json to parse
+   * @return the CaProfile according to this json
    */
   static CaProfile
   fromJson(const JsonSection& json);
@@ -67,7 +68,7 @@ public:
   /**
    * @brief A list of parameter-keys for PROBE.
    */
-  std::list<std::string> m_probeParameterKeys;
+  std::vector<std::string> m_probeParameterKeys;
   /**
    * @brief  Maximum allowed validity period of the certificate being requested.
    *
@@ -85,7 +86,7 @@ public:
   /**
    * @brief A list of supported challenges. Only CA side will have m_supportedChallenges.
    */
-  std::list<std::string> m_supportedChallenges;
+  std::vector<std::string> m_supportedChallenges;
   /**
    * @brief CA's certificate. Only Client side will have m_cert.
    */

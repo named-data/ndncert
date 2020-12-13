@@ -82,7 +82,7 @@ requesttlv::decodeApplicationParameters(const Block& payload, RequestType reques
 Block
 requesttlv::encodeDataContent(const std::vector<uint8_t>& ecdhKey, const std::array<uint8_t, 32>& salt,
                                          const RequestId& requestId, const Status& status,
-                                         const std::list<std::string>& challenges)
+                                         const std::vector<std::string>& challenges)
 {
   Block response(ndn::tlv::Content);
   response.push_back(makeBinaryBlock(tlv::EcdhPub, ecdhKey.data(), ecdhKey.size()));

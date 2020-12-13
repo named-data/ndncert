@@ -33,36 +33,36 @@ BOOST_AUTO_TEST_CASE(CAConfigFile)
 {
   ca::CaConfig config;
   config.load("tests/unit-tests/config-files/config-ca-1");
-  BOOST_CHECK_EQUAL(config.m_caProfile.m_caPrefix, "/ndn");
-  BOOST_CHECK_EQUAL(config.m_caProfile.m_caInfo, "ndn testbed ca");
-  BOOST_CHECK_EQUAL(config.m_caProfile.m_maxValidityPeriod, time::seconds(864000));
-  BOOST_CHECK_EQUAL(*config.m_caProfile.m_maxSuffixLength, 3);
-  BOOST_CHECK_EQUAL(config.m_caProfile.m_probeParameterKeys.size(), 1);
-  BOOST_CHECK_EQUAL(config.m_caProfile.m_probeParameterKeys.front(), "full name");
-  BOOST_CHECK_EQUAL(config.m_caProfile.m_supportedChallenges.size(), 1);
-  BOOST_CHECK_EQUAL(config.m_caProfile.m_supportedChallenges.front(), "pin");
+  BOOST_CHECK_EQUAL(config.caProfile.m_caPrefix, "/ndn");
+  BOOST_CHECK_EQUAL(config.caProfile.m_caInfo, "ndn testbed ca");
+  BOOST_CHECK_EQUAL(config.caProfile.m_maxValidityPeriod, time::seconds(864000));
+  BOOST_CHECK_EQUAL(*config.caProfile.m_maxSuffixLength, 3);
+  BOOST_CHECK_EQUAL(config.caProfile.m_probeParameterKeys.size(), 1);
+  BOOST_CHECK_EQUAL(config.caProfile.m_probeParameterKeys.front(), "full name");
+  BOOST_CHECK_EQUAL(config.caProfile.m_supportedChallenges.size(), 1);
+  BOOST_CHECK_EQUAL(config.caProfile.m_supportedChallenges.front(), "pin");
 
   config.load("tests/unit-tests/config-files/config-ca-2");
-  BOOST_CHECK_EQUAL(config.m_caProfile.m_caPrefix, "/ndn");
-  BOOST_CHECK_EQUAL(config.m_caProfile.m_caInfo, "missing max validity period, max suffix length, and probe");
-  BOOST_CHECK_EQUAL(config.m_caProfile.m_maxValidityPeriod, time::seconds(86400));
-  BOOST_CHECK(!config.m_caProfile.m_maxSuffixLength.has_value());
-  BOOST_CHECK_EQUAL(config.m_caProfile.m_probeParameterKeys.size(), 0);
-  BOOST_CHECK_EQUAL(config.m_caProfile.m_supportedChallenges.size(), 1);
-  BOOST_CHECK_EQUAL(config.m_caProfile.m_supportedChallenges.front(), "pin");
+  BOOST_CHECK_EQUAL(config.caProfile.m_caPrefix, "/ndn");
+  BOOST_CHECK_EQUAL(config.caProfile.m_caInfo, "missing max validity period, max suffix length, and probe");
+  BOOST_CHECK_EQUAL(config.caProfile.m_maxValidityPeriod, time::seconds(86400));
+  BOOST_CHECK(!config.caProfile.m_maxSuffixLength.has_value());
+  BOOST_CHECK_EQUAL(config.caProfile.m_probeParameterKeys.size(), 0);
+  BOOST_CHECK_EQUAL(config.caProfile.m_supportedChallenges.size(), 1);
+  BOOST_CHECK_EQUAL(config.caProfile.m_supportedChallenges.front(), "pin");
 
   config.load("tests/unit-tests/config-files/config-ca-5");
-  BOOST_CHECK_EQUAL(config.m_redirection[0]->getName(),
+  BOOST_CHECK_EQUAL(config.redirection[0]->getName(),
                     "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
-  BOOST_CHECK_EQUAL(config.m_nameAssignmentFuncs.size(), 3);
-  BOOST_CHECK_EQUAL(config.m_nameAssignmentFuncs[0]->m_nameFormat[0], "group");
-  BOOST_CHECK_EQUAL(config.m_nameAssignmentFuncs[0]->m_nameFormat[1], "email");
+  BOOST_CHECK_EQUAL(config.nameAssignmentFuncs.size(), 3);
+  BOOST_CHECK_EQUAL(config.nameAssignmentFuncs[0]->m_nameFormat[0], "group");
+  BOOST_CHECK_EQUAL(config.nameAssignmentFuncs[0]->m_nameFormat[1], "email");
   std::multimap<std::string, std::string> params;
   params.emplace("email", "1@1.edu");
   params.emplace("group", "irl");
   params.emplace("name", "ndncert");
   std::vector<Name> names;
-  for (auto& assignment : config.m_nameAssignmentFuncs) {
+  for (auto& assignment : config.nameAssignmentFuncs) {
     auto results = assignment->assignName(params);
     BOOST_CHECK_EQUAL(results.size(), 1);
     names.insert(names.end(), results.begin(), results.end());

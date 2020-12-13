@@ -59,7 +59,7 @@ public:
 
   virtual Block
   genChallengeRequestTLV(Status status, const std::string& challengeStatus,
-                         std::multimap<std::string, std::string>&& params) = 0;
+                         const std::multimap<std::string, std::string>& params) = 0;
 
   // helpers
   static std::string
@@ -68,11 +68,11 @@ public:
 protected:
   // used by challenge modules
   std::tuple<ErrorCode, std::string>
-  returnWithError(ca::RequestState& request, ErrorCode errorCode, std::string&& errorInfo);
+  returnWithError(ca::RequestState& request, ErrorCode errorCode, std::string errorInfo);
 
   std::tuple<ErrorCode, std::string>
   returnWithNewChallengeStatus(ca::RequestState& request, const std::string& challengeStatus,
-                               JsonSection&& challengeSecret, size_t remainingTries, time::seconds remainingTime);
+                               JsonSection challengeSecret, size_t remainingTries, time::seconds remainingTime);
 
   std::tuple<ErrorCode, std::string>
   returnWithSuccess(ca::RequestState& request);

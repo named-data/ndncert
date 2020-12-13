@@ -38,7 +38,7 @@ decodeApplicationParameters(const Block& block, RequestType requestType, std::ve
 Block
 encodeDataContent(const std::vector<uint8_t>& ecdhKey, const std::array<uint8_t, 32>& salt,
                   const RequestId& requestId, const Status& status,
-                  const std::list<std::string>& challenges);
+                  const std::vector<std::string>& challenges);
 
 std::list<std::string>
 decodeDataContent(const Block& content, std::vector<uint8_t>& ecdhKey,

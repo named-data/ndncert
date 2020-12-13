@@ -39,12 +39,12 @@ CaConfig::load(const std::string& fileName)
   if (configJson.begin() == configJson.end()) {
     NDN_THROW(std::runtime_error("No JSON configuration found in file: " + fileName));
   }
-  m_caProfile = CaProfile::fromJson(configJson);
-  if (m_caProfile.m_supportedChallenges.size() == 0) {
+    caProfile = CaProfile::fromJson(configJson);
+  if (caProfile.m_supportedChallenges.size() == 0) {
     NDN_THROW(std::runtime_error("At least one challenge should be specified."));
   }
   // parse redirection section if appears
-  m_redirection.clear();
+  redirection.clear();
   auto redirectionItems = configJson.get_child_optional(CONFIG_REDIRECTION);
   if (redirectionItems) {
     for (const auto& item : *redirectionItems) {
@@ -55,11 +55,11 @@ CaConfig::load(const std::string& fileName)
       }
       std::istringstream ss(caCertStr);
       auto caCert = io::load<security::Certificate>(ss);
-      m_redirection.push_back(caCert);
+      redirection.push_back(caCert);
     }
   }
   // parse name assignment if appears
-  m_nameAssignmentFuncs.clear();
+  nameAssignmentFuncs.clear();
   auto nameAssignmentItems = configJson.get_child_optional(CONFIG_NAME_ASSIGNMENT);
   if (nameAssignmentItems) {
     for (const auto& item : *nameAssignmentItems) {
@@ -67,7 +67,7 @@ CaConfig::load(const std::string& fileName)
       if (func == nullptr) {
         NDN_THROW(std::runtime_error("Error on creating name assignment function"));
       }
-      m_nameAssignmentFuncs.push_back(std::move(func));
+      nameAssignmentFuncs.push_back(std::move(func));
     }
   }
 }

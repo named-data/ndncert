@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE(OnProbeResponse){
   Data reply;
   reply.setName(Name("/site/CA/PROBE"));
   reply.setFreshnessPeriod(time::seconds(100));
-  reply.setContent(probetlv::encodeDataContent(availableNames, 3, ca.m_config.m_redirection));
+  reply.setContent(probetlv::encodeDataContent(availableNames, 3, ca.m_config.redirection));
   m_keyChain.sign(reply, signingByIdentity(identity));
 
   std::vector<std::pair<Name, int>> names;

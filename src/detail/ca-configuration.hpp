@@ -63,15 +63,15 @@ public:
   /**
    * @brief the CA's profile
    */
-  CaProfile m_caProfile;
+  CaProfile caProfile;
   /**
    * @brief Used for CA redirection
    */
-  std::vector<std::shared_ptr<security::Certificate>> m_redirection;
+  std::vector<std::shared_ptr<security::Certificate>> redirection;
   /**
    * @brief Name Assignment Functions
    */
-  std::vector<std::unique_ptr<NameAssignmentFunc>> m_nameAssignmentFuncs;
+  std::vector<std::unique_ptr<NameAssignmentFunc>> nameAssignmentFuncs;
 };
 
 } // namespace ca
