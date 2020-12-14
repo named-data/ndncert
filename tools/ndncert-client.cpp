@@ -62,7 +62,7 @@ captureParams(std::multimap<std::string, std::string>& requirement)
 }
 
 static std::multimap<std::string, std::string>
-captureParams(const std::list<std::string>& requirement)
+captureParams(const std::vector<std::string>& requirement)
 {
   std::multimap<std::string, std::string> results;
   for (const auto& r : requirement) {
