@@ -40,7 +40,7 @@ CaConfig::load(const std::string& fileName)
     NDN_THROW(std::runtime_error("No JSON configuration found in file: " + fileName));
   }
     caProfile = CaProfile::fromJson(configJson);
-  if (caProfile.m_supportedChallenges.size() == 0) {
+  if (caProfile.supportedChallenges.size() == 0) {
     NDN_THROW(std::runtime_error("At least one challenge should be specified."));
   }
   // parse redirection section if appears

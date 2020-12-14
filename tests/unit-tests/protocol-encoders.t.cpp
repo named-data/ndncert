@@ -40,17 +40,17 @@ BOOST_AUTO_TEST_CASE(InfoEncoding)
 
   requester::ProfileStorage caCache;
   caCache.load("tests/unit-tests/config-files/config-client-1");
-  auto& cert = caCache.getKnownProfiles().front().m_cert;
+  auto& cert = caCache.getKnownProfiles().front().cert;
 
   auto b = infotlv::encodeDataContent(config.caProfile, *cert);
   auto item = infotlv::decodeDataContent(b);
 
-  BOOST_CHECK_EQUAL(*item.m_cert, *cert);
-  BOOST_CHECK_EQUAL(item.m_caInfo, config.caProfile.m_caInfo);
-  BOOST_CHECK_EQUAL(item.m_caPrefix, config.caProfile.m_caPrefix);
-  BOOST_CHECK_EQUAL_COLLECTIONS(item.m_probeParameterKeys.begin(), item.m_probeParameterKeys.end(),
-                                config.caProfile.m_probeParameterKeys.begin(), config.caProfile.m_probeParameterKeys.end());
-  BOOST_CHECK_EQUAL(item.m_maxValidityPeriod, config.caProfile.m_maxValidityPeriod);
+  BOOST_CHECK_EQUAL(*item.cert, *cert);
+  BOOST_CHECK_EQUAL(item.caInfo, config.caProfile.caInfo);
+  BOOST_CHECK_EQUAL(item.caPrefix, config.caProfile.caPrefix);
+  BOOST_CHECK_EQUAL_COLLECTIONS(item.probeParameterKeys.begin(), item.probeParameterKeys.end(),
+                                config.caProfile.probeParameterKeys.begin(), config.caProfile.probeParameterKeys.end());
+  BOOST_CHECK_EQUAL(item.maxValidityPeriod, config.caProfile.maxValidityPeriod);
 }
 
 BOOST_AUTO_TEST_CASE(ErrorEncoding)
@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE(NewRevokeEncodingParam)
 {
   requester::ProfileStorage caCache;
   caCache.load("tests/unit-tests/config-files/config-client-1");
-  auto& certRequest = caCache.getKnownProfiles().front().m_cert;
+  auto& certRequest = caCache.getKnownProfiles().front().cert;
   std::vector<uint8_t> pub = ECDHState().getSelfPubKey();
   auto b = requesttlv::encodeApplicationParameters(RequestType::REVOKE, pub, *certRequest);
   std::vector<uint8_t> returnedPub;
@@ -145,7 +145,7 @@ BOOST_AUTO_TEST_CASE(ChallengeEncoding)
                          0xe0, 0xff, 0x56, 0x83, 0xf2, 0x43, 0xb2, 0x13};
   requester::ProfileStorage caCache;
   caCache.load("tests/unit-tests/config-files/config-client-1");
-  security::Certificate certRequest = *caCache.getKnownProfiles().front().m_cert;
+  security::Certificate certRequest = *caCache.getKnownProfiles().front().cert;
   RequestId id = {{102}};
   ca::RequestState state;
   state.caPrefix = Name("/ndn/ucla");

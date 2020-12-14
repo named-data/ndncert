@@ -67,7 +67,7 @@ optional<CaProfile>
 Requester::onCaProfileResponse(const Data& reply)
 {
   auto caItem = infotlv::decodeDataContent(reply.getContent());
-  if (!security::verifySignature(reply, *caItem.m_cert)) {
+  if (!security::verifySignature(reply, *caItem.cert)) {
     NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
     NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
   }
@@ -78,9 +78,9 @@ optional<CaProfile>
 Requester::onCaProfileResponseAfterRedirection(const Data& reply, const Name& caCertFullName)
 {
   auto caItem = infotlv::decodeDataContent(reply.getContent());
-  auto certBlock = caItem.m_cert->wireEncode();
-  caItem.m_cert = std::make_shared<security::Certificate>(certBlock);
-  if (caItem.m_cert->getFullName() != caCertFullName) {
+  auto certBlock = caItem.cert->wireEncode();
+  caItem.cert = std::make_shared<security::Certificate>(certBlock);
+  if (caItem.cert->getFullName() != caCertFullName) {
     NDN_LOG_ERROR("Ca profile does not match the certificate information offered by the original CA.");
     NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
   }
@@ -90,7 +90,7 @@ Requester::onCaProfileResponseAfterRedirection(const Data& reply, const Name& ca
 shared_ptr<Interest>
 Requester::genProbeInterest(const CaProfile& ca, std::multimap<std::string, std::string>&& probeInfo)
 {
-  Name interestName = ca.m_caPrefix;
+  Name interestName = ca.caPrefix;
   interestName.append("CA").append("PROBE");
   auto interest =std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
@@ -103,7 +103,7 @@ void
 Requester::onProbeResponse(const Data& reply, const CaProfile& ca,
                            std::vector<std::pair<Name, int>>& identityNames, std::vector<Name>& otherCas)
 {
-  if (!security::verifySignature(reply, *ca.m_cert)) {
+  if (!security::verifySignature(reply, *ca.cert)) {
     NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
     NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
     return;
@@ -117,12 +117,12 @@ Requester::genNewInterest(RequestState& state, const Name& identityName,
                           const time::system_clock::TimePoint& notBefore,
                           const time::system_clock::TimePoint& notAfter)
 {
-  if (!state.caProfile.m_caPrefix.isPrefixOf(identityName)) {
+  if (!state.caProfile.caPrefix.isPrefixOf(identityName)) {
     return nullptr;
   }
   if (identityName.empty()) {
     NDN_LOG_TRACE("Randomly create a new name because identityName is empty and the param is empty.");
-    state.identityName = state.caProfile.m_caPrefix;
+    state.identityName = state.caProfile.caPrefix;
     state.identityName.append(std::to_string(random::generateSecureWord64()));
   }
   else {
@@ -159,7 +159,7 @@ Requester::genNewInterest(RequestState& state, const Name& identityName,
   state.keyChain.sign(certRequest, signingByKey(keyName).setSignatureInfo(signatureInfo));
 
   // generate Interest packet
-  Name interestName = state.caProfile.m_caPrefix;
+  Name interestName = state.caProfile.caPrefix;
   interestName.append("CA").append("NEW");
   auto interest =std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
@@ -175,11 +175,11 @@ Requester::genNewInterest(RequestState& state, const Name& identityName,
 shared_ptr<Interest>
 Requester::genRevokeInterest(RequestState& state, const security::Certificate& certificate)
 {
-  if (!state.caProfile.m_caPrefix.isPrefixOf(certificate.getName())) {
+  if (!state.caProfile.caPrefix.isPrefixOf(certificate.getName())) {
     return nullptr;
   }
   // generate Interest packet
-  Name interestName = state.caProfile.m_caPrefix;
+  Name interestName = state.caProfile.caPrefix;
   interestName.append("CA").append("REVOKE");
   auto interest =std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
@@ -192,7 +192,7 @@ Requester::genRevokeInterest(RequestState& state, const security::Certificate& c
 std::list<std::string>
 Requester::onNewRenewRevokeResponse(RequestState& state, const Data& reply)
 {
-  if (!security::verifySignature(reply, *state.caProfile.m_cert)) {
+  if (!security::verifySignature(reply, *state.caProfile.cert)) {
     NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
     NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
   }
@@ -236,7 +236,7 @@ Requester::genChallengeInterest(RequestState& state,
   }
   auto challengeParams = challenge->genChallengeRequestTLV(state.status, state.challengeStatus, std::move(parameters));
 
-  Name interestName = state.caProfile.m_caPrefix;
+  Name interestName = state.caProfile.caPrefix;
   interestName.append("CA").append("CHALLENGE").append(state.requestId.data(), state.requestId.size());
   auto interest =std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
@@ -256,7 +256,7 @@ Requester::genChallengeInterest(RequestState& state,
 void
 Requester::onChallengeResponse(RequestState& state, const Data& reply)
 {
-  if (!security::verifySignature(reply, *state.caProfile.m_cert)) {
+  if (!security::verifySignature(reply, *state.caProfile.cert)) {
     NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
     NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
   }

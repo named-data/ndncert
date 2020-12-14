@@ -49,7 +49,7 @@ ProfileStorage::load(const JsonSection& json)
   for (auto item : caList) {
     CaProfile caItem;
     caItem = CaProfile::fromJson(item.second);
-    if (caItem.m_cert == nullptr) {
+    if (caItem.cert == nullptr) {
       NDN_THROW(std::runtime_error("No CA certificate is loaded from JSON configuration."));
     }
     m_caProfiles.push_back(std::move(caItem));
@@ -74,14 +74,14 @@ ProfileStorage::save(const std::string& fileName) const
 void
 ProfileStorage::removeCaProfile(const Name& caName)
 {
-  m_caProfiles.remove_if([&](const CaProfile& item) { return item.m_caPrefix == caName; });
+  m_caProfiles.remove_if([&](const CaProfile& item) { return item.caPrefix == caName; });
 }
 
 void
 ProfileStorage::addCaProfile(const CaProfile& profile)
 {
   for (auto& item : m_caProfiles) {
-    if (item.m_caPrefix == profile.m_caPrefix) {
+    if (item.caPrefix == profile.caPrefix) {
       item = profile;
       return;
     }

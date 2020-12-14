@@ -74,11 +74,11 @@ BOOST_AUTO_TEST_CASE(PacketSize0)
       auto contentBlock = response.getContent();
       contentBlock.parse();
       auto caItem = infotlv::decodeDataContent(contentBlock);
-      BOOST_CHECK_EQUAL(caItem.m_caPrefix, "/ndn");
-      BOOST_CHECK_EQUAL(caItem.m_probeParameterKeys.size(), 1);
-      BOOST_CHECK_EQUAL(caItem.m_probeParameterKeys.front(), "full name");
-      BOOST_CHECK_EQUAL(caItem.m_cert->wireEncode(), cert.wireEncode());
-      BOOST_CHECK_EQUAL(caItem.m_caInfo, "ndn testbed ca");
+      BOOST_CHECK_EQUAL(caItem.caPrefix, "/ndn");
+      BOOST_CHECK_EQUAL(caItem.probeParameterKeys.size(), 1);
+      BOOST_CHECK_EQUAL(caItem.probeParameterKeys.front(), "full name");
+      BOOST_CHECK_EQUAL(caItem.cert->wireEncode(), cert.wireEncode());
+      BOOST_CHECK_EQUAL(caItem.caInfo, "ndn testbed ca");
     }
   });
   face.receive(interest);
@@ -101,8 +101,8 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
 
   // generate NEW Interest
   CaProfile item;
-  item.m_caPrefix = Name("/ndn");
-  item.m_cert = std::make_shared<security::Certificate>(cert);
+  item.caPrefix = Name("/ndn");
+  item.cert = std::make_shared<security::Certificate>(cert);
   requester::RequestState state(m_keyChain, item, RequestType::NEW);
   auto newInterest = requester::Requester::genNewInterest(state, Name("/ndn/alice"),
                                                time::system_clock::now(),

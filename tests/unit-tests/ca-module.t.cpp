@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(Initialization)
 {
   util::DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
-  BOOST_CHECK_EQUAL(ca.getCaConf().caProfile.m_caPrefix, "/ndn");
+  BOOST_CHECK_EQUAL(ca.getCaConf().caProfile.caPrefix, "/ndn");
 
   advanceClocks(time::milliseconds(20), 60);
   BOOST_CHECK_EQUAL(ca.m_registeredPrefixHandles.size(), 1); // removed local discovery registration
@@ -84,11 +84,11 @@ BOOST_AUTO_TEST_CASE(HandleProfileFetching)
       auto contentBlock = response.getContent();
       contentBlock.parse();
       auto caItem = infotlv::decodeDataContent(contentBlock);
-      BOOST_CHECK_EQUAL(caItem.m_caPrefix, "/ndn");
-      BOOST_CHECK_EQUAL(caItem.m_probeParameterKeys.size(), 1);
-      BOOST_CHECK_EQUAL(caItem.m_probeParameterKeys.front(), "full name");
-      BOOST_CHECK_EQUAL(caItem.m_cert->wireEncode(), cert.wireEncode());
-      BOOST_CHECK_EQUAL(caItem.m_caInfo, "ndn testbed ca");
+      BOOST_CHECK_EQUAL(caItem.caPrefix, "/ndn");
+      BOOST_CHECK_EQUAL(caItem.probeParameterKeys.size(), 1);
+      BOOST_CHECK_EQUAL(caItem.probeParameterKeys.front(), "full name");
+      BOOST_CHECK_EQUAL(caItem.cert->wireEncode(), cert.wireEncode());
+      BOOST_CHECK_EQUAL(caItem.caInfo, "ndn testbed ca");
     }
   });
   face.receive(interest);
@@ -229,8 +229,8 @@ BOOST_AUTO_TEST_CASE(HandleNew)
   advanceClocks(time::milliseconds(20), 60);
 
   CaProfile item;
-  item.m_caPrefix = Name("/ndn");
-  item.m_cert = std::make_shared<security::Certificate>(cert);
+  item.caPrefix = Name("/ndn");
+  item.cert = std::make_shared<security::Certificate>(cert);
   requester::RequestState state(m_keyChain, item, RequestType::NEW);
   auto interest = requester::Requester::genNewInterest(state, Name("/ndn/zhiyi"),
                                             time::system_clock::now(),
@@ -280,8 +280,8 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidValidityPeriod1)
   advanceClocks(time::milliseconds(20), 60);
 
   CaProfile item;
-  item.m_caPrefix = Name("/ndn");
-  item.m_cert = std::make_shared<security::Certificate>(cert);
+  item.caPrefix = Name("/ndn");
+  item.cert = std::make_shared<security::Certificate>(cert);
   requester::RequestState state(m_keyChain, item, RequestType::NEW);
   auto current_tp = time::system_clock::now();
   auto interest1 = requester::Requester::genNewInterest(state, Name("/ndn/zhiyi"), current_tp, current_tp - time::hours(1));
@@ -311,8 +311,8 @@ BOOST_AUTO_TEST_CASE(HandleNewWithLongSuffix)
   advanceClocks(time::milliseconds(20), 60);
 
   CaProfile item;
-  item.m_caPrefix = Name("/ndn");
-  item.m_cert = std::make_shared<security::Certificate>(cert);
+  item.caPrefix = Name("/ndn");
+  item.cert = std::make_shared<security::Certificate>(cert);
   requester::RequestState state(m_keyChain, item, RequestType::NEW);
 
   auto interest1 = requester::Requester::genNewInterest(state, Name("/ndn/a"), time::system_clock::now(),
@@ -352,8 +352,8 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidLength1)
   advanceClocks(time::milliseconds(20), 60);
 
   CaProfile item;
-  item.m_caPrefix = Name("/ndn");
-  item.m_cert = std::make_shared<security::Certificate>(cert);
+  item.caPrefix = Name("/ndn");
+  item.cert = std::make_shared<security::Certificate>(cert);
   requester::RequestState state(m_keyChain, item, RequestType::NEW);
 
   auto current_tp = time::system_clock::now();
@@ -383,8 +383,8 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
 
   // generate NEW Interest
   CaProfile item;
-  item.m_caPrefix = Name("/ndn");
-  item.m_cert = std::make_shared<security::Certificate>(cert);
+  item.caPrefix = Name("/ndn");
+  item.cert = std::make_shared<security::Certificate>(cert);
   requester::RequestState state(m_keyChain, item, RequestType::NEW);
 
   auto newInterest = requester::Requester::genNewInterest(state, Name("/ndn/zhiyi"), time::system_clock::now(),
@@ -477,8 +477,8 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
   auto issuedCert = ca.issueCertificate(certRequest);
 
   CaProfile item;
-  item.m_caPrefix = Name("/ndn");
-  item.m_cert = std::make_shared<security::Certificate>(cert);
+  item.caPrefix = Name("/ndn");
+  item.cert = std::make_shared<security::Certificate>(cert);
   requester::RequestState state(m_keyChain, item, RequestType::REVOKE);
 
   auto interest = requester::Requester::genRevokeInterest(state, issuedCert);
@@ -540,8 +540,8 @@ BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
   m_keyChain.sign(clientCert, signingByKey(clientKey.getName()).setSignatureInfo(signatureInfo));
 
   CaProfile item;
-  item.m_caPrefix = Name("/ndn");
-  item.m_cert = std::make_shared<security::Certificate>(cert);
+  item.caPrefix = Name("/ndn");
+  item.cert = std::make_shared<security::Certificate>(cert);
   requester::RequestState state(m_keyChain, item, RequestType::NEW);
 
   auto interest = requester::Requester::genRevokeInterest(state, clientCert);

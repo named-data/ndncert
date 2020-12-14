@@ -31,22 +31,22 @@ CaProfile::fromJson(const JsonSection& json)
 {
   CaProfile profile;
   // CA prefix
-  profile.m_caPrefix = Name(json.get(CONFIG_CA_PREFIX, ""));
-  if (profile.m_caPrefix.empty()) {
+  profile.caPrefix = Name(json.get(CONFIG_CA_PREFIX, ""));
+  if (profile.caPrefix.empty()) {
     NDN_THROW(std::runtime_error("Cannot parse ca-prefix from the config file"));
   }
   // CA info
-  profile.m_caInfo = json.get(CONFIG_CA_INFO, "");
+  profile.caInfo = json.get(CONFIG_CA_INFO, "");
   // CA max validity period
-  profile.m_maxValidityPeriod = time::seconds(json.get(CONFIG_MAX_VALIDITY_PERIOD, 86400));
+  profile.maxValidityPeriod = time::seconds(json.get(CONFIG_MAX_VALIDITY_PERIOD, 86400));
   // CA max suffix length
-  profile.m_maxSuffixLength = nullopt;
+  profile.maxSuffixLength = nullopt;
   auto maxSuffixLength = json.get_optional<size_t>(CONFIG_MAX_SUFFIX_LENGTH);
   if (maxSuffixLength) {
-    profile.m_maxSuffixLength = *maxSuffixLength;
+    profile.maxSuffixLength = *maxSuffixLength;
   }
   // probe parameter keys
-  profile.m_probeParameterKeys.clear();
+  profile.probeParameterKeys.clear();
   auto probeParametersJson = json.get_child_optional(CONFIG_PROBE_PARAMETERS);
   if (probeParametersJson) {
     for (const auto& item : *probeParametersJson) {
@@ -55,11 +55,11 @@ CaProfile::fromJson(const JsonSection& json)
       if (probeParameter == "") {
         NDN_THROW(std::runtime_error("Probe parameter key cannot be empty."));
       }
-      profile.m_probeParameterKeys.push_back(probeParameter);
+      profile.probeParameterKeys.push_back(probeParameter);
     }
   }
   // supported challenges
-  profile.m_supportedChallenges.clear();
+  profile.supportedChallenges.clear();
   auto challengeListJson = json.get_child_optional(CONFIG_SUPPORTED_CHALLENGES);
   if (challengeListJson) {
     for (const auto& item : *challengeListJson) {
@@ -71,15 +71,15 @@ CaProfile::fromJson(const JsonSection& json)
       if (!ChallengeModule::isChallengeSupported(challengeType)) {
         NDN_THROW(std::runtime_error("Challenge " + challengeType + " is not supported."));
       }
-      profile.m_supportedChallenges.push_back(challengeType);
+      profile.supportedChallenges.push_back(challengeType);
     }
   }
   // anchor certificate
-  profile.m_cert = nullptr;
+  profile.cert = nullptr;
   auto certificateStr = json.get(CONFIG_CERTIFICATE, "");
   if (certificateStr != "") {
     std::istringstream ss(certificateStr);
-    profile.m_cert = io::load<security::Certificate>(ss);
+    profile.cert = io::load<security::Certificate>(ss);
   }
   return profile;
 }
@@ -88,33 +88,33 @@ JsonSection
 CaProfile::toJson() const
 {
   JsonSection caItem;
-  caItem.put(CONFIG_CA_PREFIX, m_caPrefix.toUri());
-  caItem.put(CONFIG_CA_INFO, m_caInfo);
-  caItem.put(CONFIG_MAX_VALIDITY_PERIOD, m_maxValidityPeriod.count());
-  if (m_maxSuffixLength) {
-    caItem.put(CONFIG_MAX_SUFFIX_LENGTH, *m_maxSuffixLength);
+  caItem.put(CONFIG_CA_PREFIX, caPrefix.toUri());
+  caItem.put(CONFIG_CA_INFO, caInfo);
+  caItem.put(CONFIG_MAX_VALIDITY_PERIOD, maxValidityPeriod.count());
+  if (maxSuffixLength) {
+    caItem.put(CONFIG_MAX_SUFFIX_LENGTH, *maxSuffixLength);
   }
-  if (!m_probeParameterKeys.empty()) {
+  if (!probeParameterKeys.empty()) {
     JsonSection probeParametersJson;
-    for (const auto& key : m_probeParameterKeys) {
+    for (const auto& key : probeParameterKeys) {
       JsonSection keyJson;
       keyJson.put(CONFIG_PROBE_PARAMETER, key);
       probeParametersJson.push_back(std::make_pair("", keyJson));
     }
     caItem.add_child("", probeParametersJson);
   }
-  if (!m_supportedChallenges.empty()) {
+  if (!supportedChallenges.empty()) {
     JsonSection challengeListJson;
-    for (const auto& challenge : m_supportedChallenges) {
+    for (const auto& challenge : supportedChallenges) {
       JsonSection challengeJson;
       challengeJson.put(CONFIG_CHALLENGE, challenge);
       challengeListJson.push_back(std::make_pair("", challengeJson));
     }
     caItem.add_child("", challengeListJson);
   }
-  if (m_cert != nullptr) {
+  if (cert != nullptr) {
     std::stringstream ss;
-    io::save(*m_cert, ss);
+    io::save(*cert, ss);
     caItem.put("certificate", ss.str());
   }
   return caItem;

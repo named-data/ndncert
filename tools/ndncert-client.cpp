@@ -207,21 +207,21 @@ InfoCb(const Data& reply, const Name& certFullName)
   std::cerr << "\n***************************************\n"
             << "Step " << nStep++
             << ": Will use a new trust anchor, please double check the identity info:" << std::endl
-            << "> New CA name: " << profile->m_caPrefix.toUri() << std::endl
+            << "> New CA name: " << profile->caPrefix.toUri() << std::endl
             << "> This trust anchor information is signed by: " << reply.getSignatureInfo().getKeyLocator() << std::endl
-            << "> The certificate: " << profile->m_cert << std::endl
+            << "> The certificate: " << profile->cert << std::endl
             << "Do you trust the information? Type in YES or NO" << std::endl;
 
   std::string answer;
   getline(std::cin, answer);
   boost::algorithm::to_lower(answer);
   if (answer == "yes") {
-    std::cerr << "You answered YES: new CA " << profile->m_caPrefix.toUri() << " will be used" << std::endl;
+    std::cerr << "You answered YES: new CA " << profile->caPrefix.toUri() << " will be used" << std::endl;
     runProbe(*profile);
     // client.getClientConf().save(std::string(SYSCONFDIR) + "/ndncert/client.conf");
   }
   else {
-    std::cerr << "You answered NO: new CA " << profile->m_caPrefix.toUri() << " will not be used" << std::endl;
+    std::cerr << "You answered NO: new CA " << profile->caPrefix.toUri() << " will not be used" << std::endl;
     exit(0);
   }
 }
@@ -302,8 +302,8 @@ selectCaProfile(std::string configFilePath)
             << "Step " << nStep++ << ": CA SELECTION" << std::endl;
   for (auto item : profileStorage.getKnownProfiles()) {
     std::cerr << "> Index: " << count++ << std::endl
-              << ">> CA prefix:" << item.m_caPrefix << std::endl
-              << ">> Introduction: " << item.m_caInfo << std::endl;
+              << ">> CA prefix:" << item.caPrefix << std::endl
+              << ">> Introduction: " << item.caInfo << std::endl;
   }
   std::cerr << "Please type in the CA's index that you want to apply or type in NONE if your expected CA is not in the list:\n";
 
@@ -354,7 +354,7 @@ runProbe(CaProfile profile)
   std::cerr << "\n***************************************\n"
             << "Step " << nStep++
             << ": Do you know your identity name to be certified by CA "
-            << profile.m_caPrefix.toUri()
+            << profile.caPrefix.toUri()
             << " already? Type in YES or NO" << std::endl;
   bool validAnswer = false;
   while (!validAnswer) {
@@ -367,7 +367,7 @@ runProbe(CaProfile profile)
       std::cerr << "\n***************************************\n"
                 << "Step " << nStep++
                 << ": Please type in the full identity name you want to get (with CA prefix "
-                << profile.m_caPrefix.toUri()
+                << profile.caPrefix.toUri()
                 << "):" << std::endl;
       std::string identityNameStr;
       getline(std::cin, identityNameStr);
@@ -378,7 +378,7 @@ runProbe(CaProfile profile)
       std::cerr << "You answered NO" << std::endl;
       std::cerr << "\n***************************************\n"
                 << "Step " << nStep++ << ": Please provide information for name assignment" << std::endl;
-      auto capturedParams = captureParams(profile.m_probeParameterKeys);
+      auto capturedParams = captureParams(profile.probeParameterKeys);
       face.expressInterest(*Requester::genProbeInterest(profile, std::move(capturedParams)),
                            bind(&probeCb, _2, profile), bind(&onNackCb), bind(&timeoutCb));
     }

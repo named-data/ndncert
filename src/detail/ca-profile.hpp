@@ -60,37 +60,37 @@ public:
   /**
    * @brief CA Name prefix (without /CA suffix).
    */
-  Name m_caPrefix;
+  Name caPrefix;
   /**
    * @brief CA Information.
    */
-  std::string m_caInfo;
+  std::string caInfo;
   /**
    * @brief A list of parameter-keys for PROBE.
    */
-  std::vector<std::string> m_probeParameterKeys;
+  std::vector<std::string> probeParameterKeys;
   /**
    * @brief  Maximum allowed validity period of the certificate being requested.
    *
    * The value is in the unit of second.
    * Default: one day (86400 seconds).
    */
-  time::seconds m_maxValidityPeriod;
+  time::seconds maxValidityPeriod;
   /**
    * @brief Maximum allowed suffix length of requested name.
    *
    * E.g., When its value is 2, at most 2 name components can be assigned after m_caPrefix.
    * Default: none.
    */
-  optional<size_t> m_maxSuffixLength = nullopt;
+  optional<size_t> maxSuffixLength = nullopt;
   /**
    * @brief A list of supported challenges. Only CA side will have m_supportedChallenges.
    */
-  std::vector<std::string> m_supportedChallenges;
+  std::vector<std::string> supportedChallenges;
   /**
    * @brief CA's certificate. Only Client side will have m_cert.
    */
-  std::shared_ptr<security::Certificate> m_cert;
+  std::shared_ptr<security::Certificate> cert;
 };
 
 } // namespace ndncert

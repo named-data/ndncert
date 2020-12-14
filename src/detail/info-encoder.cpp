@@ -27,19 +27,19 @@ Block
 infotlv::encodeDataContent(const CaProfile& caConfig, const security::Certificate& certificate)
 {
   Block content(ndn::tlv::Content);
-  content.push_back(makeNestedBlock(tlv::CaPrefix, caConfig.m_caPrefix));
+  content.push_back(makeNestedBlock(tlv::CaPrefix, caConfig.caPrefix));
   std::string caInfo = "";
-  if (caConfig.m_caInfo == "") {
+  if (caConfig.caInfo == "") {
     caInfo = "Issued by " + certificate.getSignatureInfo().getKeyLocator().getName().toUri();
   }
   else {
-    caInfo = caConfig.m_caInfo;
+    caInfo = caConfig.caInfo;
   }
   content.push_back(makeStringBlock(tlv::CaInfo, caInfo));
-  for (const auto& key : caConfig.m_probeParameterKeys) {
+  for (const auto& key : caConfig.probeParameterKeys) {
     content.push_back(makeStringBlock(tlv::ParameterKey, key));
   }
-  content.push_back(makeNonNegativeIntegerBlock(tlv::MaxValidityPeriod, caConfig.m_maxValidityPeriod.count()));
+  content.push_back(makeNonNegativeIntegerBlock(tlv::MaxValidityPeriod, caConfig.maxValidityPeriod.count()));
   content.push_back(makeNestedBlock(tlv::CaCertificate, certificate));
   content.encode();
   return content;
@@ -54,20 +54,20 @@ infotlv::decodeDataContent(const Block& block)
     switch (item.type()) {
     case tlv::CaPrefix:
       item.parse();
-      result.m_caPrefix.wireDecode(item.get(ndn::tlv::Name));
+      result.caPrefix.wireDecode(item.get(ndn::tlv::Name));
       break;
     case tlv::CaInfo:
-      result.m_caInfo = readString(item);
+      result.caInfo = readString(item);
       break;
     case tlv::ParameterKey:
-      result.m_probeParameterKeys.push_back(readString(item));
+      result.probeParameterKeys.push_back(readString(item));
       break;
     case tlv::MaxValidityPeriod:
-      result.m_maxValidityPeriod = time::seconds(readNonNegativeInteger(item));
+      result.maxValidityPeriod = time::seconds(readNonNegativeInteger(item));
       break;
     case tlv::CaCertificate:
       item.parse();
-      result.m_cert = std::make_shared<security::Certificate>(item.get(ndn::tlv::Data));
+      result.cert = std::make_shared<security::Certificate>(item.get(ndn::tlv::Data));
       break;
     default:
       continue;

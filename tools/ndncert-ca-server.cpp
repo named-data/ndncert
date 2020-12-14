@@ -137,7 +137,7 @@ main(int argc, char* argv[])
     });
     cachedCertificates[profileData.getName()] = profileData;
     face.setInterestFilter(
-        InterestFilter(ca.getCaConf().caProfile.m_caPrefix),
+        InterestFilter(ca.getCaConf().caProfile.caPrefix),
         [&](const InterestFilter&, const Interest& interest) {
           auto search = cachedCertificates.find(interest.getName());
           if (search != cachedCertificates.end()) {

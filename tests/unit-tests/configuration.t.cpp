@@ -33,23 +33,23 @@ BOOST_AUTO_TEST_CASE(CAConfigFile)
 {
   ca::CaConfig config;
   config.load("tests/unit-tests/config-files/config-ca-1");
-  BOOST_CHECK_EQUAL(config.caProfile.m_caPrefix, "/ndn");
-  BOOST_CHECK_EQUAL(config.caProfile.m_caInfo, "ndn testbed ca");
-  BOOST_CHECK_EQUAL(config.caProfile.m_maxValidityPeriod, time::seconds(864000));
-  BOOST_CHECK_EQUAL(*config.caProfile.m_maxSuffixLength, 3);
-  BOOST_CHECK_EQUAL(config.caProfile.m_probeParameterKeys.size(), 1);
-  BOOST_CHECK_EQUAL(config.caProfile.m_probeParameterKeys.front(), "full name");
-  BOOST_CHECK_EQUAL(config.caProfile.m_supportedChallenges.size(), 1);
-  BOOST_CHECK_EQUAL(config.caProfile.m_supportedChallenges.front(), "pin");
+  BOOST_CHECK_EQUAL(config.caProfile.caPrefix, "/ndn");
+  BOOST_CHECK_EQUAL(config.caProfile.caInfo, "ndn testbed ca");
+  BOOST_CHECK_EQUAL(config.caProfile.maxValidityPeriod, time::seconds(864000));
+  BOOST_CHECK_EQUAL(*config.caProfile.maxSuffixLength, 3);
+  BOOST_CHECK_EQUAL(config.caProfile.probeParameterKeys.size(), 1);
+  BOOST_CHECK_EQUAL(config.caProfile.probeParameterKeys.front(), "full name");
+  BOOST_CHECK_EQUAL(config.caProfile.supportedChallenges.size(), 1);
+  BOOST_CHECK_EQUAL(config.caProfile.supportedChallenges.front(), "pin");
 
   config.load("tests/unit-tests/config-files/config-ca-2");
-  BOOST_CHECK_EQUAL(config.caProfile.m_caPrefix, "/ndn");
-  BOOST_CHECK_EQUAL(config.caProfile.m_caInfo, "missing max validity period, max suffix length, and probe");
-  BOOST_CHECK_EQUAL(config.caProfile.m_maxValidityPeriod, time::seconds(86400));
-  BOOST_CHECK(!config.caProfile.m_maxSuffixLength.has_value());
-  BOOST_CHECK_EQUAL(config.caProfile.m_probeParameterKeys.size(), 0);
-  BOOST_CHECK_EQUAL(config.caProfile.m_supportedChallenges.size(), 1);
-  BOOST_CHECK_EQUAL(config.caProfile.m_supportedChallenges.front(), "pin");
+  BOOST_CHECK_EQUAL(config.caProfile.caPrefix, "/ndn");
+  BOOST_CHECK_EQUAL(config.caProfile.caInfo, "missing max validity period, max suffix length, and probe");
+  BOOST_CHECK_EQUAL(config.caProfile.maxValidityPeriod, time::seconds(86400));
+  BOOST_CHECK(!config.caProfile.maxSuffixLength.has_value());
+  BOOST_CHECK_EQUAL(config.caProfile.probeParameterKeys.size(), 0);
+  BOOST_CHECK_EQUAL(config.caProfile.supportedChallenges.size(), 1);
+  BOOST_CHECK_EQUAL(config.caProfile.supportedChallenges.front(), "pin");
 
   config.load("tests/unit-tests/config-files/config-ca-5");
   BOOST_CHECK_EQUAL(config.redirection[0]->getName(),
@@ -93,22 +93,22 @@ BOOST_AUTO_TEST_CASE(ProfileStorageConfigFile)
   BOOST_CHECK_EQUAL(profileStorage.getKnownProfiles().size(), 2);
 
   auto& profile1 = profileStorage.getKnownProfiles().front();
-  BOOST_CHECK_EQUAL(profile1.m_caPrefix, "/ndn/edu/ucla");
-  BOOST_CHECK_EQUAL(profile1.m_caInfo, "ndn testbed ca");
-  BOOST_CHECK_EQUAL(profile1.m_maxValidityPeriod, time::seconds(864000));
-  BOOST_CHECK_EQUAL(*profile1.m_maxSuffixLength, 3);
-  BOOST_CHECK_EQUAL(profile1.m_probeParameterKeys.size(), 1);
-  BOOST_CHECK_EQUAL(profile1.m_probeParameterKeys.front(), "email");
-  BOOST_CHECK_EQUAL(profile1.m_cert->getName(),
+  BOOST_CHECK_EQUAL(profile1.caPrefix, "/ndn/edu/ucla");
+  BOOST_CHECK_EQUAL(profile1.caInfo, "ndn testbed ca");
+  BOOST_CHECK_EQUAL(profile1.maxValidityPeriod, time::seconds(864000));
+  BOOST_CHECK_EQUAL(*profile1.maxSuffixLength, 3);
+  BOOST_CHECK_EQUAL(profile1.probeParameterKeys.size(), 1);
+  BOOST_CHECK_EQUAL(profile1.probeParameterKeys.front(), "email");
+  BOOST_CHECK_EQUAL(profile1.cert->getName(),
                     "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
 
   auto& profile2 = profileStorage.getKnownProfiles().back();
-  BOOST_CHECK_EQUAL(profile2.m_caPrefix, "/ndn/edu/ucla/zhiyi");
-  BOOST_CHECK_EQUAL(profile2.m_caInfo, "");
-  BOOST_CHECK_EQUAL(profile2.m_maxValidityPeriod, time::seconds(86400));
-  BOOST_CHECK(!profile2.m_maxSuffixLength);
-  BOOST_CHECK_EQUAL(profile2.m_probeParameterKeys.size(), 0);
-  BOOST_CHECK_EQUAL(profile2.m_cert->getName(),
+  BOOST_CHECK_EQUAL(profile2.caPrefix, "/ndn/edu/ucla/zhiyi");
+  BOOST_CHECK_EQUAL(profile2.caInfo, "");
+  BOOST_CHECK_EQUAL(profile2.maxValidityPeriod, time::seconds(86400));
+  BOOST_CHECK(!profile2.maxSuffixLength);
+  BOOST_CHECK_EQUAL(profile2.probeParameterKeys.size(), 0);
+  BOOST_CHECK_EQUAL(profile2.cert->getName(),
                     "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
 }
 
@@ -129,18 +129,18 @@ BOOST_AUTO_TEST_CASE(ProfileStorageAddAndRemoveProfile)
   profileStorage.load("tests/unit-tests/config-files/config-client-1");
 
   CaProfile item;
-  item.m_caPrefix = Name("/test");
-  item.m_caInfo = "test";
+  item.caPrefix = Name("/test");
+  item.caInfo = "test";
 
   profileStorage.addCaProfile(item);
   BOOST_CHECK_EQUAL(profileStorage.getKnownProfiles().size(), 3);
   auto lastItem = profileStorage.getKnownProfiles().back();
-  BOOST_CHECK_EQUAL(lastItem.m_caPrefix, "/test");
+  BOOST_CHECK_EQUAL(lastItem.caPrefix, "/test");
 
   profileStorage.removeCaProfile(Name("/test"));
   BOOST_CHECK_EQUAL(profileStorage.getKnownProfiles().size(), 2);
   lastItem = profileStorage.getKnownProfiles().back();
-  BOOST_CHECK_EQUAL(lastItem.m_caPrefix, "/ndn/edu/ucla/zhiyi");
+  BOOST_CHECK_EQUAL(lastItem.caPrefix, "/ndn/edu/ucla/zhiyi");
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // TestCaConfig

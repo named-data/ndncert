@@ -41,11 +41,11 @@ BOOST_AUTO_TEST_CASE(GenProbeInterest)
   auto cert = key.getDefaultCertificate();
 
   CaProfile ca_profile;
-  ca_profile.m_probeParameterKeys.push_back("email");
-  ca_profile.m_probeParameterKeys.push_back("uid");
-  ca_profile.m_probeParameterKeys.push_back("name");
-  ca_profile.m_caPrefix = Name("/site");
-  ca_profile.m_cert = std::make_shared<security::Certificate>(cert);
+  ca_profile.probeParameterKeys.push_back("email");
+  ca_profile.probeParameterKeys.push_back("uid");
+  ca_profile.probeParameterKeys.push_back("name");
+  ca_profile.caPrefix = Name("/site");
+  ca_profile.cert = std::make_shared<security::Certificate>(cert);
 
   std::multimap<std::string, std::string> probeParams;
   probeParams.emplace("email", "zhiyi@cs.ucla.edu");
@@ -65,11 +65,11 @@ BOOST_AUTO_TEST_CASE(OnProbeResponse){
   auto cert = key.getDefaultCertificate();
 
   CaProfile ca_profile;
-  ca_profile.m_probeParameterKeys.push_back("email");
-  ca_profile.m_probeParameterKeys.push_back("uid");
-  ca_profile.m_probeParameterKeys.push_back("name");
-  ca_profile.m_caPrefix = Name("/site");
-  ca_profile.m_cert = std::make_shared<security::Certificate>(cert);
+  ca_profile.probeParameterKeys.push_back("email");
+  ca_profile.probeParameterKeys.push_back("uid");
+  ca_profile.probeParameterKeys.push_back("name");
+  ca_profile.caPrefix = Name("/site");
+  ca_profile.cert = std::make_shared<security::Certificate>(cert);
 
   std::vector<Name> availableNames;
   availableNames.push_back(Name("/site1"));
@@ -107,8 +107,8 @@ BOOST_AUTO_TEST_CASE(ErrorHandling)
   auto cert = key.getDefaultCertificate();
 
   CaProfile item;
-  item.m_caPrefix = Name("/site");
-  item.m_cert = std::make_shared<security::Certificate>(cert);
+  item.caPrefix = Name("/site");
+  item.cert = std::make_shared<security::Certificate>(cert);
   RequestState state(m_keyChain, item, RequestType::NEW);
 
   Data errorPacket;
