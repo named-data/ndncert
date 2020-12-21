@@ -98,6 +98,10 @@ struct RequestState {
    */
   bool isNewlyCreatedIdentity = false;
   bool isNewlyCreatedKey = false;
+  /**
+   * @brief Store Nonce for signature
+   */
+  std::array<uint8_t, 16> nonce = {};
 };
 
 } // namespace requester

@@ -17,8 +17,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_CHALLENGE_CREDENTIAL_HPP
-#define NDNCERT_CHALLENGE_CREDENTIAL_HPP
+#ifndef NDNCERT_CHALLENGE_POSSESSION_HPP
+#define NDNCERT_CHALLENGE_POSSESSION_HPP
 
 #include "challenge-module.hpp"
 
@@ -26,10 +26,10 @@ namespace ndn {
 namespace ndncert {
 
 /**
- * @brief Provide Credential based challenge
+ * @brief Provide Possession based challenge
  *
- * Credential here means the certificate issued by a trust anchor. Once the requester
- * could proof his/her possession of an existing certificate from other certificate issuer,
+ * Possession here means possession of the certificate issued by a trust anchor. Once the requester
+ * could proof his/her possession of an existing certificate from this or other certificate issuer,
  * the requester could finish the challenge.
  *
  * The requester needs to provide the proof of the possession of a certificate issued by
@@ -39,17 +39,18 @@ namespace ndncert {
  * The main process of this challenge module is:
  *   1. Requester provides a certificate signed by that trusted certificate as credential.
  *   2. The challenge module will verify the signature of the credential.
- *   3. The content of the signed Data is the request id
+ *   3. The challenge module will Provide a 16 octet random number data.
+ *   3. The Requester signs the signed Data to prove it possess the private key
  *
  * Failure info when application fails:
- *   FAILURE_INVALID_CREDENTIAL: When the cert issued from trust anchor or self-signed cert
+ *   INVALID_PARAMETER: When the cert issued from trust anchor or self-signed cert
  *     cannot be validated.
  *   FAILURE_INVALID_FORMAT: When the credential format is wrong.
  */
-class ChallengeCredential : public ChallengeModule
+class ChallengePossession : public ChallengeModule
 {
 public:
-  ChallengeCredential(const std::string& configPath = "");
+  ChallengePossession(const std::string& configPath = "");
 
   // For CA
   std::tuple<ErrorCode, std::string>
@@ -65,11 +66,13 @@ public:
 
   static void
   fulfillParameters(std::multimap<std::string, std::string>& params,
-                    KeyChain& keyChain, const Name& issuedCertName, const RequestId& requestId);
+                    KeyChain& keyChain, const Name& issuedCertName, const std::array<uint8_t, 16>& nonce);
 
   // challenge parameters
   static const std::string PARAMETER_KEY_CREDENTIAL_CERT;
-  static const std::string PARAMETER_KEY_PROOF_OF_PRIVATE_KEY;
+  static const std::string PARAMETER_KEY_NONCE;
+  static const std::string PARAMETER_KEY_PROOF;
+  static const std::string NEED_PROOF;
 
 NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
@@ -83,4 +86,4 @@ NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_CHALLENGE_CREDENTIAL_HPP
+#endif // NDNCERT_CHALLENGE_POSSESSION_HPP

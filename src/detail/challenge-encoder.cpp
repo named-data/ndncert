@@ -34,6 +34,15 @@ challengetlv::encodeDataContent(ca::RequestState& request, const Name& issuedCer
         makeNonNegativeIntegerBlock(tlv::RemainingTries, request.challengeState->remainingTries));
     response.push_back(
         makeNonNegativeIntegerBlock(tlv::RemainingTime, request.challengeState->remainingTime.count()));
+    if (request.challengeState->challengeStatus == "need-proof") {
+      response.push_back(
+              makeStringBlock(tlv::ParameterKey, "nonce")
+              );
+      auto nonce = fromHex(request.challengeState->secrets.get("nonce", ""));
+      response.push_back(
+              makeBinaryBlock(tlv::ParameterValue, nonce->data(), 16)
+            );
+    }
   }
   if (!issuedCertName.empty()) {
     response.push_back(makeNestedBlock(tlv::IssuedCertName, issuedCertName));
@@ -64,6 +73,16 @@ challengetlv::decodeDataContent(const Block& contentBlock, requester::RequestSta
   if (data.find(tlv::IssuedCertName) != data.elements_end()) {
     Block issuedCertNameBlock = data.get(tlv::IssuedCertName);
     state.issuedCertName = Name(issuedCertNameBlock.blockFromValue());
+  }
+  if (data.find(tlv::ParameterKey) != data.elements_end() && readString(data.get(tlv::ParameterKey)) == "nonce") {
+    if (data.find(tlv::ParameterKey) == data.elements_end()) {
+        NDN_THROW(std::runtime_error("Parameter Key found, but no value found"));
+    }
+    Block nonceBlock = data.get(tlv::ParameterValue);
+    if (nonceBlock.value_size() != 16) {
+        NDN_THROW(std::runtime_error("Wrong nonce length"));
+    }
+    memcpy(state.nonce.data(), nonceBlock.value(), 16);
   }
 }
 
