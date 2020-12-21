@@ -325,60 +325,73 @@ aesGcm128Decrypt(const uint8_t* ciphertext, size_t ciphertextLen, const uint8_t*
   }
 }
 
-Block
-encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key, const uint8_t* payload, size_t payloadSize,
-                         const uint8_t* associatedData, size_t associatedDataSize, uint32_t& counter)
+static void
+updateIv(std::vector<uint8_t>& iv, size_t payloadSize)
 {
-  Buffer iv(12);
-  random::generateSecureBytes(iv.data(), 8);
-  if (tlvType == ndn::tlv::ApplicationParameters) {
-    // requester
-    iv[0] &= ~(1UL << 7);
-  }
-  else {
-    // CA
-    iv[0] |= 1UL << 7;
-  }
-  uint32_t temp = boost::endian::native_to_big(counter);
-  std::memcpy(&iv[8], reinterpret_cast<const uint8_t*>(&temp), 4);
+  uint32_t counter = boost::endian::load_big_u32(&iv[8]);
   uint32_t increment = (payloadSize + 15) / 16;
-  if (std::numeric_limits<uint32_t>::max() - counter < increment) {
+  if (std::numeric_limits<uint32_t>::max() - counter <= increment) {
     NDN_THROW(std::runtime_error("Error incrementing the AES block counter: "
                                  "too many blocks have been encrypted for the same request instance"));
   }
   else {
     counter += increment;
   }
+  boost::endian::store_big_u32(&iv[8], counter);
+}
 
+Block
+encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key, const uint8_t* payload, size_t payloadSize,
+                         const uint8_t* associatedData, size_t associatedDataSize, std::vector<uint8_t>& encryptionIv)
+{
   // The spec of AES encrypted payload TLV used in NDNCERT:
   //   https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3#242-aes-gcm-encryption
   Buffer encryptedPayload(payloadSize);
   uint8_t tag[16];
+  if (encryptionIv.empty()) {
+    encryptionIv.resize(12, 0);
+    random::generateSecureBytes(encryptionIv.data(), 8);
+  }
   size_t encryptedPayloadLen = aesGcm128Encrypt(payload, payloadSize, associatedData, associatedDataSize,
-                                                key, iv.data(), encryptedPayload.data(), tag);
+                                                key, encryptionIv.data(), encryptedPayload.data(), tag);
   Block content(tlvType);
-  content.push_back(makeBinaryBlock(tlv::InitializationVector, iv.data(), iv.size()));
+  content.push_back(makeBinaryBlock(tlv::InitializationVector, encryptionIv.data(), encryptionIv.size()));
   content.push_back(makeBinaryBlock(tlv::AuthenticationTag, tag, 16));
   content.push_back(makeBinaryBlock(tlv::EncryptedPayload, encryptedPayload.data(), encryptedPayloadLen));
   content.encode();
+  // update IV's counter
+  updateIv(encryptionIv, payloadSize);
   return content;
 }
 
 Buffer
-decodeBlockWithAesGcm128(const Block& block, const uint8_t* key, const uint8_t* associatedData, size_t associatedDataSize)
+decodeBlockWithAesGcm128(const Block& block, const uint8_t* key,
+                         const uint8_t* associatedData, size_t associatedDataSize,
+                         std::vector<uint8_t>& decryptionIv)
 {
   // The spec of AES encrypted payload TLV used in NDNCERT:
   //   https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3#242-aes-gcm-encryption
   block.parse();
   const auto& encryptedPayloadBlock = block.get(tlv::EncryptedPayload);
   Buffer result(encryptedPayloadBlock.value_size());
+  std::vector<uint8_t> currentIv(block.get(tlv::InitializationVector).value(), block.get(tlv::InitializationVector).value() + 12);
+  if (decryptionIv.empty()) {
+    decryptionIv = currentIv;
+  }
+  else {
+    if (currentIv != decryptionIv) {
+      NDN_THROW(std::runtime_error("Error when decrypting the AES Encrypted Block: "
+                                   "The observed IV is incorrectly formed."));
+    }
+  }
   auto resultLen = aesGcm128Decrypt(encryptedPayloadBlock.value(), encryptedPayloadBlock.value_size(),
                                     associatedData, associatedDataSize, block.get(tlv::AuthenticationTag).value(),
-                                    key, block.get(tlv::InitializationVector).value(), result.data());
+                                    key, currentIv.data(), result.data());
   if (resultLen != encryptedPayloadBlock.value_size()) {
     NDN_THROW(std::runtime_error("Error when decrypting the AES Encrypted Block: "
                                  "Decrypted payload is of an unexpected size"));
   }
+  updateIv(decryptionIv, resultLen);
   return result;
 }
 

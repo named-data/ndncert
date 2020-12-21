@@ -245,9 +245,8 @@ Requester::genChallengeInterest(RequestState& state,
   // encrypt the Interest parameters
   auto paramBlock = encodeBlockWithAesGcm128(ndn::tlv::ApplicationParameters, state.aesKey.data(),
                                              challengeParams.value(), challengeParams.value_size(),
-                                             state.requestId.data(),
-                                             state.requestId.size(),
-                                             state.aesBlockCounter);
+                                             state.requestId.data(), state.requestId.size(),
+                                             state.encryptionIv);
   interest->setApplicationParameters(paramBlock);
   state.keyChain.sign(*interest, signingByKey(state.keyPair.getName()));
   return interest;

@@ -111,12 +111,15 @@ struct RequestState
   /**
    * @brief The encryption key for the requester.
    */
-  std::array<uint8_t, 16> encryptionKey;
+  std::array<uint8_t, 16> encryptionKey = {};
   /**
-   * @brief The AES block counter for the requester.
+   * @brief The last Initialization Vector used by the AES encryption.
    */
-  uint32_t aesBlockCounter = 0;
-
+  std::vector<uint8_t> encryptionIv;
+  /**
+   * @brief The last Initialization Vector used by the other side's AES encryption.
+   */
+  std::vector<uint8_t> decryptionIv;
   /**
    * @brief The challenge type.
    */

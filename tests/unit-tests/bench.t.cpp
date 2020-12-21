@@ -105,8 +105,8 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
   item.cert = std::make_shared<security::Certificate>(cert);
   requester::RequestState state(m_keyChain, item, RequestType::NEW);
   auto newInterest = requester::Requester::genNewInterest(state, Name("/ndn/alice"),
-                                               time::system_clock::now(),
-                                               time::system_clock::now() + time::days(1));
+                                                          time::system_clock::now(),
+                                                          time::system_clock::now() + time::days(1));
 
   // std::cout << "New Interest Size: " << newInterest->wireEncode().size() << std::endl;
 

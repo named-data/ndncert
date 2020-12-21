@@ -90,9 +90,13 @@ struct RequestState {
    */
   std::array<uint8_t, 16> aesKey = {};
   /**
-   * @brief The counter of AES blocks that have been encrypted.
+   * @brief The last Initialization Vector used by the AES encryption.
    */
-  uint32_t aesBlockCounter = 0;
+  std::vector<uint8_t> encryptionIv;
+  /**
+   * @brief The last Initialization Vector used by the other side's AES encryption.
+   */
+  std::vector<uint8_t> decryptionIv;
   /**
    * @brief State about how identity/key is generated.
    */

@@ -67,7 +67,8 @@ CREATE TABLE IF NOT EXISTS
     remaining_time INTEGER,
     challenge_secrets TEXT,
     encryption_key BLOB NOT NULL,
-    aes_block_counter INTEGER
+    last_iv BLOB,
+    expected_next_iv BLOB
   );
 CREATE UNIQUE INDEX IF NOT EXISTS
   RequestStateIdIndex ON RequestStates(request_id);
@@ -130,7 +131,7 @@ CaSqlite::getRequest(const RequestId& requestId)
                              challenge_status, cert_request,
                              challenge_type, challenge_secrets,
                              challenge_tp, remaining_tries, remaining_time,
-                             request_type, encryption_key, aes_block_counter
+                             request_type, encryption_key, last_iv, expected_next_iv
                              FROM RequestStates where request_id = ?)_SQLTEXT_");
   statement.bind(1, requestId.data(), requestId.size(), SQLITE_TRANSIENT);
 
@@ -142,7 +143,8 @@ CaSqlite::getRequest(const RequestId& requestId)
     state.challengeType = statement.getString(5);
     state.requestType = static_cast<RequestType>(statement.getInt(10));
     std::memcpy(state.encryptionKey.data(), statement.getBlob(11), statement.getSize(11));
-    state.aesBlockCounter = statement.getInt(12);
+    state.encryptionIv.assign(statement.getBlob(12), statement.getBlob(12) + statement.getSize(12));
+    state.decryptionIv.assign(statement.getBlob(13), statement.getBlob(13) + statement.getSize(13));
     if (state.challengeType != "") {
       ChallengeState challengeState(statement.getString(3), time::fromIsoString(statement.getString(7)),
                                     statement.getInt(8), time::seconds(statement.getInt(9)),
@@ -164,15 +166,16 @@ CaSqlite::addRequest(const RequestState& request)
       m_database,
       R"_SQLTEXT_(INSERT OR ABORT INTO RequestStates (request_id, ca_name, status, request_type,
                   cert_request, challenge_type, challenge_status, challenge_secrets,
-                  challenge_tp, remaining_tries, remaining_time, encryption_key, aes_block_counter)
-                  values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
+                  challenge_tp, remaining_tries, remaining_time, encryption_key, last_iv, expected_next_iv)
+                  values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
   statement.bind(1, request.requestId.data(), request.requestId.size(), SQLITE_TRANSIENT);
   statement.bind(2, request.caPrefix.wireEncode(), SQLITE_TRANSIENT);
   statement.bind(3, static_cast<int>(request.status));
   statement.bind(4, static_cast<int>(request.requestType));
   statement.bind(5, request.cert.wireEncode(), SQLITE_TRANSIENT);
   statement.bind(12, request.encryptionKey.data(), request.encryptionKey.size(), SQLITE_TRANSIENT);
-  statement.bind(13, request.aesBlockCounter);
+  statement.bind(13, request.encryptionIv.data(), request.encryptionIv.size(), SQLITE_TRANSIENT);
+  statement.bind(14, request.decryptionIv.data(), request.decryptionIv.size(), SQLITE_TRANSIENT);
   if (request.challengeState) {
     statement.bind(6, request.challengeType, SQLITE_TRANSIENT);
     statement.bind(7, request.challengeState->challengeStatus, SQLITE_TRANSIENT);
@@ -193,7 +196,7 @@ CaSqlite::updateRequest(const RequestState& request)
   Sqlite3Statement statement(m_database,
                              R"_SQLTEXT_(UPDATE RequestStates
                              SET status = ?, challenge_type = ?, challenge_status = ?, challenge_secrets = ?,
-                             challenge_tp = ?, remaining_tries = ?, remaining_time = ?, aes_block_counter = ?
+                             challenge_tp = ?, remaining_tries = ?, remaining_time = ?, last_iv = ?, expected_next_iv = ?
                              WHERE request_id = ?)_SQLTEXT_");
   statement.bind(1, static_cast<int>(request.status));
   statement.bind(2, request.challengeType, SQLITE_TRANSIENT);
@@ -211,8 +214,9 @@ CaSqlite::updateRequest(const RequestState& request)
     statement.bind(6, 0);
     statement.bind(7, 0);
   }
-  statement.bind(8, request.aesBlockCounter);
-  statement.bind(9, request.requestId.data(), request.requestId.size(), SQLITE_TRANSIENT);
+  statement.bind(8, request.encryptionIv.data(), request.encryptionIv.size(), SQLITE_TRANSIENT);
+  statement.bind(9, request.decryptionIv.data(), request.decryptionIv.size(), SQLITE_TRANSIENT);
+  statement.bind(10, request.requestId.data(), request.requestId.size(), SQLITE_TRANSIENT);
 
   if (statement.step() != SQLITE_DONE) {
     addRequest(request);
@@ -226,7 +230,7 @@ CaSqlite::listAllRequests()
   Sqlite3Statement statement(m_database, R"_SQLTEXT_(SELECT id, request_id, ca_name, status,
                              challenge_status, cert_request, challenge_type, challenge_secrets,
                              challenge_tp, remaining_tries, remaining_time, request_type,
-                             encryption_key, aes_block_counter
+                             encryption_key, last_iv, expected_next_iv
                              FROM RequestStates)_SQLTEXT_");
   while (statement.step() == SQLITE_ROW) {
     RequestState state;
@@ -237,7 +241,8 @@ CaSqlite::listAllRequests()
     state.cert = security::Certificate(statement.getBlock(5));
     state.requestType = static_cast<RequestType>(statement.getInt(11));
     std::memcpy(state.encryptionKey.data(), statement.getBlob(12), statement.getSize(12));
-    state.aesBlockCounter = statement.getInt(13);
+    state.encryptionIv.assign(statement.getBlob(13), statement.getBlob(13) + statement.getSize(13));
+    state.decryptionIv.assign(statement.getBlob(14), statement.getBlob(14) + statement.getSize(14));
     if (state.challengeType != "") {
       ChallengeState challengeState(statement.getString(4), time::fromIsoString(statement.getString(8)),
                                     statement.getInt(9), time::seconds(statement.getInt(10)),
@@ -270,7 +275,8 @@ CaSqlite::listAllRequests(const Name& caName)
     state.cert = security::Certificate(statement.getBlock(5));
     state.requestType = static_cast<RequestType>(statement.getInt(11));
     std::memcpy(state.encryptionKey.data(), statement.getBlob(12), statement.getSize(12));
-    state.aesBlockCounter = statement.getInt(13);
+    state.encryptionIv.assign(statement.getBlob(13), statement.getBlob(13) + statement.getSize(13));
+    state.decryptionIv.assign(statement.getBlob(14), statement.getBlob(14) + statement.getSize(14));
     if (state.challengeType != "") {
       ChallengeState challengeState(statement.getString(4), time::fromIsoString(statement.getString(8)),
                                     statement.getInt(9), time::seconds(statement.getInt(10)),

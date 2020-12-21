@@ -30,18 +30,14 @@ challengetlv::encodeDataContent(ca::RequestState& request, const Name& issuedCer
   response.push_back(makeNonNegativeIntegerBlock(tlv::Status, static_cast<uint64_t>(request.status)));
   if (request.challengeState) {
     response.push_back(makeStringBlock(tlv::ChallengeStatus, request.challengeState->challengeStatus));
-    response.push_back(
-        makeNonNegativeIntegerBlock(tlv::RemainingTries, request.challengeState->remainingTries));
-    response.push_back(
-        makeNonNegativeIntegerBlock(tlv::RemainingTime, request.challengeState->remainingTime.count()));
+    response.push_back(makeNonNegativeIntegerBlock(tlv::RemainingTries,
+                                                   request.challengeState->remainingTries));
+    response.push_back(makeNonNegativeIntegerBlock(tlv::RemainingTime,
+                                                   request.challengeState->remainingTime.count()));
     if (request.challengeState->challengeStatus == "need-proof") {
-      response.push_back(
-              makeStringBlock(tlv::ParameterKey, "nonce")
-              );
+      response.push_back(makeStringBlock(tlv::ParameterKey, "nonce"));
       auto nonce = fromHex(request.challengeState->secrets.get("nonce", ""));
-      response.push_back(
-              makeBinaryBlock(tlv::ParameterValue, nonce->data(), 16)
-            );
+      response.push_back(makeBinaryBlock(tlv::ParameterValue, nonce->data(), 16));
     }
   }
   if (!issuedCertName.empty()) {
@@ -50,14 +46,16 @@ challengetlv::encodeDataContent(ca::RequestState& request, const Name& issuedCer
   response.encode();
   return encodeBlockWithAesGcm128(ndn::tlv::Content, request.encryptionKey.data(),
                                   response.value(), response.value_size(),
-                                  request.requestId.data(), request.requestId.size(), request.aesBlockCounter);
+                                  request.requestId.data(), request.requestId.size(),
+                                  request.encryptionIv);
 }
 
 void
 challengetlv::decodeDataContent(const Block& contentBlock, requester::RequestState& state)
 {
   auto result = decodeBlockWithAesGcm128(contentBlock, state.aesKey.data(),
-                                         state.requestId.data(), state.requestId.size());
+                                         state.requestId.data(), state.requestId.size(),
+                                         state.decryptionIv);
   auto data = makeBinaryBlock(tlv::EncryptedPayload, result.data(), result.size());
   data.parse();
   state.status = statusFromBlock(data.get(tlv::Status));
@@ -68,13 +66,15 @@ challengetlv::decodeDataContent(const Block& contentBlock, requester::RequestSta
     state.remainingTries = readNonNegativeInteger(data.get(tlv::RemainingTries));
   }
   if (data.find(tlv::RemainingTime) != data.elements_end()) {
-    state.freshBefore = time::system_clock::now() + time::seconds(readNonNegativeInteger(data.get(tlv::RemainingTime)));
+    state.freshBefore = time::system_clock::now() +
+                        time::seconds(readNonNegativeInteger(data.get(tlv::RemainingTime)));
   }
   if (data.find(tlv::IssuedCertName) != data.elements_end()) {
     Block issuedCertNameBlock = data.get(tlv::IssuedCertName);
     state.issuedCertName = Name(issuedCertNameBlock.blockFromValue());
   }
-  if (data.find(tlv::ParameterKey) != data.elements_end() && readString(data.get(tlv::ParameterKey)) == "nonce") {
+  if (data.find(tlv::ParameterKey) != data.elements_end() &&
+      readString(data.get(tlv::ParameterKey)) == "nonce") {
     if (data.find(tlv::ParameterKey) == data.elements_end()) {
         NDN_THROW(std::runtime_error("Parameter Key found, but no value found"));
     }

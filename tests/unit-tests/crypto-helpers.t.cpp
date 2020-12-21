@@ -276,28 +276,24 @@ BOOST_AUTO_TEST_CASE(AesIV)
                          0x31, 0x1e, 0x41, 0x92, 0x96, 0x6f, 0xee, 0x92};
   const std::string plaintext = "alongstringalongstringalongstringalongstringalongstringalongstringalongstringalongstring";
   const std::string associatedData = "test";
-  uint32_t counter = 0;
+  std::vector<uint8_t> encryptionIv = {};
   auto block = encodeBlockWithAesGcm128(ndn::tlv::Content, key, (uint8_t*)plaintext.c_str(), plaintext.size(),
-                                        (uint8_t*)associatedData.c_str(), associatedData.size(), counter);
+                                        (uint8_t*)associatedData.c_str(), associatedData.size(), encryptionIv);
   block.parse();
   auto ivBlock = block.get(tlv::InitializationVector);
   Buffer ivBuf(ivBlock.value(), ivBlock.value_size());
   BOOST_CHECK_EQUAL(ivBuf.size(), 12);
-  BOOST_CHECK(ivBuf[0] >= 128);
-  BOOST_CHECK_EQUAL(ivBuf[8] + ivBuf[9] + ivBuf[10] + ivBuf[11], 0);
+  auto counter = boost::endian::load_big_u32(&encryptionIv[8]);
   BOOST_CHECK_EQUAL(counter, 6);
-  counter = 300;
+  counter = boost::endian::load_big_u32(&ivBuf[8]);
+  BOOST_CHECK_EQUAL(counter, 0);
+
   block = encodeBlockWithAesGcm128(ndn::tlv::ApplicationParameters, key, (uint8_t*)plaintext.c_str(), plaintext.size(),
-                                   (uint8_t*)associatedData.c_str(), associatedData.size(), counter);
+                                   (uint8_t*)associatedData.c_str(), associatedData.size(), encryptionIv);
   block.parse();
   ivBlock = block.get(tlv::InitializationVector);
   Buffer ivBuf2(ivBlock.value(), ivBlock.value_size());
-  BOOST_CHECK_EQUAL(ivBuf2.size(), 12);
-  BOOST_CHECK(ivBuf2[0] < 128);
-  BOOST_CHECK_EQUAL(ivBuf2[8] + ivBuf2[9], 0);
-  BOOST_CHECK_EQUAL(ivBuf2[10], 1);
-  BOOST_CHECK_EQUAL(ivBuf2[11], 44);
-  BOOST_CHECK_EQUAL(counter, 306);
+  BOOST_CHECK_EQUAL(std::memcmp(ivBuf2.data(), encryptionIv.data(), 8), 0);
 }
 
 BOOST_AUTO_TEST_CASE(BlockEncodingDecoding)
@@ -308,23 +304,31 @@ BOOST_AUTO_TEST_CASE(BlockEncodingDecoding)
   const std::string plaintext2 = "shortstring";
   const std::string associatedData = "right";
   const std::string wrongAssociatedData = "wrong";
-  uint32_t counter = 0;
+  std::vector<uint8_t> encryptionIv;
+  std::vector<uint8_t> decryptionIv;
   // long string encryption
   auto block = encodeBlockWithAesGcm128(ndn::tlv::Content, key, (uint8_t*)plaintext.c_str(), plaintext.size(),
-                                        (uint8_t*)associatedData.c_str(), associatedData.size(), counter);
-  auto decoded = decodeBlockWithAesGcm128(block, key, (uint8_t*)associatedData.c_str(), associatedData.size());
+                                        (uint8_t*)associatedData.c_str(), associatedData.size(), encryptionIv);
+  auto decoded = decodeBlockWithAesGcm128(block, key, (uint8_t*)associatedData.c_str(), associatedData.size(),
+                                          decryptionIv);
   BOOST_CHECK_EQUAL(plaintext, std::string(decoded.get<char>(), decoded.size()));
 
   // short string encryption
   block = encodeBlockWithAesGcm128(ndn::tlv::Content, key, (uint8_t*)plaintext2.c_str(), plaintext2.size(),
-                                   (uint8_t*)associatedData.c_str(), associatedData.size(), counter);
-  decoded = decodeBlockWithAesGcm128(block, key, (uint8_t*)associatedData.c_str(), associatedData.size());
+                                   (uint8_t*)associatedData.c_str(), associatedData.size(), encryptionIv);
+  decoded = decodeBlockWithAesGcm128(block, key, (uint8_t*)associatedData.c_str(), associatedData.size(),
+                                     decryptionIv);
   BOOST_CHECK_EQUAL(plaintext2, std::string(decoded.get<char>(), decoded.size()));
 
   // use wrong associated data
   BOOST_CHECK_THROW(decodeBlockWithAesGcm128(block, key,
                                              (uint8_t*)wrongAssociatedData.c_str(),
-                                             wrongAssociatedData.size()), std::runtime_error);
+                                             wrongAssociatedData.size(), decryptionIv), std::runtime_error);
+  // use wrong last observed IV
+  decryptionIv[0] += 1;
+  BOOST_CHECK_THROW(decodeBlockWithAesGcm128(block, key,
+                                             (uint8_t*)associatedData.c_str(),
+                                             associatedData.size(), decryptionIv), std::runtime_error);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
