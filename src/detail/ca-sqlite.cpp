@@ -67,8 +67,8 @@ CREATE TABLE IF NOT EXISTS
     remaining_time INTEGER,
     challenge_secrets TEXT,
     encryption_key BLOB NOT NULL,
-    last_iv BLOB,
-    expected_next_iv BLOB
+    encryption_iv BLOB,
+    decryption_iv BLOB
   );
 CREATE UNIQUE INDEX IF NOT EXISTS
   RequestStateIdIndex ON RequestStates(request_id);
@@ -131,7 +131,7 @@ CaSqlite::getRequest(const RequestId& requestId)
                              challenge_status, cert_request,
                              challenge_type, challenge_secrets,
                              challenge_tp, remaining_tries, remaining_time,
-                             request_type, encryption_key, last_iv, expected_next_iv
+                             request_type, encryption_key, encryption_iv, decryption_iv
                              FROM RequestStates where request_id = ?)_SQLTEXT_");
   statement.bind(1, requestId.data(), requestId.size(), SQLITE_TRANSIENT);
 
@@ -166,7 +166,7 @@ CaSqlite::addRequest(const RequestState& request)
       m_database,
       R"_SQLTEXT_(INSERT OR ABORT INTO RequestStates (request_id, ca_name, status, request_type,
                   cert_request, challenge_type, challenge_status, challenge_secrets,
-                  challenge_tp, remaining_tries, remaining_time, encryption_key, last_iv, expected_next_iv)
+                  challenge_tp, remaining_tries, remaining_time, encryption_key, encryption_iv, decryption_iv)
                   values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
   statement.bind(1, request.requestId.data(), request.requestId.size(), SQLITE_TRANSIENT);
   statement.bind(2, request.caPrefix.wireEncode(), SQLITE_TRANSIENT);
@@ -196,7 +196,7 @@ CaSqlite::updateRequest(const RequestState& request)
   Sqlite3Statement statement(m_database,
                              R"_SQLTEXT_(UPDATE RequestStates
                              SET status = ?, challenge_type = ?, challenge_status = ?, challenge_secrets = ?,
-                             challenge_tp = ?, remaining_tries = ?, remaining_time = ?, last_iv = ?, expected_next_iv = ?
+                             challenge_tp = ?, remaining_tries = ?, remaining_time = ?, encryption_iv = ?, decryption_iv = ?
                              WHERE request_id = ?)_SQLTEXT_");
   statement.bind(1, static_cast<int>(request.status));
   statement.bind(2, request.challengeType, SQLITE_TRANSIENT);
@@ -230,7 +230,7 @@ CaSqlite::listAllRequests()
   Sqlite3Statement statement(m_database, R"_SQLTEXT_(SELECT id, request_id, ca_name, status,
                              challenge_status, cert_request, challenge_type, challenge_secrets,
                              challenge_tp, remaining_tries, remaining_time, request_type,
-                             encryption_key, last_iv, expected_next_iv
+                             encryption_key, encryption_iv, decryption_iv
                              FROM RequestStates)_SQLTEXT_");
   while (statement.step() == SQLITE_ROW) {
     RequestState state;

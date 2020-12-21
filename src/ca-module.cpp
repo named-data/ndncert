@@ -413,10 +413,11 @@ CaModule::onChallenge(const Interest& request)
     else if (requestState->requestType == RequestType::REVOKE) {
       requestState->status = Status::SUCCESS;
       m_storage->deleteRequest(requestState->requestId);
-
+      // TODO: where is the code to revoke?
       payload = challengetlv::encodeDataContent(*requestState);
       NDN_LOG_TRACE("Challenge succeeded. Certificate has been revoked");
     }
+    // TODO: where is renew?
   }
   else {
     m_storage->updateRequest(*requestState);
