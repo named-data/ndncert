@@ -13,6 +13,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: install dependencies for ndncxx
+      run: sudo apt-get install pkg-config libboost-all-dev libssl-dev libsqlite3-dev
     - name: prepare ndncxx
       run: |
         git clone https://github.com/named-data/ndn-cxx.git
