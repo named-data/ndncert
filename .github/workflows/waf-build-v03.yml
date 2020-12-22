@@ -21,12 +21,13 @@ jobs:
         cd ndn-cxx
         ./waf configure
         ./waf 
-        ./waf install
+        sudo ./waf install
+        cd ..
     - name: configure
       run: ./waf configure --with-tests
     - name: build
       run: ./waf
     - name: install
-      run: ./waf install
+      run: sudo ./waf install
     - name: check
       run: ./build/unit-tests
