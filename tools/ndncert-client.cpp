@@ -263,9 +263,23 @@ probeCb(const Data& reply, CaProfile profile)
   }
   if (index < names.size()) {
     //names
-    std::cerr << "You selected name: " << names[index].first.toUri() << std::endl;
-    //TODO add prompt to "add suffix"
-    runNew(profile, names[index].first);
+    auto selectedName = names[index].first;
+    std::cerr << "You selected name: " << selectedName.toUri() << std::endl;
+    std::cerr << "Enter Suffix if you would like one (Enter to skip): ";
+    try {
+      std::string input;
+      getline(std::cin, input);
+      auto inputName = Name(input);
+      if (!inputName.empty()) {
+        selectedName.append(inputName);
+        std::cerr << "You are applying name: " << selectedName.toUri() << std::endl;
+      }
+    }
+    catch (const std::exception& e) {
+      std::cerr << "Your input is Invalid. Exit" << std::endl;
+      exit(0);
+    }
+    runNew(profile, selectedName);
   }
   else {
     //redirects

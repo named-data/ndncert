@@ -401,7 +401,7 @@ CaModule::onChallenge(const Interest& request)
   Block payload;
   if (requestState->status == Status::PENDING) {
     // if challenge succeeded
-    if (requestState->requestType == RequestType::NEW) {
+    if (requestState->requestType == RequestType::NEW || requestState->requestType == RequestType::RENEW) {
       auto issuedCert = issueCertificate(*requestState);
       requestState->cert = issuedCert;
       requestState->status = Status::SUCCESS;
@@ -417,7 +417,6 @@ CaModule::onChallenge(const Interest& request)
       payload = challengetlv::encodeDataContent(*requestState);
       NDN_LOG_TRACE("Challenge succeeded. Certificate has been revoked");
     }
-    // TODO: where is renew?
   }
   else {
     payload = challengetlv::encodeDataContent(*requestState);
