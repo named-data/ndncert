@@ -420,8 +420,8 @@ CaModule::onChallenge(const Interest& request)
     // TODO: where is renew?
   }
   else {
-    m_storage->updateRequest(*requestState);
     payload = challengetlv::encodeDataContent(*requestState);
+    m_storage->updateRequest(*requestState);
     NDN_LOG_TRACE("No failure no success. Challenge moves on");
   }
 

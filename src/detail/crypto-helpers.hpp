@@ -144,15 +144,15 @@ aesGcm128Decrypt(const uint8_t* ciphertext, size_t ciphertextLen, const uint8_t*
  * @param payloadSize The size of the plaintext payload.
  * @param associatedData The associated data used for authentication.
  * @param associatedDataSize The size of associated data.
- * @param last The IV used by the last AES encryption and is needed by subsequent invocations of this function
- *             with the same @p key.
+ * @param encryptionIv The IV used by the last AES encryption and is needed by subsequent invocations of this function
+ *                     with the same @p key.
  * @return Block The TLV block with @p tlv_type TLV TYPE.
  */
 Block
 encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key,
                          const uint8_t* payload, size_t payloadSize,
                          const uint8_t* associatedData, size_t associatedDataSize,
-                         std::vector<uint8_t>& lastIv);
+                         std::vector<uint8_t>& encryptionIv);
 
 /**
  * @brief Decode the payload from TLV block with Authenticated GCM 128 Encryption.

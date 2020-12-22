@@ -341,8 +341,10 @@ updateIv(std::vector<uint8_t>& iv, size_t payloadSize)
 }
 
 Block
-encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key, const uint8_t* payload, size_t payloadSize,
-                         const uint8_t* associatedData, size_t associatedDataSize, std::vector<uint8_t>& encryptionIv)
+encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key,
+                         const uint8_t* payload, size_t payloadSize,
+                         const uint8_t* associatedData, size_t associatedDataSize,
+                         std::vector<uint8_t>& encryptionIv)
 {
   // The spec of AES encrypted payload TLV used in NDNCERT:
   //   https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3#242-aes-gcm-encryption
