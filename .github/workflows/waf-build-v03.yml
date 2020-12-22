@@ -13,6 +13,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: prepare ndncxx
+      run: |
+        git clone https://github.com/named-data/ndn-cxx.git
+        cd ndn-cxx
+        ./waf configure
+        ./waf 
+        ./waf install
     - name: configure
       run: ./waf configure --with-tests
     - name: build
