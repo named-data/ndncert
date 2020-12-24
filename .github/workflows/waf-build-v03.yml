@@ -27,6 +27,7 @@ jobs:
       run: |
         git clone https://github.com/named-data/ndn-cxx.git
         cd ndn-cxx
+        git checkout ndn-cxx-0.7.1
         ./waf configure
         ./waf 
         sudo ./waf install
