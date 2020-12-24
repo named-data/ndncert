@@ -39,4 +39,4 @@ jobs:
     - name: install
       run: sudo ./waf install
     - name: check
-      run: ./build/unit-tests
+      run: sudo ./build/unit-tests
