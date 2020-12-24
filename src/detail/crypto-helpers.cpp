@@ -325,10 +325,28 @@ aesGcm128Decrypt(const uint8_t* ciphertext, size_t ciphertextLen, const uint8_t*
   }
 }
 
+// Can be removed after boost version 1.72, replaced by boost::endian::load_big_u32
+static uint32_t
+loadBigU32(const std::vector<uint8_t>& iv, size_t pos)
+{
+  uint32_t result = iv[pos] << 24 | iv[pos + 1] << 16 | iv[pos + 2] << 8 | iv[pos + 3];
+  return result;
+}
+
+// Can be removed after boost version 1.72, replaced by boost::endian::store_big_u32
+static void
+storeBigU32(uint8_t* iv, uint32_t counter)
+{
+  uint32_t temp = boost::endian::native_to_big(counter);
+  std::memcpy(iv, reinterpret_cast<const uint8_t*>(&temp), 4);
+  return;
+}
+
 static void
 updateIv(std::vector<uint8_t>& iv, size_t payloadSize)
 {
-  uint32_t counter = boost::endian::load_big_u32(&iv[8]);
+  // uint32_t counter = boost::endian::load_big_u32(&iv[8]);
+  uint32_t counter = loadBigU32(iv, 8);
   uint32_t increment = (payloadSize + 15) / 16;
   if (std::numeric_limits<uint32_t>::max() - counter <= increment) {
     NDN_THROW(std::runtime_error("Error incrementing the AES block counter: "
@@ -337,7 +355,8 @@ updateIv(std::vector<uint8_t>& iv, size_t payloadSize)
   else {
     counter += increment;
   }
-  boost::endian::store_big_u32(&iv[8], counter);
+  // boost::endian::store_big_u32(&iv[8], counter);
+  storeBigU32(&iv[8], counter);
 }
 
 Block
