@@ -155,7 +155,7 @@ newCb(const Data& reply)
     std::cerr << "There is no available challenge provided by the CA. Exit" << std::endl;
     exit(1);
   }
-  else if (challengeList.size() > 1) {
+  else if (challengeList.size() >= 1) {
     std::cerr << "\n***************************************\n"
               << "Step " << nStep++
               << ": CHALLENGE SELECTION" << std::endl;
@@ -408,7 +408,7 @@ runNew(CaProfile profile, Name identityName)
   int validityPeriod = captureValidityPeriod();
   auto now = time::system_clock::now();
   std::cerr << "The validity period of your certificate will be: " << validityPeriod << " hours" << std::endl;
-  requesterState =std::make_shared<RequestState>(keyChain, profile, RequestType::NEW);
+  requesterState = std::make_shared<RequestState>(keyChain, profile, RequestType::NEW);
   auto interest = Requester::genNewInterest(*requesterState, identityName, now, now + time::hours(validityPeriod));
   if (interest != nullptr) {
     face.expressInterest(*interest, bind(&newCb, _2), bind(&onNackCb), bind(&timeoutCb));

@@ -137,14 +137,15 @@ CaSqlite::getRequest(const RequestId& requestId)
 
   if (statement.step() == SQLITE_ROW) {
     RequestState state;
+    state.requestId = requestId;
     state.caPrefix = Name(statement.getBlock(1));
     state.status = static_cast<Status>(statement.getInt(2));
     state.cert = security::Certificate(statement.getBlock(4));
     state.challengeType = statement.getString(5);
     state.requestType = static_cast<RequestType>(statement.getInt(10));
     std::memcpy(state.encryptionKey.data(), statement.getBlob(11), statement.getSize(11));
-    state.encryptionIv.assign(statement.getBlob(12), statement.getBlob(12) + statement.getSize(12));
-    state.decryptionIv.assign(statement.getBlob(13), statement.getBlob(13) + statement.getSize(13));
+    state.encryptionIv = std::vector<uint8_t>(statement.getBlob(12), statement.getBlob(12) + statement.getSize(12));
+    state.decryptionIv = std::vector<uint8_t>(statement.getBlob(13), statement.getBlob(13) + statement.getSize(13));
     if (state.challengeType != "") {
       ChallengeState challengeState(statement.getString(3), time::fromIsoString(statement.getString(7)),
                                     statement.getInt(8), time::seconds(statement.getInt(9)),
@@ -179,8 +180,7 @@ CaSqlite::addRequest(const RequestState& request)
   if (request.challengeState) {
     statement.bind(6, request.challengeType, SQLITE_TRANSIENT);
     statement.bind(7, request.challengeState->challengeStatus, SQLITE_TRANSIENT);
-    statement.bind(8, convertJson2String(request.challengeState->secrets),
-                   SQLITE_TRANSIENT);
+    statement.bind(8, convertJson2String(request.challengeState->secrets), SQLITE_TRANSIENT);
     statement.bind(9, time::toIsoString(request.challengeState->timestamp), SQLITE_TRANSIENT);
     statement.bind(10, request.challengeState->remainingTries);
     statement.bind(11, request.challengeState->remainingTime.count());
@@ -241,8 +241,8 @@ CaSqlite::listAllRequests()
     state.cert = security::Certificate(statement.getBlock(5));
     state.requestType = static_cast<RequestType>(statement.getInt(11));
     std::memcpy(state.encryptionKey.data(), statement.getBlob(12), statement.getSize(12));
-    state.encryptionIv.assign(statement.getBlob(13), statement.getBlob(13) + statement.getSize(13));
-    state.decryptionIv.assign(statement.getBlob(14), statement.getBlob(14) + statement.getSize(14));
+    state.encryptionIv = std::vector<uint8_t>(statement.getBlob(13), statement.getBlob(13) + statement.getSize(13));
+    state.decryptionIv = std::vector<uint8_t>(statement.getBlob(14), statement.getBlob(14) + statement.getSize(14));
     if (state.challengeType != "") {
       ChallengeState challengeState(statement.getString(4), time::fromIsoString(statement.getString(8)),
                                     statement.getInt(9), time::seconds(statement.getInt(10)),
@@ -262,7 +262,7 @@ CaSqlite::listAllRequests(const Name& caName)
                              R"_SQLTEXT_(SELECT id, request_id, ca_name, status,
                              challenge_status, cert_request, challenge_type, challenge_secrets,
                              challenge_tp, remaining_tries, remaining_time, request_type,
-                             encryption_key, aes_block_counter
+                             encryption_key, encryption_iv, decryption_iv
                              FROM RequestStates WHERE ca_name = ?)_SQLTEXT_");
   statement.bind(1, caName.wireEncode(), SQLITE_TRANSIENT);
 
@@ -275,8 +275,8 @@ CaSqlite::listAllRequests(const Name& caName)
     state.cert = security::Certificate(statement.getBlock(5));
     state.requestType = static_cast<RequestType>(statement.getInt(11));
     std::memcpy(state.encryptionKey.data(), statement.getBlob(12), statement.getSize(12));
-    state.encryptionIv.assign(statement.getBlob(13), statement.getBlob(13) + statement.getSize(13));
-    state.decryptionIv.assign(statement.getBlob(14), statement.getBlob(14) + statement.getSize(14));
+    state.encryptionIv = std::vector<uint8_t>(statement.getBlob(13), statement.getBlob(13) + statement.getSize(13));
+    state.decryptionIv = std::vector<uint8_t>(statement.getBlob(14), statement.getBlob(14) + statement.getSize(14));
     if (state.challengeType != "") {
       ChallengeState challengeState(statement.getString(4), time::fromIsoString(statement.getString(8)),
                                     statement.getInt(9), time::seconds(statement.getInt(10)),

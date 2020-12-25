@@ -24,8 +24,6 @@
 #include "requester.hpp"
 #include "test-common.hpp"
 
-#include <iostream>
-
 namespace ndn {
 namespace ndncert {
 namespace tests {

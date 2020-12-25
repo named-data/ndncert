@@ -44,6 +44,9 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   request1.requestId = requestId;
   request1.requestType = RequestType::NEW;
   request1.cert = cert1;
+  request1.encryptionKey = {{102}};
+  request1.decryptionIv.assign({1,2,3,4,5,6,7,8,9,10,11,12});
+  request1.decryptionIv.assign({2,3,4,5,6,7,8,9,10,11,12,13});
   storage.addRequest(request1);
 
   // get operation
@@ -53,6 +56,10 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   BOOST_CHECK_EQUAL(request1.caPrefix, result.caPrefix);
   BOOST_CHECK_EQUAL_COLLECTIONS(request1.encryptionKey.begin(), request1.encryptionKey.end(),
                                 result.encryptionKey.begin(), result.encryptionKey.end());
+  BOOST_CHECK_EQUAL_COLLECTIONS(request1.encryptionIv.begin(), request1.encryptionIv.end(),
+                                result.encryptionIv.begin(), result.encryptionIv.end());
+  BOOST_CHECK_EQUAL_COLLECTIONS(request1.decryptionIv.begin(), request1.decryptionIv.end(),
+                                result.decryptionIv.begin(), result.decryptionIv.end());
 
   // update operation
   RequestState request2;
@@ -65,11 +72,17 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   secret.add("code", "1234");
   request2.challengeState = ChallengeState("test", time::system_clock::now(), 3,
                                            time::seconds(3600), std::move(secret));
+  request2.decryptionIv.assign({1,2,3,4,5,6,7,8,9,10,11,14});
+  request2.decryptionIv.assign({2,3,4,5,6,7,8,9,10,11,12,15});
   storage.updateRequest(request2);
   result = storage.getRequest(requestId);
   BOOST_CHECK_EQUAL(request2.cert, result.cert);
   BOOST_CHECK(request2.status == result.status);
   BOOST_CHECK_EQUAL(request2.caPrefix, result.caPrefix);
+  BOOST_CHECK_EQUAL_COLLECTIONS(request2.encryptionIv.begin(), request2.encryptionIv.end(),
+                                result.encryptionIv.begin(), result.encryptionIv.end());
+  BOOST_CHECK_EQUAL_COLLECTIONS(request2.decryptionIv.begin(), request2.decryptionIv.end(),
+                                result.decryptionIv.begin(), result.decryptionIv.end());
 
   // another add operation
   auto identity2 = addIdentity(Name("/ndn/site2"));
