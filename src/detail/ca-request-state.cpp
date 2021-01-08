@@ -78,6 +78,9 @@ operator<<(std::ostream& os, const RequestState& request)
     os << "Challenge remaining tries:" << request.challengeState->remainingTries << " times\n";
     os << "Challenge remaining time: " << request.challengeState->remainingTime.count() << " seconds\n";
     os << "Challenge last update: " << time::toIsoString(request.challengeState->timestamp) << "\n";
+    std::stringstream ss;
+    boost::property_tree::write_json(ss, request.challengeState->secrets);
+    os << "Challenge secret: " << ss.str() << "\n";
   }
   os << "Certificate:\n";
   util::IndentedStream os2(os, "  ");
