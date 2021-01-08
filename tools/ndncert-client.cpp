@@ -220,7 +220,7 @@ InfoCb(const Data& reply, const Name& certFullName)
             << ": Will use a new trust anchor, please double check the identity info:" << std::endl
             << "> New CA name: " << profile->caPrefix.toUri() << std::endl
             << "> This trust anchor information is signed by: " << reply.getSignatureInfo().getKeyLocator() << std::endl
-            << "> The certificate: " << profile->cert << std::endl
+            << "> The certificate: " << *profile->cert << std::endl
             << "Do you trust the information? Type in YES or NO" << std::endl;
 
   std::string answer;
