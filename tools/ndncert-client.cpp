@@ -80,7 +80,8 @@ captureValidityPeriod()
             << ": Please type in your expected validity period of your certificate."
             << " Type the number of hours (168 for week, 730 for month, 8760 for year)."
             << " The CA may reject your application if your expected period is too long." << std::endl;
-  while (true) {
+  size_t count = 0;
+  while (true && count < 3) {
     std::string periodStr = "";
     getline(std::cin, periodStr);
     try {
@@ -88,8 +89,11 @@ captureValidityPeriod()
     }
     catch (const std::exception& e) {
       std::cerr << "Your input is invalid. Try again: " << std::endl;
+      count++;
     }
   }
+  std::cerr << "Invalid input for too many times, exit. " << std::endl;
+  exit(1);
 }
 
 static void
@@ -166,20 +170,27 @@ newCb(const Data& reply)
                 << ">> Challenge:" << item << std::endl;
     }
     std::cerr << "Please type in the challenge index that you want to perform:" << std::endl;
-    while (true) {
+    count = 0;
+    while (count < 3) {
       getline(std::cin, choice);
       try {
         challengeIndex = std::stoul(choice);
       }
       catch (const std::exception& e) {
         std::cerr << "Your input is not valid. Try again:" << std::endl;
+        count++;
         continue;
       }
       if (challengeIndex >= count) {
         std::cerr << "Your input index is out of range. Try again:" << std::endl;
+        count++;
         continue;
       }
       break;
+    }
+    if (count == 3) {
+      std::cerr << "Invalid input for too many times, exit. " << std::endl;
+      exit(1);
     }
   }
   auto it = challengeList.begin();
@@ -255,11 +266,11 @@ probeCb(const Data& reply, CaProfile profile)
   }
   catch (const std::exception& e) {
     std::cerr << "Your input is Invalid. Exit" << std::endl;
-    exit(0);
+    exit(1);
   }
   if (index >= names.size() + redirects.size()) {
     std::cerr << "Your input is not an existing index. Exit" << std::endl;
-    return;
+    exit(1);
   }
   if (index < names.size()) {
     //names
@@ -277,7 +288,7 @@ probeCb(const Data& reply, CaProfile profile)
     }
     catch (const std::exception& e) {
       std::cerr << "Your input is Invalid. Exit" << std::endl;
-      exit(0);
+      exit(1);
     }
     runNew(profile, selectedName);
   }
@@ -371,7 +382,8 @@ runProbe(CaProfile profile)
             << profile.caPrefix.toUri()
             << " already? Type in YES or NO" << std::endl;
   bool validAnswer = false;
-  while (!validAnswer) {
+  size_t count = 0;
+  while (!validAnswer && count < 3) {
     std::string answer;
     getline(std::cin, answer);
     boost::algorithm::to_lower(answer);
@@ -398,8 +410,11 @@ runProbe(CaProfile profile)
     }
     else {
       std::cerr << "Invalid answer. Type in YES or NO" << std::endl;
+      count++;
     }
   }
+  std::cerr << "Invalid input for too many times, exit. " << std::endl;
+  exit(1);
 }
 
 static void
