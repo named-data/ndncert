@@ -170,25 +170,25 @@ newCb(const Data& reply)
                 << ">> Challenge:" << item << std::endl;
     }
     std::cerr << "Please type in the challenge index that you want to perform:" << std::endl;
-    count = 0;
-    while (count < 3) {
+    size_t inputCount = 0;
+    while (inputCount < 3) {
       getline(std::cin, choice);
       try {
         challengeIndex = std::stoul(choice);
       }
       catch (const std::exception& e) {
         std::cerr << "Your input is not valid. Try again:" << std::endl;
-        count++;
+        inputCount++;
         continue;
       }
       if (challengeIndex >= count) {
         std::cerr << "Your input index is out of range. Try again:" << std::endl;
-        count++;
+        inputCount++;
         continue;
       }
       break;
     }
-    if (count == 3) {
+    if (inputCount == 3) {
       std::cerr << "Invalid input for too many times, exit. " << std::endl;
       exit(1);
     }
@@ -413,8 +413,10 @@ runProbe(CaProfile profile)
       count++;
     }
   }
-  std::cerr << "Invalid input for too many times, exit. " << std::endl;
-  exit(1);
+  if (count == 3) {
+    std::cerr << "Invalid input for too many times, exit. " << std::endl;
+    exit(1);
+  }
 }
 
 static void
