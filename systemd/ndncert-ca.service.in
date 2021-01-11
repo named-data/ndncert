@@ -3,7 +3,7 @@ Description=Certificate Management Identity Management Service for NDN
 
 [Service]
 Environment=HOME=%S/ndncert-ca
-ExecStart=@BINDIR@/ndncert-ca-server
+ExecStart=@BINDIR@/ndncert-ca-server -r
 Restart=on-failure
 RestartPreventExitStatus=2
 User=ndn
