@@ -32,6 +32,8 @@ BOOST_FIXTURE_TEST_SUITE(TestForBenchmark, IdentityManagementTimeFixture)
 
 BOOST_AUTO_TEST_CASE(PacketSize0)
 {
+  name::setConventionEncoding(name::Convention::TYPED);
+
   auto identity = addIdentity(Name("/ndn"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();

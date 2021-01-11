@@ -124,12 +124,21 @@ CaModule::getCaProfileData()
     const auto& cert = identity.getDefaultKey().getDefaultCertificate();
     Block contentTLV = infotlv::encodeDataContent(m_config.caProfile, cert);
 
-    Name infoPacketName( m_config.caProfile.caPrefix);
-    infoPacketName.append("CA").append("INFO").appendVersion().appendSegment(0);
+    // set naming convention to be typed
+    auto convention = name::getConventionEncoding();
+    name::setConventionEncoding(name::Convention::TYPED);
+
+    Name infoPacketName(m_config.caProfile.caPrefix);
+    auto segmentComp = name::Component::fromSegment(0);
+    infoPacketName.append("CA").append("INFO").appendVersion().append(segmentComp);
     m_profileData = std::make_unique<Data>(infoPacketName);
+    m_profileData->setFinalBlock(segmentComp);
     m_profileData->setContent(contentTLV);
     m_profileData->setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
     m_keyChain.sign(*m_profileData, signingByIdentity( m_config.caProfile.caPrefix));
+
+    // set back the convention
+    name::setConventionEncoding(convention);
   }
   return *m_profileData;
 }

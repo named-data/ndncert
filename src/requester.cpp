@@ -55,11 +55,19 @@ Requester::genCaProfileDiscoveryInterest(const Name& caName)
 shared_ptr<Interest>
 Requester::genCaProfileInterestFromDiscoveryResponse(const Data& reply)
 {
+  // set naming convention to be typed
+  auto convention = name::getConventionEncoding();
+  name::setConventionEncoding(name::Convention::TYPED);
+
   auto metaData = MetadataObject(reply);
   auto interestName= metaData.getVersionedName();
   interestName.appendSegment(0);
   auto interest = std::make_shared<Interest>(interestName);
   interest->setCanBePrefix(false);
+
+  // set back the convention
+  name::setConventionEncoding(convention);
+
   return interest;
 }
 
