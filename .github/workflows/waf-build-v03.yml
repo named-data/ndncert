@@ -40,5 +40,6 @@ jobs:
       run: sudo ./waf install
     - name: check
       run: |
-        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+        export LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
+        sudo ldconfig
         sudo ./build/unit-tests
