@@ -26,6 +26,7 @@
 #include <boost/program_options/variables_map.hpp>
 #include <iostream>
 #include <chrono>
+#include <deque>
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
 
@@ -37,6 +38,7 @@ Face face;
 security::KeyChain keyChain;
 std::string repoHost = "localhost";
 std::string repoPort = "7376";
+const size_t MAX_CACHED_CERT_NUM = 100;
 
 static bool
 writeDataToRepo(const Data& data) {
@@ -48,7 +50,7 @@ writeDataToRepo(const Data& data) {
 #endif //BOOST_VERSION >= 106600
   requestStream.connect(repoHost, repoPort);
   if (!requestStream) {
-    std::cerr << "ERROR: Cannot publish certificate to repo-ng"
+    std::cerr << "ERROR: Cannot publish the certificate to repo-ng"
               << " (" << requestStream.error().message() << ")" << std::endl;
     return false;
   }
@@ -118,7 +120,7 @@ main(int argc, char* argv[])
   }
 
   CaModule ca(face, keyChain, configFilePath);
-  std::map<Name, Data> cachedCertificates;
+  std::deque<Data> cachedCertificates;
   auto profileData = ca.getCaProfileData();
 
   if (wantRepoOut) {
@@ -132,16 +134,25 @@ main(int argc, char* argv[])
   else {
     ca.setStatusUpdateCallback([&](const RequestState& request) {
       if (request.status == Status::SUCCESS && request.requestType == RequestType::NEW) {
-        cachedCertificates[request.cert.getName()] = request.cert;
+        cachedCertificates.push_front(request.cert);
+        if (cachedCertificates.size() > MAX_CACHED_CERT_NUM) {
+          cachedCertificates.pop_back();
+        }
       }
     });
-    cachedCertificates[profileData.getName()] = profileData;
     face.setInterestFilter(
         InterestFilter(ca.getCaConf().caProfile.caPrefix),
         [&](const InterestFilter&, const Interest& interest) {
-          auto search = cachedCertificates.find(interest.getName());
-          if (search != cachedCertificates.end()) {
-            face.put(search->second);
+          const auto& interestName = interest.getName();
+          if (interestName.isPrefixOf(profileData.getName())) {
+            face.put(profileData);
+            return;
+          }
+          for (const auto& item : cachedCertificates) {
+            if (interestName.isPrefixOf(item.getName())) {
+              face.put(item);
+              return;
+            }
           }
         },
         [](const Name&, const std::string& errorInfo) {
