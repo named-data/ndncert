@@ -149,7 +149,7 @@ main(int argc, char* argv[])
             return;
           }
           for (const auto& item : cachedCertificates) {
-            if (interestName.isPrefixOf(item.getName())) {
+            if (interestName.isPrefixOf(item.getFullName())) {
               face.put(item);
               return;
             }
