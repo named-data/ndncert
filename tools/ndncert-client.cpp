@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "requester.hpp"
+#include "requester-request.hpp"
 #include <ndn-cxx/security/verification-helpers.hpp>
 #include <boost/asio.hpp>
 #include <boost/program_options/options_description.hpp>
@@ -43,7 +43,7 @@ runChallenge(const std::string& challengeType);
 size_t nStep = 1;
 Face face;
 security::KeyChain keyChain;
-shared_ptr<RequestState> requesterState = nullptr;
+shared_ptr<Request> requesterState = nullptr;
 
 static void
 captureParams(std::multimap<std::string, std::string>& requirement)
@@ -111,7 +111,7 @@ timeoutCb()
 static void
 certFetchCb(const Data& reply)
 {
-  auto item = Requester::onCertFetchResponse(reply);
+  auto item = Request::onCertFetchResponse(reply);
   if (item) {
     keyChain.addCertificate(keyChain.getPib().getIdentity(item->getIdentity()).getKey(item->getKeyName()), *item);
   }
@@ -127,7 +127,7 @@ static void
 challengeCb(const Data& reply)
 {
   try {
-    Requester::onChallengeResponse(*requesterState, reply);
+    requesterState->onChallengeResponse(reply);
   }
   catch (const std::exception& e) {
     std::cerr << "Error when decoding challenge step: " << e.what() << std::endl;
@@ -135,7 +135,7 @@ challengeCb(const Data& reply)
   }
   if (requesterState->status == Status::SUCCESS) {
     std::cerr << "Certificate has already been issued, downloading certificate..." << std::endl;
-    face.expressInterest(*Requester::genCertFetchInterest(*requesterState), bind(&certFetchCb, _2),
+    face.expressInterest(*requesterState->genCertFetchInterest(), bind(&certFetchCb, _2),
                          bind(&onNackCb), bind(&timeoutCb));
     return;
   }
@@ -147,7 +147,7 @@ newCb(const Data& reply)
 {
   std::list<std::string> challengeList;
   try {
-    challengeList = Requester::onNewRenewRevokeResponse(*requesterState, reply);
+    challengeList = requesterState->onNewRenewRevokeResponse(reply);
   }
   catch (const std::exception& e) {
     std::cerr << "Error on decoding NEW step reply because: " << e.what() << std::endl;
@@ -205,10 +205,10 @@ InfoCb(const Data& reply, const Name& certFullName)
   optional<CaProfile> profile;
   try {
     if (certFullName.empty()) {
-      profile = Requester::onCaProfileResponse(reply);
+      profile = Request::onCaProfileResponse(reply);
     }
     else {
-      profile = Requester::onCaProfileResponseAfterRedirection(reply, certFullName);
+      profile = Request::onCaProfileResponseAfterRedirection(reply, certFullName);
     }
   }
   catch (const std::exception& e) {
@@ -242,7 +242,7 @@ probeCb(const Data& reply, CaProfile profile)
 {
   std::vector<std::pair<Name, int>> names;
   std::vector<Name> redirects;
-  Requester::onProbeResponse(reply, profile, names, redirects);
+  Request::onProbeResponse(reply, profile, names, redirects);
   size_t count = 0;
   std::cerr << "\n***************************************\n"
             << "Step " << nStep++
@@ -298,9 +298,9 @@ probeCb(const Data& reply, CaProfile profile)
     auto redirectedCaName = security::extractIdentityFromCertName(redirectedCaFullName.getPrefix(-1));
     std::cerr << "You selected to be redirected to CA: " << redirectedCaName.toUri() << std::endl;
     face.expressInterest(
-        *Requester::genCaProfileDiscoveryInterest(redirectedCaName),
+        *Request::genCaProfileDiscoveryInterest(redirectedCaName),
         [&](const Interest&, const Data& data) {
-          auto fetchingInterest = Requester::genCaProfileInterestFromDiscoveryResponse(data);
+          auto fetchingInterest = Request::genCaProfileInterestFromDiscoveryResponse(data);
           face.expressInterest(*fetchingInterest,
                                bind(&InfoCb, _2, redirectedCaFullName),
                                bind(&onNackCb),
@@ -342,9 +342,9 @@ selectCaProfile(std::string configFilePath)
     std::string expectedCAName;
     getline(std::cin, expectedCAName);
     face.expressInterest(
-        *Requester::genCaProfileDiscoveryInterest(Name(expectedCAName)),
+        *Request::genCaProfileDiscoveryInterest(Name(expectedCAName)),
         [&](const Interest&, const Data& data) {
-          auto fetchingInterest = Requester::genCaProfileInterestFromDiscoveryResponse(data);
+          auto fetchingInterest = Request::genCaProfileInterestFromDiscoveryResponse(data);
           face.expressInterest(*fetchingInterest,
                                bind(&InfoCb, _2, Name()),
                                bind(&onNackCb),
@@ -405,7 +405,7 @@ runProbe(CaProfile profile)
       std::cerr << "\n***************************************\n"
                 << "Step " << nStep++ << ": Please provide information for name assignment" << std::endl;
       auto capturedParams = captureParams(profile.probeParameterKeys);
-      face.expressInterest(*Requester::genProbeInterest(profile, std::move(capturedParams)),
+      face.expressInterest(*Request::genProbeInterest(profile, std::move(capturedParams)),
                            bind(&probeCb, _2, profile), bind(&onNackCb), bind(&timeoutCb));
     }
     else {
@@ -425,8 +425,8 @@ runNew(CaProfile profile, Name identityName)
   int validityPeriod = captureValidityPeriod();
   auto now = time::system_clock::now();
   std::cerr << "The validity period of your certificate will be: " << validityPeriod << " hours" << std::endl;
-  requesterState = std::make_shared<RequestState>(keyChain, profile, RequestType::NEW);
-  auto interest = Requester::genNewInterest(*requesterState, identityName, now, now + time::hours(validityPeriod));
+  requesterState = std::make_shared<Request>(keyChain, profile, RequestType::NEW);
+  auto interest = requesterState->genNewInterest(identityName, now, now + time::hours(validityPeriod));
   if (interest != nullptr) {
     face.expressInterest(*interest, bind(&newCb, _2), bind(&onNackCb), bind(&timeoutCb));
   }
@@ -440,7 +440,7 @@ runChallenge(const std::string& challengeType)
 {
   std::multimap<std::string, std::string> requirement;
   try {
-    requirement = Requester::selectOrContinueChallenge(*requesterState, challengeType);
+    requirement = requesterState->selectOrContinueChallenge(challengeType);
   }
   catch (const std::exception& e) {
     std::cerr << "Error. Cannot successfully load the Challenge Module with error: " << std::string(e.what())
@@ -453,7 +453,7 @@ runChallenge(const std::string& challengeType)
               << ": Please provide parameters used for Identity Verification Challenge" << std::endl;
     captureParams(requirement);
   }
-  face.expressInterest(*Requester::genChallengeInterest(*requesterState, std::move(requirement)),
+  face.expressInterest(*requesterState->genChallengeInterest(std::move(requirement)),
                        bind(&challengeCb, _2), bind(&onNackCb), bind(&timeoutCb));
 }
 
@@ -473,7 +473,7 @@ handleSignal(const boost::system::error_code& error, int signalNum)
   }
   std::cerr << std::endl;
   if (requesterState) {
-    Requester::endSession(*requesterState);
+    requesterState->endSession();
   }
   face.getIoService().stop();
   exit(1);

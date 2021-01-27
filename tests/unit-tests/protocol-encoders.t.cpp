@@ -159,7 +159,7 @@ BOOST_AUTO_TEST_CASE(ChallengeEncoding)
   state.challengeState = ca::ChallengeState("test", tp, 3, time::seconds(3600), JsonSection());
   auto contentBlock = challengetlv::encodeDataContent(state, Name("/ndn/ucla/a/b/c"));
 
-  requester::RequestState context(m_keyChain, caCache.getKnownProfiles().front(), RequestType::NEW);
+  requester::Request context(m_keyChain, caCache.getKnownProfiles().front(), RequestType::NEW);
   context.requestId = id;
   std::memcpy(context.aesKey.data(), key, sizeof(key));
   advanceClocks(time::seconds(10));

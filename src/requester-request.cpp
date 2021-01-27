@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "requester.hpp"
+#include "requester-request.hpp"
 #include "challenge/challenge-module.hpp"
 #include "detail/crypto-helpers.hpp"
 #include "detail/challenge-encoder.hpp"
@@ -43,7 +43,7 @@ namespace requester {
 NDN_LOG_INIT(ndncert.client);
 
 shared_ptr<Interest>
-Requester::genCaProfileDiscoveryInterest(const Name& caName)
+Request::genCaProfileDiscoveryInterest(const Name& caName)
 {
   Name contentName = caName;
   if (readString(caName.at(-1)) != "CA")
@@ -53,7 +53,7 @@ Requester::genCaProfileDiscoveryInterest(const Name& caName)
 }
 
 shared_ptr<Interest>
-Requester::genCaProfileInterestFromDiscoveryResponse(const Data& reply)
+Request::genCaProfileInterestFromDiscoveryResponse(const Data& reply)
 {
   // set naming convention to be typed
   auto convention = name::getConventionEncoding();
@@ -72,7 +72,7 @@ Requester::genCaProfileInterestFromDiscoveryResponse(const Data& reply)
 }
 
 optional<CaProfile>
-Requester::onCaProfileResponse(const Data& reply)
+Request::onCaProfileResponse(const Data& reply)
 {
   auto caItem = infotlv::decodeDataContent(reply.getContent());
   if (!security::verifySignature(reply, *caItem.cert)) {
@@ -83,7 +83,7 @@ Requester::onCaProfileResponse(const Data& reply)
 }
 
 optional<CaProfile>
-Requester::onCaProfileResponseAfterRedirection(const Data& reply, const Name& caCertFullName)
+Request::onCaProfileResponseAfterRedirection(const Data& reply, const Name& caCertFullName)
 {
   auto caItem = infotlv::decodeDataContent(reply.getContent());
   auto certBlock = caItem.cert->wireEncode();
@@ -96,7 +96,7 @@ Requester::onCaProfileResponseAfterRedirection(const Data& reply, const Name& ca
 }
 
 shared_ptr<Interest>
-Requester::genProbeInterest(const CaProfile& ca, std::multimap<std::string, std::string>&& probeInfo)
+Request::genProbeInterest(const CaProfile& ca, std::multimap<std::string, std::string>&& probeInfo)
 {
   Name interestName = ca.caPrefix;
   interestName.append("CA").append("PROBE");
@@ -108,8 +108,8 @@ Requester::genProbeInterest(const CaProfile& ca, std::multimap<std::string, std:
 }
 
 void
-Requester::onProbeResponse(const Data& reply, const CaProfile& ca,
-                           std::vector<std::pair<Name, int>>& identityNames, std::vector<Name>& otherCas)
+Request::onProbeResponse(const Data& reply, const CaProfile& ca,
+                         std::vector<std::pair<Name, int>>& identityNames, std::vector<Name>& otherCas)
 {
   if (!security::verifySignature(reply, *ca.cert)) {
     NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
@@ -120,161 +120,166 @@ Requester::onProbeResponse(const Data& reply, const CaProfile& ca,
   probetlv::decodeDataContent(reply.getContent(), identityNames, otherCas);
 }
 
+Request::Request(security::KeyChain& keyChain, const CaProfile& profile, RequestType requestType)
+    : m_keyChain(keyChain)
+    , caProfile(profile)
+    , type(requestType)
+{}
+
 shared_ptr<Interest>
-Requester::genNewInterest(RequestState& state, const Name& identityName,
-                          const time::system_clock::TimePoint& notBefore,
-                          const time::system_clock::TimePoint& notAfter)
+Request::genNewInterest(const Name& newIdentityName,
+                        const time::system_clock::TimePoint& notBefore,
+                        const time::system_clock::TimePoint& notAfter)
 {
-  if (!state.caProfile.caPrefix.isPrefixOf(identityName)) {
+  if (!caProfile.caPrefix.isPrefixOf(newIdentityName)) {
     return nullptr;
   }
-  if (identityName.empty()) {
-    NDN_LOG_TRACE("Randomly create a new name because identityName is empty and the param is empty.");
-    state.identityName = state.caProfile.caPrefix;
-    state.identityName.append(std::to_string(random::generateSecureWord64()));
+  if (newIdentityName.empty()) {
+    NDN_LOG_TRACE("Randomly create a new name because newIdentityName is empty and the param is empty.");
+    identityName = caProfile.caPrefix;
+    identityName.append(std::to_string(random::generateSecureWord64()));
   }
   else {
-    state.identityName = identityName;
+    identityName = newIdentityName;
   }
 
   // generate a newly key pair or use an existing key
-  const auto& pib = state.keyChain.getPib();
+  const auto& pib = m_keyChain.getPib();
   security::pib::Identity identity;
   try {
-    identity = pib.getIdentity(state.identityName);
+    identity = pib.getIdentity(identityName);
   }
   catch (const security::Pib::Error& e) {
-    identity = state.keyChain.createIdentity(state.identityName);
-    state.isNewlyCreatedIdentity = true;
-    state.isNewlyCreatedKey = true;
+    identity = m_keyChain.createIdentity(identityName);
+    m_isNewlyCreatedIdentity = true;
+    m_isNewlyCreatedKey = true;
   }
   try {
-    state.keyPair = identity.getDefaultKey();
+    m_keyPair = identity.getDefaultKey();
   }
   catch (const security::Pib::Error& e) {
-    state.keyPair = state.keyChain.createKey(identity);
-    state.isNewlyCreatedKey = true;
+    m_keyPair = m_keyChain.createKey(identity);
+    m_isNewlyCreatedKey = true;
   }
-  auto& keyName = state.keyPair.getName();
+  auto& keyName = m_keyPair.getName();
 
   // generate certificate request
   security::Certificate certRequest;
   certRequest.setName(Name(keyName).append("cert-request").appendVersion());
   certRequest.setContentType(ndn::tlv::ContentType_Key);
-  certRequest.setContent(state.keyPair.getPublicKey().data(), state.keyPair.getPublicKey().size());
+  certRequest.setContent(m_keyPair.getPublicKey().data(), m_keyPair.getPublicKey().size());
   SignatureInfo signatureInfo;
   signatureInfo.setValidityPeriod(security::ValidityPeriod(notBefore, notAfter));
-  state.keyChain.sign(certRequest, signingByKey(keyName).setSignatureInfo(signatureInfo));
+  m_keyChain.sign(certRequest, signingByKey(keyName).setSignatureInfo(signatureInfo));
 
   // generate Interest packet
-  Name interestName = state.caProfile.caPrefix;
+  Name interestName = caProfile.caPrefix;
   interestName.append("CA").append("NEW");
   auto interest =std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
   interest->setApplicationParameters(
-          requesttlv::encodeApplicationParameters(RequestType::NEW, state.ecdh.getSelfPubKey(), certRequest));
+          requesttlv::encodeApplicationParameters(RequestType::NEW, ecdh.getSelfPubKey(), certRequest));
 
   // sign the Interest packet
-  state.keyChain.sign(*interest, signingByKey(keyName));
+  m_keyChain.sign(*interest, signingByKey(keyName));
   return interest;
 }
 
 shared_ptr<Interest>
-Requester::genRevokeInterest(RequestState& state, const security::Certificate& certificate)
+Request::genRevokeInterest(const security::Certificate& certificate)
 {
-  if (!state.caProfile.caPrefix.isPrefixOf(certificate.getName())) {
+  if (!caProfile.caPrefix.isPrefixOf(certificate.getName())) {
     return nullptr;
   }
   // generate Interest packet
-  Name interestName = state.caProfile.caPrefix;
+  Name interestName = caProfile.caPrefix;
   interestName.append("CA").append("REVOKE");
   auto interest =std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
   interest->setApplicationParameters(
-          requesttlv::encodeApplicationParameters(RequestType::REVOKE, state.ecdh.getSelfPubKey(), certificate));
+          requesttlv::encodeApplicationParameters(RequestType::REVOKE, ecdh.getSelfPubKey(), certificate));
   return interest;
 }
 
 std::list<std::string>
-Requester::onNewRenewRevokeResponse(RequestState& state, const Data& reply)
+Request::onNewRenewRevokeResponse(const Data& reply)
 {
-  if (!security::verifySignature(reply, *state.caProfile.cert)) {
+  if (!security::verifySignature(reply, *caProfile.cert)) {
     NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
     NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
   }
   processIfError(reply);
 
-  auto contentTLV = reply.getContent();
+  const auto& contentTLV = reply.getContent();
   std::vector<uint8_t> ecdhKey;
   std::array<uint8_t, 32> salt;
-  auto challenges = requesttlv::decodeDataContent(contentTLV, ecdhKey, salt, state.requestId, state.status);
+  auto challenges = requesttlv::decodeDataContent(contentTLV, ecdhKey, salt, requestId, status);
 
   // ECDH and HKDF
-  auto sharedSecret = state.ecdh.deriveSecret(ecdhKey);
+  auto sharedSecret = ecdh.deriveSecret(ecdhKey);
   hkdf(sharedSecret.data(), sharedSecret.size(),
-       salt.data(), salt.size(), state.aesKey.data(), state.aesKey.size());
+       salt.data(), salt.size(), aesKey.data(), aesKey.size());
 
   // update state
   return challenges;
 }
 
 std::multimap<std::string, std::string>
-Requester::selectOrContinueChallenge(RequestState& state, const std::string& challengeSelected)
+Request::selectOrContinueChallenge(const std::string& challengeSelected)
 {
   auto challenge = ChallengeModule::createChallengeModule(challengeSelected);
   if (challenge == nullptr) {
     NDN_THROW(std::runtime_error("The challenge selected is not supported by your current version of NDNCERT."));
   }
-  state.challengeType = challengeSelected;
-  return challenge->getRequestedParameterList(state.status, state.challengeStatus);
+  challengeType = challengeSelected;
+  return challenge->getRequestedParameterList(status, challengeStatus);
 }
 
 shared_ptr<Interest>
-Requester::genChallengeInterest(RequestState& state,
-                                std::multimap<std::string, std::string>&& parameters)
+Request::genChallengeInterest(std::multimap<std::string, std::string>&& parameters)
 {
-  if (state.challengeType == "") {
+  if (challengeType == "") {
     NDN_THROW(std::runtime_error("The challenge has not been selected."));
   }
-  auto challenge = ChallengeModule::createChallengeModule(state.challengeType);
+  auto challenge = ChallengeModule::createChallengeModule(challengeType);
   if (challenge == nullptr) {
     NDN_THROW(std::runtime_error("The challenge selected is not supported by your current version of NDNCERT."));
   }
-  auto challengeParams = challenge->genChallengeRequestTLV(state.status, state.challengeStatus, std::move(parameters));
+  auto challengeParams = challenge->genChallengeRequestTLV(status, challengeStatus, std::move(parameters));
 
-  Name interestName = state.caProfile.caPrefix;
-  interestName.append("CA").append("CHALLENGE").append(state.requestId.data(), state.requestId.size());
+  Name interestName = caProfile.caPrefix;
+  interestName.append("CA").append("CHALLENGE").append(requestId.data(), requestId.size());
   auto interest =std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
 
   // encrypt the Interest parameters
-  auto paramBlock = encodeBlockWithAesGcm128(ndn::tlv::ApplicationParameters, state.aesKey.data(),
+  auto paramBlock = encodeBlockWithAesGcm128(ndn::tlv::ApplicationParameters, aesKey.data(),
                                              challengeParams.value(), challengeParams.value_size(),
-                                             state.requestId.data(), state.requestId.size(),
-                                             state.encryptionIv);
+                                             requestId.data(), requestId.size(),
+                                             encryptionIv);
   interest->setApplicationParameters(paramBlock);
-  state.keyChain.sign(*interest, signingByKey(state.keyPair.getName()));
+  m_keyChain.sign(*interest, signingByKey(m_keyPair.getName()));
   return interest;
 }
 
 void
-Requester::onChallengeResponse(RequestState& state, const Data& reply)
+Request::onChallengeResponse(const Data& reply)
 {
-  if (!security::verifySignature(reply, *state.caProfile.cert)) {
+  if (!security::verifySignature(reply, *caProfile.cert)) {
     NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
     NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
   }
   processIfError(reply);
-  challengetlv::decodeDataContent(reply.getContent(), state);
+  challengetlv::decodeDataContent(reply.getContent(), *this);
 }
 
 shared_ptr<Interest>
-Requester::genCertFetchInterest(const RequestState& state)
+Request::genCertFetchInterest() const
 {
-  Name interestName = state.issuedCertName;
+  Name interestName = issuedCertName;
   auto interest =std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(false);
   interest->setCanBePrefix(false);
@@ -282,7 +287,7 @@ Requester::genCertFetchInterest(const RequestState& state)
 }
 
 shared_ptr<security::Certificate>
-Requester::onCertFetchResponse(const Data& reply)
+Request::onCertFetchResponse(const Data& reply)
 {
   try {
     return std::make_shared<security::Certificate>(reply);
@@ -295,25 +300,25 @@ Requester::onCertFetchResponse(const Data& reply)
 }
 
 void
-Requester::endSession(RequestState& state)
+Request::endSession()
 {
-  if (state.status == Status::SUCCESS) {
+  if (status == Status::SUCCESS) {
     return;
   }
-  if (state.isNewlyCreatedIdentity) {
+  if (m_isNewlyCreatedIdentity) {
     // put the identity into the if scope is because it may cause an error
     // outside since when endSession is called, identity may not have been created yet.
-    auto identity = state.keyChain.getPib().getIdentity(state.identityName);
-    state.keyChain.deleteIdentity(identity);
+    auto identity = m_keyChain.getPib().getIdentity(identityName);
+    m_keyChain.deleteIdentity(identity);
   }
-  else if (state.isNewlyCreatedKey) {
-    auto identity = state.keyChain.getPib().getIdentity(state.identityName);
-    state.keyChain.deleteKey(identity, state.keyPair);
+  else if (m_isNewlyCreatedKey) {
+    auto identity = m_keyChain.getPib().getIdentity(identityName);
+    m_keyChain.deleteKey(identity, m_keyPair);
   }
 }
 
 void
-Requester::processIfError(const Data& data)
+Request::processIfError(const Data& data)
 {
   auto errorInfo = errortlv::decodefromDataContent(data.getContent());
   if (std::get<0>(errorInfo) == ErrorCode::NO_ERROR) {

@@ -18,7 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "requester.hpp"
+#include "requester-request.hpp"
 #include "detail/error-encoder.hpp"
 #include "detail/probe-encoder.hpp"
 #include "challenge/challenge-module.hpp"
@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE(GenProbeInterest)
   probeParams.emplace("email", "zhiyi@cs.ucla.edu");
   probeParams.emplace("uid", "987654321");
   probeParams.emplace("name", "Zhiyi Zhang");
-  auto firstInterest = Requester::genProbeInterest(ca_profile, std::move(probeParams));
+  auto firstInterest = Request::genProbeInterest(ca_profile, std::move(probeParams));
 
   BOOST_CHECK(firstInterest->getName().at(-1).isParametersSha256Digest());
   // ignore the last name component (ParametersSha256Digest)
@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(OnProbeResponse){
 
   std::vector<std::pair<Name, int>> names;
   std::vector<Name> redirects;
-  Requester::onProbeResponse(reply, ca_profile, names, redirects);
+  Request::onProbeResponse(reply, ca_profile, names, redirects);
 
   // Test names and redirects are properly stored
   BOOST_CHECK_EQUAL(names.size(), 2);
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(ErrorHandling)
   CaProfile item;
   item.caPrefix = Name("/site");
   item.cert = std::make_shared<security::Certificate>(cert);
-  RequestState state(m_keyChain, item, RequestType::NEW);
+  Request state(m_keyChain, item, RequestType::NEW);
 
   Data errorPacket;
   errorPacket.setName(Name("/site/pretend/this/is/error/packet"));
@@ -119,9 +119,9 @@ BOOST_AUTO_TEST_CASE(ErrorHandling)
 
   std::vector<std::pair<Name, int>> ids;
   std::vector<Name> cas;
-  BOOST_CHECK_THROW(Requester::onProbeResponse(errorPacket, item, ids, cas), std::runtime_error);
-  BOOST_CHECK_THROW(Requester::onNewRenewRevokeResponse(state, errorPacket), std::runtime_error);
-  BOOST_CHECK_THROW(Requester::onChallengeResponse(state, errorPacket), std::runtime_error);
+  BOOST_CHECK_THROW(Request::onProbeResponse(errorPacket, item, ids, cas), std::runtime_error);
+  BOOST_CHECK_THROW(state.onNewRenewRevokeResponse(errorPacket), std::runtime_error);
+  BOOST_CHECK_THROW(state.onChallengeResponse(errorPacket), std::runtime_error);
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TestRequester

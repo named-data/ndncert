@@ -51,7 +51,7 @@ challengetlv::encodeDataContent(ca::RequestState& request, const Name& issuedCer
 }
 
 void
-challengetlv::decodeDataContent(const Block& contentBlock, requester::RequestState& state)
+challengetlv::decodeDataContent(const Block& contentBlock, requester::Request& state)
 {
   auto result = decodeBlockWithAesGcm128(contentBlock, state.aesKey.data(),
                                          state.requestId.data(), state.requestId.size(),

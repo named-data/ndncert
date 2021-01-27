@@ -18,16 +18,18 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_REQUESTER_HPP
-#define NDNCERT_REQUESTER_HPP
+#ifndef NDNCERT_REQUESTER_REQUEST_HPP
+#define NDNCERT_REQUESTER_REQUEST_HPP
 
-#include "requester-request-state.hpp"
+#include "detail/ca-request-state.hpp"
+#include "detail/crypto-helpers.hpp"
+#include "detail/profile-storage.hpp"
 
 namespace ndn {
 namespace ndncert {
 namespace requester {
 
-class Requester : noncopyable
+class Request : noncopyable
 {
 public:
   /**
@@ -101,18 +103,22 @@ public:
   onProbeResponse(const Data& reply, const CaProfile& ca,
                   std::vector<std::pair<Name, int>>& identityNames, std::vector<Name>& otherCas);
 
+
+  explicit
+  Request(security::KeyChain& keyChain, const CaProfile& profile, RequestType requestType);
+
   // NEW/REVOKE/RENEW related helpers
   /**
    * @brief Generates a NEW interest to the CA.
    *
    * @param state The current requester state for this request. Will be modified in the function.
-   * @param identityName The identity name to be requested.
+   * @param newIdentityName The identity name to be requested.
    * @param notBefore The expected notBefore field for the certificate (starting time)
    * @param notAfter The expected notAfter field for the certificate (expiration time)
    * @return The shared pointer to the encoded interest.
    */
-  static shared_ptr<Interest>
-  genNewInterest(RequestState& state, const Name& identityName,
+  shared_ptr<Interest>
+  genNewInterest(const Name& newIdentityName,
                  const time::system_clock::TimePoint& notBefore,
                  const time::system_clock::TimePoint& notAfter);
 
@@ -123,8 +129,8 @@ public:
    * @param certificate The certificate to the revoked.
    * @return The shared pointer to the encoded interest.
    */
-  static shared_ptr<Interest>
-  genRevokeInterest(RequestState& state, const security::Certificate& certificate);
+  shared_ptr<Interest>
+  genRevokeInterest(const security::Certificate& certificate);
 
   /**
    * @brief Decodes the replied data of NEW, RENEW, or REVOKE interest from the CA.
@@ -134,8 +140,8 @@ public:
    * @return the list of challenge accepted by the CA, for CHALLENGE step.
    * @throw std::runtime_error if the decoding fails or receiving an error packet.
    */
-  static std::list<std::string>
-  onNewRenewRevokeResponse(RequestState& state, const Data& reply);
+  std::list<std::string>
+  onNewRenewRevokeResponse(const Data& reply);
 
   // CHALLENGE helpers
   /**
@@ -147,8 +153,8 @@ public:
    * @return The requirement list for the current stage of the challenge, in name, prompt mapping.
    * @throw std::runtime_error if the challenge is not supported.
    */
-  static std::multimap<std::string, std::string>
-  selectOrContinueChallenge(RequestState& state, const std::string& challengeSelected);
+  std::multimap<std::string, std::string>
+  selectOrContinueChallenge(const std::string& challengeSelected);
 
   /**
    * @brief Generates the CHALLENGE interest for the request.
@@ -158,9 +164,8 @@ public:
    * @return The shared pointer to the encoded interest
    * @throw std::runtime_error if the challenge is not selected or is not supported.
    */
-  static shared_ptr<Interest>
-  genChallengeInterest(RequestState& state,
-                       std::multimap<std::string, std::string>&& parameters);
+  shared_ptr<Interest>
+  genChallengeInterest(std::multimap<std::string, std::string>&& parameters);
 
   /**
    * @brief Decodes the responded data from the CHALLENGE interest.
@@ -169,8 +174,8 @@ public:
    * @param reply, the response data.
    * @throw std::runtime_error if the decoding fails or receiving an error packet.
    */
-  static void
-  onChallengeResponse(RequestState& state, const Data& reply);
+  void
+  onChallengeResponse(const Data& reply);
 
   /**
    * @brief Generate the interest to fetch the issued certificate
@@ -178,8 +183,8 @@ public:
    * @param state, the state of the request.
    * @return The shared pointer to the encoded interest
    */
-  static shared_ptr<Interest>
-  genCertFetchInterest(const RequestState& state);
+  shared_ptr<Interest>
+  genCertFetchInterest() const;
 
   /**
    * @brief Decoded and installs the response certificate from the certificate fetch.
@@ -195,16 +200,92 @@ public:
    *
    * @param state, the requester state for the request.
    */
-  static void
-  endSession(RequestState& state);
+  void
+  endSession();
 
 private:
   static void
   processIfError(const Data& data);
+
+public:
+  /**
+   * @brief The CA profile for this request.
+   */
+  CaProfile caProfile;
+  /**
+   * @brief The type of request. Either NEW, RENEW, or REVOKE.
+   */
+  RequestType type;
+  /**
+   * @brief The identity name for the requesting certificate.
+   */
+  Name identityName;
+  /**
+   * @brief The CA-generated request ID for the request.
+   */
+  RequestId requestId;
+  /**
+   * @brief The current status of the request.
+   */
+  Status status = Status::BEFORE_CHALLENGE;
+  /**
+   * @brief The type of challenge chosen.
+   */
+  std::string challengeType;
+  /**
+   * @brief The status of the current challenge.
+   */
+  std::string challengeStatus;
+  /**
+   * @brief The remaining number of tries left for the challenge
+   */
+  int remainingTries = 0;
+  /**
+   * @brief The time this challenge will remain fresh
+   */
+  time::system_clock::TimePoint freshBefore;
+  /**
+   * @brief the name of the certificate being issued.
+   */
+  Name issuedCertName;
+  /**
+   * @brief ecdh state.
+   */
+  ECDHState ecdh;
+  /**
+   * @brief AES key derived from the ecdh shared secret.
+   */
+  std::array<uint8_t, 16> aesKey = {};
+  /**
+   * @brief The last Initialization Vector used by the AES encryption.
+   */
+  std::vector<uint8_t> encryptionIv;
+  /**
+   * @brief The last Initialization Vector used by the other side's AES encryption.
+   */
+  std::vector<uint8_t> decryptionIv;
+  /**
+   * @brief Store Nonce for signature
+   */
+  std::array<uint8_t, 16> nonce = {};
+private:
+  /**
+   * @brief The local keychain to generate and install identities, keys and certificates
+   */
+  security::KeyChain& m_keyChain;
+  /**
+   * @brief State about how identity/key is generated.
+   */
+  bool m_isNewlyCreatedIdentity = false;
+  bool m_isNewlyCreatedKey = false;
+  /**
+   * @brief The keypair for the request.
+   */
+  security::Key m_keyPair;
 };
 
 } // namespace requester
 } // namespace ndncert
 } // namespace ndn
 
-#endif // NDNCERT_REQUESTER_HPP
+#endif // NDNCERT_REQUESTER_REQUEST_HPP

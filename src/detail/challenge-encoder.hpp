@@ -22,7 +22,7 @@
 #define NDNCERT_DETAIL_CHALLENGE_ENCODER_HPP
 
 #include "detail/ca-request-state.hpp"
-#include "requester-request-state.hpp"
+#include "requester-request.hpp"
 
 namespace ndn {
 namespace ndncert {
@@ -32,7 +32,7 @@ Block
 encodeDataContent(ca::RequestState& request, const Name& issuedCertName = Name());
 
 void
-decodeDataContent(const Block& contentBlock, requester::RequestState& state);
+decodeDataContent(const Block& contentBlock, requester::Request& state);
 
 } // namespace challengetlv
 } // namespace ndncert
