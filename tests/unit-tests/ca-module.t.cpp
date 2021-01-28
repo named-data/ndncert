@@ -302,6 +302,47 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidValidityPeriod1)
   advanceClocks(time::milliseconds(20), 60);
 }
 
+BOOST_AUTO_TEST_CASE(HandleNewWithServerBadValidity)
+{
+  auto identity = addIdentity(Name("/ndn"));
+  auto key = identity.getDefaultKey();
+
+  //build expired cert
+  security::Certificate cert;
+  cert.setName(Name(key.getName()).append("self-sign").appendVersion());
+  cert.setContentType(ndn::tlv::ContentType_Key);
+  cert.setContent(key.getPublicKey().data(), key.getPublicKey().size());
+  SignatureInfo signatureInfo;
+  signatureInfo.setValidityPeriod(security::ValidityPeriod(time::system_clock::now() - time::days(1), time::system_clock::now() - time::seconds(1)));
+  m_keyChain.sign(cert, signingByKey(key.getName()).setSignatureInfo(signatureInfo));
+  m_keyChain.setDefaultCertificate(key, cert);
+
+  util::DummyClientFace face(io, m_keyChain, {true, true});
+  CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
+  advanceClocks(time::milliseconds(20), 60);
+
+  CaProfile item;
+  item.caPrefix = Name("/ndn");
+  item.cert = std::make_shared<security::Certificate>(cert);
+  requester::Request state(m_keyChain, item, RequestType::NEW);
+  auto interest = state.genNewInterest(Name("/ndn/zhiyi"),
+                                       time::system_clock::now(),
+                                       time::system_clock::now() + time::days(1));
+
+  int count = 0;
+  face.onSendData.connect([&](const Data& response) {
+    auto contentTlv = response.getContent();
+    contentTlv.parse();
+    auto errorCode = static_cast<ErrorCode>(readNonNegativeInteger(contentTlv.get(tlv::ErrorCode)));
+    BOOST_CHECK(errorCode != ErrorCode::NO_ERROR);
+    count ++;
+  });
+  face.receive(*interest);
+
+  advanceClocks(time::milliseconds(20), 60);
+  BOOST_CHECK_EQUAL(count, 1);
+}
+
 BOOST_AUTO_TEST_CASE(HandleNewWithLongSuffix)
 {
   auto identity = addIdentity(Name("/ndn"));

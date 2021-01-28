@@ -195,6 +195,16 @@ CaModule::onProbe(const Interest& request)
 void
 CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
 {
+
+  //verify ca cert validity
+  const auto& caCert = m_keyChain.getPib().getIdentity( m_config.caProfile.caPrefix).getDefaultKey().getDefaultCertificate();
+  if (!caCert.isValid()) {
+    NDN_LOG_ERROR("Server certificate invalid/expired");
+    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::BAD_VALIDITY_PERIOD,
+                                       "Server certificate invalid/expired"));
+    return;
+  }
+
   // NEW Naming Convention: /<CA-prefix>/CA/NEW/[SignedInterestParameters_Digest]
   // REVOKE Naming Convention: /<CA-prefix>/CA/REVOKE/[SignedInterestParameters_Digest]
   // get ECDH pub key and cert request
@@ -292,8 +302,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   }
   else if (requestType == RequestType::REVOKE) {
     //verify cert is from this CA
-    const auto& cert = m_keyChain.getPib().getIdentity( m_config.caProfile.caPrefix).getDefaultKey().getDefaultCertificate();
-    if (!security::verifySignature(*clientCert, cert)) {
+    if (!security::verifySignature(*clientCert, caCert)) {
       NDN_LOG_ERROR("Invalid signature in the certificate to revoke.");
       m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::BAD_SIGNATURE,
                                          "Invalid signature in the certificate to revoke."));
