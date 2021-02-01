@@ -120,7 +120,7 @@ CaModule::getCaProfileData()
 {
   if (m_profileData == nullptr) {
     const auto& pib = m_keyChain.getPib();
-    const auto& identity = pib.getIdentity( m_config.caProfile.caPrefix);
+    const auto& identity = pib.getIdentity(m_config.caProfile.caPrefix);
     const auto& cert = identity.getDefaultKey().getDefaultCertificate();
     Block contentTLV = infotlv::encodeDataContent(m_config.caProfile, cert);
 
