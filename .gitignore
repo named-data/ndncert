@@ -9,6 +9,9 @@
 # Visual Studio Code
 .vscode/
 
+# Clion
+.idea
+
 # macOS
 .DS_Store
 .AppleDouble

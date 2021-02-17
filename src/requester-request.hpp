@@ -268,6 +268,7 @@ public:
    * @brief Store Nonce for signature
    */
   std::array<uint8_t, 16> nonce = {};
+
 private:
   /**
    * @brief The local keychain to generate and install identities, keys and certificates

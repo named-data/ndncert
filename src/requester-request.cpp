@@ -121,9 +121,9 @@ Request::onProbeResponse(const Data& reply, const CaProfile& ca,
 }
 
 Request::Request(security::KeyChain& keyChain, const CaProfile& profile, RequestType requestType)
-    : m_keyChain(keyChain)
-    , caProfile(profile)
+    : caProfile(profile)
     , type(requestType)
+    , m_keyChain(keyChain)
 {}
 
 shared_ptr<Interest>

@@ -237,7 +237,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
 
   // get server's ECDH pub key
   ECDHState ecdh;
-  auto myEcdhPubKeyBase64 = ecdh.getSelfPubKey();
+  auto myEcdhPubKey = ecdh.getSelfPubKey();
   std::vector<uint8_t> sharedSecret;
   try {
     sharedSecret = ecdh.deriveSecret(ecdhPub);
@@ -343,7 +343,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   Data result;
   result.setName(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  result.setContent(requesttlv::encodeDataContent(myEcdhPubKeyBase64,
+  result.setContent(requesttlv::encodeDataContent(myEcdhPubKey,
                                                   salt,
                                                   requestState.requestId, requestState.status,
                                                   m_config.caProfile.supportedChallenges));

@@ -26,24 +26,11 @@
 namespace ndn {
 namespace ndncert {
 
-NDN_LOG_INIT(ndncert.encoding.new_renew_revoke);
-
 Block
 requesttlv::encodeApplicationParameters(RequestType requestType, const std::vector<uint8_t>& ecdhPub,
                                                    const security::Certificate& certRequest)
 {
   Block request(ndn::tlv::ApplicationParameters);
-  std::stringstream ss;
-  try {
-    security::transform::bufferSource(certRequest.wireEncode().wire(), certRequest.wireEncode().size())
-    >> security::transform::base64Encode(false)
-    >> security::transform::streamSink(ss);
-  }
-  catch (const security::transform::Error& e) {
-    NDN_LOG_ERROR("Cannot convert self-signed cert into BASE64 string " << e.what());
-    return request;
-  }
-
   request.push_back(makeBinaryBlock(tlv::EcdhPub, ecdhPub.data(), ecdhPub.size()));
   if (requestType == RequestType::NEW || requestType == RequestType::RENEW) {
     request.push_back(makeNestedBlock(tlv::CertRequest, certRequest));
