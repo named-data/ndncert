@@ -25,7 +25,7 @@
 #include "detail/challenge-encoder.hpp"
 #include "detail/error-encoder.hpp"
 #include "detail/info-encoder.hpp"
-#include "detail/new-renew-revoke-encoder.hpp"
+#include "detail/request-encoder.hpp"
 #include "detail/probe-encoder.hpp"
 #include <ndn-cxx/metadata-object.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>

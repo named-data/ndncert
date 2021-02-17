@@ -21,7 +21,7 @@
 #include "detail/challenge-encoder.hpp"
 #include "detail/error-encoder.hpp"
 #include "detail/info-encoder.hpp"
-#include "detail/new-renew-revoke-encoder.hpp"
+#include "detail/request-encoder.hpp"
 #include "detail/probe-encoder.hpp"
 #include "detail/ca-configuration.hpp"
 #include "test-common.hpp"

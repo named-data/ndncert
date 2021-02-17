@@ -18,8 +18,8 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_DETAIL_NEW_RENEW_REVOKE_ENCODER_HPP
-#define NDNCERT_DETAIL_NEW_RENEW_REVOKE_ENCODER_HPP
+#ifndef NDNCERT_DETAIL_REQUEST_ENCODER_HPP
+#define NDNCERT_DETAIL_REQUEST_ENCODER_HPP
 
 #include "detail/ca-request-state.hpp"
 
@@ -37,8 +37,7 @@ decodeApplicationParameters(const Block& block, RequestType requestType, std::ve
 
 Block
 encodeDataContent(const std::vector<uint8_t>& ecdhKey, const std::array<uint8_t, 32>& salt,
-                  const RequestId& requestId,
-                  const std::vector<std::string>& challenges);
+                  const RequestId& requestId, const std::vector<std::string>& challenges);
 
 std::list<std::string>
 decodeDataContent(const Block& content, std::vector<uint8_t>& ecdhKey,
