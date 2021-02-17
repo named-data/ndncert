@@ -27,10 +27,11 @@ namespace ndn {
 namespace ndncert {
 
 Block
-requesttlv::encodeApplicationParameters(RequestType requestType, const std::vector<uint8_t>& ecdhPub,
-                                                   const security::Certificate& certRequest)
+requesttlv::encodeApplicationParameters(RequestType requestType, const std::vector <uint8_t>& ecdhPub,
+                                        const security::Certificate& certRequest)
 {
-  Block request(ndn::tlv::ApplicationParameters);
+  Block
+  request(ndn::tlv::ApplicationParameters);
   request.push_back(makeBinaryBlock(tlv::EcdhPub, ecdhPub.data(), ecdhPub.size()));
   if (requestType == RequestType::NEW || requestType == RequestType::RENEW) {
     request.push_back(makeNestedBlock(tlv::CertRequest, certRequest));
@@ -44,8 +45,8 @@ requesttlv::encodeApplicationParameters(RequestType requestType, const std::vect
 
 void
 requesttlv::decodeApplicationParameters(const Block& payload, RequestType requestType,
-                                                   std::vector<uint8_t>& ecdhPub,
-                                                   shared_ptr<security::Certificate>& clientCert)
+                                        std::vector <uint8_t>& ecdhPub,
+                                        shared_ptr <security::Certificate>& clientCert)
 {
   payload.parse();
 
@@ -63,19 +64,18 @@ requesttlv::decodeApplicationParameters(const Block& payload, RequestType reques
   requestPayload.parse();
 
   security::Certificate cert = security::Certificate(requestPayload.get(ndn::tlv::Data));
-  clientCert =std::make_shared<security::Certificate>(cert);
+  clientCert = std::make_shared<security::Certificate>(cert);
 }
 
 Block
-requesttlv::encodeDataContent(const std::vector<uint8_t>& ecdhKey, const std::array<uint8_t, 32>& salt,
-                                         const RequestId& requestId, const Status& status,
-                                         const std::vector<std::string>& challenges)
+requesttlv::encodeDataContent(const std::vector <uint8_t>& ecdhKey, const std::array<uint8_t, 32>& salt,
+                              const RequestId& requestId,
+                              const std::vector <std::string>& challenges)
 {
   Block response(ndn::tlv::Content);
   response.push_back(makeBinaryBlock(tlv::EcdhPub, ecdhKey.data(), ecdhKey.size()));
   response.push_back(makeBinaryBlock(tlv::Salt, salt.data(), salt.size()));
   response.push_back(makeBinaryBlock(tlv::RequestId, requestId.data(), requestId.size()));
-  response.push_back(makeNonNegativeIntegerBlock(tlv::Status, static_cast<size_t>(status)));
   for (const auto& entry: challenges) {
     response.push_back(makeStringBlock(tlv::Challenge, entry));
   }
@@ -83,12 +83,11 @@ requesttlv::encodeDataContent(const std::vector<uint8_t>& ecdhKey, const std::ar
   return response;
 }
 
-std::list<std::string>
-requesttlv::decodeDataContent(const Block& content, std::vector<uint8_t>& ecdhKey,
-                                         std::array<uint8_t, 32>& salt, RequestId& requestId, Status& status)
+std::list <std::string>
+requesttlv::decodeDataContent(const Block& content, std::vector <uint8_t>& ecdhKey,
+                              std::array<uint8_t, 32>& salt, RequestId& requestId)
 {
   content.parse();
-  status = statusFromBlock(content.get(tlv::Status));
 
   const auto& ecdhBlock = content.get(tlv::EcdhPub);
   ecdhKey.resize(ecdhBlock.value_size());
@@ -100,7 +99,7 @@ requesttlv::decodeDataContent(const Block& content, std::vector<uint8_t>& ecdhKe
   const auto& requestIdBlock = content.get(tlv::RequestId);
   std::memcpy(requestId.data(), requestIdBlock.value(), requestIdBlock.value_size());
 
-  std::list<std::string> challenges;
+  std::list <std::string> challenges;
   for (auto const& element : content.elements()) {
     if (element.type() == tlv::Challenge) {
       challenges.push_back(readString(element));

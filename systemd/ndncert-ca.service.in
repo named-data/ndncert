@@ -6,6 +6,7 @@ Environment=HOME=%S/ndncert-ca
 ExecStart=@BINDIR@/ndncert-ca-server
 Restart=on-failure
 RestartPreventExitStatus=2
+RestartSec=5
 User=ndn
 
 [Install]

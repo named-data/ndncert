@@ -215,7 +215,7 @@ Request::onNewRenewRevokeResponse(const Data& reply)
   const auto& contentTLV = reply.getContent();
   std::vector<uint8_t> ecdhKey;
   std::array<uint8_t, 32> salt;
-  auto challenges = requesttlv::decodeDataContent(contentTLV, ecdhKey, salt, requestId, status);
+  auto challenges = requesttlv::decodeDataContent(contentTLV, ecdhKey, salt, requestId);
 
   // ECDH and HKDF
   auto sharedSecret = ecdh.deriveSecret(ecdhKey);

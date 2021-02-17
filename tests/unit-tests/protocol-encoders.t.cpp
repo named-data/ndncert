@@ -127,16 +127,14 @@ BOOST_AUTO_TEST_CASE(NewRevokeEncodingData)
   std::vector<std::string> list;
   list.emplace_back("abc");
   list.emplace_back("def");
-  auto b = requesttlv::encodeDataContent(pub, salt, id, Status::BEFORE_CHALLENGE, list);
+  auto b = requesttlv::encodeDataContent(pub, salt, id, list);
   std::vector<uint8_t> returnedPub;
   std::array<uint8_t, 32> returnedSalt;
   RequestId returnedId;
-  Status s;
-  auto retlist = requesttlv::decodeDataContent(b, returnedPub, returnedSalt, returnedId, s);
+  auto retlist = requesttlv::decodeDataContent(b, returnedPub, returnedSalt, returnedId);
   BOOST_CHECK_EQUAL_COLLECTIONS(returnedPub.begin(), returnedPub.end(), pub.begin(), pub.end());
   BOOST_CHECK_EQUAL_COLLECTIONS(returnedSalt.begin(), returnedSalt.end(), salt.begin(), salt.end());
   BOOST_CHECK_EQUAL_COLLECTIONS(returnedId.begin(), returnedId.end(), id.begin(), id.end());
-  BOOST_CHECK_EQUAL(static_cast<size_t>(s), static_cast<size_t>(Status::BEFORE_CHALLENGE));
 }
 
 BOOST_AUTO_TEST_CASE(ChallengeEncoding)

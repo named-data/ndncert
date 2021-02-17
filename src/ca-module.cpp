@@ -45,8 +45,8 @@ NDN_LOG_INIT(ndncert.ca);
 
 CaModule::CaModule(Face& face, security::KeyChain& keyChain,
                    const std::string& configPath, const std::string& storageType)
-    : m_face(face)
-    , m_keyChain(keyChain)
+  : m_face(face)
+  , m_keyChain(keyChain)
 {
   // load the config and create storage
   m_config.load(configPath);
@@ -76,36 +76,37 @@ CaModule::registerPrefix()
   prefix.append("CA");
 
   auto prefixId = m_face.registerPrefix(
-      prefix,
-      [&](const Name& name) {
-        // register INFO RDR metadata prefix
-        name::Component metaDataComp(32, reinterpret_cast<const uint8_t*>("metadata"), std::strlen("metadata"));
-        auto filterId = m_face.setInterestFilter(Name(name).append("INFO").append(metaDataComp),
-                                                 bind(&CaModule::onCaProfileDiscovery, this, _2));
-        m_interestFilterHandles.push_back(filterId);
+    prefix,
+    [&](const Name& name)
+    {
+      // register INFO RDR metadata prefix
+      name::Component metaDataComp(32, reinterpret_cast<const uint8_t*>("metadata"), std::strlen("metadata"));
+      auto filterId = m_face.setInterestFilter(Name(name).append("INFO").append(metaDataComp),
+                                               bind(&CaModule::onCaProfileDiscovery, this, _2));
+      m_interestFilterHandles.push_back(filterId);
 
-        // register PROBE prefix
-        filterId = m_face.setInterestFilter(Name(name).append("PROBE"),
-                                            bind(&CaModule::onProbe, this, _2));
-        m_interestFilterHandles.push_back(filterId);
+      // register PROBE prefix
+      filterId = m_face.setInterestFilter(Name(name).append("PROBE"),
+                                          bind(&CaModule::onProbe, this, _2));
+      m_interestFilterHandles.push_back(filterId);
 
-        // register NEW prefix
-        filterId = m_face.setInterestFilter(Name(name).append("NEW"),
-                                            bind(&CaModule::onNewRenewRevoke, this, _2, RequestType::NEW));
-        m_interestFilterHandles.push_back(filterId);
+      // register NEW prefix
+      filterId = m_face.setInterestFilter(Name(name).append("NEW"),
+                                          bind(&CaModule::onNewRenewRevoke, this, _2, RequestType::NEW));
+      m_interestFilterHandles.push_back(filterId);
 
-        // register SELECT prefix
-        filterId = m_face.setInterestFilter(Name(name).append("CHALLENGE"),
-                                            bind(&CaModule::onChallenge, this, _2));
-        m_interestFilterHandles.push_back(filterId);
+      // register SELECT prefix
+      filterId = m_face.setInterestFilter(Name(name).append("CHALLENGE"),
+                                          bind(&CaModule::onChallenge, this, _2));
+      m_interestFilterHandles.push_back(filterId);
 
-        // register REVOKE prefix
-        filterId = m_face.setInterestFilter(Name(name).append("REVOKE"),
-                                            bind(&CaModule::onNewRenewRevoke, this, _2, RequestType::REVOKE));
-        m_interestFilterHandles.push_back(filterId);
-        NDN_LOG_TRACE("Prefix " << name << " got registered");
-      },
-      bind(&CaModule::onRegisterFailed, this, _2));
+      // register REVOKE prefix
+      filterId = m_face.setInterestFilter(Name(name).append("REVOKE"),
+                                          bind(&CaModule::onNewRenewRevoke, this, _2, RequestType::REVOKE));
+      m_interestFilterHandles.push_back(filterId);
+      NDN_LOG_TRACE("Prefix " << name << " got registered");
+    },
+    bind(&CaModule::onRegisterFailed, this, _2));
   m_registeredPrefixHandles.push_back(prefixId);
 }
 
@@ -135,7 +136,7 @@ CaModule::getCaProfileData()
     m_profileData->setFinalBlock(segmentComp);
     m_profileData->setContent(contentTLV);
     m_profileData->setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-    m_keyChain.sign(*m_profileData, signingByIdentity( m_config.caProfile.caPrefix));
+    m_keyChain.sign(*m_profileData, signingByIdentity(m_config.caProfile.caPrefix));
 
     // set back the convention
     name::setConventionEncoding(convention);
@@ -155,7 +156,7 @@ CaModule::onCaProfileDiscovery(const Interest& request)
   Name discoveryInterestName(m_profileData->getName().getPrefix(-2));
   name::Component metadataComponent(32, reinterpret_cast<const uint8_t*>("metadata"), std::strlen("metadata"));
   discoveryInterestName.append(metadataComponent);
-  m_face.put(metadata.makeData(discoveryInterestName, m_keyChain, signingByIdentity( m_config.caProfile.caPrefix)));
+  m_face.put(metadata.makeData(discoveryInterestName, m_keyChain, signingByIdentity(m_config.caProfile.caPrefix)));
 }
 
 void
@@ -166,7 +167,7 @@ CaModule::onProbe(const Interest& request)
 
   // process PROBE requests: collect probe parameters
   auto parameters = probetlv::decodeApplicationParameters(request.getApplicationParameters());
-  std::vector<PartialName> availableComponents;
+  std::vector <PartialName> availableComponents;
   for (auto& item : m_config.nameAssignmentFuncs) {
     auto names = item->assignName(parameters);
     availableComponents.insert(availableComponents.end(), names.begin(), names.end());
@@ -176,7 +177,7 @@ CaModule::onProbe(const Interest& request)
                                        "Cannot generate available names from parameters provided."));
     return;
   }
-  std::vector<Name> availableNames;
+  std::vector <Name> availableNames;
   for (const auto& component : availableComponents) {
     Name newIdentityName = m_config.caProfile.caPrefix;
     newIdentityName.append(component);
@@ -185,9 +186,10 @@ CaModule::onProbe(const Interest& request)
 
   Data result;
   result.setName(request.getName());
-  result.setContent(probetlv::encodeDataContent(availableNames, m_config.caProfile.maxSuffixLength, m_config.redirection));
+  result.setContent(
+    probetlv::encodeDataContent(availableNames, m_config.caProfile.maxSuffixLength, m_config.redirection));
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  m_keyChain.sign(result, signingByIdentity( m_config.caProfile.caPrefix));
+  m_keyChain.sign(result, signingByIdentity(m_config.caProfile.caPrefix));
   m_face.put(result);
   NDN_LOG_TRACE("Handle PROBE: send out the PROBE response");
 }
@@ -197,7 +199,10 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
 {
 
   //verify ca cert validity
-  const auto& caCert = m_keyChain.getPib().getIdentity( m_config.caProfile.caPrefix).getDefaultKey().getDefaultCertificate();
+  const auto& caCert = m_keyChain.getPib()
+                                 .getIdentity(m_config.caProfile.caPrefix)
+                                 .getDefaultKey()
+                                 .getDefaultCertificate();
   if (!caCert.isValid()) {
     NDN_LOG_ERROR("Server certificate invalid/expired");
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::BAD_VALIDITY_PERIOD,
@@ -209,8 +214,8 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   // REVOKE Naming Convention: /<CA-prefix>/CA/REVOKE/[SignedInterestParameters_Digest]
   // get ECDH pub key and cert request
   const auto& parameterTLV = request.getApplicationParameters();
-  std::vector<uint8_t> ecdhPub;
-  shared_ptr<security::Certificate> clientCert;
+  std::vector <uint8_t> ecdhPub;
+  shared_ptr <security::Certificate> clientCert;
   try {
     requesttlv::decodeApplicationParameters(parameterTLV, requestType, ecdhPub, clientCert);
   }
@@ -237,8 +242,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
 
   // get server's ECDH pub key
   ECDHState ecdh;
-  auto myEcdhPubKey = ecdh.getSelfPubKey();
-  std::vector<uint8_t> sharedSecret;
+  std::vector <uint8_t> sharedSecret;
   try {
     sharedSecret = ecdh.deriveSecret(ecdhPub);
   }
@@ -256,16 +260,16 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   hkdf(sharedSecret.data(), sharedSecret.size(), salt.data(), salt.size(), aesKey.data(), aesKey.size());
 
   // verify identity name
-  if (! m_config.caProfile.caPrefix.isPrefixOf(clientCert->getIdentity())
+  if (!m_config.caProfile.caPrefix.isPrefixOf(clientCert->getIdentity())
       || !security::Certificate::isValidName(clientCert->getName())
       || clientCert->getIdentity().size() <= m_config.caProfile.caPrefix.size()) {
-      NDN_LOG_ERROR("An invalid certificate name is being requested " << clientCert->getName());
-      m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
-                                         "An invalid certificate name is being requested."));
-      return;
+    NDN_LOG_ERROR("An invalid certificate name is being requested " << clientCert->getName());
+    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
+                                       "An invalid certificate name is being requested."));
+    return;
   }
-  if ( m_config.caProfile.maxSuffixLength) {
-    if (clientCert->getIdentity().size() > m_config.caProfile.caPrefix.size() + * m_config.caProfile.maxSuffixLength) {
+  if (m_config.caProfile.maxSuffixLength) {
+    if (clientCert->getIdentity().size() > m_config.caProfile.caPrefix.size() + *m_config.caProfile.maxSuffixLength) {
       NDN_LOG_ERROR("An invalid certificate name is being requested " << clientCert->getName());
       m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
                                          "An invalid certificate name is being requested."));
@@ -343,11 +347,10 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   Data result;
   result.setName(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  result.setContent(requesttlv::encodeDataContent(myEcdhPubKey,
-                                                  salt,
-                                                  requestState.requestId, requestState.status,
+  result.setContent(requesttlv::encodeDataContent(ecdh.getSelfPubKey(),
+                                                  salt, requestState.requestId,
                                                   m_config.caProfile.supportedChallenges));
-  m_keyChain.sign(result, signingByIdentity( m_config.caProfile.caPrefix));
+  m_keyChain.sign(result, signingByIdentity(m_config.caProfile.caPrefix));
   m_face.put(result);
   if (m_statusUpdateCallback) {
     m_statusUpdateCallback(requestState);
@@ -404,7 +407,8 @@ CaModule::onChallenge(const Interest& request)
   if (challenge == nullptr) {
     NDN_LOG_TRACE("Unrecognized challenge type: " << challengeType);
     m_storage->deleteRequest(requestState->requestId);
-    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER, "Unrecognized challenge type."));
+    m_face.put(
+      generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER, "Unrecognized challenge type."));
     return;
   }
 
@@ -446,7 +450,7 @@ CaModule::onChallenge(const Interest& request)
   result.setName(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
   result.setContent(payload);
-  m_keyChain.sign(result, signingByIdentity( m_config.caProfile.caPrefix));
+  m_keyChain.sign(result, signingByIdentity(m_config.caProfile.caPrefix));
   m_face.put(result);
   if (m_statusUpdateCallback) {
     m_statusUpdateCallback(*requestState);
@@ -475,7 +479,7 @@ CaModule::issueCertificate(const RequestState& requestState)
   return newCert;
 }
 
-std::unique_ptr<RequestState>
+std::unique_ptr <RequestState>
 CaModule::getCertificateRequest(const Interest& request)
 {
   RequestId requestId;
@@ -510,7 +514,7 @@ CaModule::generateErrorDataPacket(const Name& name, ErrorCode error, const std::
   result.setName(name);
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
   result.setContent(errortlv::encodeDataContent(error, errorInfo));
-  m_keyChain.sign(result, signingByIdentity( m_config.caProfile.caPrefix));
+  m_keyChain.sign(result, signingByIdentity(m_config.caProfile.caPrefix));
   return result;
 }
 
