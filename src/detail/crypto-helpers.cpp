@@ -395,14 +395,22 @@ decodeBlockWithAesGcm128(const Block& block, const uint8_t* key,
   block.parse();
   const auto& encryptedPayloadBlock = block.get(tlv::EncryptedPayload);
   Buffer result(encryptedPayloadBlock.value_size());
-  std::vector<uint8_t> currentIv(block.get(tlv::InitializationVector).value(), block.get(tlv::InitializationVector).value() + 12);
+  if (block.get(tlv::InitializationVector).value_size() != 12 || block.get(tlv::AuthenticationTag).value_size() != 16) {
+    NDN_THROW(std::runtime_error("Error when decrypting the AES Encrypted Block: "
+                                 "The observed IV or Authentication Tag is incorrectly formed."));
+  }
+  std::vector<uint8_t> currentIv(block.get(tlv::InitializationVector).value(),
+                                 block.get(tlv::InitializationVector).value() + 12);
   if (decryptionIv.empty()) {
     decryptionIv = currentIv;
   }
   else {
-    if (currentIv != decryptionIv) {
+    if (loadBigU32(currentIv, 8) < loadBigU32(decryptionIv, 8)) {
       NDN_THROW(std::runtime_error("Error when decrypting the AES Encrypted Block: "
                                    "The observed IV is incorrectly formed."));
+    }
+    else {
+      decryptionIv = currentIv;
     }
   }
   auto resultLen = aesGcm128Decrypt(encryptedPayloadBlock.value(), encryptedPayloadBlock.value_size(),
