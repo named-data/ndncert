@@ -379,11 +379,9 @@ CaModule::onChallenge(const Interest& request)
   // decrypt the parameters
   Buffer paramTLVPayload;
   try {
-    paramTLVPayload = decodeBlockWithAesGcm128(request.getApplicationParameters(),
-                                               requestState->encryptionKey.data(),
-                                               requestState->requestId.data(),
-                                               requestState->requestId.size(),
-                                               requestState->decryptionIv);
+    paramTLVPayload = decodeBlockWithAesGcm128(request.getApplicationParameters(), requestState->encryptionKey.data(),
+                                               requestState->requestId.data(), requestState->requestId.size(),
+                                               requestState->decryptionIv, requestState->encryptionIv);
   }
   catch (const std::exception& e) {
     NDN_LOG_ERROR("Interest paramaters decryption failed: " << e.what());

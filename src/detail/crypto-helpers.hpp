@@ -170,7 +170,7 @@ encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key,
 Buffer
 decodeBlockWithAesGcm128(const Block& block, const uint8_t* key,
                          const uint8_t* associatedData, size_t associatedDataSize,
-                         std::vector<uint8_t>& decryptionIv);
+                         std::vector<uint8_t>& decryptionIv, const std::vector<uint8_t>& encryptionIv);
 
 } // namespace ndncert
 } // namespace ndn

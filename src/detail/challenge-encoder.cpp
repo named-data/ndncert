@@ -55,7 +55,7 @@ challengetlv::decodeDataContent(const Block& contentBlock, requester::Request& s
 {
   auto result = decodeBlockWithAesGcm128(contentBlock, state.m_aesKey.data(),
                                          state.m_requestId.data(), state.m_requestId.size(),
-                                         state.m_decryptionIv);
+                                         state.m_decryptionIv, state.m_encryptionIv);
   auto data = makeBinaryBlock(tlv::EncryptedPayload, result.data(), result.size());
   data.parse();
   state.m_status = statusFromBlock(data.get(tlv::Status));

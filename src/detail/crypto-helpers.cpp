@@ -90,7 +90,7 @@ ECDHState::~ECDHState()
   }
 }
 
-const std::vector<uint8_t>&
+const std::vector <uint8_t>&
 ECDHState::getSelfPubKey()
 {
   auto privECKey = EVP_PKEY_get1_EC_KEY(m_privkey);
@@ -110,8 +110,8 @@ ECDHState::getSelfPubKey()
   return m_pubKey;
 }
 
-const std::vector<uint8_t>&
-ECDHState::deriveSecret(const std::vector<uint8_t>& peerKey)
+const std::vector <uint8_t>&
+ECDHState::deriveSecret(const std::vector <uint8_t>& peerKey)
 {
   // prepare self private key
   auto privECKey = EVP_PKEY_get1_EC_KEY(m_privkey);
@@ -141,7 +141,8 @@ ECDHState::deriveSecret(const std::vector<uint8_t>& peerKey)
   if (EC_KEY_set_public_key(ecPeerkey, peerPoint) == 0) {
     EC_KEY_free(ecPeerkey);
     EC_POINT_free(peerPoint);
-    NDN_THROW(std::runtime_error("Cannot initialize peer EC_KEY with the EC_POINT when calling EC_KEY_set_public_key()"));
+    NDN_THROW(
+      std::runtime_error("Cannot initialize peer EC_KEY with the EC_POINT when calling EC_KEY_set_public_key()"));
   }
   EVP_PKEY* evpPeerkey = EVP_PKEY_new();
   if (EVP_PKEY_set1_EC_KEY(evpPeerkey, ecPeerkey) == 0) {
@@ -327,7 +328,7 @@ aesGcm128Decrypt(const uint8_t* ciphertext, size_t ciphertextLen, const uint8_t*
 
 // Can be removed after boost version 1.72, replaced by boost::endian::load_big_u32
 static uint32_t
-loadBigU32(const std::vector<uint8_t>& iv, size_t pos)
+loadBigU32(const std::vector <uint8_t>& iv, size_t pos)
 {
   uint32_t result = iv[pos] << 24 | iv[pos + 1] << 16 | iv[pos + 2] << 8 | iv[pos + 3];
   return result;
@@ -343,7 +344,7 @@ storeBigU32(uint8_t* iv, uint32_t counter)
 }
 
 static void
-updateIv(std::vector<uint8_t>& iv, size_t payloadSize)
+updateIv(std::vector <uint8_t>& iv, size_t payloadSize)
 {
   // uint32_t counter = boost::endian::load_big_u32(&iv[8]);
   uint32_t counter = loadBigU32(iv, 8);
@@ -363,7 +364,7 @@ Block
 encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key,
                          const uint8_t* payload, size_t payloadSize,
                          const uint8_t* associatedData, size_t associatedDataSize,
-                         std::vector<uint8_t>& encryptionIv)
+                         std::vector <uint8_t>& encryptionIv)
 {
   // The spec of AES encrypted payload TLV used in NDNCERT:
   //   https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3#242-aes-gcm-encryption
@@ -388,37 +389,41 @@ encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key,
 Buffer
 decodeBlockWithAesGcm128(const Block& block, const uint8_t* key,
                          const uint8_t* associatedData, size_t associatedDataSize,
-                         std::vector<uint8_t>& decryptionIv)
+                         std::vector<uint8_t>& decryptionIv, const std::vector <uint8_t>& encryptionIv)
 {
   // The spec of AES encrypted payload TLV used in NDNCERT:
   //   https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3#242-aes-gcm-encryption
   block.parse();
   const auto& encryptedPayloadBlock = block.get(tlv::EncryptedPayload);
   Buffer result(encryptedPayloadBlock.value_size());
-  if (block.get(tlv::InitializationVector).value_size() != 12 || block.get(tlv::AuthenticationTag).value_size() != 16) {
+  if (block.get(tlv::InitializationVector).value_size() != 12 ||
+      block.get(tlv::AuthenticationTag).value_size() != 16) {
     NDN_THROW(std::runtime_error("Error when decrypting the AES Encrypted Block: "
-                                 "The observed IV or Authentication Tag is incorrectly formed."));
+                                 "The observed IV or Authentication Tag is of an unexpected size."));
   }
-  std::vector<uint8_t> currentIv(block.get(tlv::InitializationVector).value(),
-                                 block.get(tlv::InitializationVector).value() + 12);
-  if (decryptionIv.empty()) {
-    decryptionIv = currentIv;
-  }
-  else {
-    if (loadBigU32(currentIv, 8) < loadBigU32(decryptionIv, 8)) {
+  std::vector <uint8_t> observedDecryptionIv(block.get(tlv::InitializationVector).value(),
+                                             block.get(tlv::InitializationVector).value() + 12);
+  if (!encryptionIv.empty()) {
+    if (std::equal(observedDecryptionIv.begin(), observedDecryptionIv.begin() + 8, encryptionIv.begin())) {
       NDN_THROW(std::runtime_error("Error when decrypting the AES Encrypted Block: "
-                                   "The observed IV is incorrectly formed."));
-    }
-    else {
-      decryptionIv = currentIv;
+                                   "The observed IV's the random component should be different from ours."));
     }
   }
+  if (!decryptionIv.empty()) {
+    if (loadBigU32(observedDecryptionIv, 8) < loadBigU32(decryptionIv, 8) ||
+        !std::equal(observedDecryptionIv.begin(), observedDecryptionIv.begin() + 8, decryptionIv.begin())) {
+      NDN_THROW(std::runtime_error("Error when decrypting the AES Encrypted Block: "
+                                   "The observed IV's counter should be monotonically increasing "
+                                   "and the random component must be the same from the requester."));
+    }
+  }
+  decryptionIv = observedDecryptionIv;
   auto resultLen = aesGcm128Decrypt(encryptedPayloadBlock.value(), encryptedPayloadBlock.value_size(),
                                     associatedData, associatedDataSize, block.get(tlv::AuthenticationTag).value(),
-                                    key, currentIv.data(), result.data());
+                                    key, decryptionIv.data(), result.data());
   if (resultLen != encryptedPayloadBlock.value_size()) {
     NDN_THROW(std::runtime_error("Error when decrypting the AES Encrypted Block: "
-                                 "Decrypted payload is of an unexpected size"));
+                                 "Decrypted payload is of an unexpected size."));
   }
   updateIv(decryptionIv, resultLen);
   return result;
