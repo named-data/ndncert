@@ -158,16 +158,16 @@ BOOST_AUTO_TEST_CASE(ChallengeEncoding)
   auto contentBlock = challengetlv::encodeDataContent(state, Name("/ndn/ucla/a/b/c"));
 
   requester::Request context(m_keyChain, caCache.getKnownProfiles().front(), RequestType::NEW);
-  context.requestId = id;
-  std::memcpy(context.aesKey.data(), key, sizeof(key));
+  context.m_requestId = id;
+  std::memcpy(context.m_aesKey.data(), key, sizeof(key));
   advanceClocks(time::seconds(10));
   challengetlv::decodeDataContent(contentBlock, context);
 
-  BOOST_CHECK_EQUAL(static_cast<size_t>(context.status), static_cast<size_t>(Status::PENDING));
-  BOOST_CHECK_EQUAL(context.challengeStatus, "test");
-  BOOST_CHECK_EQUAL(context.remainingTries, 3);
-  BOOST_CHECK_EQUAL(context.freshBefore, tp + time::seconds(3600) + time::seconds(10));
-  BOOST_CHECK_EQUAL(context.issuedCertName, "/ndn/ucla/a/b/c");
+  BOOST_CHECK_EQUAL(static_cast<size_t>(context.m_status), static_cast<size_t>(Status::PENDING));
+  BOOST_CHECK_EQUAL(context.m_challengeStatus, "test");
+  BOOST_CHECK_EQUAL(context.m_remainingTries, 3);
+  BOOST_CHECK_EQUAL(context.m_freshBefore, tp + time::seconds(3600) + time::seconds(10));
+  BOOST_CHECK_EQUAL(context.m_issuedCertName, "/ndn/ucla/a/b/c");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

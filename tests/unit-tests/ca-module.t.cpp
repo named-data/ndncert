@@ -262,7 +262,7 @@ BOOST_AUTO_TEST_CASE(HandleNew)
     RequestId requestId;
     std::memcpy(requestId.data(), contentBlock.get(tlv::RequestId).value(), contentBlock.get(tlv::RequestId).value_size());
     auto ca_encryption_key = ca.getCaStorage()->getRequest(requestId).encryptionKey;
-    BOOST_CHECK_EQUAL_COLLECTIONS(state.aesKey.begin(), state.aesKey.end(),
+    BOOST_CHECK_EQUAL_COLLECTIONS(state.m_aesKey.begin(), state.m_aesKey.end(),
                                   ca_encryption_key.begin(), ca_encryption_key.end());
   });
   face.receive(*interest);
@@ -450,8 +450,8 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
       BOOST_CHECK(security::verifySignature(response, cert));
 
       state.onChallengeResponse(response);
-      BOOST_CHECK(state.status == Status::CHALLENGE);
-      BOOST_CHECK_EQUAL(state.challengeStatus, ChallengePin::NEED_CODE);
+      BOOST_CHECK(state.m_status == Status::CHALLENGE);
+      BOOST_CHECK_EQUAL(state.m_challengeStatus, ChallengePin::NEED_CODE);
       auto paramList = state.selectOrContinueChallenge("pin");
       challengeInterest2 = state.genChallengeInterest(std::move(paramList));
     }
@@ -460,8 +460,8 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
       BOOST_CHECK(security::verifySignature(response, cert));
 
       state.onChallengeResponse(response);
-      BOOST_CHECK(state.status == Status::CHALLENGE);
-      BOOST_CHECK_EQUAL(state.challengeStatus, ChallengePin::WRONG_CODE);
+      BOOST_CHECK(state.m_status == Status::CHALLENGE);
+      BOOST_CHECK_EQUAL(state.m_challengeStatus, ChallengePin::WRONG_CODE);
 
       auto paramList = state.selectOrContinueChallenge("pin");
       auto request = ca.getCertificateRequest(*challengeInterest2);
@@ -473,7 +473,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
       count++;
       BOOST_CHECK(security::verifySignature(response, cert));
       state.onChallengeResponse(response);
-      BOOST_CHECK(state.status == Status::SUCCESS);
+      BOOST_CHECK(state.m_status == Status::SUCCESS);
     }
   });
 
@@ -550,7 +550,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
     RequestId requestId;
     std::memcpy(requestId.data(), contentBlock.get(tlv::RequestId).value(), contentBlock.get(tlv::RequestId).value_size());
     auto ca_encryption_key = ca.getCaStorage()->getRequest(requestId).encryptionKey;
-    BOOST_CHECK_EQUAL_COLLECTIONS(state.aesKey.begin(), state.aesKey.end(),
+    BOOST_CHECK_EQUAL_COLLECTIONS(state.m_aesKey.begin(), state.m_aesKey.end(),
                                   ca_encryption_key.begin(), ca_encryption_key.end());
   });
   face.receive(*interest);

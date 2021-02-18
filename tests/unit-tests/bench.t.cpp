@@ -130,8 +130,8 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
       BOOST_CHECK(security::verifySignature(response, cert));
 
       state.onChallengeResponse(response);
-      BOOST_CHECK(state.status == Status::CHALLENGE);
-      BOOST_CHECK_EQUAL(state.challengeStatus, ChallengePin::NEED_CODE);
+      BOOST_CHECK(state.m_status == Status::CHALLENGE);
+      BOOST_CHECK_EQUAL(state.m_challengeStatus, ChallengePin::NEED_CODE);
       auto paramList = state.selectOrContinueChallenge("pin");
       challengeInterest2 = state.genChallengeInterest(std::move(paramList));
     }
@@ -140,8 +140,8 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
       BOOST_CHECK(security::verifySignature(response, cert));
 
       state.onChallengeResponse(response);
-      BOOST_CHECK(state.status == Status::CHALLENGE);
-      BOOST_CHECK_EQUAL(state.challengeStatus, ChallengePin::WRONG_CODE);
+      BOOST_CHECK(state.m_status == Status::CHALLENGE);
+      BOOST_CHECK_EQUAL(state.m_challengeStatus, ChallengePin::WRONG_CODE);
 
       auto paramList = state.selectOrContinueChallenge("pin");
       auto request = ca.getCertificateRequest(*challengeInterest2);
@@ -155,7 +155,7 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
       count++;
       BOOST_CHECK(security::verifySignature(response, cert));
       state.onChallengeResponse(response);
-      BOOST_CHECK(state.status == Status::SUCCESS);
+      BOOST_CHECK(state.m_status == Status::SUCCESS);
     }
   });
 

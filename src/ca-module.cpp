@@ -252,12 +252,6 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
                                        "Cannot derive a shared secret using the provided ECDH key."));
     return;
   }
-  // generate salt for HKDF
-  std::array<uint8_t, 32> salt;
-  random::generateSecureBytes(salt.data(), salt.size());
-  // hkdf
-  std::array<uint8_t, 16> aesKey;
-  hkdf(sharedSecret.data(), sharedSecret.size(), salt.data(), salt.size(), aesKey.data(), aesKey.size());
 
   // verify identity name
   if (!m_config.caProfile.caPrefix.isPrefixOf(clientCert->getIdentity())
@@ -334,6 +328,13 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   requestState.requestId = id;
   requestState.requestType = requestType;
   requestState.cert = *clientCert;
+  // generate salt for HKDF
+  std::array<uint8_t, 32> salt;
+  random::generateSecureBytes(salt.data(), salt.size());
+  // hkdf
+  std::array<uint8_t, 16> aesKey;
+  hkdf(sharedSecret.data(), sharedSecret.size(), salt.data(), salt.size(),
+       aesKey.data(), aesKey.size(), id.data(), id.size());
   requestState.encryptionKey = aesKey;
   try {
     m_storage->addRequest(requestState);

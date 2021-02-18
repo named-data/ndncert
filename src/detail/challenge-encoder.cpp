@@ -53,25 +53,25 @@ challengetlv::encodeDataContent(ca::RequestState& request, const Name& issuedCer
 void
 challengetlv::decodeDataContent(const Block& contentBlock, requester::Request& state)
 {
-  auto result = decodeBlockWithAesGcm128(contentBlock, state.aesKey.data(),
-                                         state.requestId.data(), state.requestId.size(),
-                                         state.decryptionIv);
+  auto result = decodeBlockWithAesGcm128(contentBlock, state.m_aesKey.data(),
+                                         state.m_requestId.data(), state.m_requestId.size(),
+                                         state.m_decryptionIv);
   auto data = makeBinaryBlock(tlv::EncryptedPayload, result.data(), result.size());
   data.parse();
-  state.status = statusFromBlock(data.get(tlv::Status));
+  state.m_status = statusFromBlock(data.get(tlv::Status));
   if (data.find(tlv::ChallengeStatus) != data.elements_end()) {
-    state.challengeStatus = readString(data.get(tlv::ChallengeStatus));
+    state.m_challengeStatus = readString(data.get(tlv::ChallengeStatus));
   }
   if (data.find(tlv::RemainingTries) != data.elements_end()) {
-    state.remainingTries = readNonNegativeInteger(data.get(tlv::RemainingTries));
+    state.m_remainingTries = readNonNegativeInteger(data.get(tlv::RemainingTries));
   }
   if (data.find(tlv::RemainingTime) != data.elements_end()) {
-    state.freshBefore = time::system_clock::now() +
-                        time::seconds(readNonNegativeInteger(data.get(tlv::RemainingTime)));
+    state.m_freshBefore = time::system_clock::now() +
+                          time::seconds(readNonNegativeInteger(data.get(tlv::RemainingTime)));
   }
   if (data.find(tlv::IssuedCertName) != data.elements_end()) {
     Block issuedCertNameBlock = data.get(tlv::IssuedCertName);
-    state.issuedCertName = Name(issuedCertNameBlock.blockFromValue());
+    state.m_issuedCertName = Name(issuedCertNameBlock.blockFromValue());
   }
   if (data.find(tlv::ParameterKey) != data.elements_end() &&
       readString(data.get(tlv::ParameterKey)) == "nonce") {
@@ -82,7 +82,7 @@ challengetlv::decodeDataContent(const Block& contentBlock, requester::Request& s
     if (nonceBlock.value_size() != 16) {
         NDN_THROW(std::runtime_error("Wrong nonce length"));
     }
-    memcpy(state.nonce.data(), nonceBlock.value(), 16);
+    memcpy(state.m_nonce.data(), nonceBlock.value(), 16);
   }
 }
 

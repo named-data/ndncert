@@ -211,63 +211,63 @@ public:
   /**
    * @brief The CA profile for this request.
    */
-  CaProfile caProfile;
+  CaProfile m_caProfile;
   /**
    * @brief The type of request. Either NEW, RENEW, or REVOKE.
    */
-  RequestType type;
+  RequestType m_type;
   /**
    * @brief The identity name for the requesting certificate.
    */
-  Name identityName;
+  Name m_identityName;
   /**
    * @brief The CA-generated request ID for the request.
    */
-  RequestId requestId;
+  RequestId m_requestId;
   /**
    * @brief The current status of the request.
    */
-  Status status = Status::BEFORE_CHALLENGE;
+  Status m_status = Status::BEFORE_CHALLENGE;
   /**
    * @brief The type of challenge chosen.
    */
-  std::string challengeType;
+  std::string m_challengeType;
   /**
    * @brief The status of the current challenge.
    */
-  std::string challengeStatus;
+  std::string m_challengeStatus;
   /**
    * @brief The remaining number of tries left for the challenge
    */
-  int remainingTries = 0;
+  int m_remainingTries = 0;
   /**
    * @brief The time this challenge will remain fresh
    */
-  time::system_clock::TimePoint freshBefore;
+  time::system_clock::TimePoint m_freshBefore;
   /**
    * @brief the name of the certificate being issued.
    */
-  Name issuedCertName;
+  Name m_issuedCertName;
   /**
    * @brief ecdh state.
    */
-  ECDHState ecdh;
+  ECDHState m_ecdh;
   /**
    * @brief AES key derived from the ecdh shared secret.
    */
-  std::array<uint8_t, 16> aesKey = {};
+  std::array<uint8_t, 16> m_aesKey = {};
   /**
    * @brief The last Initialization Vector used by the AES encryption.
    */
-  std::vector<uint8_t> encryptionIv;
+  std::vector<uint8_t> m_encryptionIv;
   /**
    * @brief The last Initialization Vector used by the other side's AES encryption.
    */
-  std::vector<uint8_t> decryptionIv;
+  std::vector<uint8_t> m_decryptionIv;
   /**
    * @brief Store Nonce for signature
    */
-  std::array<uint8_t, 16> nonce = {};
+  std::array<uint8_t, 16> m_nonce = {};
 
 private:
   /**
