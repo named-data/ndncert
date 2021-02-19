@@ -42,45 +42,21 @@ ECDHState::ECDHState()
   auto EC_NID = NID_X9_62_prime256v1;
   // params context
   EVP_PKEY_CTX* ctx_params = EVP_PKEY_CTX_new_id(EVP_PKEY_EC, nullptr);
-  if (ctx_params == nullptr) {
-    NDN_THROW(std::runtime_error("Could not create context"));
-  }
-  if (EVP_PKEY_paramgen_init(ctx_params) != 1) {
-    EVP_PKEY_CTX_free(ctx_params);
-    NDN_THROW(std::runtime_error("Could not initialize parameter generation"));
-  }
-  if (1 != EVP_PKEY_CTX_set_ec_paramgen_curve_nid(ctx_params, EC_NID)) {
-    EVP_PKEY_CTX_free(ctx_params);
-    NDN_THROW(std::runtime_error("Likely unknown elliptical curve ID specified"));
-  }
+  EVP_PKEY_paramgen_init(ctx_params);
+  EVP_PKEY_CTX_set_ec_paramgen_curve_nid(ctx_params, EC_NID);
   // generate params
   EVP_PKEY* params = nullptr;
-  if (!EVP_PKEY_paramgen(ctx_params, &params)) {
-    EVP_PKEY_CTX_free(ctx_params);
-    NDN_THROW(std::runtime_error("Could not create parameter object parameters"));
-  }
+  EVP_PKEY_paramgen(ctx_params, &params);
   // key generation context
   EVP_PKEY_CTX* ctx_keygen = EVP_PKEY_CTX_new(params, nullptr);
-  if (ctx_keygen == nullptr) {
-    EVP_PKEY_free(params);
-    EVP_PKEY_CTX_free(ctx_params);
-    NDN_THROW(std::runtime_error("Could not create the context for the key generation"));
-  }
-  if (1 != EVP_PKEY_keygen_init(ctx_keygen)) {
-    EVP_PKEY_CTX_free(ctx_keygen);
-    EVP_PKEY_free(params);
-    EVP_PKEY_CTX_free(ctx_params);
-    NDN_THROW(std::runtime_error("Could not init context for key generation"));
-  }
-  if (1 != EVP_PKEY_keygen(ctx_keygen, &m_privkey)) {
-    EVP_PKEY_CTX_free(ctx_keygen);
-    EVP_PKEY_free(params);
-    EVP_PKEY_CTX_free(ctx_params);
-    NDN_THROW(std::runtime_error("Could not generate DHE keys in final step"));
-  }
+  EVP_PKEY_keygen_init(ctx_keygen);
+  auto resultCode = EVP_PKEY_keygen(ctx_keygen, &m_privkey);
   EVP_PKEY_CTX_free(ctx_keygen);
   EVP_PKEY_free(params);
   EVP_PKEY_CTX_free(ctx_params);
+  if (resultCode <= 0) {
+    NDN_THROW(std::runtime_error("Error in initiating ECDH"));
+  }
 }
 
 ECDHState::~ECDHState()
