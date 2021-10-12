@@ -66,7 +66,7 @@ CaProfile::fromJson(const JsonSection& json)
       auto challengeType = item.second.get(CONFIG_CHALLENGE, "");
       challengeType = boost::algorithm::to_lower_copy(challengeType);
       if (challengeType == "") {
-        NDN_THROW(std::runtime_error("Challenge type canont be empty."));
+        NDN_THROW(std::runtime_error("Challenge type cannot be empty."));
       }
       if (!ChallengeModule::isChallengeSupported(challengeType)) {
         NDN_THROW(std::runtime_error("Challenge " + challengeType + " is not supported."));

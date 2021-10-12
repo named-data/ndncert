@@ -28,7 +28,7 @@ namespace ndn {
 namespace ndncert {
 
 NDN_LOG_INIT(ndncert.challenge.possession);
-NDNCERT_REGISTER_CHALLENGE(ChallengePossession, "Possession");
+NDNCERT_REGISTER_CHALLENGE(ChallengePossession, "possession");
 
 const std::string ChallengePossession::PARAMETER_KEY_CREDENTIAL_CERT = "issued-cert";
 const std::string ChallengePossession::PARAMETER_KEY_NONCE = "nonce";
