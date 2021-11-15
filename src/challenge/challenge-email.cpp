@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -109,6 +109,9 @@ ChallengeEmail::getRequestedParameterList(Status status, const std::string& chal
   std::multimap<std::string, std::string> result;
   if (status == Status::BEFORE_CHALLENGE && challengeStatus == "") {
     result.emplace(PARAMETER_KEY_EMAIL, "Please input your email address");
+  }
+  else if (status == Status::CHALLENGE && challengeStatus == INVALID_EMAIL) {
+    result.emplace(PARAMETER_KEY_EMAIL, "Invalid email, please try again");
   }
   else if (status == Status::CHALLENGE && challengeStatus == NEED_CODE) {
     result.emplace(PARAMETER_KEY_CODE, "Please input your verification code");
