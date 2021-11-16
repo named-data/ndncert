@@ -12,7 +12,7 @@ If you would like to become a contributor to the official repository, please fol
 * Md Ashiqur Rahman <https://ashiqrahman.com>
 * Junxiao Shi <https://cs.arizona.edu/~shijunxiao>
 * Yufeng Zhang <https://yufengzh.io>
-* ***(Maintainer)*** Zhiyi Zhang <https://zhiyi-zhang.com>
+* Zhiyi Zhang <https://zhiyi-zhang.com>
 
 # Technical Advisors
 
