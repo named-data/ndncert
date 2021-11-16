@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -19,8 +19,11 @@
  */
 
 #include "detail/ca-configuration.hpp"
+
 #include <ndn-cxx/util/io.hpp>
+
 #include <boost/filesystem.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -39,7 +42,7 @@ CaConfig::load(const std::string& fileName)
   if (configJson.begin() == configJson.end()) {
     NDN_THROW(std::runtime_error("No JSON configuration found in file: " + fileName));
   }
-    caProfile = CaProfile::fromJson(configJson);
+  caProfile = CaProfile::fromJson(configJson);
   if (caProfile.supportedChallenges.size() == 0) {
     NDN_THROW(std::runtime_error("At least one challenge should be specified."));
   }

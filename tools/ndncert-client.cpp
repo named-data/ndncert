@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -19,13 +19,15 @@
  */
 
 #include "requester-request.hpp"
+
 #include <ndn-cxx/security/verification-helpers.hpp>
+
 #include <boost/asio.hpp>
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
+
 #include <iostream>
-#include <string>
 
 namespace ndn {
 namespace ndncert {
@@ -33,17 +35,20 @@ namespace requester {
 
 static void
 selectCaProfile(std::string configFilePath);
+
 static void
 runProbe(CaProfile profile);
+
 static void
 runNew(CaProfile profile, Name identityName);
+
 static void
 runChallenge(const std::string& challengeType);
 
-size_t nStep = 1;
-Face face;
-security::KeyChain keyChain;
-shared_ptr<Request> requesterState = nullptr;
+static size_t nStep = 1;
+static Face face;
+static security::KeyChain keyChain;
+static shared_ptr<Request> requesterState;
 
 static void
 captureParams(std::multimap<std::string, std::string>& requirement)
@@ -135,8 +140,10 @@ challengeCb(const Data& reply)
   }
   if (requesterState->m_status == Status::SUCCESS) {
     std::cerr << "Certificate has already been issued, downloading certificate..." << std::endl;
-    face.expressInterest(*requesterState->genCertFetchInterest(), bind(&certFetchCb, _2),
-                         bind(&onNackCb), bind(&timeoutCb));
+    face.expressInterest(*requesterState->genCertFetchInterest(),
+                         [] (const auto&, const auto& data) { certFetchCb(data); },
+                         [] (auto&&...) { onNackCb(); },
+                         [] (auto&&...) { timeoutCb(); });
     return;
   }
   runChallenge(requesterState->m_challengeType);
@@ -200,7 +207,7 @@ newCb(const Data& reply)
 }
 
 static void
-InfoCb(const Data& reply, const Name& certFullName)
+infoCb(const Data& reply, const Name& certFullName)
 {
   optional<CaProfile> profile;
   try {
@@ -299,15 +306,15 @@ probeCb(const Data& reply, CaProfile profile)
     std::cerr << "You selected to be redirected to CA: " << redirectedCaName.toUri() << std::endl;
     face.expressInterest(
         *Request::genCaProfileDiscoveryInterest(redirectedCaName),
-        [&](const Interest&, const Data& data) {
+        [&] (const auto&, const auto& data) {
           auto fetchingInterest = Request::genCaProfileInterestFromDiscoveryResponse(data);
           face.expressInterest(*fetchingInterest,
-                               bind(&InfoCb, _2, redirectedCaFullName),
-                               bind(&onNackCb),
-                               bind(&timeoutCb));
+                               [=] (const auto&, const auto& data2) { infoCb(data2, redirectedCaFullName); },
+                               [] (auto&&...) { onNackCb(); },
+                               [] (auto&&...) { timeoutCb(); });
         },
-        bind(&onNackCb),
-        bind(&timeoutCb));
+        [] (auto&&...) { onNackCb(); },
+        [] (auto&&...) { timeoutCb(); });
   }
 }
 
@@ -343,15 +350,15 @@ selectCaProfile(std::string configFilePath)
     getline(std::cin, expectedCAName);
     face.expressInterest(
         *Request::genCaProfileDiscoveryInterest(Name(expectedCAName)),
-        [&](const Interest&, const Data& data) {
+        [&] (const auto&, const auto& data) {
           auto fetchingInterest = Request::genCaProfileInterestFromDiscoveryResponse(data);
           face.expressInterest(*fetchingInterest,
-                               bind(&InfoCb, _2, Name()),
-                               bind(&onNackCb),
-                               bind(&timeoutCb));
+                               [] (const auto&, const auto& data2) { infoCb(data2, {}); },
+                               [] (auto&&...) { onNackCb(); },
+                               [] (auto&&...) { timeoutCb(); });
         },
-        bind(&onNackCb),
-        bind(&timeoutCb));
+        [] (auto&&...) { onNackCb(); },
+        [] (auto&&...) { timeoutCb(); });
   }
   else {
     size_t caIndex;
@@ -406,7 +413,9 @@ runProbe(CaProfile profile)
                 << "Step " << nStep++ << ": Please provide information for name assignment" << std::endl;
       auto capturedParams = captureParams(profile.probeParameterKeys);
       face.expressInterest(*Request::genProbeInterest(profile, std::move(capturedParams)),
-                           bind(&probeCb, _2, profile), bind(&onNackCb), bind(&timeoutCb));
+                           [profile] (const auto&, const auto& data) { probeCb(data, profile); },
+                           [] (auto&&...) { onNackCb(); },
+                           [] (auto&&...) { timeoutCb(); });
     }
     else {
       std::cerr << "Invalid answer. Type in YES or NO" << std::endl;
@@ -428,7 +437,10 @@ runNew(CaProfile profile, Name identityName)
   requesterState = std::make_shared<Request>(keyChain, profile, RequestType::NEW);
   auto interest = requesterState->genNewInterest(identityName, now, now + time::hours(validityPeriod));
   if (interest != nullptr) {
-    face.expressInterest(*interest, bind(&newCb, _2), bind(&onNackCb), bind(&timeoutCb));
+    face.expressInterest(*interest,
+                         [] (const auto&, const auto& data) { newCb(data); },
+                         [] (auto&&...) { onNackCb(); },
+                         [] (auto&&...) { timeoutCb(); });
   }
   else {
     std::cerr << "Cannot generate the Interest for NEW step. Exit" << std::endl;
@@ -443,8 +455,8 @@ runChallenge(const std::string& challengeType)
     requirement = requesterState->selectOrContinueChallenge(challengeType);
   }
   catch (const std::exception& e) {
-    std::cerr << "Error. Cannot successfully load the Challenge Module with error: " << std::string(e.what())
-              << "Exit." << std::endl;
+    std::cerr << "Error. Cannot successfully load the Challenge Module with error: " << e.what()
+              << "\nExit." << std::endl;
     exit(1);
   }
   if (requirement.size() > 0) {
@@ -454,7 +466,9 @@ runChallenge(const std::string& challengeType)
     captureParams(requirement);
   }
   face.expressInterest(*requesterState->genChallengeInterest(std::move(requirement)),
-                       bind(&challengeCb, _2), bind(&onNackCb), bind(&timeoutCb));
+                       [] (const auto&, const auto& data) { challengeCb(data); },
+                       [] (auto&&...) { onNackCb(); },
+                       [] (auto&&...) { timeoutCb(); });
 }
 
 static void
@@ -479,7 +493,7 @@ handleSignal(const boost::system::error_code& error, int signalNum)
   exit(1);
 }
 
-int
+static int
 main(int argc, char* argv[])
 {
   boost::asio::signal_set terminateSignals(face.getIoService());
@@ -489,8 +503,11 @@ main(int argc, char* argv[])
 
   namespace po = boost::program_options;
   std::string configFilePath = std::string(NDNCERT_SYSCONFDIR) + "/ndncert/client.conf";
-  po::options_description description("General Usage\n ndncert-client [-h] [-c] [-v]\n");
-  description.add_options()("help,h", "produce help message")("config-file,c", po::value<std::string>(&configFilePath), "configuration file name");
+  po::options_description description("Usage: ndncert-client [-h] [-c FILE]\n");
+  description.add_options()
+    ("help,h", "produce help message")
+    ("config-file,c", po::value<std::string>(&configFilePath), "configuration file name")
+    ;
   po::positional_options_description p;
 
   po::variables_map vm;
@@ -502,10 +519,12 @@ main(int argc, char* argv[])
     std::cerr << "ERROR: " << e.what() << std::endl;
     return 1;
   }
+
   if (vm.count("help") != 0) {
     std::cerr << description << std::endl;
     return 0;
   }
+
   selectCaProfile(configFilePath);
   face.processEvents();
   return 0;

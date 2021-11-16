@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2020, Regents of the University of California.
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -21,9 +21,12 @@
 #include "detail/ca-sqlite.hpp"
 
 #include <sqlite3.h>
-#include <boost/filesystem.hpp>
+
 #include <ndn-cxx/security/validation-policy.hpp>
 #include <ndn-cxx/util/sqlite3-statement.hpp>
+
+#include <boost/filesystem.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
 namespace ndn {
 namespace ndncert {
@@ -186,7 +189,8 @@ CaSqlite::addRequest(const RequestState& request)
     statement.bind(11, request.challengeState->remainingTime.count());
   }
   if (statement.step() != SQLITE_DONE) {
-    NDN_THROW(std::runtime_error("Request " + toHex(request.requestId.data(), request.requestId.size()) + " cannot be added to database"));
+    NDN_THROW(std::runtime_error("Request " + toHex(request.requestId.data(), request.requestId.size()) +
+                                 " cannot be added to database"));
   }
 }
 

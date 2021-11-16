@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -27,6 +27,7 @@
 #include "detail/info-encoder.hpp"
 #include "detail/request-encoder.hpp"
 #include "detail/probe-encoder.hpp"
+
 #include <ndn-cxx/metadata-object.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
@@ -77,36 +78,36 @@ CaModule::registerPrefix()
 
   auto prefixId = m_face.registerPrefix(
     prefix,
-    [&](const Name& name)
-    {
+    [&] (const Name& name) {
       // register INFO RDR metadata prefix
       name::Component metaDataComp(32, reinterpret_cast<const uint8_t*>("metadata"), std::strlen("metadata"));
       auto filterId = m_face.setInterestFilter(Name(name).append("INFO").append(metaDataComp),
-                                               bind(&CaModule::onCaProfileDiscovery, this, _2));
+                                               [this] (auto&&, const auto& i) { onCaProfileDiscovery(i); });
       m_interestFilterHandles.push_back(filterId);
 
       // register PROBE prefix
       filterId = m_face.setInterestFilter(Name(name).append("PROBE"),
-                                          bind(&CaModule::onProbe, this, _2));
+                                          [this] (auto&&, const auto& i) { onProbe(i); });
       m_interestFilterHandles.push_back(filterId);
 
       // register NEW prefix
       filterId = m_face.setInterestFilter(Name(name).append("NEW"),
-                                          bind(&CaModule::onNewRenewRevoke, this, _2, RequestType::NEW));
+                                          [this] (auto&&, const auto& i) { onNewRenewRevoke(i, RequestType::NEW); });
       m_interestFilterHandles.push_back(filterId);
 
       // register SELECT prefix
       filterId = m_face.setInterestFilter(Name(name).append("CHALLENGE"),
-                                          bind(&CaModule::onChallenge, this, _2));
+                                          [this] (auto&&, const auto& i) { onChallenge(i); });
       m_interestFilterHandles.push_back(filterId);
 
       // register REVOKE prefix
       filterId = m_face.setInterestFilter(Name(name).append("REVOKE"),
-                                          bind(&CaModule::onNewRenewRevoke, this, _2, RequestType::REVOKE));
+                                          [this] (auto&&, const auto& i) { onNewRenewRevoke(i, RequestType::REVOKE); });
       m_interestFilterHandles.push_back(filterId);
+
       NDN_LOG_TRACE("Prefix " << name << " got registered");
     },
-    bind(&CaModule::onRegisterFailed, this, _2));
+    [this] (auto&&, const auto& reason) { onRegisterFailed(reason); });
   m_registeredPrefixHandles.push_back(prefixId);
 }
 

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -37,6 +37,9 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
+#include <tuple>
+
 #include <ndn-cxx/data.hpp>
 #include <ndn-cxx/encoding/block-helpers.hpp>
 #include <ndn-cxx/encoding/block.hpp>
@@ -48,13 +51,11 @@
 #include <ndn-cxx/security/certificate.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/util/logger.hpp>
-#include <ndn-cxx/util/nonstd/optional.hpp>
-#include <tuple>
+#include <ndn-cxx/util/optional.hpp>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/assert.hpp>
 #include <boost/noncopyable.hpp>
-#include <boost/property_tree/info_parser.hpp>
-#include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 
 namespace ndn {
@@ -93,8 +94,7 @@ enum : uint32_t {
 
 } // namespace tlv
 
-using boost::noncopyable;
-typedef boost::property_tree::ptree JsonSection;
+using JsonSection = boost::property_tree::ptree;
 
 // NDNCERT error code
 enum class ErrorCode : uint64_t {

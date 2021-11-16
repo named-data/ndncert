@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -19,15 +19,17 @@
  */
 
 #include "detail/ca-request-state.hpp"
+
 #include <ndn-cxx/util/indented-stream.hpp>
+
+#include <boost/property_tree/json_parser.hpp>
 
 namespace ndn {
 namespace ndncert {
 
 std::string statusToString(Status status)
 {
-  switch (status)
-  {
+  switch (status) {
   case Status::BEFORE_CHALLENGE:
     return "Before challenge";
   case Status::CHALLENGE:
@@ -58,11 +60,11 @@ ChallengeState::ChallengeState(const std::string& challengeStatus,
                                const time::system_clock::TimePoint& challengeTp,
                                size_t remainingTries, time::seconds remainingTime,
                                JsonSection&& challengeSecrets)
-    : challengeStatus(challengeStatus)
-    , timestamp(challengeTp)
-    , remainingTries(remainingTries)
-    , remainingTime(remainingTime)
-    , secrets(std::move(challengeSecrets))
+  : challengeStatus(challengeStatus)
+  , timestamp(challengeTp)
+  , remainingTries(remainingTries)
+  , remainingTime(remainingTime)
+  , secrets(std::move(challengeSecrets))
 {
 }
 
