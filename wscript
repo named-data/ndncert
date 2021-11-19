@@ -27,7 +27,7 @@ def configure(conf):
                    pkg_config_path=os.environ.get('PKG_CONFIG_PATH', '%s/pkgconfig' % conf.env.LIBDIR))
 
     conf.check_sqlite3()
-    conf.check_openssl(lib='crypto', atleast_version=0x1010100f) # 1.1.1
+    conf.check_openssl(lib='crypto', atleast_version='1.1.1')
 
     boost_libs = ['system', 'program_options', 'filesystem']
     if conf.env.WITH_TESTS:
