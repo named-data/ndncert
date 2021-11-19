@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -22,6 +22,7 @@
 #define NDNCERT_DETAIL_CRYPTO_HELPERS_HPP
 
 #include "detail/ndncert-common.hpp"
+
 #include <openssl/evp.h>
 
 namespace ndn {
@@ -36,6 +37,7 @@ class ECDHState : noncopyable
 {
 public:
   ECDHState();
+
   ~ECDHState();
 
   /**
@@ -171,6 +173,14 @@ Buffer
 decodeBlockWithAesGcm128(const Block& block, const uint8_t* key,
                          const uint8_t* associatedData, size_t associatedDataSize,
                          std::vector<uint8_t>& decryptionIv, const std::vector<uint8_t>& encryptionIv);
+
+#ifdef NDNCERT_HAVE_TESTS
+uint32_t
+loadBigU32(const uint8_t* src) noexcept;
+
+void
+storeBigU32(uint8_t* dest, uint32_t src) noexcept;
+#endif
 
 } // namespace ndncert
 } // namespace ndn

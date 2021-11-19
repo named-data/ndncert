@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -21,18 +21,21 @@
 #include "detail/crypto-helpers.hpp"
 
 #include <boost/endian/conversion.hpp>
-#include <cstring>
+
 #include <ndn-cxx/encoding/buffer-stream.hpp>
 #include <ndn-cxx/security/transform/base64-decode.hpp>
 #include <ndn-cxx/security/transform/base64-encode.hpp>
 #include <ndn-cxx/security/transform/buffer-source.hpp>
 #include <ndn-cxx/security/transform/stream-sink.hpp>
 #include <ndn-cxx/util/random.hpp>
+
 #include <openssl/ec.h>
 #include <openssl/err.h>
 #include <openssl/hmac.h>
 #include <openssl/kdf.h>
 #include <openssl/pem.h>
+
+#include <cstring>
 
 namespace ndn {
 namespace ndncert {
@@ -360,28 +363,40 @@ aesGcm128Decrypt(const uint8_t* ciphertext, size_t ciphertextLen, const uint8_t*
 //  }
 }
 
-// Can be removed after boost version 1.72, replaced by boost::endian::load_big_u32
-static uint32_t
-loadBigU32(const std::vector <uint8_t>& iv, size_t pos)
+#ifndef NDNCERT_HAVE_TESTS
+static
+#endif
+uint32_t
+loadBigU32(const uint8_t* src) noexcept
 {
-  uint32_t result = iv[pos] << 24 | iv[pos + 1] << 16 | iv[pos + 2] << 8 | iv[pos + 3];
-  return result;
+#if BOOST_VERSION >= 107100
+  return boost::endian::endian_load<uint32_t, 4, boost::endian::order::big>(src);
+#else
+  uint32_t dest;
+  std::memcpy(reinterpret_cast<uint8_t*>(&dest), src, sizeof(dest));
+  return boost::endian::big_to_native(dest);
+#endif
 }
 
-// Can be removed after boost version 1.72, replaced by boost::endian::store_big_u32
-static void
-storeBigU32(uint8_t* iv, uint32_t counter)
+#ifndef NDNCERT_HAVE_TESTS
+static
+#endif
+void
+storeBigU32(uint8_t* dest, uint32_t src) noexcept
 {
-  uint32_t temp = boost::endian::native_to_big(counter);
-  std::memcpy(iv, reinterpret_cast<const uint8_t*>(&temp), 4);
-  return;
+#if BOOST_VERSION >= 107100
+  boost::endian::endian_store<uint32_t, 4, boost::endian::order::big>(dest, src);
+#else
+  boost::endian::native_to_big_inplace(src);
+  std::memcpy(dest, reinterpret_cast<const uint8_t*>(&src), sizeof(src));
+#endif
 }
 
 static void
-updateIv(std::vector <uint8_t>& iv, size_t payloadSize)
+updateIv(std::vector<uint8_t>& iv, size_t payloadSize)
 {
-  // uint32_t counter = boost::endian::load_big_u32(&iv[8]);
-  uint32_t counter = loadBigU32(iv, 8);
+  BOOST_ASSERT(iv.size() >= 12);
+  uint32_t counter = loadBigU32(&iv[8]);
   uint32_t increment = (payloadSize + 15) / 16;
   if (std::numeric_limits<uint32_t>::max() - counter <= increment) {
     NDN_THROW(std::runtime_error("Error incrementing the AES block counter: "
@@ -390,7 +405,6 @@ updateIv(std::vector <uint8_t>& iv, size_t payloadSize)
   else {
     counter += increment;
   }
-  // boost::endian::store_big_u32(&iv[8], counter);
   storeBigU32(&iv[8], counter);
 }
 
@@ -398,7 +412,7 @@ Block
 encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key,
                          const uint8_t* payload, size_t payloadSize,
                          const uint8_t* associatedData, size_t associatedDataSize,
-                         std::vector <uint8_t>& encryptionIv)
+                         std::vector<uint8_t>& encryptionIv)
 {
   // The spec of AES encrypted payload TLV used in NDNCERT:
   //   https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3#242-aes-gcm-encryption
@@ -423,7 +437,7 @@ encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key,
 Buffer
 decodeBlockWithAesGcm128(const Block& block, const uint8_t* key,
                          const uint8_t* associatedData, size_t associatedDataSize,
-                         std::vector <uint8_t>& decryptionIv, const std::vector <uint8_t>& encryptionIv)
+                         std::vector<uint8_t>& decryptionIv, const std::vector<uint8_t>& encryptionIv)
 {
   // The spec of AES encrypted payload TLV used in NDNCERT:
   //   https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3#242-aes-gcm-encryption
@@ -435,8 +449,8 @@ decodeBlockWithAesGcm128(const Block& block, const uint8_t* key,
     NDN_THROW(std::runtime_error("Error when decrypting the AES Encrypted Block: "
                                  "The observed IV or Authentication Tag is of an unexpected size."));
   }
-  std::vector <uint8_t> observedDecryptionIv(block.get(tlv::InitializationVector).value(),
-                                             block.get(tlv::InitializationVector).value() + 12);
+  std::vector<uint8_t> observedDecryptionIv(block.get(tlv::InitializationVector).value(),
+                                            block.get(tlv::InitializationVector).value() + 12);
   if (!encryptionIv.empty()) {
     if (std::equal(observedDecryptionIv.begin(), observedDecryptionIv.begin() + 8, encryptionIv.begin())) {
       NDN_THROW(std::runtime_error("Error when decrypting the AES Encrypted Block: "
@@ -444,7 +458,7 @@ decodeBlockWithAesGcm128(const Block& block, const uint8_t* key,
     }
   }
   if (!decryptionIv.empty()) {
-    if (loadBigU32(observedDecryptionIv, 8) < loadBigU32(decryptionIv, 8) ||
+    if (loadBigU32(&observedDecryptionIv[8]) < loadBigU32(&decryptionIv[8]) ||
         !std::equal(observedDecryptionIv.begin(), observedDecryptionIv.begin() + 8, decryptionIv.begin())) {
       NDN_THROW(std::runtime_error("Error when decrypting the AES Encrypted Block: "
                                    "The observed IV's counter should be monotonically increasing "

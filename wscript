@@ -16,8 +16,6 @@ def options(opt):
     optgrp = opt.add_option_group('ndncert Options')
     optgrp.add_option('--with-tests', action='store_true', default=False,
                       help='Build unit tests')
-    optgrp.add_option('--with-systemd', action='store_true', default=False,
-                      help='Enable systemd service file compilation')
 
 def configure(conf):
     conf.load(['compiler_cxx', 'gnu_dirs',
@@ -36,10 +34,10 @@ def configure(conf):
         boost_libs.append('unit_test_framework')
 
     conf.check_boost(lib=boost_libs, mt=True)
-    if conf.env.BOOST_VERSION_NUMBER < 105800:
-        conf.fatal('Minimum required Boost version is 1.58.0\n'
-                   'Please upgrade your distribution or manually install a newer version of Boost'
-                   ' (https://redmine.named-data.net/projects/nfd/wiki/Boost_FAQ)')
+    if conf.env.BOOST_VERSION_NUMBER < 106501:
+        conf.fatal('The minimum supported version of Boost is 1.65.1.\n'
+                   'Please upgrade your distribution or manually install a newer version of Boost.\n'
+                   'For more information, see https://redmine.named-data.net/projects/nfd/wiki/Boost')
 
     conf.check_compiler_flags()
 
@@ -59,8 +57,6 @@ def configure(conf):
     # will not appear in the config header, but will instead be passed directly to the
     # compiler on the command line.
     conf.write_config_header('src/detail/ndncert-config.hpp', define_prefix='NDNCERT_')
-
-    conf.define_cond('WITH_SYSTEMD', conf.options.with_systemd)
 
 def build(bld):
     bld.shlib(target='ndn-cert',

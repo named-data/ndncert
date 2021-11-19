@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2020, Regents of the University of California.
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -283,10 +283,8 @@ BOOST_AUTO_TEST_CASE(AesIV)
   auto ivBlock = block.get(tlv::InitializationVector);
   Buffer ivBuf(ivBlock.value(), ivBlock.value_size());
   BOOST_CHECK_EQUAL(ivBuf.size(), 12);
-  auto counter = boost::endian::load_big_u32(&encryptionIv[8]);
-  BOOST_CHECK_EQUAL(counter, 6);
-  counter = boost::endian::load_big_u32(&ivBuf[8]);
-  BOOST_CHECK_EQUAL(counter, 0);
+  BOOST_CHECK_EQUAL(loadBigU32(&encryptionIv[8]), 6);
+  BOOST_CHECK_EQUAL(loadBigU32(&ivBuf[8]), 0);
 
   block = encodeBlockWithAesGcm128(ndn::tlv::ApplicationParameters, key, (uint8_t*)plaintext.c_str(), plaintext.size(),
                                    (uint8_t*)associatedData.c_str(), associatedData.size(), encryptionIv);
