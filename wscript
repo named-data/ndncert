@@ -82,15 +82,13 @@ def build(bld):
         cwd=bld.path.find_dir('src'),
         relative_trick=True)
 
-    bld.install_files(
-        dest='${INCLUDEDIR}/ndncert',
-        files=bld.path.get_bld().ant_glob('src/**/*.hpp'),
-        cwd=bld.path.get_bld().find_dir('src'),
-        relative_trick=False)
+    bld.install_files('${INCLUDEDIR}/ndncert/detail',
+                      bld.path.find_resource('src/detail/ndncert-config.hpp'))
 
-    bld.install_files('${SYSCONFDIR}/ndncert', ['ca.conf.sample',
-                                                'client.conf.sample',
-                                                'ndncert-mail.conf.sample'])
+    bld.install_files('${SYSCONFDIR}/ndncert',
+                      ['ca.conf.sample',
+                       'client.conf.sample',
+                       'ndncert-mail.conf.sample'])
 
     bld(features='subst',
         name='ndncert-send-email-challenge',
@@ -99,7 +97,8 @@ def build(bld):
         install_path='${BINDIR}',
         chmod=Utils.O755)
 
-    bld(features='subst',
-        name='ndncert-server.service',
-        source='systemd/ndncert-ca.service.in',
-        target='systemd/ndncert-ca.service')
+    if Utils.unversioned_sys_platform() == 'linux':
+        bld(features='subst',
+            name='ndncert-ca.service',
+            source='systemd/ndncert-ca.service.in',
+            target='systemd/ndncert-ca.service')
