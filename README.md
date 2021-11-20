@@ -1,6 +1,6 @@
-# NDN Certificate Management Protocol (NDNCERT)
+# NDNCERT: NDN Certificate Management Protocol
 
-![build_v03](https://github.com/named-data/ndncert/workflows/build_v03/badge.svg)
+[![CI](https://github.com/named-data/ndncert/actions/workflows/ci.yml/badge.svg)](https://github.com/named-data/ndncert/actions/workflows/ci.yml)
 ![Language](https://img.shields.io/badge/C%2B%2B-14-blue)
 
 The NDN certificate management protocol (**NDNCERT**) enables automatic certificate management
