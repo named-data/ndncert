@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2020, Regents of the University of California.
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -19,6 +19,7 @@
  */
 
 #include "ca-module.hpp"
+
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/program_options/options_description.hpp>
@@ -27,17 +28,17 @@
 #include <iostream>
 #include <chrono>
 #include <deque>
+
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
 
-namespace ndn {
 namespace ndncert {
 namespace ca {
 
-Face face;
-security::KeyChain keyChain;
-std::string repoHost = "localhost";
-std::string repoPort = "7376";
+static ndn::Face face;
+static ndn::KeyChain keyChain;
+static std::string repoHost = "localhost";
+static std::string repoPort = "7376";
 const size_t MAX_CACHED_CERT_NUM = 100;
 
 static bool
@@ -141,8 +142,8 @@ main(int argc, char* argv[])
       }
     });
     face.setInterestFilter(
-        InterestFilter(ca.getCaConf().caProfile.caPrefix),
-        [&](const InterestFilter&, const Interest& interest) {
+        ndn::InterestFilter(ca.getCaConf().caProfile.caPrefix),
+        [&](const auto&, const auto& interest) {
           const auto& interestName = interest.getName();
           if (interestName.isPrefixOf(profileData.getName())) {
             face.put(profileData);
@@ -166,10 +167,9 @@ main(int argc, char* argv[])
 
 } // namespace ca
 } // namespace ndncert
-} // namespace ndn
 
 int
 main(int argc, char* argv[])
 {
-  return ndn::ndncert::ca::main(argc, argv);
+  return ndncert::ca::main(argc, argv);
 }

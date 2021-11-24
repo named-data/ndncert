@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -19,24 +19,22 @@
  */
 
 #include "assignment-random.hpp"
+
 #include <ndn-cxx/util/random.hpp>
 
-namespace ndn {
 namespace ndncert {
 
 NDNCERT_REGISTER_FUNCFACTORY(AssignmentRandom, "random");
 
 AssignmentRandom::AssignmentRandom(const std::string& format)
   : NameAssignmentFunc(format)
-{}
-
-std::vector<PartialName>
-AssignmentRandom::assignName(const std::multimap<std::string, std::string>& params)
 {
-  std::vector<PartialName> resultList;
-  resultList.emplace_back(to_string(random::generateSecureWord64()));
-  return resultList;
+}
+
+std::vector<ndn::PartialName>
+AssignmentRandom::assignName(const std::multimap<std::string, std::string>&)
+{
+  return {ndn::PartialName(ndn::to_string(ndn::random::generateSecureWord64()))};
 }
 
 } // namespace ndncert
-} // namespace ndn

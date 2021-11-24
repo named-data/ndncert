@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -20,30 +20,30 @@
 
 #include "detail/challenge-encoder.hpp"
 
-namespace ndn {
 namespace ndncert {
 
 Block
 challengetlv::encodeDataContent(ca::RequestState& request, const Name& issuedCertName)
 {
   Block response(tlv::EncryptedPayload);
-  response.push_back(makeNonNegativeIntegerBlock(tlv::Status, static_cast<uint64_t>(request.status)));
+  response.push_back(ndn::makeNonNegativeIntegerBlock(tlv::Status, static_cast<uint64_t>(request.status)));
   if (request.challengeState) {
-    response.push_back(makeStringBlock(tlv::ChallengeStatus, request.challengeState->challengeStatus));
-    response.push_back(makeNonNegativeIntegerBlock(tlv::RemainingTries,
-                                                   request.challengeState->remainingTries));
-    response.push_back(makeNonNegativeIntegerBlock(tlv::RemainingTime,
-                                                   request.challengeState->remainingTime.count()));
+    response.push_back(ndn::makeStringBlock(tlv::ChallengeStatus, request.challengeState->challengeStatus));
+    response.push_back(ndn::makeNonNegativeIntegerBlock(tlv::RemainingTries,
+                                                        request.challengeState->remainingTries));
+    response.push_back(ndn::makeNonNegativeIntegerBlock(tlv::RemainingTime,
+                                                        request.challengeState->remainingTime.count()));
     if (request.challengeState->challengeStatus == "need-proof") {
-      response.push_back(makeStringBlock(tlv::ParameterKey, "nonce"));
-      auto nonce = fromHex(request.challengeState->secrets.get("nonce", ""));
-      response.push_back(makeBinaryBlock(tlv::ParameterValue, nonce->data(), 16));
+      response.push_back(ndn::makeStringBlock(tlv::ParameterKey, "nonce"));
+      auto nonce = ndn::fromHex(request.challengeState->secrets.get("nonce", ""));
+      response.push_back(ndn::makeBinaryBlock(tlv::ParameterValue, nonce->data(), 16));
     }
   }
   if (!issuedCertName.empty()) {
     response.push_back(makeNestedBlock(tlv::IssuedCertName, issuedCertName));
   }
   response.encode();
+
   return encodeBlockWithAesGcm128(ndn::tlv::Content, request.encryptionKey.data(),
                                   response.value(), response.value_size(),
                                   request.requestId.data(), request.requestId.size(),
@@ -56,8 +56,9 @@ challengetlv::decodeDataContent(const Block& contentBlock, requester::Request& s
   auto result = decodeBlockWithAesGcm128(contentBlock, state.m_aesKey.data(),
                                          state.m_requestId.data(), state.m_requestId.size(),
                                          state.m_decryptionIv, state.m_encryptionIv);
-  auto data = makeBinaryBlock(tlv::EncryptedPayload, result.data(), result.size());
+  auto data = ndn::makeBinaryBlock(tlv::EncryptedPayload, result.data(), result.size());
   data.parse();
+
   state.m_status = statusFromBlock(data.get(tlv::Status));
   if (data.find(tlv::ChallengeStatus) != data.elements_end()) {
     state.m_challengeStatus = readString(data.get(tlv::ChallengeStatus));
@@ -87,4 +88,3 @@ challengetlv::decodeDataContent(const Block& contentBlock, requester::Request& s
 }
 
 } // namespace ndncert
-} // namespace ndn

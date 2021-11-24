@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2020, Regents of the University of California.
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -24,31 +24,28 @@
 #include "requester-request.hpp"
 #include "test-common.hpp"
 
-namespace ndn {
 namespace ndncert {
 namespace tests {
 
-BOOST_FIXTURE_TEST_SUITE(TestForBenchmark, IdentityManagementTimeFixture)
+BOOST_FIXTURE_TEST_SUITE(Benchmark, IdentityManagementTimeFixture)
 
 BOOST_AUTO_TEST_CASE(PacketSize0)
 {
-  name::setConventionEncoding(name::Convention::TYPED);
-
   auto identity = addIdentity(Name("/ndn"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, m_keyChain, {true, true});
+  ndn::util::DummyClientFace face(io, m_keyChain, {true, true});
   ca::CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
   auto profileData = ca.getCaProfileData();
 
-  Interest interest = MetadataObject::makeDiscoveryInterest(Name("/ndn/CA/INFO"));
+  Interest interest = ndn::MetadataObject::makeDiscoveryInterest(Name("/ndn/CA/INFO"));
   // std::cout << "CA Config discovery Interest Size: " << interest.wireEncode().size() << std::endl;
-  shared_ptr<Interest> infoInterest = nullptr;
+  std::shared_ptr<Interest> infoInterest;
 
   face.setInterestFilter(
-      InterestFilter("/ndn/CA/INFO"),
+      ndn::InterestFilter("/ndn/CA/INFO"),
       [&](const auto&, const Interest& interest) {
         // std::cout << interest.getName() << std::endl;
         if (interest.getName() == profileData.getName()) {
@@ -72,7 +69,7 @@ BOOST_AUTO_TEST_CASE(PacketSize0)
     else {
       count++;
       // std::cout << "CA Config Data Size: " << response.wireEncode().size() << std::endl;
-      BOOST_CHECK(security::verifySignature(response, cert));
+      BOOST_CHECK(ndn::security::verifySignature(response, cert));
       auto contentBlock = response.getContent();
       contentBlock.parse();
       auto caItem = infotlv::decodeDataContent(contentBlock);
@@ -97,25 +94,25 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, m_keyChain, {true, true});
+  ndn::util::DummyClientFace face(io, m_keyChain, {true, true});
   ca::CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
   // generate NEW Interest
   CaProfile item;
   item.caPrefix = Name("/ndn");
-  item.cert = std::make_shared<security::Certificate>(cert);
+  item.cert = std::make_shared<Certificate>(cert);
   requester::Request state(m_keyChain, item, RequestType::NEW);
   auto newInterest = state.genNewInterest(Name("/ndn/alice"),
-                                                        time::system_clock::now(),
-                                                          time::system_clock::now() + time::days(1));
+                                          time::system_clock::now(),
+                                          time::system_clock::now() + time::days(1));
 
   // std::cout << "New Interest Size: " << newInterest->wireEncode().size() << std::endl;
 
   // generate CHALLENGE Interest
-  shared_ptr<Interest> challengeInterest = nullptr;
-  shared_ptr<Interest> challengeInterest2 = nullptr;
-  shared_ptr<Interest> challengeInterest3 = nullptr;
+  std::shared_ptr<Interest> challengeInterest;
+  std::shared_ptr<Interest> challengeInterest2;
+  std::shared_ptr<Interest> challengeInterest3;
 
   int count = 0;
   face.onSendData.connect([&](const Data& response) {
@@ -127,7 +124,7 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 0) {
       count++;
-      BOOST_CHECK(security::verifySignature(response, cert));
+      BOOST_CHECK(ndn::security::verifySignature(response, cert));
 
       state.onChallengeResponse(response);
       BOOST_CHECK(state.m_status == Status::CHALLENGE);
@@ -137,7 +134,7 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 1) {
       count++;
-      BOOST_CHECK(security::verifySignature(response, cert));
+      BOOST_CHECK(ndn::security::verifySignature(response, cert));
 
       state.onChallengeResponse(response);
       BOOST_CHECK(state.m_status == Status::CHALLENGE);
@@ -153,7 +150,7 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 2) {
       // std::cout << "CHALLENGE Data Size: " << response.wireEncode().size() << std::endl;
       count++;
-      BOOST_CHECK(security::verifySignature(response, cert));
+      BOOST_CHECK(ndn::security::verifySignature(response, cert));
       state.onChallengeResponse(response);
       BOOST_CHECK(state.m_status == Status::SUCCESS);
     }
@@ -170,8 +167,7 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
   BOOST_CHECK_EQUAL(count, 3);
 }
 
-BOOST_AUTO_TEST_SUITE_END()  // TestCaConfig
+BOOST_AUTO_TEST_SUITE_END() // Benchmark
 
 } // namespace tests
 } // namespace ndncert
-} // namespace ndn

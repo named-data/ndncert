@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -23,17 +23,16 @@
 
 #include "detail/ca-request-state.hpp"
 
-namespace ndn {
 namespace ndncert {
 namespace requesttlv {
 
 Block
 encodeApplicationParameters(RequestType requestType, const std::vector<uint8_t>& ecdhPub,
-                            const security::Certificate& certRequest);
+                            const Certificate& certRequest);
 
 void
 decodeApplicationParameters(const Block& block, RequestType requestType, std::vector<uint8_t>& ecdhPub,
-                            shared_ptr<security::Certificate>& certRequest);
+                            std::shared_ptr<Certificate>& certRequest);
 
 Block
 encodeDataContent(const std::vector<uint8_t>& ecdhKey, const std::array<uint8_t, 32>& salt,
@@ -45,6 +44,5 @@ decodeDataContent(const Block& content, std::vector<uint8_t>& ecdhKey,
 
 } // namespace requesttlv
 } // namespace ndncert
-} // namespace ndn
 
-#endif // NDNCERT_DETAIL_NEW_RENEW_REVOKE_ENCODER_HPP
+#endif // NDNCERT_DETAIL_REQUEST_ENCODER_HPP

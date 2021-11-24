@@ -27,7 +27,6 @@
 
 #include <boost/property_tree/json_parser.hpp>
 
-namespace ndn {
 namespace ndncert {
 
 NDN_LOG_INIT(ndncert.challenge.possession);
@@ -58,7 +57,7 @@ ChallengePossession::parseConfigFile()
   }
   catch (const boost::property_tree::file_parser_error& error) {
     NDN_THROW(std::runtime_error("Failed to parse configuration file " + m_configFile + ": " +
-                                 error.message() + " on line " + std::to_string(error.line())));
+                                 error.message() + " on line " + ndn::to_string(error.line())));
   }
 
   if (config.begin() == config.end()) {
@@ -70,7 +69,7 @@ ChallengePossession::parseConfigFile()
   auto it = anchorList.begin();
   for (; it != anchorList.end(); it++) {
     std::istringstream ss(it->second.get("certificate", ""));
-    auto cert = io::load<security::Certificate>(ss);
+    auto cert = ndn::io::load<Certificate>(ss);
     if (cert == nullptr) {
       NDN_LOG_ERROR("Cannot load the certificate from config file");
       continue;
@@ -87,7 +86,7 @@ ChallengePossession::handleChallengeRequest(const Block& params, ca::RequestStat
   if (m_trustAnchors.empty()) {
     parseConfigFile();
   }
-  security::Certificate credential;
+  Certificate credential;
   const uint8_t* signature = nullptr;
   size_t signatureLen = 0;
   const auto& elements = params.elements();
@@ -113,16 +112,18 @@ ChallengePossession::handleChallengeRequest(const Block& params, ca::RequestStat
   // verify the credential and the self-signed cert
   if (request.status == Status::BEFORE_CHALLENGE) {
     NDN_LOG_TRACE("Challenge Interest arrives. Check certificate and init the challenge");
+    using ndn::toHex;
+
     // check the certificate
     bool checkOK = false;
     if (credential.hasContent() && signatureLen == 0) {
       Name signingKeyName = credential.getSignatureInfo().getKeyLocator().getName();
-      security::transform::PublicKey key;
+      ndn::security::transform::PublicKey key;
       const auto& pubKeyBuffer = credential.getPublicKey();
       key.loadPkcs8(pubKeyBuffer.data(), pubKeyBuffer.size());
       for (auto anchor : m_trustAnchors) {
         if (anchor.getKeyName() == signingKeyName) {
-          if (security::verifySignature(credential, anchor)) {
+          if (ndn::security::verifySignature(credential, anchor)) {
             checkOK = true;
           }
         }
@@ -137,7 +138,7 @@ ChallengePossession::handleChallengeRequest(const Block& params, ca::RequestStat
 
     // for the first time, init the challenge
     std::array<uint8_t, 16> secretCode{};
-    random::generateSecureBytes(secretCode.data(), 16);
+    ndn::random::generateSecureBytes(secretCode.data(), 16);
     JsonSection secretJson;
     secretJson.add(PARAMETER_KEY_NONCE, toHex(secretCode.data(), 16));
     auto credential_block = credential.wireEncode();
@@ -152,14 +153,14 @@ ChallengePossession::handleChallengeRequest(const Block& params, ca::RequestStat
     if (credential.hasContent() || signatureLen == 0) {
       return returnWithError(request, ErrorCode::BAD_INTEREST_FORMAT, "Cannot find certificate");
     }
-    credential = security::Certificate(Block(fromHex(request.challengeState->secrets.get(PARAMETER_KEY_CREDENTIAL_CERT, ""))));
-    auto secretCode = *fromHex(request.challengeState->secrets.get(PARAMETER_KEY_NONCE, ""));
+    credential = Certificate(Block(ndn::fromHex(request.challengeState->secrets.get(PARAMETER_KEY_CREDENTIAL_CERT, ""))));
+    auto secretCode = *ndn::fromHex(request.challengeState->secrets.get(PARAMETER_KEY_NONCE, ""));
 
     //check the proof
-    security::transform::PublicKey key;
+    ndn::security::transform::PublicKey key;
     const auto& pubKeyBuffer = credential.getPublicKey();
     key.loadPkcs8(pubKeyBuffer.data(), pubKeyBuffer.size());
-    if (security::verifySignature({{secretCode.data(), secretCode.size()}}, signature, signatureLen, key)) {
+    if (ndn::security::verifySignature({{secretCode.data(), secretCode.size()}}, signature, signatureLen, key)) {
       return returnWithSuccess(request);
     }
     return returnWithError(request, ErrorCode::INVALID_PARAMETER,
@@ -196,10 +197,10 @@ ChallengePossession::genChallengeRequestTLV(Status status, const std::string& ch
     if (params.size() != 1) {
       NDN_THROW(std::runtime_error("Wrong parameter provided."));
     }
-    request.push_back(makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
+    request.push_back(ndn::makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
     for (const auto& item : params) {
       if (std::get<0>(item) == PARAMETER_KEY_CREDENTIAL_CERT) {
-        request.push_back(makeStringBlock(tlv::ParameterKey, PARAMETER_KEY_CREDENTIAL_CERT));
+        request.push_back(ndn::makeStringBlock(tlv::ParameterKey, PARAMETER_KEY_CREDENTIAL_CERT));
         Block valueBlock(tlv::ParameterValue);
         auto& certTlvStr = std::get<1>(item);
         valueBlock.push_back(Block(reinterpret_cast<const uint8_t*>(certTlvStr.data()), certTlvStr.size()));
@@ -210,17 +211,17 @@ ChallengePossession::genChallengeRequestTLV(Status status, const std::string& ch
       }
     }
   }
-  else if (status == Status::CHALLENGE && challengeStatus == NEED_PROOF){
+  else if (status == Status::CHALLENGE && challengeStatus == NEED_PROOF) {
     if (params.size() != 1) {
       NDN_THROW(std::runtime_error("Wrong parameter provided."));
     }
     for (const auto& item : params) {
       if (std::get<0>(item) == PARAMETER_KEY_PROOF) {
-        request.push_back(makeStringBlock(tlv::ParameterKey, PARAMETER_KEY_PROOF));
+        request.push_back(ndn::makeStringBlock(tlv::ParameterKey, PARAMETER_KEY_PROOF));
         auto& sigTlvStr = std::get<1>(item);
-        Block valueBlock = makeBinaryBlock(tlv::ParameterValue,
-                                           reinterpret_cast<const uint8_t*>(sigTlvStr.data()),
-                                           sigTlvStr.size());
+        auto valueBlock = ndn::makeBinaryBlock(tlv::ParameterValue,
+                                               reinterpret_cast<const uint8_t*>(sigTlvStr.data()),
+                                               sigTlvStr.size());
         request.push_back(valueBlock);
       }
       else {
@@ -237,14 +238,14 @@ ChallengePossession::genChallengeRequestTLV(Status status, const std::string& ch
 
 void
 ChallengePossession::fulfillParameters(std::multimap<std::string, std::string>& params,
-                                       KeyChain& keyChain, const Name& issuedCertName,
+                                       ndn::KeyChain& keyChain, const Name& issuedCertName,
                                        const std::array<uint8_t, 16>& nonce)
 {
-  auto keyName = security::extractKeyNameFromCertName(issuedCertName);
-  auto id = keyChain.getPib().getIdentity(security::extractIdentityFromCertName(issuedCertName));
+  auto keyName = ndn::security::extractKeyNameFromCertName(issuedCertName);
+  auto id = keyChain.getPib().getIdentity(ndn::security::extractIdentityFromCertName(issuedCertName));
   auto issuedCert = id.getKey(keyName).getCertificate(issuedCertName);
   auto issuedCertTlv = issuedCert.wireEncode();
-  auto signature = keyChain.getTpm().sign({{nonce.data(), nonce.size()}}, keyName, DigestAlgorithm::SHA256);
+  auto signature = keyChain.getTpm().sign({{nonce.data(), nonce.size()}}, keyName, ndn::DigestAlgorithm::SHA256);
 
   for (auto& item : params) {
     if (item.first == PARAMETER_KEY_CREDENTIAL_CERT) {
@@ -257,4 +258,3 @@ ChallengePossession::fulfillParameters(std::multimap<std::string, std::string>& 
 }
 
 } // namespace ndncert
-} // namespace ndn

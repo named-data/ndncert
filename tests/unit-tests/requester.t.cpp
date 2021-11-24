@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2020, Regents of the University of California.
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -25,7 +25,6 @@
 #include "ca-module.hpp"
 #include "test-common.hpp"
 
-namespace ndn {
 namespace ndncert {
 namespace tests {
 
@@ -33,7 +32,6 @@ using namespace requester;
 
 BOOST_FIXTURE_TEST_SUITE(TestRequester, IdentityManagementTimeFixture)
 
-/* PROBE */
 BOOST_AUTO_TEST_CASE(GenProbeInterest)
 {
   auto identity = addIdentity(Name("/site"));
@@ -45,7 +43,7 @@ BOOST_AUTO_TEST_CASE(GenProbeInterest)
   ca_profile.probeParameterKeys.push_back("uid");
   ca_profile.probeParameterKeys.push_back("name");
   ca_profile.caPrefix = Name("/site");
-  ca_profile.cert = std::make_shared<security::Certificate>(cert);
+  ca_profile.cert = std::make_shared<Certificate>(cert);
 
   std::multimap<std::string, std::string> probeParams;
   probeParams.emplace("email", "zhiyi@cs.ucla.edu");
@@ -69,20 +67,20 @@ BOOST_AUTO_TEST_CASE(OnProbeResponse){
   ca_profile.probeParameterKeys.push_back("uid");
   ca_profile.probeParameterKeys.push_back("name");
   ca_profile.caPrefix = Name("/site");
-  ca_profile.cert = std::make_shared<security::Certificate>(cert);
+  ca_profile.cert = std::make_shared<Certificate>(cert);
 
   std::vector<Name> availableNames;
   availableNames.push_back(Name("/site1"));
   availableNames.push_back(Name("/site2"));
 
-  util::DummyClientFace face(io, m_keyChain, {true, true});
+  ndn::util::DummyClientFace face(io, m_keyChain, {true, true});
   ca::CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-5", "ca-storage-memory");
 
   Data reply;
   reply.setName(Name("/site/CA/PROBE"));
   reply.setFreshnessPeriod(time::seconds(100));
   reply.setContent(probetlv::encodeDataContent(availableNames, 3, ca.m_config.redirection));
-  m_keyChain.sign(reply, signingByIdentity(identity));
+  m_keyChain.sign(reply, ndn::signingByIdentity(identity));
 
   std::vector<std::pair<Name, int>> names;
   std::vector<Name> redirects;
@@ -96,8 +94,8 @@ BOOST_AUTO_TEST_CASE(OnProbeResponse){
   BOOST_CHECK_EQUAL(names[1].second, 3);
 
   BOOST_CHECK_EQUAL(redirects.size(), 2);
-  BOOST_CHECK_EQUAL(security::extractIdentityFromCertName(redirects[0].getPrefix(-1)), "/ndn/site1");
-  BOOST_CHECK_EQUAL(security::extractIdentityFromCertName(redirects[1].getPrefix(-1)), "/ndn/site1");
+  BOOST_CHECK_EQUAL(ndn::security::extractIdentityFromCertName(redirects[0].getPrefix(-1)), "/ndn/site1");
+  BOOST_CHECK_EQUAL(ndn::security::extractIdentityFromCertName(redirects[1].getPrefix(-1)), "/ndn/site1");
 }
 
 BOOST_AUTO_TEST_CASE(ErrorHandling)
@@ -108,14 +106,14 @@ BOOST_AUTO_TEST_CASE(ErrorHandling)
 
   CaProfile item;
   item.caPrefix = Name("/site");
-  item.cert = std::make_shared<security::Certificate>(cert);
+  item.cert = std::make_shared<Certificate>(cert);
   Request state(m_keyChain, item, RequestType::NEW);
 
   Data errorPacket;
   errorPacket.setName(Name("/site/pretend/this/is/error/packet"));
   errorPacket.setFreshnessPeriod(time::seconds(100));
   errorPacket.setContent(errortlv::encodeDataContent(ErrorCode::INVALID_PARAMETER, "This is a test."));
-  m_keyChain.sign(errorPacket, signingByIdentity(identity));
+  m_keyChain.sign(errorPacket, ndn::signingByIdentity(identity));
 
   std::vector<std::pair<Name, int>> ids;
   std::vector<Name> cas;
@@ -128,4 +126,3 @@ BOOST_AUTO_TEST_SUITE_END() // TestRequester
 
 } // namespace tests
 } // namespace ndncert
-} // namespace ndn

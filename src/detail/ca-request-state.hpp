@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -22,9 +22,9 @@
 #define NDNCERT_DETAIL_CA_REQUEST_STATE_HPP
 
 #include "detail/ndncert-common.hpp"
+
 #include <array>
 
-namespace ndn {
 namespace ndncert {
 
 typedef std::array<uint8_t, 8> RequestId;
@@ -107,7 +107,7 @@ struct RequestState
   /**
    * @brief The self-signed certificate in the request.
    */
-  security::Certificate cert;
+  Certificate cert;
   /**
    * @brief The encryption key for the requester.
    */
@@ -135,6 +135,5 @@ operator<<(std::ostream& os, const RequestState& request);
 
 } // namespace ca
 } // namespace ndncert
-} // namespace ndn
 
 #endif // NDNCERT_DETAIL_CA_REQUEST_STATE_HPP

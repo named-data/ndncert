@@ -25,7 +25,6 @@
 #include <boost/filesystem.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
-namespace ndn {
 namespace ndncert {
 namespace ca {
 
@@ -57,7 +56,7 @@ CaConfig::load(const std::string& fileName)
         NDN_THROW(std::runtime_error("Redirect-to item's ca-prefix or certificate cannot be empty."));
       }
       std::istringstream ss(caCertStr);
-      auto caCert = io::load<security::Certificate>(ss);
+      auto caCert = ndn::io::load<Certificate>(ss);
       redirection.push_back(caCert);
     }
   }
@@ -77,4 +76,3 @@ CaConfig::load(const std::string& fileName)
 
 } // namespace ca
 } // namespace ndncert
-} // namespace ndn

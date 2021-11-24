@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -20,7 +20,6 @@
 
 #include "detail/probe-encoder.hpp"
 
-namespace ndn {
 namespace ndncert {
 
 Block
@@ -28,8 +27,8 @@ probetlv::encodeApplicationParameters(const std::multimap<std::string, std::stri
 {
   Block content(ndn::tlv::ApplicationParameters);
   for (const auto& items : parameters) {
-    content.push_back(makeStringBlock(tlv::ParameterKey, items.first));
-    content.push_back(makeStringBlock(tlv::ParameterValue, items.second));
+    content.push_back(ndn::makeStringBlock(tlv::ParameterKey, items.first));
+    content.push_back(ndn::makeStringBlock(tlv::ParameterValue, items.second));
   }
   content.encode();
   return content;
@@ -51,14 +50,14 @@ probetlv::decodeApplicationParameters(const Block& block)
 
 Block
 probetlv::encodeDataContent(const std::vector<Name>& identifiers, optional<size_t> maxSuffixLength,
-                                std::vector<std::shared_ptr<security::Certificate>> redirectionItems)
+                            std::vector<std::shared_ptr<Certificate>> redirectionItems)
 {
   Block content(ndn::tlv::Content);
   for (const auto& name : identifiers) {
     Block item(tlv::ProbeResponse);
     item.push_back(name.wireEncode());
     if (maxSuffixLength) {
-      item.push_back(makeNonNegativeIntegerBlock(tlv::MaxSuffixLength, *maxSuffixLength));
+      item.push_back(ndn::makeNonNegativeIntegerBlock(tlv::MaxSuffixLength, *maxSuffixLength));
     }
     content.push_back(item);
   }
@@ -71,8 +70,8 @@ probetlv::encodeDataContent(const std::vector<Name>& identifiers, optional<size_
 
 void
 probetlv::decodeDataContent(const Block& block,
-                                std::vector<std::pair<Name, int>>& availableNames,
-                                std::vector<Name>& availableRedirection)
+                            std::vector<std::pair<Name, int>>& availableNames,
+                            std::vector<Name>& availableRedirection)
 {
   block.parse();
   for (const auto& item : block.elements()) {
@@ -103,4 +102,3 @@ probetlv::decodeDataContent(const Block& block,
 }
 
 } // namespace ndncert
-} // namespace ndn

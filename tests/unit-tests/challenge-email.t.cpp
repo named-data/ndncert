@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2020, Regents of the University of California.
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -21,7 +21,6 @@
 #include "challenge/challenge-email.hpp"
 #include "test-common.hpp"
 
-namespace ndn {
 namespace ndncert {
 namespace tests {
 
@@ -52,9 +51,9 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmail)
   request.requestType = RequestType::NEW;
   request.cert = cert;
 
-  Block paramTLV = makeEmptyBlock(tlv::EncryptedPayload);
-  paramTLV.push_back(makeStringBlock(tlv::ParameterKey, ChallengeEmail::PARAMETER_KEY_EMAIL));
-  paramTLV.push_back(makeStringBlock(tlv::ParameterValue, "zhiyi@cs.ucla.edu"));
+  Block paramTLV = ndn::makeEmptyBlock(tlv::EncryptedPayload);
+  paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterKey, ChallengeEmail::PARAMETER_KEY_EMAIL));
+  paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterValue, "zhiyi@cs.ucla.edu"));
 
   ChallengeEmail challenge("./tests/unit-tests/test-send-email.sh");
   challenge.handleChallengeRequest(paramTLV, request);
@@ -106,9 +105,9 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithInvalidEmail)
   request.requestType = RequestType::NEW;
   request.cert = cert;
 
-  Block paramTLV = makeEmptyBlock(tlv::EncryptedPayload);
-  paramTLV.push_back(makeStringBlock(tlv::ParameterKey, ChallengeEmail::PARAMETER_KEY_EMAIL));
-  paramTLV.push_back(makeStringBlock(tlv::ParameterValue, "zhiyi@cs"));
+  Block paramTLV = ndn::makeEmptyBlock(tlv::EncryptedPayload);
+  paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterKey, ChallengeEmail::PARAMETER_KEY_EMAIL));
+  paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterValue, "zhiyi@cs"));
 
   ChallengeEmail challenge;
   challenge.handleChallengeRequest(paramTLV, request);
@@ -136,9 +135,9 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
   request.challengeState = ca::ChallengeState(ChallengeEmail::NEED_CODE, time::system_clock::now(),
                                               3, time::seconds(3600), std::move(secret));
 
-  Block paramTLV = makeEmptyBlock(tlv::EncryptedPayload);
-  paramTLV.push_back(makeStringBlock(tlv::ParameterKey, ChallengeEmail::PARAMETER_KEY_CODE));
-  paramTLV.push_back(makeStringBlock(tlv::ParameterValue, "4567"));
+  Block paramTLV = ndn::makeEmptyBlock(tlv::EncryptedPayload);
+  paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterKey, ChallengeEmail::PARAMETER_KEY_CODE));
+  paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterValue, "4567"));
 
   ChallengeEmail challenge;
   challenge.handleChallengeRequest(paramTLV, request);
@@ -165,9 +164,9 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithWrongCode)
   request.challengeState = ca::ChallengeState(ChallengeEmail::NEED_CODE, time::system_clock::now(),
                                               3, time::seconds(3600), std::move(secret));
 
-  Block paramTLV = makeEmptyBlock(tlv::EncryptedPayload);
-  paramTLV.push_back(makeStringBlock(tlv::ParameterKey, ChallengeEmail::PARAMETER_KEY_CODE));
-  paramTLV.push_back(makeStringBlock(tlv::ParameterValue, "7890"));
+  Block paramTLV = ndn::makeEmptyBlock(tlv::EncryptedPayload);
+  paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterKey, ChallengeEmail::PARAMETER_KEY_CODE));
+  paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterValue, "7890"));
 
   ChallengeEmail challenge;
   challenge.handleChallengeRequest(paramTLV, request);
@@ -177,8 +176,7 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithWrongCode)
   BOOST_CHECK_EQUAL(request.challengeState->secrets.empty(), false);
 }
 
-BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE_END() // TestChallengeEmail
 
 } // namespace tests
 } // namespace ndncert
-} // namespace ndn

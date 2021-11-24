@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2020, Regents of the University of California.
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -21,7 +21,6 @@
 #include "challenge/challenge-pin.hpp"
 #include "test-common.hpp"
 
-namespace ndn {
 namespace ndncert {
 namespace tests {
 
@@ -46,7 +45,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmptyInfo)
   request.cert = cert;
 
   ChallengePin challenge;
-  challenge.handleChallengeRequest(makeEmptyBlock(tlv::EncryptedPayload), request);
+  challenge.handleChallengeRequest(ndn::makeEmptyBlock(tlv::EncryptedPayload), request);
 
   BOOST_CHECK(request.status == Status::CHALLENGE);
   BOOST_CHECK_EQUAL(request.challengeState->challengeStatus, ChallengePin::NEED_CODE);
@@ -71,9 +70,9 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
   request.challengeState = ca::ChallengeState(ChallengePin::NEED_CODE, time::system_clock::now(),
                                               3, time::seconds(3600), std::move(secret));
 
-  Block paramTLV = makeEmptyBlock(tlv::EncryptedPayload);
-  paramTLV.push_back(makeStringBlock(tlv::ParameterKey, ChallengePin::PARAMETER_KEY_CODE));
-  paramTLV.push_back(makeStringBlock(tlv::ParameterValue, "12345"));
+  Block paramTLV = ndn::makeEmptyBlock(tlv::EncryptedPayload);
+  paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterKey, ChallengePin::PARAMETER_KEY_CODE));
+  paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterValue, "12345"));
 
   ChallengePin challenge;
   challenge.handleChallengeRequest(paramTLV, request);
@@ -100,9 +99,9 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithWrongCode)
   request.challengeState = ca::ChallengeState(ChallengePin::NEED_CODE, time::system_clock::now(),
                                               3, time::seconds(3600), std::move(secret));
 
-  Block paramTLV = makeEmptyBlock(tlv::EncryptedPayload);
-  paramTLV.push_back(makeStringBlock(tlv::ParameterKey, ChallengePin::PARAMETER_KEY_CODE));
-  paramTLV.push_back(makeStringBlock(tlv::ParameterValue, "45678"));
+  Block paramTLV = ndn::makeEmptyBlock(tlv::EncryptedPayload);
+  paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterKey, ChallengePin::PARAMETER_KEY_CODE));
+  paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterValue, "45678"));
 
   ChallengePin challenge;
   challenge.handleChallengeRequest(paramTLV, request);
@@ -112,8 +111,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithWrongCode)
   BOOST_CHECK_EQUAL(request.challengeState->secrets.empty(), false);
 }
 
-BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE_END() // TestChallengePin
 
 } // namespace tests
 } // namespace ndncert
-} // namespace ndn

@@ -23,7 +23,6 @@
 #include <boost/filesystem.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
-namespace ndn {
 namespace ndncert {
 namespace requester {
 
@@ -99,4 +98,3 @@ ProfileStorage::getKnownProfiles() const
 
 } // namespace requester
 } // namespace ndncert
-} // namespace ndn

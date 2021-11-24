@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -23,11 +23,10 @@
 
 #include "detail/ca-request-state.hpp"
 
-namespace ndn {
 namespace ndncert {
 namespace ca {
 
-class CaStorage : noncopyable
+class CaStorage : boost::noncopyable
 {
 public: // request related
   /**
@@ -66,14 +65,14 @@ public: // factory
     };
   }
 
-  static unique_ptr<CaStorage>
+  static std::unique_ptr<CaStorage>
   createCaStorage(const std::string& caStorageType, const Name& caName, const std::string& path);
 
   virtual
   ~CaStorage() = default;
 
 private:
-  using CaStorageCreateFunc = function<unique_ptr<CaStorage> (const Name&, const std::string&)>;
+  using CaStorageCreateFunc = std::function<std::unique_ptr<CaStorage> (const Name&, const std::string&)>;
   using CaStorageFactory = std::map<std::string, CaStorageCreateFunc>;
 
   static CaStorageFactory&
@@ -86,12 +85,11 @@ static class NdnCert ## C ## CaStorageRegistrationClass          \
 public:                                                          \
   NdnCert ## C ## CaStorageRegistrationClass()                   \
   {                                                              \
-    ::ndn::ndncert::ca::CaStorage::registerCaStorage<C>();       \
+    ::ndncert::ca::CaStorage::registerCaStorage<C>();            \
   }                                                              \
 } g_NdnCert ## C ## CaStorageRegistrationVariable
 
 } // namespace ca
 } // namespace ndncert
-} // namespace ndn
 
 #endif // NDNCERT_DETAIL_CA_STORAGE_HPP

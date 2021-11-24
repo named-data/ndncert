@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -19,20 +19,21 @@
  */
 
 #include "detail/request-encoder.hpp"
+
 #include <ndn-cxx/security/transform/base64-encode.hpp>
 #include <ndn-cxx/security/transform/buffer-source.hpp>
 #include <ndn-cxx/security/transform/stream-sink.hpp>
 
-namespace ndn {
 namespace ndncert {
 
 Block
-requesttlv::encodeApplicationParameters(RequestType requestType, const std::vector <uint8_t>& ecdhPub,
-                                        const security::Certificate& certRequest)
+requesttlv::encodeApplicationParameters(RequestType requestType,
+                                        const std::vector<uint8_t>& ecdhPub,
+                                        const Certificate& certRequest)
 {
   Block
   request(ndn::tlv::ApplicationParameters);
-  request.push_back(makeBinaryBlock(tlv::EcdhPub, ecdhPub.data(), ecdhPub.size()));
+  request.push_back(ndn::makeBinaryBlock(tlv::EcdhPub, ecdhPub.data(), ecdhPub.size()));
   if (requestType == RequestType::NEW || requestType == RequestType::RENEW) {
     request.push_back(makeNestedBlock(tlv::CertRequest, certRequest));
   }
@@ -45,8 +46,8 @@ requesttlv::encodeApplicationParameters(RequestType requestType, const std::vect
 
 void
 requesttlv::decodeApplicationParameters(const Block& payload, RequestType requestType,
-                                        std::vector <uint8_t>& ecdhPub,
-                                        shared_ptr <security::Certificate>& clientCert)
+                                        std::vector<uint8_t>& ecdhPub,
+                                        std::shared_ptr<Certificate>& clientCert)
 {
   payload.parse();
 
@@ -63,8 +64,7 @@ requesttlv::decodeApplicationParameters(const Block& payload, RequestType reques
   }
   requestPayload.parse();
 
-  security::Certificate cert = security::Certificate(requestPayload.get(ndn::tlv::Data));
-  clientCert = std::make_shared<security::Certificate>(cert);
+  clientCert = std::make_shared<Certificate>(requestPayload.get(ndn::tlv::Data));
 }
 
 Block
@@ -73,11 +73,11 @@ requesttlv::encodeDataContent(const std::vector <uint8_t>& ecdhKey, const std::a
                               const std::vector <std::string>& challenges)
 {
   Block response(ndn::tlv::Content);
-  response.push_back(makeBinaryBlock(tlv::EcdhPub, ecdhKey.data(), ecdhKey.size()));
-  response.push_back(makeBinaryBlock(tlv::Salt, salt.data(), salt.size()));
-  response.push_back(makeBinaryBlock(tlv::RequestId, requestId.data(), requestId.size()));
+  response.push_back(ndn::makeBinaryBlock(tlv::EcdhPub, ecdhKey.data(), ecdhKey.size()));
+  response.push_back(ndn::makeBinaryBlock(tlv::Salt, salt.data(), salt.size()));
+  response.push_back(ndn::makeBinaryBlock(tlv::RequestId, requestId.data(), requestId.size()));
   for (const auto& entry: challenges) {
-    response.push_back(makeStringBlock(tlv::Challenge, entry));
+    response.push_back(ndn::makeStringBlock(tlv::Challenge, entry));
   }
   response.encode();
   return response;
@@ -109,4 +109,3 @@ requesttlv::decodeDataContent(const Block& content, std::vector <uint8_t>& ecdhK
 }
 
 } // namespace ndncert
-} // namespace ndn

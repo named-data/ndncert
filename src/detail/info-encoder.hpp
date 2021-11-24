@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -23,7 +23,6 @@
 
 #include "detail/ca-profile.hpp"
 
-namespace ndn {
 namespace ndncert {
 namespace infotlv {
 
@@ -31,7 +30,7 @@ namespace infotlv {
  * Encode CA configuration and its certificate into a TLV block as INFO Data packet content.
  */
 Block
-encodeDataContent(const CaProfile& caConfig, const security::Certificate& certificate);
+encodeDataContent(const CaProfile& caConfig, const Certificate& certificate);
 
 /**
  * Decode CA configuration from the TLV block of INFO Data packet content.
@@ -41,6 +40,5 @@ decodeDataContent(const Block& block);
 
 } // namespace infotlv
 } // namespace ndncert
-} // namespace ndn
 
 #endif // NDNCERT_DETAIL_INFO_ENCODER_HPP

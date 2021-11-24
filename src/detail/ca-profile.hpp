@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -23,7 +23,6 @@
 
 #include "detail/ndncert-common.hpp"
 
-namespace ndn {
 namespace ndncert {
 
 // used in parsing CA configuration file and Client CA profile storage file
@@ -90,10 +89,9 @@ public:
   /**
    * @brief CA's certificate. Only Client side will have m_cert.
    */
-  std::shared_ptr<security::Certificate> cert;
+  std::shared_ptr<Certificate> cert;
 };
 
 } // namespace ndncert
-} // namespace ndn
 
 #endif // NDNCERT_DETAIL_CA_PROFILE_HPP

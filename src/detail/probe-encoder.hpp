@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -23,7 +23,6 @@
 
 #include "detail/ndncert-common.hpp"
 
-namespace ndn {
 namespace ndncert {
 namespace probetlv {
 
@@ -39,14 +38,13 @@ decodeDataContent(const Block& block, std::vector<std::pair<Name, int>>& availab
 Block
 encodeDataContent(const std::vector<Name>& identifiers,
                   optional<size_t> maxSuffixLength = nullopt,
-                  std::vector<std::shared_ptr<security::Certificate>> redirectionItems =
-                          std::vector<std::shared_ptr<security::Certificate>>());
+                  std::vector<std::shared_ptr<Certificate>> redirectionItems =
+                          std::vector<std::shared_ptr<Certificate>>());
 
 std::multimap<std::string, std::string>
 decodeApplicationParameters(const Block& block);
 
 } // namespace probetlv
 } // namespace ndncert
-} // namespace ndn
 
 #endif // NDNCERT_DETAIL_PROBE_ENCODER_HPP

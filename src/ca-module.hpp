@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -25,7 +25,9 @@
 #include "detail/crypto-helpers.hpp"
 #include "detail/ca-storage.hpp"
 
-namespace ndn {
+#include <ndn-cxx/face.hpp>
+#include <ndn-cxx/security/key-chain.hpp>
+
 namespace ndncert {
 namespace ca {
 
@@ -37,12 +39,12 @@ namespace ca {
  *
  * @param RequestState The state of the certificate request whose status is updated.
  */
-using StatusUpdateCallback = function<void(const RequestState&)>;
+using StatusUpdateCallback = std::function<void(const RequestState&)>;
 
-class CaModule : noncopyable
+class CaModule : boost::noncopyable
 {
 public:
-  CaModule(Face& face, security::KeyChain& keyChain, const std::string& configPath,
+  CaModule(ndn::Face& face, ndn::KeyChain& keyChain, const std::string& configPath,
            const std::string& storageType = "ca-storage-sqlite3");
 
   ~CaModule();
@@ -53,7 +55,7 @@ public:
     return m_config;
   }
 
-  const unique_ptr<CaStorage>&
+  const std::unique_ptr<CaStorage>&
   getCaStorage()
   {
     return m_storage;
@@ -84,7 +86,7 @@ NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::unique_ptr<RequestState>
   getCertificateRequest(const Interest& request);
 
-  security::Certificate
+  Certificate
   issueCertificate(const RequestState& requestState);
 
   void
@@ -94,10 +96,10 @@ NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   generateErrorDataPacket(const Name& name, ErrorCode error, const std::string& errorInfo);
 
 NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  Face& m_face;
+  ndn::Face& m_face;
   CaConfig m_config;
-  unique_ptr<CaStorage> m_storage;
-  security::KeyChain& m_keyChain;
+  std::unique_ptr<CaStorage> m_storage;
+  ndn::KeyChain& m_keyChain;
   uint8_t m_requestIdGenKey[32];
   std::unique_ptr<Data> m_profileData;
   /**
@@ -105,12 +107,11 @@ NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
    */
   StatusUpdateCallback m_statusUpdateCallback;
 
-  std::list<RegisteredPrefixHandle> m_registeredPrefixHandles;
-  std::list<InterestFilterHandle> m_interestFilterHandles;
+  std::list<ndn::RegisteredPrefixHandle> m_registeredPrefixHandles;
+  std::list<ndn::InterestFilterHandle> m_interestFilterHandles;
 };
 
 } // namespace ca
 } // namespace ndncert
-} // namespace ndn
 
 #endif // NDNCERT_CA_MODULE_HPP

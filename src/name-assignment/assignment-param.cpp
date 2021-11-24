@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -20,19 +20,19 @@
 
 #include "assignment-param.hpp"
 
-namespace ndn {
 namespace ndncert {
 
 NDNCERT_REGISTER_FUNCFACTORY(AssignmentParam, "param");
 
 AssignmentParam::AssignmentParam(const std::string& format)
   : NameAssignmentFunc(format)
-{}
+{
+}
 
-std::vector<PartialName>
+std::vector<ndn::PartialName>
 AssignmentParam::assignName(const std::multimap<std::string, std::string>& params)
 {
-  std::vector<PartialName> resultList;
+  std::vector<ndn::PartialName> resultList;
   Name result;
   for (const auto& item : m_nameFormat) {
     auto it = std::find_if(params.begin(), params.end(),
@@ -49,4 +49,3 @@ AssignmentParam::assignName(const std::multimap<std::string, std::string>& param
 }
 
 } // namespace ndncert
-} // namespace ndn

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2020 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -20,15 +20,16 @@
  */
 
 #include "identity-management-fixture.hpp"
+
 #include <ndn-cxx/security/additional-description.hpp>
 #include <ndn-cxx/util/io.hpp>
+
 #include <boost/filesystem.hpp>
 
-namespace ndn {
 namespace ndncert {
 namespace tests {
 
-namespace v2 = security::v2;
+using namespace ndn::security;
 
 IdentityManagementBaseFixture::~IdentityManagementBaseFixture()
 {
@@ -43,10 +44,10 @@ IdentityManagementBaseFixture::saveCertToFile(const Data& obj, const std::string
 {
   m_certFiles.insert(filename);
   try {
-    io::save(obj, filename);
+    ndn::io::save(obj, filename);
     return true;
   }
-  catch (const io::Error&) {
+  catch (const ndn::io::Error&) {
     return false;
   }
 }
@@ -56,8 +57,8 @@ IdentityManagementFixture::IdentityManagementFixture()
 {
 }
 
-security::Identity
-IdentityManagementFixture::addIdentity(const Name& identityName, const KeyParams& params)
+Identity
+IdentityManagementFixture::addIdentity(const Name& identityName, const ndn::KeyParams& params)
 {
   auto identity = m_keyChain.createIdentity(identityName, params);
   m_identities.insert(identityName);
@@ -65,32 +66,31 @@ IdentityManagementFixture::addIdentity(const Name& identityName, const KeyParams
 }
 
 bool
-IdentityManagementFixture::saveCertificate(const security::Identity& identity, const std::string& filename)
+IdentityManagementFixture::saveCertificate(const Identity& identity, const std::string& filename)
 {
   try {
     auto cert = identity.getDefaultKey().getDefaultCertificate();
     return saveCertToFile(cert, filename);
   }
-  catch (const security::Pib::Error&) {
+  catch (const Pib::Error&) {
     return false;
   }
 }
 
-security::Identity
+Identity
 IdentityManagementFixture::addSubCertificate(const Name& subIdentityName,
-                                             const security::Identity& issuer, const KeyParams& params)
+                                             const Identity& issuer, const ndn::KeyParams& params)
 {
   auto subIdentity = addIdentity(subIdentityName, params);
 
-  v2::Certificate request = subIdentity.getDefaultKey().getDefaultCertificate();
-
+  Certificate request = subIdentity.getDefaultKey().getDefaultCertificate();
   request.setName(request.getKeyName().append("parent").appendVersion());
 
   SignatureInfo info;
   auto now = time::system_clock::now();
-  info.setValidityPeriod(security::ValidityPeriod(now, now + 7300_days));
+  info.setValidityPeriod(ValidityPeriod(now, now + 7300_days));
 
-  v2::AdditionalDescription description;
+  AdditionalDescription description;
   description.set("type", "sub-certificate");
   info.addCustomTlv(description.wireEncode());
 
@@ -100,14 +100,14 @@ IdentityManagementFixture::addSubCertificate(const Name& subIdentityName,
   return subIdentity;
 }
 
-v2::Certificate
-IdentityManagementFixture::addCertificate(const security::Key& key, const std::string& issuer)
+Certificate
+IdentityManagementFixture::addCertificate(const Key& key, const std::string& issuer)
 {
   Name certificateName = key.getName();
   certificateName
     .append(issuer)
     .appendVersion();
-  v2::Certificate certificate;
+  Certificate certificate;
   certificate.setName(certificateName);
 
   // set metainfo
@@ -120,7 +120,7 @@ IdentityManagementFixture::addCertificate(const security::Key& key, const std::s
   // set signature-info
   SignatureInfo info;
   auto now = time::system_clock::now();
-  info.setValidityPeriod(security::ValidityPeriod(now, now + 10_days));
+  info.setValidityPeriod(ValidityPeriod(now, now + 10_days));
 
   m_keyChain.sign(certificate, signingByKey(key).setSignatureInfo(info));
   return certificate;
@@ -128,4 +128,3 @@ IdentityManagementFixture::addCertificate(const security::Key& key, const std::s
 
 } // namespace tests
 } // namespace ndncert
-} // namespace ndn

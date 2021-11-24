@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2020, Regents of the University of California.
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -21,7 +21,6 @@
 #include "detail/ca-sqlite.hpp"
 #include "test-common.hpp"
 
-namespace ndn {
 namespace ndncert {
 namespace tests {
 
@@ -130,8 +129,7 @@ BOOST_AUTO_TEST_CASE(DuplicateAdd)
   BOOST_CHECK_THROW(storage.addRequest(request1), std::runtime_error);
 }
 
-BOOST_AUTO_TEST_SUITE_END() // TestCaModule
+BOOST_AUTO_TEST_SUITE_END() // TestCaSqlite
 
 } // namespace tests
 } // namespace ndncert
-} // namespace ndn

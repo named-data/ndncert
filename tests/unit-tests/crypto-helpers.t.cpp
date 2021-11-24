@@ -21,7 +21,6 @@
 #include "detail/crypto-helpers.hpp"
 #include "test-common.hpp"
 
-namespace ndn {
 namespace ndncert {
 namespace tests {
 
@@ -281,7 +280,7 @@ BOOST_AUTO_TEST_CASE(AesIV)
                                         (uint8_t*)associatedData.c_str(), associatedData.size(), encryptionIv);
   block.parse();
   auto ivBlock = block.get(tlv::InitializationVector);
-  Buffer ivBuf(ivBlock.value(), ivBlock.value_size());
+  ndn::Buffer ivBuf(ivBlock.value(), ivBlock.value_size());
   BOOST_CHECK_EQUAL(ivBuf.size(), 12);
   BOOST_CHECK_EQUAL(loadBigU32(&encryptionIv[8]), 6);
   BOOST_CHECK_EQUAL(loadBigU32(&ivBuf[8]), 0);
@@ -290,7 +289,7 @@ BOOST_AUTO_TEST_CASE(AesIV)
                                    (uint8_t*)associatedData.c_str(), associatedData.size(), encryptionIv);
   block.parse();
   ivBlock = block.get(tlv::InitializationVector);
-  Buffer ivBuf2(ivBlock.value(), ivBlock.value_size());
+  ndn::Buffer ivBuf2(ivBlock.value(), ivBlock.value_size());
   BOOST_CHECK_EQUAL(std::memcmp(ivBuf2.data(), encryptionIv.data(), 8), 0);
 }
 
@@ -338,8 +337,7 @@ BOOST_AUTO_TEST_CASE(BlockEncodingDecoding)
                     std::runtime_error);
 }
 
-BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE_END() // TestCryptoHelpers
 
 } // namespace tests
 } // namespace ndncert
-} // namespace ndn

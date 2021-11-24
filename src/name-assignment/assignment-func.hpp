@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -22,12 +22,12 @@
 #define NDNCERT_ASSIGNMENT_FUNC_HPP
 
 #include "detail/ca-request-state.hpp"
+
 #include <map>
 
-namespace ndn {
 namespace ndncert {
 
-class NameAssignmentFunc : noncopyable
+class NameAssignmentFunc : boost::noncopyable
 {
 protected:
   explicit NameAssignmentFunc(const std::string& format = "");
@@ -45,7 +45,7 @@ public:
    * @param vector A list of parameter key-value pair used for name assignment.
    * @return a vector containing the possible namespaces derived from the parameters.
    */
-  virtual std::vector<PartialName>
+  virtual std::vector<ndn::PartialName>
   assignName(const std::multimap<std::string, std::string>& params) = 0;
 
 public:
@@ -58,14 +58,14 @@ public:
     factory[typeName] = [](const std::string& format) { return std::make_unique<AssignmentType>(format); };
   }
 
-  static unique_ptr<NameAssignmentFunc>
+  static std::unique_ptr<NameAssignmentFunc>
   createNameAssignmentFunc(const std::string& challengeType, const std::string& format = "");
 
 NDNCERT_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   std::vector<std::string> m_nameFormat;
 
 private:
-  typedef function<unique_ptr<NameAssignmentFunc>(const std::string&)> FactoryCreateFunc;
+  typedef std::function<std::unique_ptr<NameAssignmentFunc>(const std::string&)> FactoryCreateFunc;
   typedef std::map<std::string, FactoryCreateFunc> CurriedFuncFactory;
 
   static CurriedFuncFactory&
@@ -73,15 +73,15 @@ private:
 };
 
 #define NDNCERT_REGISTER_FUNCFACTORY(C, T)                                        \
-  static class NdnCert##C##FuncFactoryRegistrationClass {                         \
+  static class NdnCert##C##FuncFactoryRegistrationClass                           \
+  {                                                                               \
   public:                                                                         \
     NdnCert##C##FuncFactoryRegistrationClass()                                    \
     {                                                                             \
-      ::ndn::ndncert::NameAssignmentFunc::registerNameAssignmentFunc<C>(T);       \
+      ::ndncert::NameAssignmentFunc::registerNameAssignmentFunc<C>(T);            \
     }                                                                             \
   } g_NdnCert##C##ChallengeRegistrationVariable
 
 } // namespace ndncert
-} // namespace ndn
 
 #endif // NDNCERT_ASSIGNMENT_FUNC_HPP

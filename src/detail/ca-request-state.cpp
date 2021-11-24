@@ -24,7 +24,6 @@
 
 #include <boost/property_tree/json_parser.hpp>
 
-namespace ndn {
 namespace ndncert {
 
 std::string statusToString(Status status)
@@ -72,7 +71,7 @@ std::ostream&
 operator<<(std::ostream& os, const RequestState& request)
 {
   os << "Request's CA name: " << request.caPrefix << "\n";
-  os << "Request's request ID: " << toHex(request.requestId.data(), request.requestId.size()) << "\n";
+  os << "Request's request ID: " << ndn::toHex(request.requestId.data(), request.requestId.size()) << "\n";
   os << "Request's status: " << statusToString(request.status) << "\n";
   os << "Request's challenge type: " << request.challengeType << "\n";
   if (request.challengeState) {
@@ -85,11 +84,10 @@ operator<<(std::ostream& os, const RequestState& request)
     os << "Challenge secret: " << ss.str() << "\n";
   }
   os << "Certificate:\n";
-  util::IndentedStream os2(os, "  ");
+  ndn::util::IndentedStream os2(os, "  ");
   os2 << request.cert;
   return os;
 }
 
 } // namespace ca
 } // namespace ndncert
-} // namespace ndn

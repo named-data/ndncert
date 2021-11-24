@@ -20,6 +20,8 @@
 
 #include "requester-request.hpp"
 
+#include <ndn-cxx/face.hpp>
+#include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
 
 #include <boost/asio.hpp>
@@ -29,7 +31,6 @@
 
 #include <iostream>
 
-namespace ndn {
 namespace ndncert {
 namespace requester {
 
@@ -46,9 +47,9 @@ static void
 runChallenge(const std::string& challengeType);
 
 static size_t nStep = 1;
-static Face face;
-static security::KeyChain keyChain;
-static shared_ptr<Request> requesterState;
+static ndn::Face face;
+static ndn::KeyChain keyChain;
+static std::shared_ptr<Request> requesterState;
 
 static void
 captureParams(std::multimap<std::string, std::string>& requirement)
@@ -92,7 +93,7 @@ captureValidityPeriod()
     try {
       return std::stoul(periodStr);
     }
-    catch (const std::exception& e) {
+    catch (const std::exception&) {
       std::cerr << "Your input is invalid. Try again: " << std::endl;
       count++;
     }
@@ -183,7 +184,7 @@ newCb(const Data& reply)
       try {
         challengeIndex = std::stoul(choice);
       }
-      catch (const std::exception& e) {
+      catch (const std::exception&) {
         std::cerr << "Your input is not valid. Try again:" << std::endl;
         inputCount++;
         continue;
@@ -262,7 +263,8 @@ probeCb(const Data& reply, CaProfile profile)
   std::cerr << "\nOr choose another trusted CA suggested by the CA: " << std::endl;
   for (const auto& redirect : redirects) {
     std::cerr << "> Index: " << count++ << std::endl
-              << ">> Suggested CA: " << security::extractIdentityFromCertName(redirect.getPrefix(-1)) << std::endl;
+              << ">> Suggested CA: " << ndn::security::extractIdentityFromCertName(redirect.getPrefix(-1))
+              << std::endl;
   }
   std::cerr << "Please type in the index of your choice:" << std::endl;
   size_t index = 0;
@@ -271,7 +273,7 @@ probeCb(const Data& reply, CaProfile profile)
     getline(std::cin, input);
     index = std::stoul(input);
   }
-  catch (const std::exception& e) {
+  catch (const std::exception&) {
     std::cerr << "Your input is Invalid. Exit" << std::endl;
     exit(1);
   }
@@ -293,7 +295,7 @@ probeCb(const Data& reply, CaProfile profile)
         std::cerr << "You are applying name: " << selectedName.toUri() << std::endl;
       }
     }
-    catch (const std::exception& e) {
+    catch (const std::exception&) {
       std::cerr << "Your input is Invalid. Exit" << std::endl;
       exit(1);
     }
@@ -302,7 +304,7 @@ probeCb(const Data& reply, CaProfile profile)
   else {
     //redirects
     auto redirectedCaFullName = redirects[index - names.size()];
-    auto redirectedCaName = security::extractIdentityFromCertName(redirectedCaFullName.getPrefix(-1));
+    auto redirectedCaName = ndn::security::extractIdentityFromCertName(redirectedCaFullName.getPrefix(-1));
     std::cerr << "You selected to be redirected to CA: " << redirectedCaName.toUri() << std::endl;
     face.expressInterest(
         *Request::genCaProfileDiscoveryInterest(redirectedCaName),
@@ -365,7 +367,7 @@ selectCaProfile(std::string configFilePath)
     try {
       caIndex = std::stoul(caIndexS);
     }
-    catch (const std::exception& e) {
+    catch (const std::exception&) {
       std::cerr << "Your input is neither NONE nor a valid index. Exit" << std::endl;
       return;
     }
@@ -532,10 +534,9 @@ main(int argc, char* argv[])
 
 } // namespace requester
 } // namespace ndncert
-} // namespace ndn
 
 int
 main(int argc, char* argv[])
 {
-  return ndn::ndncert::requester::main(argc, argv);
+  return ndncert::requester::main(argc, argv);
 }

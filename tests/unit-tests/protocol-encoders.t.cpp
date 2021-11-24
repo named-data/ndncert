@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -25,9 +25,7 @@
 #include "detail/probe-encoder.hpp"
 #include "detail/ca-configuration.hpp"
 #include "test-common.hpp"
-#include "identity-management-fixture.hpp"
 
-namespace ndn {
 namespace ndncert {
 namespace tests {
 
@@ -108,7 +106,7 @@ BOOST_AUTO_TEST_CASE(NewRevokeEncodingParam)
   std::vector<uint8_t> pub = ECDHState().getSelfPubKey();
   auto b = requesttlv::encodeApplicationParameters(RequestType::REVOKE, pub, *certRequest);
   std::vector<uint8_t> returnedPub;
-  std::shared_ptr<security::Certificate> returnedCert;
+  std::shared_ptr<Certificate> returnedCert;
   requesttlv::decodeApplicationParameters(b, RequestType::REVOKE, returnedPub, returnedCert);
 
   BOOST_CHECK_EQUAL(returnedPub.size(), pub.size());
@@ -143,7 +141,7 @@ BOOST_AUTO_TEST_CASE(ChallengeEncoding)
                          0xe0, 0xff, 0x56, 0x83, 0xf2, 0x43, 0xb2, 0x13};
   requester::ProfileStorage caCache;
   caCache.load("tests/unit-tests/config-files/config-client-1");
-  security::Certificate certRequest = *caCache.getKnownProfiles().front().cert;
+  auto certRequest = *caCache.getKnownProfiles().front().cert;
   RequestId id = {{102}};
   ca::RequestState state;
   state.caPrefix = Name("/ndn/ucla");
@@ -170,8 +168,7 @@ BOOST_AUTO_TEST_CASE(ChallengeEncoding)
   BOOST_CHECK_EQUAL(context.m_issuedCertName, "/ndn/ucla/a/b/c");
 }
 
-BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE_END() // TestProtocolEncoding
 
 } // namespace tests
 } // namespace ndncert
-} // namespace ndn

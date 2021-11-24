@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -25,11 +25,12 @@
 #include "detail/crypto-helpers.hpp"
 #include "detail/profile-storage.hpp"
 
-namespace ndn {
+#include <ndn-cxx/security/key-chain.hpp>
+
 namespace ndncert {
 namespace requester {
 
-class Request : noncopyable
+class Request : boost::noncopyable
 {
 public:
   /**
@@ -38,7 +39,7 @@ public:
    * @param caName The name prefix of the CA.
    * @return A shared pointer to an Interest ready to be sent.
    */
-  static shared_ptr<Interest>
+  static std::shared_ptr<Interest>
   genCaProfileDiscoveryInterest(const Name& caName);
 
   /**
@@ -47,7 +48,7 @@ public:
    * @param reply The Data packet replied from discovery Interest.
    * @return A shared pointer to an Interest ready to be sent.
    */
-  static shared_ptr<Interest>
+  static std::shared_ptr<Interest>
   genCaProfileInterestFromDiscoveryResponse(const Data& reply);
 
   /**
@@ -85,7 +86,7 @@ public:
    * @param probeInfo The requester information to carry to the CA
    * @return A shared pointer of to the encoded interest, ready to be sent.
    */
-  static shared_ptr<Interest>
+  static std::shared_ptr<Interest>
   genProbeInterest(const CaProfile& ca, std::multimap<std::string, std::string>&& probeInfo);
 
   /**
@@ -103,9 +104,8 @@ public:
   onProbeResponse(const Data& reply, const CaProfile& ca,
                   std::vector<std::pair<Name, int>>& identityNames, std::vector<Name>& otherCas);
 
-
   explicit
-  Request(security::KeyChain& keyChain, const CaProfile& profile, RequestType requestType);
+  Request(ndn::KeyChain& keyChain, const CaProfile& profile, RequestType requestType);
 
   // NEW/REVOKE/RENEW related helpers
   /**
@@ -117,7 +117,7 @@ public:
    * @param notAfter The expected notAfter field for the certificate (expiration time)
    * @return The shared pointer to the encoded interest.
    */
-  shared_ptr<Interest>
+  std::shared_ptr<Interest>
   genNewInterest(const Name& newIdentityName,
                  const time::system_clock::TimePoint& notBefore,
                  const time::system_clock::TimePoint& notAfter);
@@ -129,8 +129,8 @@ public:
    * @param certificate The certificate to the revoked.
    * @return The shared pointer to the encoded interest.
    */
-  shared_ptr<Interest>
-  genRevokeInterest(const security::Certificate& certificate);
+  std::shared_ptr<Interest>
+  genRevokeInterest(const Certificate& certificate);
 
   /**
    * @brief Decodes the replied data of NEW, RENEW, or REVOKE interest from the CA.
@@ -164,7 +164,7 @@ public:
    * @return The shared pointer to the encoded interest
    * @throw std::runtime_error if the challenge is not selected or is not supported.
    */
-  shared_ptr<Interest>
+  std::shared_ptr<Interest>
   genChallengeInterest(std::multimap<std::string, std::string>&& parameters);
 
   /**
@@ -183,7 +183,7 @@ public:
    * @param state, the state of the request.
    * @return The shared pointer to the encoded interest
    */
-  shared_ptr<Interest>
+  std::shared_ptr<Interest>
   genCertFetchInterest() const;
 
   /**
@@ -192,7 +192,7 @@ public:
    * @param reply, the data replied from the certificate fetch interest.
    * @return The shared pointer to the certificate being fetched.
    */
-  static shared_ptr<security::Certificate>
+  static std::shared_ptr<Certificate>
   onCertFetchResponse(const Data& reply);
 
   /**
@@ -273,7 +273,7 @@ private:
   /**
    * @brief The local keychain to generate and install identities, keys and certificates
    */
-  security::KeyChain& m_keyChain;
+  ndn::KeyChain& m_keyChain;
   /**
    * @brief State about how identity/key is generated.
    */
@@ -282,11 +282,10 @@ private:
   /**
    * @brief The keypair for the request.
    */
-  security::Key m_keyPair;
+  ndn::security::Key m_keyPair;
 };
 
 } // namespace requester
 } // namespace ndncert
-} // namespace ndn
 
 #endif // NDNCERT_REQUESTER_REQUEST_HPP

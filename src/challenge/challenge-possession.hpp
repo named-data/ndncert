@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -22,7 +22,8 @@
 
 #include "challenge-module.hpp"
 
-namespace ndn {
+#include <ndn-cxx/security/key-chain.hpp>
+
 namespace ndncert {
 
 /**
@@ -66,7 +67,8 @@ public:
 
   static void
   fulfillParameters(std::multimap<std::string, std::string>& params,
-                    KeyChain& keyChain, const Name& issuedCertName, const std::array<uint8_t, 16>& nonce);
+                    ndn::KeyChain& keyChain, const Name& issuedCertName,
+                    const std::array<uint8_t, 16>& nonce);
 
   // challenge parameters
   static const std::string PARAMETER_KEY_CREDENTIAL_CERT;
@@ -79,11 +81,10 @@ NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   parseConfigFile();
 
 NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  std::list<security::Certificate> m_trustAnchors;
+  std::list<Certificate> m_trustAnchors;
   std::string m_configFile;
 };
 
 } // namespace ndncert
-} // namespace ndn
 
 #endif // NDNCERT_CHALLENGE_POSSESSION_HPP

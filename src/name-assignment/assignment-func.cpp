@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -19,9 +19,7 @@
  */
 
 #include "assignment-func.hpp"
-#include <ndn-cxx/util/random.hpp>
 
-namespace ndn {
 namespace ndncert {
 
 NameAssignmentFunc::NameAssignmentFunc(const std::string& format)
@@ -39,7 +37,7 @@ NameAssignmentFunc::NameAssignmentFunc(const std::string& format)
   }
 }
 
-unique_ptr<NameAssignmentFunc>
+std::unique_ptr<NameAssignmentFunc>
 NameAssignmentFunc::createNameAssignmentFunc(const std::string& challengeType, const std::string& format)
 {
   CurriedFuncFactory& factory = getFactory();
@@ -55,4 +53,3 @@ NameAssignmentFunc::getFactory()
 }
 
 } // namespace ndncert
-} // namespace ndn

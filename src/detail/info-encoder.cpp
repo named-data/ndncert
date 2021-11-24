@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -20,11 +20,10 @@
 
 #include "detail/info-encoder.hpp"
 
-namespace ndn {
 namespace ndncert {
 
 Block
-infotlv::encodeDataContent(const CaProfile& caConfig, const security::Certificate& certificate)
+infotlv::encodeDataContent(const CaProfile& caConfig, const Certificate& certificate)
 {
   Block content(ndn::tlv::Content);
   content.push_back(makeNestedBlock(tlv::CaPrefix, caConfig.caPrefix));
@@ -35,11 +34,11 @@ infotlv::encodeDataContent(const CaProfile& caConfig, const security::Certificat
   else {
     caInfo = caConfig.caInfo;
   }
-  content.push_back(makeStringBlock(tlv::CaInfo, caInfo));
+  content.push_back(ndn::makeStringBlock(tlv::CaInfo, caInfo));
   for (const auto& key : caConfig.probeParameterKeys) {
-    content.push_back(makeStringBlock(tlv::ParameterKey, key));
+    content.push_back(ndn::makeStringBlock(tlv::ParameterKey, key));
   }
-  content.push_back(makeNonNegativeIntegerBlock(tlv::MaxValidityPeriod, caConfig.maxValidityPeriod.count()));
+  content.push_back(ndn::makeNonNegativeIntegerBlock(tlv::MaxValidityPeriod, caConfig.maxValidityPeriod.count()));
   content.push_back(makeNestedBlock(tlv::CaCertificate, certificate));
   content.encode();
   return content;
@@ -67,7 +66,7 @@ infotlv::decodeDataContent(const Block& block)
       break;
     case tlv::CaCertificate:
       item.parse();
-      result.cert = std::make_shared<security::Certificate>(item.get(ndn::tlv::Data));
+      result.cert = std::make_shared<Certificate>(item.get(ndn::tlv::Data));
       break;
     default:
       continue;
@@ -78,4 +77,3 @@ infotlv::decodeDataContent(const Block& block)
 }
 
 } // namespace ndncert
-} // namespace ndn

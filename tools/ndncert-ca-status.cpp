@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -20,16 +20,17 @@
 
 #include "ca-module.hpp"
 #include "detail/ca-sqlite.hpp"
-#include <iostream>
+
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/program_options/parsers.hpp>
 
-namespace ndn {
+#include <iostream>
+
 namespace ndncert {
 namespace ca {
 
-int
+static int
 main(int argc, char* argv[])
 {
   namespace po = boost::program_options;
@@ -75,10 +76,9 @@ main(int argc, char* argv[])
 
 } // namespace ca
 } // namespace ndncert
-} // namespace ndn
 
 int
 main(int argc, char* argv[])
 {
-  return ndn::ndncert::ca::main(argc, argv);
+  return ndncert::ca::main(argc, argv);
 }

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -19,6 +19,7 @@
  */
 
 #include "requester-request.hpp"
+
 #include "challenge/challenge-module.hpp"
 #include "detail/crypto-helpers.hpp"
 #include "detail/challenge-encoder.hpp"
@@ -26,6 +27,8 @@
 #include "detail/info-encoder.hpp"
 #include "detail/request-encoder.hpp"
 #include "detail/probe-encoder.hpp"
+
+#include <ndn-cxx/metadata-object.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/transform/base64-encode.hpp>
 #include <ndn-cxx/security/transform/buffer-source.hpp>
@@ -33,41 +36,32 @@
 #include <ndn-cxx/security/verification-helpers.hpp>
 #include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/util/random.hpp>
-#include <ndn-cxx/metadata-object.hpp>
+
 #include <boost/lexical_cast.hpp>
 
-namespace ndn {
 namespace ndncert {
 namespace requester {
 
 NDN_LOG_INIT(ndncert.client);
 
-shared_ptr<Interest>
+std::shared_ptr<Interest>
 Request::genCaProfileDiscoveryInterest(const Name& caName)
 {
   Name contentName = caName;
   if (readString(caName.at(-1)) != "CA")
     contentName.append("CA");
   contentName.append("INFO");
-  return std::make_shared<Interest>(MetadataObject::makeDiscoveryInterest(contentName));
+  return std::make_shared<Interest>(ndn::MetadataObject::makeDiscoveryInterest(contentName));
 }
 
-shared_ptr<Interest>
+std::shared_ptr<Interest>
 Request::genCaProfileInterestFromDiscoveryResponse(const Data& reply)
 {
-  // set naming convention to be typed
-  auto convention = name::getConventionEncoding();
-  name::setConventionEncoding(name::Convention::TYPED);
-
-  auto metaData = MetadataObject(reply);
+  auto metaData = ndn::MetadataObject(reply);
   auto interestName= metaData.getVersionedName();
   interestName.appendSegment(0);
   auto interest = std::make_shared<Interest>(interestName);
   interest->setCanBePrefix(false);
-
-  // set back the convention
-  name::setConventionEncoding(convention);
-
   return interest;
 }
 
@@ -75,7 +69,7 @@ optional<CaProfile>
 Request::onCaProfileResponse(const Data& reply)
 {
   auto caItem = infotlv::decodeDataContent(reply.getContent());
-  if (!security::verifySignature(reply, *caItem.cert)) {
+  if (!ndn::security::verifySignature(reply, *caItem.cert)) {
     NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
     NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
   }
@@ -87,7 +81,7 @@ Request::onCaProfileResponseAfterRedirection(const Data& reply, const Name& caCe
 {
   auto caItem = infotlv::decodeDataContent(reply.getContent());
   auto certBlock = caItem.cert->wireEncode();
-  caItem.cert = std::make_shared<security::Certificate>(certBlock);
+  caItem.cert = std::make_shared<Certificate>(certBlock);
   if (caItem.cert->getFullName() != caCertFullName) {
     NDN_LOG_ERROR("Ca profile does not match the certificate information offered by the original CA.");
     NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
@@ -95,12 +89,12 @@ Request::onCaProfileResponseAfterRedirection(const Data& reply, const Name& caCe
   return onCaProfileResponse(reply);
 }
 
-shared_ptr<Interest>
+std::shared_ptr<Interest>
 Request::genProbeInterest(const CaProfile& ca, std::multimap<std::string, std::string>&& probeInfo)
 {
   Name interestName = ca.caPrefix;
   interestName.append("CA").append("PROBE");
-  auto interest =std::make_shared<Interest>(interestName);
+  auto interest = std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
   interest->setCanBePrefix(false);
   interest->setApplicationParameters(probetlv::encodeApplicationParameters(std::move(probeInfo)));
@@ -111,7 +105,7 @@ void
 Request::onProbeResponse(const Data& reply, const CaProfile& ca,
                          std::vector<std::pair<Name, int>>& identityNames, std::vector<Name>& otherCas)
 {
-  if (!security::verifySignature(reply, *ca.cert)) {
+  if (!ndn::security::verifySignature(reply, *ca.cert)) {
     NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
     NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
     return;
@@ -120,13 +114,14 @@ Request::onProbeResponse(const Data& reply, const CaProfile& ca,
   probetlv::decodeDataContent(reply.getContent(), identityNames, otherCas);
 }
 
-Request::Request(security::KeyChain& keyChain, const CaProfile& profile, RequestType requestType)
-    : m_caProfile(profile)
-    , m_type(requestType)
-    , m_keyChain(keyChain)
-{}
+Request::Request(ndn::KeyChain& keyChain, const CaProfile& profile, RequestType requestType)
+  : m_caProfile(profile)
+  , m_type(requestType)
+  , m_keyChain(keyChain)
+{
+}
 
-shared_ptr<Interest>
+std::shared_ptr<Interest>
 Request::genNewInterest(const Name& newIdentityName,
                         const time::system_clock::TimePoint& notBefore,
                         const time::system_clock::TimePoint& notAfter)
@@ -137,7 +132,7 @@ Request::genNewInterest(const Name& newIdentityName,
   if (newIdentityName.empty()) {
     NDN_LOG_TRACE("Randomly create a new name because newIdentityName is empty and the param is empty.");
     m_identityName = m_caProfile.caPrefix;
-    m_identityName.append(std::to_string(random::generateSecureWord64()));
+    m_identityName.append(ndn::to_string(ndn::random::generateSecureWord64()));
   }
   else {
     m_identityName = newIdentityName;
@@ -145,11 +140,11 @@ Request::genNewInterest(const Name& newIdentityName,
 
   // generate a newly key pair or use an existing key
   const auto& pib = m_keyChain.getPib();
-  security::pib::Identity identity;
+  ndn::security::pib::Identity identity;
   try {
     identity = pib.getIdentity(m_identityName);
   }
-  catch (const security::Pib::Error& e) {
+  catch (const ndn::security::Pib::Error&) {
     identity = m_keyChain.createIdentity(m_identityName);
     m_isNewlyCreatedIdentity = true;
     m_isNewlyCreatedKey = true;
@@ -157,19 +152,19 @@ Request::genNewInterest(const Name& newIdentityName,
   try {
     m_keyPair = identity.getDefaultKey();
   }
-  catch (const security::Pib::Error& e) {
+  catch (const ndn::security::Pib::Error&) {
     m_keyPair = m_keyChain.createKey(identity);
     m_isNewlyCreatedKey = true;
   }
   auto& keyName = m_keyPair.getName();
 
   // generate certificate request
-  security::Certificate certRequest;
+  Certificate certRequest;
   certRequest.setName(Name(keyName).append("cert-request").appendVersion());
   certRequest.setContentType(ndn::tlv::ContentType_Key);
   certRequest.setContent(m_keyPair.getPublicKey().data(), m_keyPair.getPublicKey().size());
   SignatureInfo signatureInfo;
-  signatureInfo.setValidityPeriod(security::ValidityPeriod(notBefore, notAfter));
+  signatureInfo.setValidityPeriod(ndn::security::ValidityPeriod(notBefore, notAfter));
   m_keyChain.sign(certRequest, signingByKey(keyName).setSignatureInfo(signatureInfo));
 
   // generate Interest packet
@@ -186,8 +181,8 @@ Request::genNewInterest(const Name& newIdentityName,
   return interest;
 }
 
-shared_ptr<Interest>
-Request::genRevokeInterest(const security::Certificate& certificate)
+std::shared_ptr<Interest>
+Request::genRevokeInterest(const Certificate& certificate)
 {
   if (!m_caProfile.caPrefix.isPrefixOf(certificate.getName())) {
     return nullptr;
@@ -206,7 +201,7 @@ Request::genRevokeInterest(const security::Certificate& certificate)
 std::list<std::string>
 Request::onNewRenewRevokeResponse(const Data& reply)
 {
-  if (!security::verifySignature(reply, *m_caProfile.cert)) {
+  if (!ndn::security::verifySignature(reply, *m_caProfile.cert)) {
     NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
     NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
   }
@@ -238,7 +233,7 @@ Request::selectOrContinueChallenge(const std::string& challengeSelected)
   return challenge->getRequestedParameterList(m_status, m_challengeStatus);
 }
 
-shared_ptr<Interest>
+std::shared_ptr<Interest>
 Request::genChallengeInterest(std::multimap<std::string, std::string>&& parameters)
 {
   if (m_challengeType == "") {
@@ -269,7 +264,7 @@ Request::genChallengeInterest(std::multimap<std::string, std::string>&& paramete
 void
 Request::onChallengeResponse(const Data& reply)
 {
-  if (!security::verifySignature(reply, *m_caProfile.cert)) {
+  if (!ndn::security::verifySignature(reply, *m_caProfile.cert)) {
     NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
     NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
   }
@@ -277,23 +272,23 @@ Request::onChallengeResponse(const Data& reply)
   challengetlv::decodeDataContent(reply.getContent(), *this);
 }
 
-shared_ptr<Interest>
+std::shared_ptr<Interest>
 Request::genCertFetchInterest() const
 {
   Name interestName = m_issuedCertName;
-  auto interest =std::make_shared<Interest>(interestName);
+  auto interest = std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(false);
   interest->setCanBePrefix(false);
   return interest;
 }
 
-shared_ptr<security::Certificate>
+std::shared_ptr<Certificate>
 Request::onCertFetchResponse(const Data& reply)
 {
   try {
-    return std::make_shared<security::Certificate>(reply);
+    return std::make_shared<Certificate>(reply);
   }
-  catch (const std::exception& e) {
+  catch (const std::exception&) {
     NDN_LOG_ERROR("Cannot parse replied certificate ");
     NDN_THROW(std::runtime_error("Cannot parse replied certificate "));
     return nullptr;
@@ -334,4 +329,3 @@ Request::processIfError(const Data& data)
 
 } // namespace requester
 } // namespace ndncert
-} // namespace ndn

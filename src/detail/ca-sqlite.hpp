@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2020, Regents of the University of California.
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -25,7 +25,6 @@
 
 struct sqlite3;
 
-namespace ndn {
 namespace ndncert {
 namespace ca {
 
@@ -37,7 +36,7 @@ public:
   explicit
   CaSqlite(const Name& caName, const std::string& path = "");
 
-  ~CaSqlite();
+  ~CaSqlite() override;
 
 public:
   /**
@@ -70,6 +69,5 @@ private:
 
 } // namespace ca
 } // namespace ndncert
-} // namespace ndn
 
 #endif // NDNCERT_DETAIL_CA_SQLITE_HPP

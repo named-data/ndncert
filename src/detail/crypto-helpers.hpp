@@ -25,7 +25,6 @@
 
 #include <openssl/evp.h>
 
-namespace ndn {
 namespace ndncert {
 
 /**
@@ -33,7 +32,7 @@ namespace ndncert {
  *
  * The ECDH is based on prime256v1.
  */
-class ECDHState : noncopyable
+class ECDHState : boost::noncopyable
 {
 public:
   ECDHState();
@@ -169,7 +168,7 @@ encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key,
  *                     invocations of this function with the same @p key.
  * @return Buffer The plaintext buffer.
  */
-Buffer
+ndn::Buffer
 decodeBlockWithAesGcm128(const Block& block, const uint8_t* key,
                          const uint8_t* associatedData, size_t associatedDataSize,
                          std::vector<uint8_t>& decryptionIv, const std::vector<uint8_t>& encryptionIv);
@@ -183,6 +182,5 @@ storeBigU32(uint8_t* dest, uint32_t src) noexcept;
 #endif
 
 } // namespace ndncert
-} // namespace ndn
 
 #endif // NDNCERT_DETAIL_CRYPTO_HELPERS_HPP

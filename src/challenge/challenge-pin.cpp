@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -19,9 +19,9 @@
  */
 
 #include "challenge-pin.hpp"
+
 #include <ndn-cxx/util/random.hpp>
 
-namespace ndn {
 namespace ndncert {
 
 NDN_LOG_INIT(ndncert.challenge.pin);
@@ -32,7 +32,7 @@ const std::string ChallengePin::WRONG_CODE = "wrong-code";
 const std::string ChallengePin::PARAMETER_KEY_CODE = "code";
 
 ChallengePin::ChallengePin(const size_t& maxAttemptTimes, const time::seconds& secretLifetime)
-    : ChallengeModule("pin", maxAttemptTimes, secretLifetime)
+  : ChallengeModule("pin", maxAttemptTimes, secretLifetime)
 {
 }
 
@@ -48,8 +48,10 @@ ChallengePin::handleChallengeRequest(const Block& params, ca::RequestState& requ
     std::string secretCode = generateSecretCode();
     JsonSection secretJson;
     secretJson.add(PARAMETER_KEY_CODE, secretCode);
-    NDN_LOG_TRACE("Secret for request " << toHex(request.requestId.data(), request.requestId.size()) << " : " << secretCode);
-    return returnWithNewChallengeStatus(request, NEED_CODE, std::move(secretJson), m_maxAttemptTimes, m_secretLifetime);
+    NDN_LOG_TRACE("Secret for request " << ndn::toHex(request.requestId.data(), request.requestId.size())
+                  << " : " << secretCode);
+    return returnWithNewChallengeStatus(request, NEED_CODE, std::move(secretJson), m_maxAttemptTimes,
+                                        m_secretLifetime);
   }
   if (request.challengeState) {
     if (request.challengeState->challengeStatus == NEED_CODE ||
@@ -109,15 +111,15 @@ ChallengePin::genChallengeRequestTLV(Status status, const std::string& challenge
 {
   Block request(tlv::EncryptedPayload);
   if (status == Status::BEFORE_CHALLENGE) {
-    request.push_back(makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
+    request.push_back(ndn::makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
   }
   else if (status == Status::CHALLENGE && (challengeStatus == NEED_CODE || challengeStatus == WRONG_CODE)) {
     if (params.size() != 1 || params.find(PARAMETER_KEY_CODE) == params.end()) {
       NDN_THROW(std::runtime_error("Wrong parameter provided."));
     }
-    request.push_back(makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
-    request.push_back(makeStringBlock(tlv::ParameterKey, PARAMETER_KEY_CODE));
-    request.push_back(makeStringBlock(tlv::ParameterValue, params.find(PARAMETER_KEY_CODE)->second));
+    request.push_back(ndn::makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
+    request.push_back(ndn::makeStringBlock(tlv::ParameterKey, PARAMETER_KEY_CODE));
+    request.push_back(ndn::makeStringBlock(tlv::ParameterValue, params.find(PARAMETER_KEY_CODE)->second));
   }
   else {
     NDN_THROW(std::runtime_error("Unexpected status or challenge status."));
@@ -125,5 +127,5 @@ ChallengePin::genChallengeRequestTLV(Status status, const std::string& challenge
   request.encode();
   return request;
 }
+
 } // namespace ndncert
-} // namespace ndn

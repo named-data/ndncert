@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -19,14 +19,13 @@
  */
 
 #include "challenge/challenge-possession.hpp"
-#include "test-common.hpp"
 #include "detail/challenge-encoder.hpp"
+#include "test-common.hpp"
 
-namespace ndn {
 namespace ndncert {
 namespace tests {
 
-BOOST_FIXTURE_TEST_SUITE(TestChallengeCredential, IdentityManagementFixture)
+BOOST_FIXTURE_TEST_SUITE(TestChallengePossession, IdentityManagementFixture)
 
 BOOST_AUTO_TEST_CASE(LoadConfig)
 {
@@ -65,12 +64,12 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
   auto identityB = addIdentity(Name("/trust/cert"));
   auto keyB = identityB.getDefaultKey();
   auto credentialName = Name(keyB.getName()).append("Credential").appendVersion();
-  security::Certificate credential;
+  Certificate credential;
   credential.setName(credentialName);
   credential.setContent(keyB.getPublicKey().data(), keyB.getPublicKey().size());
   SignatureInfo signatureInfo;
-  signatureInfo.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(), time::system_clock::now() +
-                                  time::minutes(1)));
+  signatureInfo.setValidityPeriod(ndn::security::ValidityPeriod(time::system_clock::now(),
+                                                                time::system_clock::now() + time::minutes(1)));
   m_keyChain.sign(credential, signingByCertificate(trustAnchor).setSignatureInfo(signatureInfo));
   m_keyChain.addCertificate(keyB, credential);
 
@@ -83,7 +82,7 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
   BOOST_CHECK_EQUAL(state.challengeState->challengeStatus, "need-proof");
 
   // reply from server
-  auto nonceBuf = fromHex(state.challengeState->secrets.get("nonce", ""));
+  auto nonceBuf = ndn::fromHex(state.challengeState->secrets.get("nonce", ""));
   std::array<uint8_t, 16> nonce{};
   memcpy(nonce.data(), nonceBuf->data(), 16);
   auto params2 = challenge.getRequestedParameterList(state.status, state.challengeState->challengeStatus);
@@ -118,12 +117,12 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequestProofFail)
   auto identityB = addIdentity(Name("/trust/cert"));
   auto keyB = identityB.getDefaultKey();
   auto credentialName = Name(keyB.getName()).append("Credential").appendVersion();
-  security::Certificate credential;
+  Certificate credential;
   credential.setName(credentialName);
   credential.setContent(keyB.getPublicKey().data(), keyB.getPublicKey().size());
   SignatureInfo signatureInfo;
-  signatureInfo.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(), time::system_clock::now() +
-                                                                                        time::minutes(1)));
+  signatureInfo.setValidityPeriod(ndn::security::ValidityPeriod(time::system_clock::now(),
+                                                                time::system_clock::now() + time::minutes(1)));
   m_keyChain.sign(credential, signingByCertificate(trustAnchor).setSignatureInfo(signatureInfo));
   m_keyChain.addCertificate(keyB, credential);
 
@@ -144,8 +143,7 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequestProofFail)
   BOOST_CHECK_EQUAL(statusToString(state.status), statusToString(Status::FAILURE));
 }
 
-BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE_END() // TestChallengePossession
 
 } // namespace tests
 } // namespace ndncert
-} // namespace ndn

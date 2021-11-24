@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2020, Regents of the University of California.
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -23,13 +23,12 @@
 #include "detail/info-encoder.hpp"
 #include "test-common.hpp"
 
-namespace ndn {
 namespace ndncert {
 namespace tests {
 
 BOOST_FIXTURE_TEST_SUITE(TestConfig, IdentityManagementFixture)
 
-BOOST_AUTO_TEST_CASE(CAConfigFile)
+BOOST_AUTO_TEST_CASE(CaConfigFile)
 {
   ca::CaConfig config;
   config.load("tests/unit-tests/config-files/config-ca-1");
@@ -73,7 +72,7 @@ BOOST_AUTO_TEST_CASE(CAConfigFile)
   BOOST_CHECK_EQUAL(names[2].size(), 1);
 }
 
-BOOST_AUTO_TEST_CASE(CAConfigFileWithErrors)
+BOOST_AUTO_TEST_CASE(CaConfigFileWithErrors)
 {
   ca::CaConfig config;
   // nonexistent file
@@ -143,8 +142,7 @@ BOOST_AUTO_TEST_CASE(ProfileStorageAddAndRemoveProfile)
   BOOST_CHECK_EQUAL(lastItem.caPrefix, "/ndn/edu/ucla/zhiyi");
 }
 
-BOOST_AUTO_TEST_SUITE_END()  // TestCaConfig
+BOOST_AUTO_TEST_SUITE_END() // TestConfig
 
 } // namespace tests
 } // namespace ndncert
-} // namespace ndn

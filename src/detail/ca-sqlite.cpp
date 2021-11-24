@@ -28,16 +28,15 @@
 #include <boost/filesystem.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
-namespace ndn {
 namespace ndncert {
 namespace ca {
 
-using namespace ndn::util;
-const std::string CaSqlite::STORAGE_TYPE = "ca-storage-sqlite3";
+using ndn::util::Sqlite3Statement;
 
+const std::string CaSqlite::STORAGE_TYPE = "ca-storage-sqlite3";
 NDNCERT_REGISTER_CA_STORAGE(CaSqlite);
 
-std::string
+static std::string
 convertJson2String(const JsonSection& json)
 {
   std::stringstream ss;
@@ -45,7 +44,7 @@ convertJson2String(const JsonSection& json)
   return ss.str();
 }
 
-JsonSection
+static JsonSection
 convertString2Json(const std::string& jsonContent)
 {
   std::istringstream ss(jsonContent);
@@ -54,7 +53,7 @@ convertString2Json(const std::string& jsonContent)
   return json;
 }
 
-static const std::string INITIALIZATION = R"_DBTEXT_(
+const std::string INITIALIZATION = R"SQL(
 CREATE TABLE IF NOT EXISTS
   RequestStates(
     id INTEGER PRIMARY KEY,
@@ -75,10 +74,10 @@ CREATE TABLE IF NOT EXISTS
   );
 CREATE UNIQUE INDEX IF NOT EXISTS
   RequestStateIdIndex ON RequestStates(request_id);
-)_DBTEXT_";
+)SQL";
 
 CaSqlite::CaSqlite(const Name& caName, const std::string& path)
-    : CaStorage()
+  : CaStorage()
 {
   // Determine the path of sqlite db
   boost::filesystem::path dbDir;
@@ -143,7 +142,7 @@ CaSqlite::getRequest(const RequestId& requestId)
     state.requestId = requestId;
     state.caPrefix = Name(statement.getBlock(1));
     state.status = static_cast<Status>(statement.getInt(2));
-    state.cert = security::Certificate(statement.getBlock(4));
+    state.cert = Certificate(statement.getBlock(4));
     state.challengeType = statement.getString(5);
     state.requestType = static_cast<RequestType>(statement.getInt(10));
     std::memcpy(state.encryptionKey.data(), statement.getBlob(11), statement.getSize(11));
@@ -158,7 +157,7 @@ CaSqlite::getRequest(const RequestId& requestId)
     return state;
   }
   else {
-    NDN_THROW(std::runtime_error("Request " + toHex(requestId.data(), requestId.size()) +
+    NDN_THROW(std::runtime_error("Request " + ndn::toHex(requestId.data(), requestId.size()) +
                                  " cannot be fetched from database"));
   }
 }
@@ -189,7 +188,7 @@ CaSqlite::addRequest(const RequestState& request)
     statement.bind(11, request.challengeState->remainingTime.count());
   }
   if (statement.step() != SQLITE_DONE) {
-    NDN_THROW(std::runtime_error("Request " + toHex(request.requestId.data(), request.requestId.size()) +
+    NDN_THROW(std::runtime_error("Request " + ndn::toHex(request.requestId.data(), request.requestId.size()) +
                                  " cannot be added to database"));
   }
 }
@@ -242,7 +241,7 @@ CaSqlite::listAllRequests()
     state.caPrefix = Name(statement.getBlock(2));
     state.status = static_cast<Status>(statement.getInt(3));
     state.challengeType = statement.getString(6);
-    state.cert = security::Certificate(statement.getBlock(5));
+    state.cert = Certificate(statement.getBlock(5));
     state.requestType = static_cast<RequestType>(statement.getInt(11));
     std::memcpy(state.encryptionKey.data(), statement.getBlob(12), statement.getSize(12));
     state.encryptionIv = std::vector<uint8_t>(statement.getBlob(13), statement.getBlob(13) + statement.getSize(13));
@@ -276,7 +275,7 @@ CaSqlite::listAllRequests(const Name& caName)
     state.caPrefix = Name(statement.getBlock(2));
     state.status = static_cast<Status>(statement.getInt(3));
     state.challengeType = statement.getString(6);
-    state.cert = security::Certificate(statement.getBlock(5));
+    state.cert = Certificate(statement.getBlock(5));
     state.requestType = static_cast<RequestType>(statement.getInt(11));
     std::memcpy(state.encryptionKey.data(), statement.getBlob(12), statement.getSize(12));
     state.encryptionIv = std::vector<uint8_t>(statement.getBlob(13), statement.getBlob(13) + statement.getSize(13));
@@ -303,4 +302,3 @@ CaSqlite::deleteRequest(const RequestId& requestId)
 
 } // namespace ca
 } // namespace ndncert
-} // namespace ndn

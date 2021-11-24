@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2020, Regents of the University of California.
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -26,17 +26,18 @@
 #include "requester-request.hpp"
 #include "test-common.hpp"
 
-namespace ndn {
 namespace ndncert {
 namespace tests {
 
 using namespace ca;
+using ndn::util::DummyClientFace;
+using ndn::security::verifySignature;
 
 BOOST_FIXTURE_TEST_SUITE(TestCaModule, DatabaseFixture)
 
 BOOST_AUTO_TEST_CASE(Initialization)
 {
-  util::DummyClientFace face(io, m_keyChain, {true, true});
+  DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   BOOST_CHECK_EQUAL(ca.getCaConf().caProfile.caPrefix, "/ndn");
 
@@ -47,22 +48,20 @@ BOOST_AUTO_TEST_CASE(Initialization)
 
 BOOST_AUTO_TEST_CASE(HandleProfileFetching)
 {
-  name::setConventionEncoding(name::Convention::TYPED);
-
   auto identity = addIdentity(Name("/ndn"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, m_keyChain, {true, true});
+  DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
   auto profileData = ca.getCaProfileData();
 
-  Interest interest = MetadataObject::makeDiscoveryInterest(Name("/ndn/CA/INFO"));
-  shared_ptr<Interest> infoInterest = nullptr;
+  Interest interest = ndn::MetadataObject::makeDiscoveryInterest(Name("/ndn/CA/INFO"));
+  std::shared_ptr<Interest> infoInterest = nullptr;
 
   face.setInterestFilter(
-      InterestFilter("/ndn/CA/INFO"),
+      ndn::InterestFilter("/ndn/CA/INFO"),
       [&](const auto&, const Interest& interest) {
         if (interest.getName() == profileData.getName()) {
           face.put(profileData);
@@ -77,12 +76,12 @@ BOOST_AUTO_TEST_CASE(HandleProfileFetching)
       count++;
       auto block = response.getContent();
       block.parse();
-      infoInterest =std::make_shared<Interest>(Name(block.get(ndn::tlv::Name)).appendSegment(0));
+      infoInterest = std::make_shared<Interest>(Name(block.get(ndn::tlv::Name)).appendSegment(0));
       infoInterest->setCanBePrefix(false);
     }
     else {
       count++;
-      BOOST_CHECK(security::verifySignature(response, cert));
+      BOOST_CHECK(verifySignature(response, cert));
       auto contentBlock = response.getContent();
       contentBlock.parse();
       auto caItem = infotlv::decodeDataContent(contentBlock);
@@ -107,16 +106,16 @@ BOOST_AUTO_TEST_CASE(HandleProbe)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, m_keyChain, {true, true});
+  DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
   Interest interest("/ndn/CA/PROBE");
   interest.setCanBePrefix(false);
 
-  Block paramTLV = makeEmptyBlock(ndn::tlv::ApplicationParameters);
-  paramTLV.push_back(makeStringBlock(tlv::ParameterKey, "name"));
-  paramTLV.push_back(makeStringBlock(tlv::ParameterValue, "zhiyi"));
+  Block paramTLV = ndn::makeEmptyBlock(ndn::tlv::ApplicationParameters);
+  paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterKey, "name"));
+  paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterValue, "zhiyi"));
   paramTLV.encode();
 
   interest.setApplicationParameters(paramTLV);
@@ -124,7 +123,7 @@ BOOST_AUTO_TEST_CASE(HandleProbe)
   int count = 0;
   face.onSendData.connect([&](const Data& response) {
     count++;
-    BOOST_CHECK(security::verifySignature(response, cert));
+    BOOST_CHECK(verifySignature(response, cert));
     Block contentBlock = response.getContent();
     contentBlock.parse();
     Block probeResponse = contentBlock.get(tlv::ProbeResponse);
@@ -145,16 +144,16 @@ BOOST_AUTO_TEST_CASE(HandleProbeUsingDefaultHandler)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, m_keyChain, {true, true});
+  DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
   Interest interest("/ndn/CA/PROBE");
   interest.setCanBePrefix(false);
 
-  Block paramTLV = makeEmptyBlock(ndn::tlv::ApplicationParameters);
-  paramTLV.push_back(makeStringBlock(tlv::ParameterKey, "name"));
-  paramTLV.push_back(makeStringBlock(tlv::ParameterValue, "zhiyi"));
+  Block paramTLV = ndn::makeEmptyBlock(ndn::tlv::ApplicationParameters);
+  paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterKey, "name"));
+  paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterValue, "zhiyi"));
   paramTLV.encode();
 
   interest.setApplicationParameters(paramTLV);
@@ -162,7 +161,7 @@ BOOST_AUTO_TEST_CASE(HandleProbeUsingDefaultHandler)
   int count = 0;
   face.onSendData.connect([&](const Data& response) {
     count++;
-    BOOST_CHECK(security::verifySignature(response, cert));
+    BOOST_CHECK(verifySignature(response, cert));
     auto contentBlock = response.getContent();
     contentBlock.parse();
     auto probeResponseBlock = contentBlock.get(tlv::ProbeResponse);
@@ -183,16 +182,16 @@ BOOST_AUTO_TEST_CASE(HandleProbeRedirection)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, m_keyChain, {true, true});
+  DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-5", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
   Interest interest("/ndn/CA/PROBE");
   interest.setCanBePrefix(false);
 
-  Block paramTLV = makeEmptyBlock(ndn::tlv::ApplicationParameters);
-  paramTLV.push_back(makeStringBlock(tlv::ParameterKey, "name"));
-  paramTLV.push_back(makeStringBlock(tlv::ParameterValue, "zhiyi"));
+  Block paramTLV = ndn::makeEmptyBlock(ndn::tlv::ApplicationParameters);
+  paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterKey, "name"));
+  paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterValue, "zhiyi"));
   paramTLV.encode();
 
   interest.setApplicationParameters(paramTLV);
@@ -200,7 +199,7 @@ BOOST_AUTO_TEST_CASE(HandleProbeRedirection)
   int count = 0;
   face.onSendData.connect([&](const Data& response) {
     count++;
-    BOOST_CHECK(security::verifySignature(response, cert));
+    BOOST_CHECK(verifySignature(response, cert));
     Block contentBlock = response.getContent();
     contentBlock.parse();
 
@@ -212,8 +211,8 @@ BOOST_AUTO_TEST_CASE(HandleProbeRedirection)
       }
     }
     BOOST_CHECK_EQUAL(redirectionItems.size(), 2);
-    BOOST_CHECK_EQUAL(security::extractIdentityFromCertName(redirectionItems[0].getPrefix(-1)), "/ndn/site1");
-    BOOST_CHECK_EQUAL(security::extractIdentityFromCertName(redirectionItems[1].getPrefix(-1)), "/ndn/site1");
+    BOOST_CHECK_EQUAL(ndn::security::extractIdentityFromCertName(redirectionItems[0].getPrefix(-1)), "/ndn/site1");
+    BOOST_CHECK_EQUAL(ndn::security::extractIdentityFromCertName(redirectionItems[1].getPrefix(-1)), "/ndn/site1");
   });
   face.receive(interest);
   advanceClocks(time::milliseconds(20), 60);
@@ -226,13 +225,13 @@ BOOST_AUTO_TEST_CASE(HandleNew)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, m_keyChain, {true, true});
+  DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
   CaProfile item;
   item.caPrefix = Name("/ndn");
-  item.cert = std::make_shared<security::Certificate>(cert);
+  item.cert = std::make_shared<Certificate>(cert);
   requester::Request state(m_keyChain, item, RequestType::NEW);
   auto interest = state.genNewInterest(Name("/ndn/zhiyi"),
                                        time::system_clock::now(),
@@ -241,7 +240,7 @@ BOOST_AUTO_TEST_CASE(HandleNew)
   int count = 0;
   face.onSendData.connect([&](const Data& response) {
     count++;
-    BOOST_CHECK(security::verifySignature(response, cert));
+    BOOST_CHECK(verifySignature(response, cert));
     auto contentBlock = response.getContent();
     contentBlock.parse();
 
@@ -277,13 +276,13 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidValidityPeriod1)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, m_keyChain, {true, true});
+  DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1");
   advanceClocks(time::milliseconds(20), 60);
 
   CaProfile item;
   item.caPrefix = Name("/ndn");
-  item.cert = std::make_shared<security::Certificate>(cert);
+  item.cert = std::make_shared<Certificate>(cert);
   requester::Request state(m_keyChain, item, RequestType::NEW);
   auto current_tp = time::system_clock::now();
   auto interest1 = state.genNewInterest(Name("/ndn/zhiyi"), current_tp, current_tp - time::hours(1));
@@ -308,22 +307,23 @@ BOOST_AUTO_TEST_CASE(HandleNewWithServerBadValidity)
   auto key = identity.getDefaultKey();
 
   //build expired cert
-  security::Certificate cert;
+  Certificate cert;
   cert.setName(Name(key.getName()).append("self-sign").appendVersion());
   cert.setContentType(ndn::tlv::ContentType_Key);
   cert.setContent(key.getPublicKey().data(), key.getPublicKey().size());
   SignatureInfo signatureInfo;
-  signatureInfo.setValidityPeriod(security::ValidityPeriod(time::system_clock::now() - time::days(1), time::system_clock::now() - time::seconds(1)));
+  signatureInfo.setValidityPeriod(ndn::security::ValidityPeriod(time::system_clock::now() - time::days(1),
+                                                                time::system_clock::now() - time::seconds(1)));
   m_keyChain.sign(cert, signingByKey(key.getName()).setSignatureInfo(signatureInfo));
   m_keyChain.setDefaultCertificate(key, cert);
 
-  util::DummyClientFace face(io, m_keyChain, {true, true});
+  DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
   CaProfile item;
   item.caPrefix = Name("/ndn");
-  item.cert = std::make_shared<security::Certificate>(cert);
+  item.cert = std::make_shared<Certificate>(cert);
   requester::Request state(m_keyChain, item, RequestType::NEW);
   auto interest = state.genNewInterest(Name("/ndn/zhiyi"),
                                        time::system_clock::now(),
@@ -349,13 +349,13 @@ BOOST_AUTO_TEST_CASE(HandleNewWithLongSuffix)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, m_keyChain, {true, true});
+  DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
   CaProfile item;
   item.caPrefix = Name("/ndn");
-  item.cert = std::make_shared<security::Certificate>(cert);
+  item.cert = std::make_shared<Certificate>(cert);
   requester::Request state(m_keyChain, item, RequestType::NEW);
 
   auto interest1 = state.genNewInterest(Name("/ndn/a"), time::system_clock::now(),
@@ -374,8 +374,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithLongSuffix)
     }
     else {
       // should successfully get responses
-      BOOST_CHECK_EXCEPTION(readNonNegativeInteger(contentTlv.get(tlv::ErrorCode)), std::runtime_error,
-                            [](const auto& e) { return true; });
+      BOOST_CHECK_THROW(readNonNegativeInteger(contentTlv.get(tlv::ErrorCode)), std::runtime_error);
     }
   });
   face.receive(*interest1);
@@ -390,13 +389,13 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidLength1)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, m_keyChain, {true, true});
+  DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1");
   advanceClocks(time::milliseconds(20), 60);
 
   CaProfile item;
   item.caPrefix = Name("/ndn");
-  item.cert = std::make_shared<security::Certificate>(cert);
+  item.cert = std::make_shared<Certificate>(cert);
   requester::Request state(m_keyChain, item, RequestType::NEW);
 
   auto current_tp = time::system_clock::now();
@@ -420,23 +419,23 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, m_keyChain, {true, true});
+  DummyClientFace face(io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
   // generate NEW Interest
   CaProfile item;
   item.caPrefix = Name("/ndn");
-  item.cert = std::make_shared<security::Certificate>(cert);
+  item.cert = std::make_shared<Certificate>(cert);
   requester::Request state(m_keyChain, item, RequestType::NEW);
 
   auto newInterest = state.genNewInterest(Name("/ndn/zhiyi"), time::system_clock::now(),
                                                 time::system_clock::now() + time::days(1));
 
   // generate CHALLENGE Interest
-  shared_ptr<Interest> challengeInterest = nullptr;
-  shared_ptr<Interest> challengeInterest2 = nullptr;
-  shared_ptr<Interest> challengeInterest3 = nullptr;
+  std::shared_ptr<Interest> challengeInterest;
+  std::shared_ptr<Interest> challengeInterest2;
+  std::shared_ptr<Interest> challengeInterest3;
 
   int count = 0;
   face.onSendData.connect([&](const Data& response) {
@@ -447,7 +446,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 0) {
       count++;
-      BOOST_CHECK(security::verifySignature(response, cert));
+      BOOST_CHECK(verifySignature(response, cert));
 
       state.onChallengeResponse(response);
       BOOST_CHECK(state.m_status == Status::CHALLENGE);
@@ -457,7 +456,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 1) {
       count++;
-      BOOST_CHECK(security::verifySignature(response, cert));
+      BOOST_CHECK(verifySignature(response, cert));
 
       state.onChallengeResponse(response);
       BOOST_CHECK(state.m_status == Status::CHALLENGE);
@@ -471,7 +470,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
     }
     else if (Name("/ndn/CA/CHALLENGE").isPrefixOf(response.getName()) && count == 2) {
       count++;
-      BOOST_CHECK(security::verifySignature(response, cert));
+      BOOST_CHECK(verifySignature(response, cert));
       state.onChallengeResponse(response);
       BOOST_CHECK(state.m_status == Status::SUCCESS);
     }
@@ -494,21 +493,21 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, {true, true});
+  DummyClientFace face(io, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
   //generate a certificate
   auto clientIdentity = m_keyChain.createIdentity("/ndn/qwerty");
   auto clientKey = clientIdentity.getDefaultKey();
-  security::Certificate clientCert;
+  Certificate clientCert;
   clientCert.setName(Name(clientKey.getName()).append("cert-request").appendVersion());
   clientCert.setContentType(ndn::tlv::ContentType_Key);
   clientCert.setFreshnessPeriod(time::hours(24));
   clientCert.setContent(clientKey.getPublicKey().data(), clientKey.getPublicKey().size());
   SignatureInfo signatureInfo;
-  signatureInfo.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
-                                                           time::system_clock::now() + time::hours(10)));
+  signatureInfo.setValidityPeriod(ndn::security::ValidityPeriod(time::system_clock::now(),
+                                                                time::system_clock::now() + time::hours(10)));
   m_keyChain.sign(clientCert, signingByKey(clientKey.getName()).setSignatureInfo(signatureInfo));
   RequestId requestId = {{101}};
   RequestState certRequest;
@@ -521,7 +520,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
 
   CaProfile item;
   item.caPrefix = Name("/ndn");
-  item.cert = std::make_shared<security::Certificate>(cert);
+  item.cert = std::make_shared<Certificate>(cert);
   requester::Request state(m_keyChain, item, RequestType::REVOKE);
 
   auto interest = state.genRevokeInterest(issuedCert);
@@ -529,7 +528,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
   int count = 0;
   face.onSendData.connect([&](const Data& response) {
     count++;
-    BOOST_CHECK(security::verifySignature(response, cert));
+    BOOST_CHECK(verifySignature(response, cert));
     auto contentBlock = response.getContent();
     contentBlock.parse();
 
@@ -565,26 +564,26 @@ BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  util::DummyClientFace face(io, {true, true});
+  DummyClientFace face(io, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
   // generate a certificate
   auto clientIdentity = m_keyChain.createIdentity("/ndn/qwerty");
   auto clientKey = clientIdentity.getDefaultKey();
-  security::Certificate clientCert;
-  clientCert.setName(Name(clientKey.getName()).append("NDNCERT").append(std::to_string(1473283247810732701)));
+  Certificate clientCert;
+  clientCert.setName(Name(clientKey.getName()).append("NDNCERT").append("1473283247810732701"));
   clientCert.setContentType(ndn::tlv::ContentType_Key);
   clientCert.setFreshnessPeriod(time::hours(24));
   clientCert.setContent(clientKey.getPublicKey().data(), clientKey.getPublicKey().size());
   SignatureInfo signatureInfo;
-  signatureInfo.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
-                                                           time::system_clock::now() + time::hours(10)));
+  signatureInfo.setValidityPeriod(ndn::security::ValidityPeriod(time::system_clock::now(),
+                                                                time::system_clock::now() + time::hours(10)));
   m_keyChain.sign(clientCert, signingByKey(clientKey.getName()).setSignatureInfo(signatureInfo));
 
   CaProfile item;
   item.caPrefix = Name("/ndn");
-  item.cert = std::make_shared<security::Certificate>(cert);
+  item.cert = std::make_shared<Certificate>(cert);
   requester::Request state(m_keyChain, item, RequestType::NEW);
 
   auto interest = state.genRevokeInterest(clientCert);
@@ -602,8 +601,7 @@ BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
   BOOST_CHECK_EQUAL(receiveData, true);
 }
 
-BOOST_AUTO_TEST_SUITE_END()  // TestCaModule
+BOOST_AUTO_TEST_SUITE_END() // TestCaModule
 
 } // namespace tests
 } // namespace ndncert
-} // namespace ndn

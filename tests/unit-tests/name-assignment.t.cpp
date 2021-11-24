@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -23,11 +23,11 @@
 #include "name-assignment/assignment-hash.hpp"
 #include "test-common.hpp"
 
-namespace ndn {
 namespace ndncert {
 namespace tests {
 
 BOOST_AUTO_TEST_SUITE(TestNameAssignment)
+
 BOOST_AUTO_TEST_CASE(NameAssignmentRandom)
 {
   AssignmentRandom assignment;
@@ -68,10 +68,7 @@ BOOST_AUTO_TEST_CASE(NameAssignmentHash)
   BOOST_CHECK_EQUAL(assignment.assignName(params).begin()->size(), 2);
 }
 
-BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE_END() // TestNameAssignment
 
 } // namespace tests
 } // namespace ndncert
-} // namespace ndn
-
-

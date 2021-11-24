@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -20,15 +20,14 @@
 
 #include "detail/error-encoder.hpp"
 
-namespace ndn {
 namespace ndncert {
 
 Block
 errortlv::encodeDataContent(ErrorCode errorCode, const std::string& description)
 {
   Block response(ndn::tlv::Content);
-  response.push_back(makeNonNegativeIntegerBlock(tlv::ErrorCode, static_cast<size_t>(errorCode)));
-  response.push_back(makeStringBlock(tlv::ErrorInfo, description));
+  response.push_back(ndn::makeNonNegativeIntegerBlock(tlv::ErrorCode, static_cast<size_t>(errorCode)));
+  response.push_back(ndn::makeStringBlock(tlv::ErrorInfo, description));
   response.encode();
   return response;
 }
@@ -45,4 +44,3 @@ errortlv::decodefromDataContent(const Block& block)
 }
 
 } // namespace ndncert
-} // namespace ndn

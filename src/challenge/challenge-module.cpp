@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -21,7 +21,6 @@
 #include "challenge/challenge-module.hpp"
 #include <ndn-cxx/util/random.hpp>
 
-namespace ndn {
 namespace ndncert {
 
 ChallengeModule::ChallengeModule(const std::string& challengeType,
@@ -41,7 +40,7 @@ ChallengeModule::isChallengeSupported(const std::string& challengeType)
   return i == factory.end() ? false : true;
 }
 
-unique_ptr<ChallengeModule>
+std::unique_ptr<ChallengeModule>
 ChallengeModule::createChallengeModule(const std::string& challengeType)
 {
   ChallengeFactory& factory = getFactory();
@@ -61,11 +60,11 @@ ChallengeModule::generateSecretCode()
 {
   uint32_t securityCode = 0;
   do {
-    securityCode = random::generateSecureWord32();
+    securityCode = ndn::random::generateSecureWord32();
   }
   while (securityCode >= 4294000000);
   securityCode /= 4294;
-  std::string result = std::to_string(securityCode);
+  std::string result = ndn::to_string(securityCode);
   while (result.length() < 6) {
     result = "0" + result;
   }
@@ -103,4 +102,3 @@ ChallengeModule::returnWithSuccess(ca::RequestState& request)
 }
 
 } // namespace ndncert
-} // namespace ndn

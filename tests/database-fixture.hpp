@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2020 Regents of the University of California.
+ * Copyright (c) 2013-2021 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,9 +24,9 @@
 
 #include "identity-management-fixture.hpp"
 #include "unit-test-time-fixture.hpp"
+
 #include <boost/filesystem.hpp>
 
-namespace ndn {
 namespace ndncert {
 namespace tests {
 
@@ -58,6 +58,5 @@ protected:
 
 } // namespace tests
 } // namespace ndncert
-} // namespace ndn
 
 #endif // NDNCERT_TESTS_DATABASE_FIXTURE_HPP

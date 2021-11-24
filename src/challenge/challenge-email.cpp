@@ -22,7 +22,6 @@
 #include <regex>
 #include <boost/process.hpp>
 
-namespace ndn {
 namespace ndncert {
 
 NDN_LOG_INIT(ndncert.challenge.email);
@@ -37,8 +36,8 @@ const std::string ChallengeEmail::PARAMETER_KEY_CODE = "code";
 ChallengeEmail::ChallengeEmail(const std::string& scriptPath,
                                const size_t& maxAttemptTimes,
                                const time::seconds secretLifetime)
-    : ChallengeModule("email", maxAttemptTimes, secretLifetime)
-    , m_sendEmailScript(scriptPath)
+  : ChallengeModule("email", maxAttemptTimes, secretLifetime)
+  , m_sendEmailScript(scriptPath)
 {
 }
 
@@ -52,7 +51,8 @@ ChallengeEmail::handleChallengeRequest(const Block& params, ca::RequestState& re
     // for the first time, init the challenge
     std::string emailAddress = readString(params.get(tlv::ParameterValue));
     if (!isValidEmailAddress(emailAddress)) {
-      return returnWithNewChallengeStatus(request, INVALID_EMAIL, JsonSection(), m_maxAttemptTimes - 1, m_secretLifetime);
+      return returnWithNewChallengeStatus(request, INVALID_EMAIL, JsonSection(), m_maxAttemptTimes - 1,
+                                          m_secretLifetime);
     }
     auto lastComponentRequested = readString(request.cert.getIdentity().get(-1));
     if (lastComponentRequested != emailAddress) {
@@ -64,8 +64,10 @@ ChallengeEmail::handleChallengeRequest(const Block& params, ca::RequestState& re
     secretJson.add(PARAMETER_KEY_CODE, emailCode);
     // send out the email
     sendEmail(emailAddress, emailCode, request);
-    NDN_LOG_TRACE("Secret for request " << toHex(request.requestId.data(), request.requestId.size()) << " : " << emailCode);
-    return returnWithNewChallengeStatus(request, NEED_CODE, std::move(secretJson), m_maxAttemptTimes, m_secretLifetime);
+    NDN_LOG_TRACE("Secret for request " << ndn::toHex(request.requestId.data(), request.requestId.size())
+                  << " : " << emailCode);
+    return returnWithNewChallengeStatus(request, NEED_CODE, std::move(secretJson),
+                                        m_maxAttemptTimes, m_secretLifetime);
   }
   if (request.challengeState) {
     if (request.challengeState->challengeStatus == NEED_CODE ||
@@ -134,17 +136,17 @@ ChallengeEmail::genChallengeRequestTLV(Status status, const std::string& challen
     if (params.size() != 1 || params.find(PARAMETER_KEY_EMAIL) == params.end()) {
       NDN_THROW(std::runtime_error("Wrong parameter provided."));
     }
-    request.push_back(makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
-    request.push_back(makeStringBlock(tlv::ParameterKey, PARAMETER_KEY_EMAIL));
-    request.push_back(makeStringBlock(tlv::ParameterValue, params.find(PARAMETER_KEY_EMAIL)->second));
+    request.push_back(ndn::makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
+    request.push_back(ndn::makeStringBlock(tlv::ParameterKey, PARAMETER_KEY_EMAIL));
+    request.push_back(ndn::makeStringBlock(tlv::ParameterValue, params.find(PARAMETER_KEY_EMAIL)->second));
   }
   else if (status == Status::CHALLENGE && (challengeStatus == NEED_CODE || challengeStatus == WRONG_CODE)) {
     if (params.size() != 1 || params.find(PARAMETER_KEY_CODE) == params.end()) {
       NDN_THROW(std::runtime_error("Wrong parameter provided."));
     }
-    request.push_back(makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
-    request.push_back(makeStringBlock(tlv::ParameterKey, PARAMETER_KEY_CODE));
-    request.push_back(makeStringBlock(tlv::ParameterValue, params.find(PARAMETER_KEY_CODE)->second));
+    request.push_back(ndn::makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
+    request.push_back(ndn::makeStringBlock(tlv::ParameterKey, PARAMETER_KEY_CODE));
+    request.push_back(ndn::makeStringBlock(tlv::ParameterValue, params.find(PARAMETER_KEY_CODE)->second));
   }
   else {
     NDN_THROW(std::runtime_error("Unexpected status or challenge status."));
@@ -179,4 +181,3 @@ ChallengeEmail::sendEmail(const std::string& emailAddress, const std::string& se
 }
 
 } // namespace ndncert
-} // namespace ndn

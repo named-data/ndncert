@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2017-2020, Regents of the University of California.
+/*
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -23,16 +23,16 @@
 
 #include "detail/ca-request-state.hpp"
 
-namespace ndn {
 namespace ndncert {
 
-class ChallengeModule : noncopyable
+class ChallengeModule : boost::noncopyable
 {
 public:
   explicit
   ChallengeModule(const std::string& challengeType, size_t maxAttemptTimes, time::seconds secretLifetime);
 
-  virtual ~ChallengeModule() = default;
+  virtual
+  ~ChallengeModule() = default;
 
   template <class ChallengeType>
   static void
@@ -46,7 +46,7 @@ public:
   static bool
   isChallengeSupported(const std::string& challengeType);
 
-  static unique_ptr<ChallengeModule>
+  static std::unique_ptr<ChallengeModule>
   createChallengeModule(const std::string& challengeType);
 
   // For CA
@@ -83,7 +83,7 @@ public:
   const time::seconds m_secretLifetime;
 
 private:
-  typedef function<unique_ptr<ChallengeModule>()> ChallengeCreateFunc;
+  typedef std::function<std::unique_ptr<ChallengeModule>()> ChallengeCreateFunc;
   typedef std::map<std::string, ChallengeCreateFunc> ChallengeFactory;
 
   static ChallengeFactory&
@@ -91,15 +91,15 @@ private:
 };
 
 #define NDNCERT_REGISTER_CHALLENGE(C, T)                              \
-  static class NdnCert##C##ChallengeRegistrationClass {               \
+  static class NdnCert##C##ChallengeRegistrationClass                 \
+  {                                                                   \
   public:                                                             \
     NdnCert##C##ChallengeRegistrationClass()                          \
     {                                                                 \
-      ::ndn::ndncert::ChallengeModule::registerChallengeModule<C>(T); \
+      ::ndncert::ChallengeModule::registerChallengeModule<C>(T);      \
     }                                                                 \
   } g_NdnCert##C##ChallengeRegistrationVariable
 
 } // namespace ndncert
-} // namespace ndn
 
 #endif // NDNCERT_CHALLENGE_MODULE_HPP

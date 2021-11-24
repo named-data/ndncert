@@ -41,25 +41,36 @@
 #include <tuple>
 
 #include <ndn-cxx/data.hpp>
-#include <ndn-cxx/encoding/block-helpers.hpp>
 #include <ndn-cxx/encoding/block.hpp>
-#include <ndn-cxx/encoding/tlv.hpp>
-#include <ndn-cxx/face.hpp>
+#include <ndn-cxx/encoding/block-helpers.hpp>
 #include <ndn-cxx/interest.hpp>
-#include <ndn-cxx/lp/nack.hpp>
 #include <ndn-cxx/name.hpp>
 #include <ndn-cxx/security/certificate.hpp>
-#include <ndn-cxx/security/key-chain.hpp>
+#include <ndn-cxx/util/exception.hpp>
 #include <ndn-cxx/util/logger.hpp>
 #include <ndn-cxx/util/optional.hpp>
+#include <ndn-cxx/util/time.hpp>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/assert.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/property_tree/ptree.hpp>
 
-namespace ndn {
 namespace ndncert {
+
+using ndn::Block;
+using ndn::Data;
+using ndn::Interest;
+using ndn::Name;
+using ndn::SignatureInfo;
+using ndn::security::Certificate;
+
+using ndn::optional;
+using ndn::nullopt;
+
+namespace time = ndn::time;
+using namespace ndn::time_literals;
+using namespace std::string_literals;
 
 namespace tlv {
 
@@ -127,6 +138,5 @@ std::ostream&
 operator<<(std::ostream& out, RequestType type);
 
 } // namespace ndncert
-} // namespace ndn
 
 #endif // NDNCERT_DETAIL_NDNCERT_COMMON_HPP

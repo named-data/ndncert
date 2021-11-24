@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2020, Regents of the University of California.
+ * Copyright (c) 2017-2021, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -19,15 +19,11 @@
  */
 
 #include "detail/ca-memory.hpp"
-#include <ndn-cxx/security/validation-policy.hpp>
 
-namespace ndn {
 namespace ndncert {
 namespace ca {
 
-const std::string
-CaMemory::STORAGE_TYPE = "ca-storage-memory";
-
+const std::string CaMemory::STORAGE_TYPE = "ca-storage-memory";
 NDNCERT_REGISTER_CA_STORAGE(CaMemory);
 
 CaMemory::CaMemory(const Name& caName, const std::string& path)
@@ -40,7 +36,8 @@ CaMemory::getRequest(const RequestId& requestId)
 {
   auto search = m_requests.find(requestId);
   if (search == m_requests.end()) {
-    NDN_THROW(std::runtime_error("Request " + toHex(requestId.data(), requestId.size()) + " doest not exists"));
+    NDN_THROW(std::runtime_error("Request " + ndn::toHex(requestId.data(), requestId.size()) +
+                                 " does not exists"));
   }
   return search->second;
 }
@@ -53,7 +50,8 @@ CaMemory::addRequest(const RequestState& request)
     m_requests.insert(std::make_pair(request.requestId, request));
   }
   else {
-    NDN_THROW(std::runtime_error("Request " + toHex(request.requestId.data(), request.requestId.size()) + " already exists"));
+    NDN_THROW(std::runtime_error("Request " + ndn::toHex(request.requestId.data(), request.requestId.size()) +
+                                 " already exists"));
   }
 }
 
@@ -103,4 +101,3 @@ CaMemory::listAllRequests(const Name& caName)
 
 } // namespace ca
 } // namespace ndncert
-} // namespace ndn

@@ -37,7 +37,6 @@
 
 #include <cstring>
 
-namespace ndn {
 namespace ndncert {
 
 ECDHState::ECDHState()
@@ -416,25 +415,25 @@ encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key,
 {
   // The spec of AES encrypted payload TLV used in NDNCERT:
   //   https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3#242-aes-gcm-encryption
-  Buffer encryptedPayload(payloadSize);
+  ndn::Buffer encryptedPayload(payloadSize);
   uint8_t tag[16];
   if (encryptionIv.empty()) {
     encryptionIv.resize(12, 0);
-    random::generateSecureBytes(encryptionIv.data(), 8);
+    ndn::random::generateSecureBytes(encryptionIv.data(), 8);
   }
   size_t encryptedPayloadLen = aesGcm128Encrypt(payload, payloadSize, associatedData, associatedDataSize,
                                                 key, encryptionIv.data(), encryptedPayload.data(), tag);
   Block content(tlvType);
-  content.push_back(makeBinaryBlock(tlv::InitializationVector, encryptionIv.data(), encryptionIv.size()));
-  content.push_back(makeBinaryBlock(tlv::AuthenticationTag, tag, 16));
-  content.push_back(makeBinaryBlock(tlv::EncryptedPayload, encryptedPayload.data(), encryptedPayloadLen));
+  content.push_back(ndn::makeBinaryBlock(tlv::InitializationVector, encryptionIv.data(), encryptionIv.size()));
+  content.push_back(ndn::makeBinaryBlock(tlv::AuthenticationTag, tag, 16));
+  content.push_back(ndn::makeBinaryBlock(tlv::EncryptedPayload, encryptedPayload.data(), encryptedPayloadLen));
   content.encode();
   // update IV's counter
   updateIv(encryptionIv, payloadSize);
   return content;
 }
 
-Buffer
+ndn::Buffer
 decodeBlockWithAesGcm128(const Block& block, const uint8_t* key,
                          const uint8_t* associatedData, size_t associatedDataSize,
                          std::vector<uint8_t>& decryptionIv, const std::vector<uint8_t>& encryptionIv)
@@ -443,7 +442,7 @@ decodeBlockWithAesGcm128(const Block& block, const uint8_t* key,
   //   https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3#242-aes-gcm-encryption
   block.parse();
   const auto& encryptedPayloadBlock = block.get(tlv::EncryptedPayload);
-  Buffer result(encryptedPayloadBlock.value_size());
+  ndn::Buffer result(encryptedPayloadBlock.value_size());
   if (block.get(tlv::InitializationVector).value_size() != 12 ||
       block.get(tlv::AuthenticationTag).value_size() != 16) {
     NDN_THROW(std::runtime_error("Error when decrypting the AES Encrypted Block: "
@@ -478,4 +477,3 @@ decodeBlockWithAesGcm128(const Block& block, const uint8_t* key,
 }
 
 } // namespace ndncert
-} // namespace ndn
