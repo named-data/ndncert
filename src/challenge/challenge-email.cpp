@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -29,7 +29,6 @@ NDNCERT_REGISTER_CHALLENGE(ChallengeEmail, "email");
 
 const std::string ChallengeEmail::NEED_CODE = "need-code";
 const std::string ChallengeEmail::WRONG_CODE = "wrong-code";
-const std::string ChallengeEmail::INVALID_EMAIL = "invalid-email";
 const std::string ChallengeEmail::PARAMETER_KEY_EMAIL = "email";
 const std::string ChallengeEmail::PARAMETER_KEY_CODE = "code";
 
@@ -50,13 +49,9 @@ ChallengeEmail::handleChallengeRequest(const Block& params, ca::RequestState& re
   if (request.status == Status::BEFORE_CHALLENGE) {
     // for the first time, init the challenge
     std::string emailAddress = readString(params.get(tlv::ParameterValue));
-    if (!isValidEmailAddress(emailAddress)) {
-      return returnWithNewChallengeStatus(request, INVALID_EMAIL, JsonSection(), m_maxAttemptTimes - 1,
-                                          m_secretLifetime);
-    }
     auto lastComponentRequested = readString(request.cert.getIdentity().get(-1));
     if (lastComponentRequested != emailAddress) {
-      NDN_LOG_TRACE("Email and requested name do not match. Email " << emailAddress << "requested last component "
+      NDN_LOG_TRACE("Email and requested name do not match. Email " << emailAddress << " requested last component "
                     << lastComponentRequested);
     }
     std::string emailCode = generateSecretCode();
@@ -96,8 +91,8 @@ ChallengeEmail::handleChallengeRequest(const Block& params, ca::RequestState& re
       }
       else {
         // run out times
-        NDN_LOG_TRACE("Wrong secret code provided. Ran out tires. Challenge failed.");
-        return returnWithError(request, ErrorCode::OUT_OF_TRIES, "Ran out tires.");
+        NDN_LOG_TRACE("Wrong secret code provided. Ran out of tries. Challenge failed.");
+        return returnWithError(request, ErrorCode::OUT_OF_TRIES, "Ran out of tries.");
       }
     }
   }
@@ -111,9 +106,6 @@ ChallengeEmail::getRequestedParameterList(Status status, const std::string& chal
   std::multimap<std::string, std::string> result;
   if (status == Status::BEFORE_CHALLENGE && challengeStatus == "") {
     result.emplace(PARAMETER_KEY_EMAIL, "Please input your email address");
-  }
-  else if (status == Status::CHALLENGE && challengeStatus == INVALID_EMAIL) {
-    result.emplace(PARAMETER_KEY_EMAIL, "Invalid email, please try again");
   }
   else if (status == Status::CHALLENGE && challengeStatus == NEED_CODE) {
     result.emplace(PARAMETER_KEY_CODE, "Please input your verification code");
@@ -176,8 +168,10 @@ ChallengeEmail::sendEmail(const std::string& emailAddress, const std::string& se
   if (child.exit_code() != 0) {
     NDN_LOG_TRACE("EmailSending Script " + m_sendEmailScript + " fails.");
   }
-  NDN_LOG_TRACE("EmailSending Script " + m_sendEmailScript +
-             " was executed successfully with return value 0.");
+  else {
+    NDN_LOG_TRACE("EmailSending Script " + m_sendEmailScript +
+              " was executed successfully with return value 0.");
+  }
 }
 
 } // namespace ndncert

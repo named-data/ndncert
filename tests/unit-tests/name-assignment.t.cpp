@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -18,6 +18,7 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
+#include "name-assignment/assignment-email.hpp"
 #include "name-assignment/assignment-random.hpp"
 #include "name-assignment/assignment-param.hpp"
 #include "name-assignment/assignment-hash.hpp"
@@ -49,6 +50,14 @@ BOOST_AUTO_TEST_CASE(NameAssignmentParam)
   BOOST_CHECK_EQUAL(*assignment.assignName(params).begin(), Name("/123/789"));
   params.find("xyz")->second = "";
   BOOST_CHECK_EQUAL(assignment.assignName(params).size(), 0);
+
+  AssignmentParam assignment2("/\"guest\"/email");
+  params.emplace("email", "1@1.com");
+  BOOST_CHECK_EQUAL(assignment2.assignName(params).size(), 1);
+  BOOST_CHECK_EQUAL(assignment2.assignName(params).begin()->toUri(), Name("/guest/1@1.com").toUri());
+
+  AssignmentParam assignment3("/\"/email");
+  BOOST_CHECK_EQUAL(assignment3.assignName(params).size(), 0);
 }
 
 BOOST_AUTO_TEST_CASE(NameAssignmentHash)
@@ -66,6 +75,20 @@ BOOST_AUTO_TEST_CASE(NameAssignmentHash)
   params.find("xyz")->second = "";
   BOOST_CHECK_EQUAL(assignment.assignName(params).size(), 1);
   BOOST_CHECK_EQUAL(assignment.assignName(params).begin()->size(), 2);
+}
+
+BOOST_AUTO_TEST_CASE(NameAssignmentEmail)
+{
+  AssignmentEmail assignment("/edu/ucla");
+  std::multimap<std::string, std::string> params;
+  BOOST_CHECK_EQUAL(assignment.assignName(params).size(), 0);
+  params.emplace("email", "das@math.ucla.edu");
+  BOOST_CHECK_EQUAL(*assignment.assignName(params).begin(), Name("/math/das"));
+
+  params.clear();
+  params.emplace("email", "d/~.^as@6666=.9!");
+  BOOST_CHECK_EQUAL(assignment.assignName(params).size(), 1);
+  BOOST_CHECK_EQUAL(*assignment.assignName(params).begin(), Name("/9!/6666%3D/d%2F~.%5Eas"));
 }
 
 BOOST_AUTO_TEST_SUITE_END() // TestNameAssignment

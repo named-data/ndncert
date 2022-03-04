@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -51,8 +51,8 @@ BOOST_AUTO_TEST_CASE(CaConfigFile)
   BOOST_CHECK_EQUAL(config.caProfile.supportedChallenges.front(), "pin");
 
   config.load("tests/unit-tests/config-files/config-ca-5");
-  BOOST_CHECK_EQUAL(config.redirection[0]->getName(),
-                    "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
+  BOOST_CHECK_EQUAL(config.redirection[0].first->getName(),
+                    "/ndn/edu/ucla/KEY/m%08%98%C2xNZ%13/self/v=1646441513929");
   BOOST_CHECK_EQUAL(config.nameAssignmentFuncs.size(), 3);
   BOOST_CHECK_EQUAL(config.nameAssignmentFuncs[0]->m_nameFormat[0], "group");
   BOOST_CHECK_EQUAL(config.nameAssignmentFuncs[0]->m_nameFormat[1], "email");
@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE(ProfileStorageConfigFile)
   BOOST_CHECK_EQUAL(profile1.probeParameterKeys.size(), 1);
   BOOST_CHECK_EQUAL(profile1.probeParameterKeys.front(), "email");
   BOOST_CHECK_EQUAL(profile1.cert->getName(),
-                    "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
+                    "/ndn/site1/KEY/B%B2%60F%07%88%1C2/self/v=1646441889090");
 
   auto& profile2 = profileStorage.getKnownProfiles().back();
   BOOST_CHECK_EQUAL(profile2.caPrefix, "/ndn/edu/ucla/zhiyi");
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(ProfileStorageConfigFile)
   BOOST_CHECK(!profile2.maxSuffixLength);
   BOOST_CHECK_EQUAL(profile2.probeParameterKeys.size(), 0);
   BOOST_CHECK_EQUAL(profile2.cert->getName(),
-                    "/ndn/site1/KEY/%11%BC%22%F4c%15%FF%17/self/%FD%00%00%01Y%C8%14%D9%A5");
+                    "/ndn/site1/KEY/B%B2%60F%07%88%1C2/self/v=1646441889090");
 }
 
 BOOST_AUTO_TEST_CASE(ProfileStorageWithErrors)

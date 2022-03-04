@@ -1,12 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys
 import smtplib
 import argparse
 import socket
-try: # python3
-    from configparser import ConfigParser
-except ImportError: # python2
-    from ConfigParser import SafeConfigParser as ConfigParser
+from configparser import ConfigParser
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 

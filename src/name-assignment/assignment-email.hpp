@@ -18,32 +18,25 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_DETAIL_PROBE_ENCODER_HPP
-#define NDNCERT_DETAIL_PROBE_ENCODER_HPP
+#ifndef NDNCERT_ASSIGNMENT_EMAIL_HPP
+#define NDNCERT_ASSIGNMENT_EMAIL_HPP
 
-#include "detail/ndncert-common.hpp"
+#include "assignment-func.hpp"
 
 namespace ndncert {
-namespace probetlv {
 
-// For Client use
-Block
-encodeApplicationParameters(const std::multimap<std::string, std::string>& parameters);
+/**
+ * assign names base on client probe parameter
+ */
+class AssignmentEmail : public NameAssignmentFunc
+{
+public:
+  explicit AssignmentEmail(const std::string& format = "");
 
-void
-decodeDataContent(const Block& block, std::vector<std::pair<Name, int>>& availableNames,
-                  std::vector<Name>& availableRedirection);
+  std::vector<ndn::PartialName>
+  assignName(const std::multimap<std::string, std::string>& params) override;
+};
 
-// For CA use
-Block
-encodeDataContent(const std::vector<Name>& identifiers,
-                  optional<size_t> maxSuffixLength = nullopt,
-                  std::vector<ndn::Name> redirectionItems = std::vector<ndn::Name>());
-
-std::multimap<std::string, std::string>
-decodeApplicationParameters(const Block& block);
-
-} // namespace probetlv
 } // namespace ndncert
 
-#endif // NDNCERT_DETAIL_PROBE_ENCODER_HPP
+#endif // NDNCERT_ASSIGNMENT_EMAIL_HPP

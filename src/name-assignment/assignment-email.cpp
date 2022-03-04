@@ -18,37 +18,44 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#include "assignment-param.hpp"
+#include "assignment-email.hpp"
 
 namespace ndncert {
 
-NDNCERT_REGISTER_FUNCFACTORY(AssignmentParam, "param");
+NDNCERT_REGISTER_FUNCFACTORY(AssignmentEmail, "email");
 
-AssignmentParam::AssignmentParam(const std::string& format)
+AssignmentEmail::AssignmentEmail(const std::string& format)
   : NameAssignmentFunc(format)
 {
 }
 
 std::vector<ndn::PartialName>
-AssignmentParam::assignName(const std::multimap<std::string, std::string>& params)
+AssignmentEmail::assignName(const std::multimap<std::string, std::string>& params)
 {
   std::vector<ndn::PartialName> resultList;
   Name result;
-  for (const auto& item : m_nameFormat) {
-    if (item.size() >= 2 && item[0] == '"' && item[item.size() - 1] == '"') {
-      result.append(item.substr(1, item.size() - 2));
-    }
-    else {
-      auto it = params.find(item);
-      if (it != params.end() && !it->second.empty()) {
-        result.append(it->second);
+  if (!m_nameFormat.empty() && params.count("email") > 0) {
+    const std::string& email = params.begin()->second;
+    auto formatIter = m_nameFormat.begin();
+    size_t emailSplit = email.rfind("@");
+    std::string domain = "." + email.substr(emailSplit + 1);
+
+    if (emailSplit != std::string::npos && emailSplit > 0) {
+      size_t domainSplit = domain.rfind(".");
+      while (domainSplit != std::string::npos) {
+        if (formatIter != m_nameFormat.end() && domain.substr(domainSplit + 1) == *formatIter) {
+          formatIter++;
+        }
+        else {
+          result.push_back(domain.substr(domainSplit + 1).c_str());
+        }
+        domain = domain.substr(0, domainSplit);
+        domainSplit = domain.rfind(".");
       }
-      else {
-        return resultList; // empty
-      }
+      result.push_back(email.substr(0, emailSplit).c_str());
+      resultList.push_back(std::move(result));
     }
   }
-  resultList.push_back(std::move(result));
   return resultList;
 }
 

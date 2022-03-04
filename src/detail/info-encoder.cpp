@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -19,6 +19,8 @@
  */
 
 #include "detail/info-encoder.hpp"
+
+NDN_LOG_INIT(ndncert.encode.info);
 
 namespace ndncert {
 
@@ -41,36 +43,41 @@ infotlv::encodeDataContent(const CaProfile& caConfig, const Certificate& certifi
   content.push_back(ndn::makeNonNegativeIntegerBlock(tlv::MaxValidityPeriod, caConfig.maxValidityPeriod.count()));
   content.push_back(makeNestedBlock(tlv::CaCertificate, certificate));
   content.encode();
+  NDN_LOG_TRACE("Encoding INFO packet with certificate " << certificate.getFullName());
   return content;
 }
 
 CaProfile
-infotlv::decodeDataContent(const Block& block)
-{
+infotlv::decodeDataContent(const Block& block) {
   CaProfile result;
   block.parse();
-  for (auto const& item : block.elements()) {
+  for (auto const &item : block.elements()) {
     switch (item.type()) {
-    case tlv::CaPrefix:
-      item.parse();
-      result.caPrefix.wireDecode(item.get(ndn::tlv::Name));
-      break;
-    case tlv::CaInfo:
-      result.caInfo = readString(item);
-      break;
-    case tlv::ParameterKey:
-      result.probeParameterKeys.push_back(readString(item));
-      break;
-    case tlv::MaxValidityPeriod:
-      result.maxValidityPeriod = time::seconds(readNonNegativeInteger(item));
-      break;
-    case tlv::CaCertificate:
-      item.parse();
-      result.cert = std::make_shared<Certificate>(item.get(ndn::tlv::Data));
-      break;
-    default:
-      continue;
-      break;
+      case tlv::CaPrefix:
+        item.parse();
+        result.caPrefix.wireDecode(item.get(ndn::tlv::Name));
+        break;
+      case tlv::CaInfo:
+        result.caInfo = readString(item);
+        break;
+      case tlv::ParameterKey:
+        result.probeParameterKeys.push_back(readString(item));
+        break;
+      case tlv::MaxValidityPeriod:
+        result.maxValidityPeriod = time::seconds(readNonNegativeInteger(item));
+        break;
+      case tlv::CaCertificate:
+        item.parse();
+        result.cert = std::make_shared<Certificate>(item.get(ndn::tlv::Data));
+        break;
+      default:
+        if (ndn::tlv::isCriticalType(item.type())) {
+          NDN_THROW(std::runtime_error("Unrecognized TLV Type: " + std::to_string(item.type())));
+        }
+        else {
+          //ignore
+        }
+        break;
     }
   }
   return result;

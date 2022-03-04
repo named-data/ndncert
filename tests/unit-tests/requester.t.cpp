@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -70,8 +70,8 @@ BOOST_AUTO_TEST_CASE(OnProbeResponse){
   ca_profile.cert = std::make_shared<Certificate>(cert);
 
   std::vector<Name> availableNames;
-  availableNames.push_back(Name("/site1"));
-  availableNames.push_back(Name("/site2"));
+  availableNames.emplace_back("/site1");
+  availableNames.emplace_back("/site2");
 
   ndn::util::DummyClientFace face(io, m_keyChain, {true, true});
   ca::CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-5", "ca-storage-memory");
@@ -79,7 +79,11 @@ BOOST_AUTO_TEST_CASE(OnProbeResponse){
   Data reply;
   reply.setName(Name("/site/CA/PROBE"));
   reply.setFreshnessPeriod(time::seconds(100));
-  reply.setContent(probetlv::encodeDataContent(availableNames, 3, ca.m_config.redirection));
+  {
+    std::vector<Name> redirectionNames;
+    for (const auto &i : ca.m_config.redirection) redirectionNames.push_back(i.first->getFullName());
+    reply.setContent(probetlv::encodeDataContent(availableNames, 3, redirectionNames));
+  }
   m_keyChain.sign(reply, ndn::signingByIdentity(identity));
 
   std::vector<std::pair<Name, int>> names;
@@ -94,8 +98,8 @@ BOOST_AUTO_TEST_CASE(OnProbeResponse){
   BOOST_CHECK_EQUAL(names[1].second, 3);
 
   BOOST_CHECK_EQUAL(redirects.size(), 2);
-  BOOST_CHECK_EQUAL(ndn::security::extractIdentityFromCertName(redirects[0].getPrefix(-1)), "/ndn/site1");
-  BOOST_CHECK_EQUAL(ndn::security::extractIdentityFromCertName(redirects[1].getPrefix(-1)), "/ndn/site1");
+  BOOST_CHECK_EQUAL(ndn::security::extractIdentityFromCertName(redirects[0].getPrefix(-1)), "/ndn/edu/ucla");
+  BOOST_CHECK_EQUAL(ndn::security::extractIdentityFromCertName(redirects[1].getPrefix(-1)), "/ndn/edu/ucla/cs/irl");
 }
 
 BOOST_AUTO_TEST_CASE(ErrorHandling)

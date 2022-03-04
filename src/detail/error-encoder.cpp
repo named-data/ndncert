@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -20,6 +20,8 @@
 
 #include "detail/error-encoder.hpp"
 
+NDN_LOG_INIT(ndncert.encode.error);
+
 namespace ndncert {
 
 Block
@@ -35,12 +37,44 @@ errortlv::encodeDataContent(ErrorCode errorCode, const std::string& description)
 std::tuple<ErrorCode, std::string>
 errortlv::decodefromDataContent(const Block& block)
 {
-  block.parse();
-  if (block.find(tlv::ErrorCode) == block.elements_end()) {
+  try {
+    block.parse();
+    int codeCount = 0;
+    int infoCount = 0;
+    int otherCriticalCount = 0;
+    ErrorCode error;
+    std::string errorInfo;
+    for (const auto& item : block.elements()) {
+      if (item.type() == tlv::ErrorCode) {
+        error = static_cast<ErrorCode>(readNonNegativeInteger(block.get(tlv::ErrorCode)));
+        codeCount ++;
+      }
+      else if (item.type() == tlv::ErrorInfo) {
+        errorInfo = readString(block.get(tlv::ErrorInfo));
+        infoCount ++;
+      }
+      else if (ndn::tlv::isCriticalType(item.type())) {
+        otherCriticalCount ++;
+      }
+      else {
+        //ignore
+      }
+    }
+    if (codeCount == 0 && infoCount == 0) {
+      return std::make_tuple(ErrorCode::NO_ERROR, "");
+    }
+    if (codeCount != 1 || infoCount != 1) {
+      NDN_THROW(std::runtime_error("Error TLV contains " + std::to_string(codeCount) + " error code(s) and " +
+                                      std::to_string(infoCount) + "error info(s), instead of expected 1 times each."));
+    }
+    if (otherCriticalCount > 0) {
+      NDN_THROW(std::runtime_error("Unknown Critical TLV type in error packet"));
+    }
+    return std::make_tuple(error, errorInfo);
+  } catch (const std::exception& e) {
+    NDN_LOG_ERROR("[errortlv::DecodeFromDataContent] Exception in error message decoding: " << e.what());
     return std::make_tuple(ErrorCode::NO_ERROR, "");
   }
-  ErrorCode error = static_cast<ErrorCode>(readNonNegativeInteger(block.get(tlv::ErrorCode)));
-  return std::make_tuple(error, readString(block.get(tlv::ErrorInfo)));
 }
 
 } // namespace ndncert

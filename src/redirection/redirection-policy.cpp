@@ -18,32 +18,23 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_DETAIL_PROBE_ENCODER_HPP
-#define NDNCERT_DETAIL_PROBE_ENCODER_HPP
-
-#include "detail/ndncert-common.hpp"
+#include "redirection-policy.hpp"
 
 namespace ndncert {
-namespace probetlv {
 
-// For Client use
-Block
-encodeApplicationParameters(const std::multimap<std::string, std::string>& parameters);
+std::unique_ptr<RedirectionPolicy>
+RedirectionPolicy::createPolicyFunc(const std::string& policyType, const std::string& format)
+{
+  PolicyFactory& factory = getFactory();
+  auto i = factory.find(policyType);
+  return i == factory.end() ? nullptr : i->second(format);
+}
 
-void
-decodeDataContent(const Block& block, std::vector<std::pair<Name, int>>& availableNames,
-                  std::vector<Name>& availableRedirection);
+RedirectionPolicy::PolicyFactory&
+RedirectionPolicy::getFactory()
+{
+  static PolicyFactory factory;
+  return factory;
+}
 
-// For CA use
-Block
-encodeDataContent(const std::vector<Name>& identifiers,
-                  optional<size_t> maxSuffixLength = nullopt,
-                  std::vector<ndn::Name> redirectionItems = std::vector<ndn::Name>());
-
-std::multimap<std::string, std::string>
-decodeApplicationParameters(const Block& block);
-
-} // namespace probetlv
 } // namespace ndncert
-
-#endif // NDNCERT_DETAIL_PROBE_ENCODER_HPP

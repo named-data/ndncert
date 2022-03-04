@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -91,30 +91,6 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmail)
   std::string certName = line;
   BOOST_CHECK_EQUAL(certName, cert.getName());
   std::remove("tmp.txt");
-}
-
-BOOST_AUTO_TEST_CASE(OnChallengeRequestWithInvalidEmail)
-{
-  auto identity = addIdentity(Name("/ndn/site1"));
-  auto key = identity.getDefaultKey();
-  auto cert = key.getDefaultCertificate();
-  RequestId requestId = {{101}};
-  ca::RequestState request;
-  request.caPrefix = Name("/ndn/site1");
-  request.requestId = requestId;
-  request.requestType = RequestType::NEW;
-  request.cert = cert;
-
-  Block paramTLV = ndn::makeEmptyBlock(tlv::EncryptedPayload);
-  paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterKey, ChallengeEmail::PARAMETER_KEY_EMAIL));
-  paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterValue, "zhiyi@cs"));
-
-  ChallengeEmail challenge;
-  challenge.handleChallengeRequest(paramTLV, request);
-
-  BOOST_CHECK_EQUAL(request.challengeType, "email");
-  BOOST_CHECK_EQUAL(request.challengeState->challengeStatus, ChallengeEmail::INVALID_EMAIL);
-  BOOST_CHECK_EQUAL(request.challengeState->remainingTries, 2);
 }
 
 BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)

@@ -1,14 +1,41 @@
 [Unit]
 Description=Certificate Management Identity Management Service for NDN
+BindsTo=nfd.service
+After=nfd.service
 
 [Service]
 Environment=HOME=%S/ndncert-ca
 ExecStart=@BINDIR@/ndncert-ca-server
 Restart=on-failure
 RestartPreventExitStatus=2
-RestartSec=5
 User=ndn
 
+CapabilityBoundingSet=
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+NoNewPrivileges=yes
+PrivateDevices=yes
+PrivateTmp=yes
+PrivateUsers=yes
+ProtectControlGroups=yes
+ProtectHome=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+# systemd older than v232 doesn't support a value of "strict" for ProtectSystem,
+# so it will ignore that line and use ProtectSystem=full; with newer systemd,
+# the latter assignment is recognized and takes precedence, resulting in an
+# effective setting of ProtectSystem=strict
+ProtectSystem=full
+ProtectSystem=strict
+RestrictAddressFamilies=AF_UNIX AF_NETLINK AF_INET AF_INET6 AF_PACKET
+RestrictNamespaces=yes
+RestrictRealtime=yes
+StateDirectory=ndncert-ca
+SystemCallArchitectures=native
+SystemCallErrorNumber=EPERM
+SystemCallFilter=~@aio @chown @clock @cpu-emulation @debug @keyring @module @mount @obsolete @privileged @raw-io @reboot @resources @setuid @swap
+
+# Dependency
 [Install]
 WantedBy=multi-user.target
-Alias=ndncert.service
+WantedBy=nfd.service

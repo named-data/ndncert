@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -53,11 +53,24 @@ CaConfig::load(const std::string& fileName)
       auto caPrefixStr = item.second.get(CONFIG_CA_PREFIX, "");
       auto caCertStr = item.second.get(CONFIG_CERTIFICATE, "");
       if (caCertStr == "") {
-        NDN_THROW(std::runtime_error("Redirect-to item's ca-prefix or certificate cannot be empty."));
+        NDN_THROW(std::runtime_error("Redirect-to item's certificate cannot be empty."));
       }
       std::istringstream ss(caCertStr);
       auto caCert = ndn::io::load<Certificate>(ss);
-      redirection.push_back(caCert);
+      if (caPrefixStr != "" && Name(caPrefixStr) != caCert->getIdentity()) {
+        NDN_THROW(std::runtime_error("Redirect-to item's prefix and certificate does not match."));
+      }
+
+      auto policyType = item.second.get(CONFIG_REDIRECTION_POLICY_TYPE, "");
+      auto policyParam = item.second.get(CONFIG_REDIRECTION_POLICY_PARAM, "");
+      if (policyType.empty()) {
+          NDN_THROW(std::runtime_error("Redirect-to policy type expected but not provided."));
+      }
+      auto policy = RedirectionPolicy::createPolicyFunc(policyType, policyParam);
+      if (policy == nullptr) {
+        NDN_THROW(std::runtime_error("Error on creating redirection policy"));
+      }
+      redirection.emplace_back(caCert, std::move(policy));
     }
   }
   // parse name assignment if appears

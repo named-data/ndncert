@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -21,8 +21,9 @@
 #ifndef NDNCERT_DETAIL_CA_CONFIGURATION_HPP
 #define NDNCERT_DETAIL_CA_CONFIGURATION_HPP
 
-#include "detail/ca-profile.hpp"
 #include "name-assignment/assignment-func.hpp"
+#include "redirection/redirection-policy.hpp"
+#include "ca-profile.hpp"
 
 namespace ndncert {
 namespace ca {
@@ -66,7 +67,7 @@ public:
   /**
    * @brief Used for CA redirection
    */
-  std::vector<std::shared_ptr<Certificate>> redirection;
+  std::vector<std::pair<std::shared_ptr<Certificate>, std::unique_ptr<RedirectionPolicy>>> redirection;
   /**
    * @brief Name Assignment Functions
    */

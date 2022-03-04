@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -153,25 +153,40 @@ CaModule::onCaProfileDiscovery(const Interest&)
 }
 
 void
-CaModule::onProbe(const Interest& request)
-{
+CaModule::onProbe(const Interest& request) {
   // PROBE Naming Convention: /<CA-Prefix>/CA/PROBE/[ParametersSha256DigestComponent]
   NDN_LOG_TRACE("Received PROBE request");
 
   // process PROBE requests: collect probe parameters
-  auto parameters = probetlv::decodeApplicationParameters(request.getApplicationParameters());
+  std::vector<ndn::Name> redirectionNames;
   std::vector<ndn::PartialName> availableComponents;
-  for (auto& item : m_config.nameAssignmentFuncs) {
-    auto names = item->assignName(parameters);
-    availableComponents.insert(availableComponents.end(), names.begin(), names.end());
+  try {
+    auto parameters = probetlv::decodeApplicationParameters(request.getApplicationParameters());
+
+    //collect redirections
+    for (auto &item : m_config.redirection) {
+      if (item.second->isRedirecting(parameters)) {
+        redirectionNames.push_back(item.first->getFullName());
+      }
+    }
+
+    //collect name assignments
+    for (auto &item : m_config.nameAssignmentFuncs) {
+      auto names = item->assignName(parameters);
+      availableComponents.insert(availableComponents.end(), names.begin(), names.end());
+    }
+  } catch (const std::exception& e) {
+    NDN_LOG_ERROR("[CaModule::onProbe]Error in decoding TLV: " << e.what());
+    return;
   }
-  if (availableComponents.size() == 0) {
+
+  if (availableComponents.size() == 0 && redirectionNames.size() == 0) {
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
                                        "Cannot generate available names from parameters provided."));
     return;
   }
-  std::vector <Name> availableNames;
-  for (const auto& component : availableComponents) {
+  std::vector<Name> availableNames;
+  for (const auto &component : availableComponents) {
     Name newIdentityName = m_config.caProfile.caPrefix;
     newIdentityName.append(component);
     availableNames.push_back(newIdentityName);
@@ -180,7 +195,7 @@ CaModule::onProbe(const Interest& request)
   Data result;
   result.setName(request.getName());
   result.setContent(
-    probetlv::encodeDataContent(availableNames, m_config.caProfile.maxSuffixLength, m_config.redirection));
+      probetlv::encodeDataContent(availableNames, m_config.caProfile.maxSuffixLength, redirectionNames));
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
   m_keyChain.sign(result, signingByIdentity(m_config.caProfile.caPrefix));
   m_face.put(result);
@@ -457,7 +472,7 @@ CaModule::issueCertificate(const RequestState& requestState)
   Certificate newCert;
 
   Name certName = requestState.cert.getKeyName();
-  certName.append("NDNCERT").append(ndn::to_string(ndn::random::generateSecureWord64()));
+  certName.append("NDNCERT").appendVersion();
   newCert.setName(certName);
   newCert.setContent(requestState.cert.getContent());
   NDN_LOG_TRACE("cert request content " << requestState.cert);

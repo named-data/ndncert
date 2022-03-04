@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -37,6 +37,8 @@ const std::string CONFIG_CHALLENGE = "challenge";
 const std::string CONFIG_CERTIFICATE = "certificate";
 const std::string CONFIG_REDIRECTION = "redirect-to";
 const std::string CONFIG_NAME_ASSIGNMENT = "name-assignment";
+const std::string CONFIG_REDIRECTION_POLICY_TYPE = "policy-type";
+const std::string CONFIG_REDIRECTION_POLICY_PARAM = "policy-param";
 
 class CaProfile
 {

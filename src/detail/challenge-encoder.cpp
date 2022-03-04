@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -59,31 +59,62 @@ challengetlv::decodeDataContent(const Block& contentBlock, requester::Request& s
   auto data = ndn::makeBinaryBlock(tlv::EncryptedPayload, result.data(), result.size());
   data.parse();
 
-  state.m_status = statusFromBlock(data.get(tlv::Status));
-  if (data.find(tlv::ChallengeStatus) != data.elements_end()) {
-    state.m_challengeStatus = readString(data.get(tlv::ChallengeStatus));
-  }
-  if (data.find(tlv::RemainingTries) != data.elements_end()) {
-    state.m_remainingTries = readNonNegativeInteger(data.get(tlv::RemainingTries));
-  }
-  if (data.find(tlv::RemainingTime) != data.elements_end()) {
-    state.m_freshBefore = time::system_clock::now() +
-                          time::seconds(readNonNegativeInteger(data.get(tlv::RemainingTime)));
-  }
-  if (data.find(tlv::IssuedCertName) != data.elements_end()) {
-    Block issuedCertNameBlock = data.get(tlv::IssuedCertName);
-    state.m_issuedCertName = Name(issuedCertNameBlock.blockFromValue());
-  }
-  if (data.find(tlv::ParameterKey) != data.elements_end() &&
-      readString(data.get(tlv::ParameterKey)) == "nonce") {
-    if (data.find(tlv::ParameterKey) == data.elements_end()) {
+  int numStatus = 0;
+  bool lookingForNonce = false;
+  for (const auto &item : data.elements()) {
+    if (!lookingForNonce) {
+      switch (item.type()) {
+        case tlv::Status:
+          state.m_status = statusFromBlock(data.get(tlv::Status));
+          numStatus++;
+          break;
+        case tlv::ChallengeStatus:
+          state.m_challengeStatus = readString(item);
+          break;
+        case tlv::RemainingTries:
+          state.m_remainingTries = readNonNegativeInteger(item);
+          break;
+        case tlv::RemainingTime:
+          state.m_freshBefore = time::system_clock::now() +
+                                time::seconds(readNonNegativeInteger(item));
+          break;
+        case tlv::IssuedCertName:
+          state.m_issuedCertName = Name(item.blockFromValue());
+          break;
+        case tlv::ParameterKey:
+          if (readString(item) == "nonce") {
+            lookingForNonce = true;
+          }
+          else {
+            NDN_THROW(std::runtime_error("Unknown Parameter: " + readString(item)));
+          }
+          break;
+        default:
+          if (ndn::tlv::isCriticalType(item.type())) {
+            NDN_THROW(std::runtime_error("Unrecognized TLV Type: " + std::to_string(item.type())));
+          }
+          else {
+            //ignore
+          }
+          break;
+      }
+    }
+    else {
+      if (item.type() == tlv::ParameterValue) {
+        lookingForNonce = false;
+        if (item.value_size() != 16) {
+          NDN_THROW(std::runtime_error("Wrong nonce length"));
+        }
+        memcpy(state.m_nonce.data(), item.value(), 16);
+      }
+      else {
         NDN_THROW(std::runtime_error("Parameter Key found, but no value found"));
+      }
     }
-    Block nonceBlock = data.get(tlv::ParameterValue);
-    if (nonceBlock.value_size() != 16) {
-        NDN_THROW(std::runtime_error("Wrong nonce length"));
-    }
-    memcpy(state.m_nonce.data(), nonceBlock.value(), 16);
+  }
+  if (numStatus != 1) {
+    NDN_THROW(std::runtime_error("number of status block is not equal to 1; there are " +
+                                 std::to_string(numStatus) + " status blocks"));
   }
 }
 

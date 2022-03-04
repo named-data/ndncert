@@ -18,32 +18,46 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_DETAIL_PROBE_ENCODER_HPP
-#define NDNCERT_DETAIL_PROBE_ENCODER_HPP
-
-#include "detail/ndncert-common.hpp"
+#include "redirection-param.hpp"
+#include <boost/algorithm/string.hpp>
 
 namespace ndncert {
-namespace probetlv {
 
-// For Client use
-Block
-encodeApplicationParameters(const std::multimap<std::string, std::string>& parameters);
+NDNCERT_REGISTER_POLICY_FACTORY(RedirectionParam, "param");
 
-void
-decodeDataContent(const Block& block, std::vector<std::pair<Name, int>>& availableNames,
-                  std::vector<Name>& availableRedirection);
+RedirectionParam::RedirectionParam(const std::string& format)
+  : RedirectionPolicy(format)
+{
+  if (format.empty()) {
+    return;
+  }
+  std::vector<std::string> strs;
+  boost::split(strs,format,boost::is_any_of("&"));
+  for (const auto& s : strs) {
+    auto i = s.find('=');
+    if (i == std::string::npos) {
+      NDN_THROW(std::runtime_error("Redirection param format: no '=' in format piece"));
+    }
+    m_format.emplace(s.substr(0, i), s.substr(i + 1));
+  }
+}
 
-// For CA use
-Block
-encodeDataContent(const std::vector<Name>& identifiers,
-                  optional<size_t> maxSuffixLength = nullopt,
-                  std::vector<ndn::Name> redirectionItems = std::vector<ndn::Name>());
+bool
+RedirectionParam::isRedirecting(const std::multimap<std::string, std::string>& params)
+{
+  for (const auto& p : m_format) {
+    bool found = false;
+    for (auto it = params.find(p.first); it != params.end() && it->first == p.first; it ++) {
+      if (it->second == p.second) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      return false;
+    }
+  }
+  return true;
+}
 
-std::multimap<std::string, std::string>
-decodeApplicationParameters(const Block& block);
-
-} // namespace probetlv
 } // namespace ndncert
-
-#endif // NDNCERT_DETAIL_PROBE_ENCODER_HPP

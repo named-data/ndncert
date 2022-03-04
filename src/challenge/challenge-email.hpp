@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -44,7 +44,6 @@ namespace ndncert {
  *
  * Failure info when application fails:
  *   FAILURE_MAXRETRY: When run out retry times.
- *   FAILURE_INVALID_EMAIL: When the email is invalid.
  *   FAILURE_TIMEOUT: When the secret lifetime expires.
  */
 class ChallengeEmail : public ChallengeModule
@@ -69,7 +68,6 @@ public:
   // challenge status
   static const std::string NEED_CODE;
   static const std::string WRONG_CODE;
-  static const std::string INVALID_EMAIL;
   // challenge parameters
   static const std::string PARAMETER_KEY_EMAIL;
   static const std::string PARAMETER_KEY_CODE;

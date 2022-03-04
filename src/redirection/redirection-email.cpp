@@ -18,32 +18,29 @@
  * See AUTHORS.md for complete list of ndncert authors and contributors.
  */
 
-#ifndef NDNCERT_DETAIL_PROBE_ENCODER_HPP
-#define NDNCERT_DETAIL_PROBE_ENCODER_HPP
-
-#include "detail/ndncert-common.hpp"
+#include "redirection-email.hpp"
+#include <boost/algorithm/string.hpp>
 
 namespace ndncert {
-namespace probetlv {
 
-// For Client use
-Block
-encodeApplicationParameters(const std::multimap<std::string, std::string>& parameters);
+NDNCERT_REGISTER_POLICY_FACTORY(RedirectionEmail, "email");
 
-void
-decodeDataContent(const Block& block, std::vector<std::pair<Name, int>>& availableNames,
-                  std::vector<Name>& availableRedirection);
+RedirectionEmail::RedirectionEmail(const std::string& format)
+  : RedirectionPolicy(format)
+{
+  m_domain = format;
+}
 
-// For CA use
-Block
-encodeDataContent(const std::vector<Name>& identifiers,
-                  optional<size_t> maxSuffixLength = nullopt,
-                  std::vector<ndn::Name> redirectionItems = std::vector<ndn::Name>());
+bool
+RedirectionEmail::isRedirecting(const std::multimap<std::string, std::string>& params)
+{
+  for (auto it = params.find("email"); it != params.end() && it->first == "email"; it++) {
+    auto i = it->second.rfind('@');
+    if (i != std::string::npos && it->second.substr(i + 1) == m_domain) {
+      return true;
+    }
+  }
+  return false;
+}
 
-std::multimap<std::string, std::string>
-decodeApplicationParameters(const Block& block);
-
-} // namespace probetlv
 } // namespace ndncert
-
-#endif // NDNCERT_DETAIL_PROBE_ENCODER_HPP

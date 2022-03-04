@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -35,14 +35,21 @@ probetlv::encodeApplicationParameters(const std::multimap<std::string, std::stri
 }
 
 std::multimap<std::string, std::string>
-probetlv::decodeApplicationParameters(const Block& block)
-{
+probetlv::decodeApplicationParameters(const Block& block) {
   std::multimap<std::string, std::string> result;
   block.parse();
-  for (size_t i = 0; i < block.elements().size() - 1; i++) {
-    if (block.elements()[i].type() == tlv::ParameterKey && block.elements()[i + 1].type() == tlv::ParameterValue) {
-      result.emplace(readString(block.elements().at(i)), readString(block.elements().at(i + 1)));
-      i ++;
+  const auto& elements = block.elements();
+  for (size_t i = 0; i < elements.size(); i++) {
+    if (i + 1 < elements.size() && elements[i].type() == tlv::ParameterKey &&
+        elements[i + 1].type() == tlv::ParameterValue) {
+      result.emplace(readString(elements.at(i)), readString(elements.at(i + 1)));
+      i++;
+    }
+    else if (ndn::tlv::isCriticalType(elements[i].type())) {
+      NDN_THROW(std::runtime_error("Unrecognized TLV Type: " + std::to_string(elements[i].type())));
+    }
+    else {
+      //ignore
     }
   }
   return result;
@@ -50,7 +57,7 @@ probetlv::decodeApplicationParameters(const Block& block)
 
 Block
 probetlv::encodeDataContent(const std::vector<Name>& identifiers, optional<size_t> maxSuffixLength,
-                            std::vector<std::shared_ptr<Certificate>> redirectionItems)
+                            std::vector<ndn::Name> redirectionItems)
 {
   Block content(ndn::tlv::Content);
   for (const auto& name : identifiers) {
@@ -61,9 +68,11 @@ probetlv::encodeDataContent(const std::vector<Name>& identifiers, optional<size_
     }
     content.push_back(item);
   }
+
   for (const auto& item : redirectionItems) {
-    content.push_back(makeNestedBlock(tlv::ProbeRedirect, item->getFullName()));
+    content.push_back(makeNestedBlock(tlv::ProbeRedirect, item));
   }
+
   content.encode();
   return content;
 }
@@ -71,8 +80,7 @@ probetlv::encodeDataContent(const std::vector<Name>& identifiers, optional<size_
 void
 probetlv::decodeDataContent(const Block& block,
                             std::vector<std::pair<Name, int>>& availableNames,
-                            std::vector<Name>& availableRedirection)
-{
+                            std::vector<Name>& availableRedirection) {
   block.parse();
   for (const auto& item : block.elements()) {
     if (item.type() == tlv::ProbeResponse) {
@@ -89,14 +97,26 @@ probetlv::decodeDataContent(const Block& block,
         else if (subBlock.type() == tlv::MaxSuffixLength) {
           maxSuffixLength = readNonNegativeInteger(subBlock);
         }
+        else if (ndn::tlv::isCriticalType(subBlock.type())) {
+          NDN_THROW(std::runtime_error("Unrecognized TLV Type in probe name item: " + std::to_string(subBlock.type())));
+        }
+        else {
+          //ignore
+        }
       }
       if (elementName.empty()) {
         NDN_THROW(std::runtime_error("Invalid probe format"));
       }
       availableNames.emplace_back(elementName, maxSuffixLength);
     }
-    if (item.type() == tlv::ProbeRedirect) {
+    else if (item.type() == tlv::ProbeRedirect) {
       availableRedirection.emplace_back(Name(item.blockFromValue()));
+    }
+    else if (ndn::tlv::isCriticalType(item.type())) {
+      NDN_THROW(std::runtime_error("Unrecognized TLV Type: " + std::to_string(item.type())));
+    }
+    else {
+      //ignore
     }
   }
 }
