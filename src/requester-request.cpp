@@ -58,11 +58,9 @@ std::shared_ptr<Interest>
 Request::genCaProfileInterestFromDiscoveryResponse(const Data& reply)
 {
   auto metaData = ndn::MetadataObject(reply);
-  auto interestName= metaData.getVersionedName();
+  auto interestName = metaData.getVersionedName();
   interestName.appendSegment(0);
-  auto interest = std::make_shared<Interest>(interestName);
-  interest->setCanBePrefix(false);
-  return interest;
+  return std::make_shared<Interest>(interestName);
 }
 
 optional<CaProfile>
@@ -96,7 +94,6 @@ Request::genProbeInterest(const CaProfile& ca, std::multimap<std::string, std::s
   interestName.append("CA").append("PROBE");
   auto interest = std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
-  interest->setCanBePrefix(false);
   interest->setApplicationParameters(probetlv::encodeApplicationParameters(std::move(probeInfo)));
   return interest;
 }
@@ -108,7 +105,6 @@ Request::onProbeResponse(const Data& reply, const CaProfile& ca,
   if (!ndn::security::verifySignature(reply, *ca.cert)) {
     NDN_LOG_ERROR("Cannot verify replied Data packet signature.");
     NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
-    return;
   }
   processIfError(reply);
   probetlv::decodeDataContent(reply.getContent(), identityNames, otherCas);
@@ -170,11 +166,10 @@ Request::genNewInterest(const Name& newIdentityName,
   // generate Interest packet
   Name interestName = m_caProfile.caPrefix;
   interestName.append("CA").append("NEW");
-  auto interest =std::make_shared<Interest>(interestName);
+  auto interest = std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
-  interest->setCanBePrefix(false);
   interest->setApplicationParameters(
-          requesttlv::encodeApplicationParameters(RequestType::NEW, m_ecdh.getSelfPubKey(), certRequest));
+    requesttlv::encodeApplicationParameters(RequestType::NEW, m_ecdh.getSelfPubKey(), certRequest));
 
   // sign the Interest packet
   m_keyChain.sign(*interest, signingByKey(keyName));
@@ -187,14 +182,14 @@ Request::genRevokeInterest(const Certificate& certificate)
   if (!m_caProfile.caPrefix.isPrefixOf(certificate.getName())) {
     return nullptr;
   }
+
   // generate Interest packet
   Name interestName = m_caProfile.caPrefix;
   interestName.append("CA").append("REVOKE");
-  auto interest =std::make_shared<Interest>(interestName);
+  auto interest = std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
-  interest->setCanBePrefix(false);
   interest->setApplicationParameters(
-          requesttlv::encodeApplicationParameters(RequestType::REVOKE, m_ecdh.getSelfPubKey(), certificate));
+    requesttlv::encodeApplicationParameters(RequestType::REVOKE, m_ecdh.getSelfPubKey(), certificate));
   return interest;
 }
 
@@ -247,9 +242,8 @@ Request::genChallengeInterest(std::multimap<std::string, std::string>&& paramete
 
   Name interestName = m_caProfile.caPrefix;
   interestName.append("CA").append("CHALLENGE").append(m_requestId.data(), m_requestId.size());
-  auto interest =std::make_shared<Interest>(interestName);
+  auto interest = std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
-  interest->setCanBePrefix(false);
 
   // encrypt the Interest parameters
   auto paramBlock = encodeBlockWithAesGcm128(ndn::tlv::ApplicationParameters, m_aesKey.data(),
@@ -275,13 +269,10 @@ Request::onChallengeResponse(const Data& reply)
 std::shared_ptr<Interest>
 Request::genCertFetchInterest() const
 {
-  Name interestName = m_issuedCertName;
-  auto interest = std::make_shared<Interest>(interestName);
+  auto interest = std::make_shared<Interest>(m_issuedCertName);
   if (!m_forwardingHint.empty()) {
     interest->setForwardingHint({m_forwardingHint});
   }
-  interest->setMustBeFresh(false);
-  interest->setCanBePrefix(false);
   return interest;
 }
 
@@ -292,9 +283,8 @@ Request::onCertFetchResponse(const Data& reply)
     return std::make_shared<Certificate>(reply);
   }
   catch (const std::exception&) {
-    NDN_LOG_ERROR("Cannot parse replied certificate ");
-    NDN_THROW(std::runtime_error("Cannot parse replied certificate "));
-    return nullptr;
+    NDN_LOG_ERROR("Cannot parse replied certificate");
+    NDN_THROW(std::runtime_error("Cannot parse replied certificate"));
   }
 }
 
@@ -304,6 +294,7 @@ Request::endSession()
   if (m_status == Status::SUCCESS) {
     return;
   }
+
   if (m_isNewlyCreatedIdentity) {
     // put the identity into the if scope is because it may cause an error
     // outside since when endSession is called, identity may not have been created yet.

@@ -77,7 +77,6 @@ BOOST_AUTO_TEST_CASE(HandleProfileFetching)
       auto block = response.getContent();
       block.parse();
       infoInterest = std::make_shared<Interest>(Name(block.get(ndn::tlv::Name)).appendSegment(0));
-      infoInterest->setCanBePrefix(false);
     }
     else {
       count++;
@@ -111,13 +110,10 @@ BOOST_AUTO_TEST_CASE(HandleProbe)
   advanceClocks(time::milliseconds(20), 60);
 
   Interest interest("/ndn/CA/PROBE");
-  interest.setCanBePrefix(false);
-
   Block paramTLV = ndn::makeEmptyBlock(ndn::tlv::ApplicationParameters);
   paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterKey, "name"));
   paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterValue, "zhiyi"));
   paramTLV.encode();
-
   interest.setApplicationParameters(paramTLV);
 
   int count = 0;
@@ -149,13 +145,10 @@ BOOST_AUTO_TEST_CASE(HandleProbeUsingDefaultHandler)
   advanceClocks(time::milliseconds(20), 60);
 
   Interest interest("/ndn/CA/PROBE");
-  interest.setCanBePrefix(false);
-
   Block paramTLV = ndn::makeEmptyBlock(ndn::tlv::ApplicationParameters);
   paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterKey, "name"));
   paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterValue, "zhiyi"));
   paramTLV.encode();
-
   interest.setApplicationParameters(paramTLV);
 
   int count = 0;
@@ -187,13 +180,10 @@ BOOST_AUTO_TEST_CASE(HandleProbeRedirection)
   advanceClocks(time::milliseconds(20), 60);
 
   Interest interest("/ndn/CA/PROBE");
-  interest.setCanBePrefix(false);
-
   Block paramTLV = ndn::makeEmptyBlock(ndn::tlv::ApplicationParameters);
   paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterKey, "name"));
   paramTLV.push_back(ndn::makeStringBlock(tlv::ParameterValue, "zhiyi"));
   paramTLV.encode();
-
   interest.setApplicationParameters(paramTLV);
 
   int count = 0;

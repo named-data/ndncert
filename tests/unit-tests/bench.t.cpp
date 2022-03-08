@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -62,8 +62,7 @@ BOOST_AUTO_TEST_CASE(PacketSize0)
       // std::cout << "CA Config MetaData Size: " << response.wireEncode().size() << std::endl;
       auto block = response.getContent();
       block.parse();
-      infoInterest =std::make_shared<Interest>(Name(block.get(ndn::tlv::Name)).appendSegment(0));
-      infoInterest->setCanBePrefix(false);
+      infoInterest = std::make_shared<Interest>(Name(block.get(ndn::tlv::Name)).appendSegment(0));
       // std::cout << "CA Config fetch Interest Size: " << infoInterest->wireEncode().size() << std::endl;
     }
     else {
