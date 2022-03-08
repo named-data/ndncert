@@ -41,6 +41,7 @@ challengetlv::encodeDataContent(ca::RequestState& request, const Name& issuedCer
   }
   if (!issuedCertName.empty()) {
     response.push_back(makeNestedBlock(tlv::IssuedCertName, issuedCertName));
+    response.push_back(makeNestedBlock(ndn::tlv::ForwardingHint, Name(request.caPrefix).append("CA")));
   }
   response.encode();
 
@@ -80,6 +81,9 @@ challengetlv::decodeDataContent(const Block& contentBlock, requester::Request& s
           break;
         case tlv::IssuedCertName:
           state.m_issuedCertName = Name(item.blockFromValue());
+          break;
+        case ndn::tlv::ForwardingHint:
+          state.m_forwardingHint = Name(item.blockFromValue());
           break;
         case tlv::ParameterKey:
           if (readString(item) == "nonce") {

@@ -277,6 +277,9 @@ Request::genCertFetchInterest() const
 {
   Name interestName = m_issuedCertName;
   auto interest = std::make_shared<Interest>(interestName);
+  if (!m_forwardingHint.empty()) {
+    interest->setForwardingHint({m_forwardingHint});
+  }
   interest->setMustBeFresh(false);
   interest->setCanBePrefix(false);
   return interest;
