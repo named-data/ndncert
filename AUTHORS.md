@@ -11,6 +11,7 @@ If you would like to become a contributor to the official repository, please fol
 * Davide Pesavento <https://github.com/Pesa>
 * Md Ashiqur Rahman <https://ashiqrahman.com>
 * Junxiao Shi <https://cs.arizona.edu/~shijunxiao>
+* Tianyuan Yu <https://www.tianyuan-yu.com>
 * Yufeng Zhang <https://yufengzh.io>
 * Zhiyi Zhang <https://zhiyi-zhang.com>
 

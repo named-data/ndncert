@@ -118,41 +118,23 @@ Request::Request(ndn::KeyChain& keyChain, const CaProfile& profile, RequestType 
 }
 
 std::shared_ptr<Interest>
-Request::genNewInterest(const Name& newIdentityName,
+Request::genNewInterest(const Name& keyName,
                         const time::system_clock::TimePoint& notBefore,
                         const time::system_clock::TimePoint& notAfter)
 {
-  if (!m_caProfile.caPrefix.isPrefixOf(newIdentityName)) {
+  if (!m_caProfile.caPrefix.isPrefixOf(keyName)) {
     return nullptr;
   }
-  if (newIdentityName.empty()) {
-    NDN_LOG_TRACE("Randomly create a new name because newIdentityName is empty and the param is empty.");
-    m_identityName = m_caProfile.caPrefix;
-    m_identityName.append(ndn::to_string(ndn::random::generateSecureWord64()));
+  if (keyName.empty()) {
+    return nullptr;
   }
   else {
-    m_identityName = newIdentityName;
-  }
-
-  // generate a newly key pair or use an existing key
-  const auto& pib = m_keyChain.getPib();
-  ndn::security::pib::Identity identity;
-  try {
+    const auto& pib = m_keyChain.getPib();
+    ndn::security::pib::Identity identity;
+    m_identityName = ndn::security::extractIdentityFromKeyName(keyName);
     identity = pib.getIdentity(m_identityName);
+    m_keyPair = identity.getKey(keyName);
   }
-  catch (const ndn::security::Pib::Error&) {
-    identity = m_keyChain.createIdentity(m_identityName);
-    m_isNewlyCreatedIdentity = true;
-    m_isNewlyCreatedKey = true;
-  }
-  try {
-    m_keyPair = identity.getDefaultKey();
-  }
-  catch (const ndn::security::Pib::Error&) {
-    m_keyPair = m_keyChain.createKey(identity);
-    m_isNewlyCreatedKey = true;
-  }
-  auto& keyName = m_keyPair.getName();
 
   // generate certificate request
   Certificate certRequest;
@@ -285,25 +267,6 @@ Request::onCertFetchResponse(const Data& reply)
   catch (const std::exception&) {
     NDN_LOG_ERROR("Cannot parse replied certificate");
     NDN_THROW(std::runtime_error("Cannot parse replied certificate"));
-  }
-}
-
-void
-Request::endSession()
-{
-  if (m_status == Status::SUCCESS) {
-    return;
-  }
-
-  if (m_isNewlyCreatedIdentity) {
-    // put the identity into the if scope is because it may cause an error
-    // outside since when endSession is called, identity may not have been created yet.
-    auto identity = m_keyChain.getPib().getIdentity(m_identityName);
-    m_keyChain.deleteIdentity(identity);
-  }
-  else if (m_isNewlyCreatedKey) {
-    auto identity = m_keyChain.getPib().getIdentity(m_identityName);
-    m_keyChain.deleteKey(identity, m_keyPair);
   }
 }
 

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -47,9 +47,13 @@ static void
 runChallenge(const std::string& challengeType);
 
 static size_t nStep = 1;
+static const std::string defaultChallenge = "email";
 static ndn::Face face;
 static ndn::KeyChain keyChain;
 static std::shared_ptr<Request> requesterState;
+static std::shared_ptr<std::multimap<std::string, std::string>> capturedProbeParams;
+static Name newlyCreatedIdentityName;
+static Name newlyCreatedKeyName;
 
 static void
 captureParams(std::multimap<std::string, std::string>& requirement)
@@ -79,13 +83,14 @@ captureParams(const std::vector<std::string>& requirement)
 }
 
 static int
-captureValidityPeriod()
+captureValidityPeriod(time::hours maxValidityPeriod)
 {
   std::cerr << "\n***************************************\n"
             << "Step " << nStep++
             << ": Please type in your expected validity period of your certificate."
             << " Type the number of hours (168 for week, 730 for month, 8760 for year)."
-            << " The CA may reject your application if your expected period is too long." << std::endl;
+            << " The CA may reject your application if your expected period is too long."
+            << " The maximum validity period allowed by this CA is " << maxValidityPeriod << "."<< std::endl;
   size_t count = 0;
   while (true && count < 3) {
     std::string periodStr = "";
@@ -102,10 +107,65 @@ captureValidityPeriod()
   exit(1);
 }
 
+static Name
+captureKeyName(ndn::security::pib::Identity& identity, ndn::security::pib::Key& defaultKey)
+{
+  size_t count = 0;
+  std::cerr << "***************************************\n"
+            << "Step " << nStep++ << ": KEY SELECTION" << std::endl;
+  for (const auto& key : identity.getKeys()) {
+    std::cerr << "> Index: " << count++ << std::endl
+              << ">> Key Name:";
+    if (key == defaultKey) {
+      std::cerr << "  +->* ";
+    }
+    else {
+      std::cerr << "  +->  ";
+    }
+    std::cerr << key.getName() << std::endl;
+  }
+
+  std::cerr << "Please type in the key's index that you want to certify or type in NEW if you want to certify a new key:\n";
+  std::string indexStr = "";
+  std::string indexStrLower = "";
+  size_t keyIndex;
+  getline(std::cin, indexStr);
+
+  indexStrLower = indexStr;
+  boost::algorithm::to_lower(indexStrLower);
+  if (indexStrLower == "new") {
+    auto newlyCreatedKey = keyChain.createKey(identity);
+    newlyCreatedKeyName = newlyCreatedKey.getName();
+    std::cerr << "New key generated: " << newlyCreatedKeyName << std::endl;
+    return newlyCreatedKeyName;
+  }
+  else {
+    try {
+      keyIndex = std::stoul(indexStr);
+    }
+    catch (const std::exception&) {
+      std::cerr << "Your input is neither NEW nor a valid index. Exit" << std::endl;
+      exit(1);
+    }
+
+    if (keyIndex >= count) {
+      std::cerr << "Your input is not an existing index. Exit" << std::endl;
+      exit(1);
+    }
+    else {
+      auto itemIterator = identity.getKeys().begin();
+      std::advance(itemIterator, keyIndex);
+      auto targetKeyItem = *itemIterator;
+      return targetKeyItem.getName();
+    }
+  }
+}
+
 static void
 onNackCb()
 {
   std::cerr << "Got NACK\n";
+  exit(1);
 }
 
 static void
@@ -123,9 +183,9 @@ certFetchCb(const Data& reply)
   }
   std::cerr << "\n***************************************\n"
             << "Step " << nStep++
-            << ": DONE\nCertificate with Name: " << reply.getName().toUri()
-            << "has already been installed to your local keychain" << std::endl
-            << "Exit now";
+            << ": DONE\nCertificate with Name: " << reply.getName()
+            << " has been installed to your local keychain\n"
+            << "Exit now" << std::endl;
   face.getIoService().stop();
 }
 
@@ -168,43 +228,51 @@ newCb(const Data& reply)
     exit(1);
   }
   else if (challengeList.size() >= 1) {
-    std::cerr << "\n***************************************\n"
-              << "Step " << nStep++
-              << ": CHALLENGE SELECTION" << std::endl;
-    size_t count = 0;
-    std::string choice = "";
-    for (auto item : challengeList) {
-      std::cerr << "> Index: " << count++ << std::endl
-                << ">> Challenge:" << item << std::endl;
+    auto item = std::find(challengeList.begin(), challengeList.end(), defaultChallenge);
+    if (item != challengeList.end()) {
+      runChallenge(defaultChallenge);
     }
-    std::cerr << "Please type in the challenge index that you want to perform:" << std::endl;
-    size_t inputCount = 0;
-    while (inputCount < 3) {
-      getline(std::cin, choice);
-      try {
-        challengeIndex = std::stoul(choice);
+    else {
+      // default challenge not available
+      std::cerr << "\n***************************************\n"
+                << "Step " << nStep++
+                << ": CHALLENGE SELECTION" << std::endl;
+      size_t count = 0;
+      std::string choice = "";
+      for (auto item : challengeList) {
+        std::cerr << "> Index: " << count++ << std::endl
+                  << ">> Challenge: " << item << std::endl;
       }
-      catch (const std::exception&) {
-        std::cerr << "Your input is not valid. Try again:" << std::endl;
-        inputCount++;
-        continue;
+      std::cerr << "Please type in the index of the challenge that you want to perform:" << std::endl;
+      size_t inputCount = 0;
+      while (inputCount < 3) {
+        getline(std::cin, choice);
+        try {
+          challengeIndex = std::stoul(choice);
+        }
+        catch (const std::exception&) {
+          std::cerr << "Your input is not valid. Try again:" << std::endl;
+          inputCount++;
+          continue;
+        }
+        if (challengeIndex >= count) {
+          std::cerr << "Your input index is out of range. Try again:" << std::endl;
+          inputCount++;
+          continue;
+        }
+        break;
       }
-      if (challengeIndex >= count) {
-        std::cerr << "Your input index is out of range. Try again:" << std::endl;
-        inputCount++;
-        continue;
+      if (inputCount == 3) {
+        std::cerr << "Invalid input for too many times, exit. " << std::endl;
+        exit(1);
       }
-      break;
-    }
-    if (inputCount == 3) {
-      std::cerr << "Invalid input for too many times, exit. " << std::endl;
-      exit(1);
+
+      auto it = challengeList.begin();
+      std::advance(it, challengeIndex);
+      std::cerr << "The challenge has been selected: " << *it << std::endl;
+      runChallenge(*it);
     }
   }
-  auto it = challengeList.begin();
-  std::advance(it, challengeIndex);
-  std::cerr << "The challenge has been selected: " << *it << std::endl;
-  runChallenge(*it);
 }
 
 static void
@@ -226,7 +294,7 @@ infoCb(const Data& reply, const Name& certFullName)
   std::cerr << "\n***************************************\n"
             << "Step " << nStep++
             << ": Will use a new trust anchor, please double check the identity info:" << std::endl
-            << "> New CA name: " << profile->caPrefix.toUri() << std::endl
+            << "> New CA name: " << profile->caPrefix << std::endl
             << "> This trust anchor information is signed by: " << reply.getSignatureInfo().getKeyLocator() << std::endl
             << "> The certificate: " << *profile->cert << std::endl
             << "Do you trust the information? Type in YES or NO" << std::endl;
@@ -235,12 +303,11 @@ infoCb(const Data& reply, const Name& certFullName)
   getline(std::cin, answer);
   boost::algorithm::to_lower(answer);
   if (answer == "yes") {
-    std::cerr << "You answered YES: new CA " << profile->caPrefix.toUri() << " will be used" << std::endl;
+    std::cerr << "You answered YES: new CA " << profile->caPrefix << " will be used" << std::endl;
     runProbe(*profile);
-    // client.getClientConf().save(std::string(SYSCONFDIR) + "/ndncert/client.conf");
   }
   else {
-    std::cerr << "You answered NO: new CA " << profile->caPrefix.toUri() << " will not be used" << std::endl;
+    std::cerr << "You answered NO: new CA " << profile->caPrefix << " will not be used" << std::endl;
     exit(0);
   }
 }
@@ -250,73 +317,98 @@ probeCb(const Data& reply, CaProfile profile)
 {
   std::vector<std::pair<Name, int>> names;
   std::vector<Name> redirects;
-  Request::onProbeResponse(reply, profile, names, redirects);
-  size_t count = 0;
-  std::cerr << "\n***************************************\n"
-            << "Step " << nStep++
-            << ": You can either select one of the following names suggested by the CA: " << std::endl;
-  for (const auto& name : names) {
-    std::cerr << "> Index: " << count++ << std::endl
-              << ">> Suggested name: " << name.first.toUri() << std::endl
-              << ">> Corresponding Max sufiix length: " << name.second << std::endl;
-  }
-  std::cerr << "\nOr choose another trusted CA suggested by the CA: " << std::endl;
-  for (const auto& redirect : redirects) {
-    std::cerr << "> Index: " << count++ << std::endl
-              << ">> Suggested CA: " << ndn::security::extractIdentityFromCertName(redirect.getPrefix(-1))
-              << std::endl;
-  }
-  std::cerr << "Please type in the index of your choice:" << std::endl;
-  size_t index = 0;
   try {
-    std::string input;
-    getline(std::cin, input);
-    index = std::stoul(input);
+    Request::onProbeResponse(reply, profile, names, redirects);
   }
-  catch (const std::exception&) {
-    std::cerr << "Your input is Invalid. Exit" << std::endl;
+  catch (const std::exception& e) {
+    std::cerr << "The probed CA response cannot be used because: " << e.what() << std::endl;
     exit(1);
   }
-  if (index >= names.size() + redirects.size()) {
-    std::cerr << "Your input is not an existing index. Exit" << std::endl;
-    exit(1);
-  }
-  if (index < names.size()) {
-    //names
-    auto selectedName = names[index].first;
-    std::cerr << "You selected name: " << selectedName.toUri() << std::endl;
-    std::cerr << "Enter Suffix if you would like one (Enter to skip): ";
-    try {
-      std::string input;
-      getline(std::cin, input);
-      auto inputName = Name(input);
-      if (!inputName.empty()) {
-        selectedName.append(inputName);
-        std::cerr << "You are applying name: " << selectedName.toUri() << std::endl;
+
+  size_t count = 0;
+  Name selectedName;
+  Name redirectedCaFullName;
+  // always prefer redirection over direct assignment
+  if (redirects.size() > 0) {
+    if (redirects.size() < 2) {
+      redirectedCaFullName = redirects.front();
+    }
+    else {
+      std::cerr << "\n***************************************\n"
+                << "Step " << nStep++
+                << " Choose another trusted CA suggested by the CA: " << std::endl;
+      for (const auto& redirect : redirects) {
+        std::cerr << "> Index: " << count++ << std::endl
+                  << ">> Suggested CA: " << ndn::security::extractIdentityFromCertName(redirect.getPrefix(-1))
+                  << std::endl;
       }
+      std::cerr << "Please type in the index of your choice:" << std::endl;
+      size_t index = 0;
+      try {
+        std::string input;
+        getline(std::cin, input);
+        index = std::stoul(input);
+      }
+      catch (const std::exception&) {
+        std::cerr << "Your input is Invalid. Exit" << std::endl;
+        exit(1);
+      }
+      if (index >= redirects.size()) {
+        std::cerr << "Your input is not an existing index. Exit" << std::endl;
+        exit(1);
+      }
+      redirectedCaFullName = redirects[index];
     }
-    catch (const std::exception&) {
-      std::cerr << "Your input is Invalid. Exit" << std::endl;
-      exit(1);
-    }
-    runNew(profile, selectedName);
-  }
-  else {
-    //redirects
-    auto redirectedCaFullName = redirects[index - names.size()];
     auto redirectedCaName = ndn::security::extractIdentityFromCertName(redirectedCaFullName.getPrefix(-1));
-    std::cerr << "You selected to be redirected to CA: " << redirectedCaName.toUri() << std::endl;
+    std::cerr << "You will be redirected to CA: " << redirectedCaName << std::endl;
     face.expressInterest(
         *Request::genCaProfileDiscoveryInterest(redirectedCaName),
-        [&] (const auto&, const auto& data) {
+        [&, redirectedCaFullName] (const auto&, const auto& data) {
           auto fetchingInterest = Request::genCaProfileInterestFromDiscoveryResponse(data);
           face.expressInterest(*fetchingInterest,
-                               [=] (const auto&, const auto& data2) { infoCb(data2, redirectedCaFullName); },
-                               [] (auto&&...) { onNackCb(); },
-                               [] (auto&&...) { timeoutCb(); });
+                              [=] (const auto&, const auto& data2) { infoCb(data2, redirectedCaFullName); },
+                              [] (auto&&...) { onNackCb(); },
+                              [] (auto&&...) { timeoutCb(); });
         },
         [] (auto&&...) { onNackCb(); },
         [] (auto&&...) { timeoutCb(); });
+  }
+  else if (names.size() > 0) {
+    if (names.size() < 2) {
+      selectedName = names.front().first;
+    }
+    else {
+      std::cerr << "\n***************************************\n"
+                << "Step " << nStep++
+                << ": You can either select one of the following names suggested by the CA: " << std::endl;
+      for (const auto& name : names) {
+        std::cerr << "> Index: " << count++ << std::endl
+                  << ">> Suggested name: " << name.first << std::endl
+                  << ">> Corresponding max suffix length: " << name.second << std::endl;
+      }
+      std::cerr << "Please type in the index of your choice:" << std::endl;
+      size_t index = 0;
+      try {
+        std::string input;
+        getline(std::cin, input);
+        index = std::stoul(input);
+      }
+      catch (const std::exception&) {
+        std::cerr << "Your input is invalid. Exit" << std::endl;
+        exit(1);
+      }
+      if (index >= names.size()) {
+        std::cerr << "Your input is not an existing index. Exit" << std::endl;
+        exit(1);
+      }
+      selectedName = names[index].first;
+    }
+    std::cerr << "You are applying for name: " << selectedName << std::endl;
+    runNew(profile, selectedName);
+  }
+  else {
+    std::cerr << "Neither name assignment nor redirection is available, exit." << std::endl;
+    exit(1);
   }
 }
 
@@ -369,11 +461,11 @@ selectCaProfile(std::string configFilePath)
     }
     catch (const std::exception&) {
       std::cerr << "Your input is neither NONE nor a valid index. Exit" << std::endl;
-      return;
+      exit(1);
     }
     if (caIndex >= count) {
       std::cerr << "Your input is not an existing index. Exit" << std::endl;
-      return;
+      exit(1);
     }
     auto itemIterator = profileStorage.getKnownProfiles().cbegin();
     std::advance(itemIterator, caIndex);
@@ -385,59 +477,53 @@ selectCaProfile(std::string configFilePath)
 static void
 runProbe(CaProfile profile)
 {
-  std::cerr << "\n***************************************\n"
-            << "Step " << nStep++
-            << ": Do you know your identity name to be certified by CA "
-            << profile.caPrefix.toUri()
-            << " already? Type in YES or NO" << std::endl;
-  bool validAnswer = false;
-  size_t count = 0;
-  while (!validAnswer && count < 3) {
-    std::string answer;
-    getline(std::cin, answer);
-    boost::algorithm::to_lower(answer);
-    if (answer == "yes") {
-      validAnswer = true;
-      std::cerr << "You answered YES" << std::endl;
-      std::cerr << "\n***************************************\n"
-                << "Step " << nStep++
-                << ": Please type in the full identity name you want to get (with CA prefix "
-                << profile.caPrefix.toUri()
-                << "):" << std::endl;
-      std::string identityNameStr;
-      getline(std::cin, identityNameStr);
-      runNew(profile, Name(identityNameStr));
-    }
-    else if (answer == "no") {
-      validAnswer = true;
-      std::cerr << "You answered NO" << std::endl;
-      std::cerr << "\n***************************************\n"
-                << "Step " << nStep++ << ": Please provide information for name assignment" << std::endl;
-      auto capturedParams = captureParams(profile.probeParameterKeys);
-      face.expressInterest(*Request::genProbeInterest(profile, std::move(capturedParams)),
-                           [profile] (const auto&, const auto& data) { probeCb(data, profile); },
-                           [] (auto&&...) { onNackCb(); },
-                           [] (auto&&...) { timeoutCb(); });
-    }
-    else {
-      std::cerr << "Invalid answer. Type in YES or NO" << std::endl;
-      count++;
-    }
+  if (!capturedProbeParams) {
+    std::cerr << "\n***************************************\n"
+          << "Step " << nStep++ << ": Please provide information for name assignment" << std::endl;
+    auto captured = captureParams(profile.probeParameterKeys);
+    capturedProbeParams = std::make_shared<std::multimap<std::string, std::string>>(captured);
   }
-  if (count == 3) {
-    std::cerr << "Invalid input for too many times, exit. " << std::endl;
-    exit(1);
-  }
+  face.expressInterest(*Request::genProbeInterest(profile, std::move(*capturedProbeParams)),
+                        [profile] (const auto&, const auto& data) { probeCb(data, profile); },
+                        [] (auto&&...) { onNackCb(); },
+                        [] (auto&&...) { timeoutCb(); });
 }
 
 static void
 runNew(CaProfile profile, Name identityName)
 {
-  int validityPeriod = captureValidityPeriod();
+  int validityPeriod = captureValidityPeriod(time::duration_cast<time::hours>(profile.maxValidityPeriod));
   auto now = time::system_clock::now();
   std::cerr << "The validity period of your certificate will be: " << validityPeriod << " hours" << std::endl;
   requesterState = std::make_shared<Request>(keyChain, profile, RequestType::NEW);
-  auto interest = requesterState->genNewInterest(identityName, now, now + time::hours(validityPeriod));
+
+  // generate a newly key pair or choose an existing key
+  const auto& pib = keyChain.getPib();
+  ndn::security::pib::Identity identity;
+  ndn::security::pib::Key defaultKey;
+  try {
+    identity = pib.getIdentity(identityName);
+  }
+  catch (const ndn::security::Pib::Error&) {
+    identity = keyChain.createIdentity(identityName);
+    newlyCreatedIdentityName = identity.getName();
+  }
+  try {
+    defaultKey = identity.getDefaultKey();
+  }
+  catch (const ndn::security::Pib::Error&) {
+    defaultKey = keyChain.createKey(identity);
+    newlyCreatedKeyName = defaultKey.getName();
+  }
+
+  Name keyName;
+  if (newlyCreatedIdentityName.empty()) {
+    keyName = captureKeyName(identity, defaultKey);
+  }
+  else {
+    keyName = defaultKey.getName();
+  }
+  auto interest = requesterState->genNewInterest(keyName, now, now + time::hours(validityPeriod));
   if (interest != nullptr) {
     face.expressInterest(*interest,
                          [] (const auto&, const auto& data) { newCb(data); },
@@ -462,10 +548,15 @@ runChallenge(const std::string& challengeType)
     exit(1);
   }
   if (requirement.size() > 0) {
-    std::cerr << "\n***************************************\n"
-              << "Step " << nStep
-              << ": Please provide parameters used for Identity Verification Challenge" << std::endl;
-    captureParams(requirement);
+    if (requesterState->m_status == Status::BEFORE_CHALLENGE && challengeType == defaultChallenge) {
+      requirement.find(challengeType)->second = capturedProbeParams->find(defaultChallenge)->second;
+    }
+    else {
+      std::cerr << "\n***************************************\n"
+          << "Step " << nStep
+          << ": Please provide parameters used for Identity Verification Challenge" << std::endl;
+      captureParams(requirement);
+    }
   }
   face.expressInterest(*requesterState->genChallengeInterest(std::move(requirement)),
                        [] (const auto&, const auto& data) { challengeCb(data); },
@@ -489,7 +580,14 @@ handleSignal(const boost::system::error_code& error, int signalNum)
   }
   std::cerr << std::endl;
   if (requesterState) {
-    requesterState->endSession();
+    if (!newlyCreatedIdentityName.empty()) {
+      auto identity = keyChain.getPib().getIdentity(newlyCreatedIdentityName);
+      keyChain.deleteIdentity(identity);
+    }
+    else if (!newlyCreatedKeyName.empty()) {
+      auto identity = keyChain.getPib().getIdentity(ndn::security::extractIdentityFromKeyName(newlyCreatedKeyName));
+      keyChain.deleteKey(identity, identity.getKey(newlyCreatedKeyName));
+    }
   }
   face.getIoService().stop();
   exit(1);

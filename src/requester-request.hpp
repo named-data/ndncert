@@ -112,13 +112,13 @@ public:
    * @brief Generates a NEW interest to the CA.
    *
    * @param state The current requester state for this request. Will be modified in the function.
-   * @param newIdentityName The identity name to be requested.
+   * @param keyName The key name to be requested.
    * @param notBefore The expected notBefore field for the certificate (starting time)
    * @param notAfter The expected notAfter field for the certificate (expiration time)
    * @return The shared pointer to the encoded interest.
    */
   std::shared_ptr<Interest>
-  genNewInterest(const Name& newIdentityName,
+  genNewInterest(const Name& keyName,
                  const time::system_clock::TimePoint& notBefore,
                  const time::system_clock::TimePoint& notAfter);
 
@@ -195,14 +195,6 @@ public:
   static std::shared_ptr<Certificate>
   onCertFetchResponse(const Data& reply);
 
-  /**
-   * @brief End the current request session and performs cleanup if necessary.
-   *
-   * @param state, the requester state for the request.
-   */
-  void
-  endSession();
-
 private:
   static void
   processIfError(const Data& data);
@@ -278,11 +270,6 @@ private:
    * @brief The local keychain to generate and install identities, keys and certificates
    */
   ndn::KeyChain& m_keyChain;
-  /**
-   * @brief State about how identity/key is generated.
-   */
-  bool m_isNewlyCreatedIdentity = false;
-  bool m_isNewlyCreatedKey = false;
   /**
    * @brief The keypair for the request.
    */

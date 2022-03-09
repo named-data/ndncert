@@ -102,10 +102,9 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
   item.caPrefix = Name("/ndn");
   item.cert = std::make_shared<Certificate>(cert);
   requester::Request state(m_keyChain, item, RequestType::NEW);
-  auto newInterest = state.genNewInterest(Name("/ndn/alice"),
+  auto newInterest = state.genNewInterest(addIdentity(Name("/ndn/alice")).getDefaultKey().getName(),
                                           time::system_clock::now(),
                                           time::system_clock::now() + time::days(1));
-
   // std::cout << "New Interest Size: " << newInterest->wireEncode().size() << std::endl;
 
   // generate CHALLENGE Interest

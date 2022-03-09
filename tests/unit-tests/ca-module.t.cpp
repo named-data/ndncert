@@ -223,7 +223,7 @@ BOOST_AUTO_TEST_CASE(HandleNew)
   item.caPrefix = Name("/ndn");
   item.cert = std::make_shared<Certificate>(cert);
   requester::Request state(m_keyChain, item, RequestType::NEW);
-  auto interest = state.genNewInterest(Name("/ndn/zhiyi"),
+  auto interest = state.genNewInterest(addIdentity(Name("/ndn/zhiyi")).getDefaultKey().getName(),
                                        time::system_clock::now(),
                                        time::system_clock::now() + time::days(1));
 
@@ -274,10 +274,12 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidValidityPeriod1)
   item.caPrefix = Name("/ndn");
   item.cert = std::make_shared<Certificate>(cert);
   requester::Request state(m_keyChain, item, RequestType::NEW);
+  auto client = addIdentity(Name("/ndn/zhiyi"));
   auto current_tp = time::system_clock::now();
-  auto interest1 = state.genNewInterest(Name("/ndn/zhiyi"), current_tp, current_tp - time::hours(1));
-  auto interest2 = state.genNewInterest(Name("/ndn/zhiyi"), current_tp, current_tp + time::days(361));
-  auto interest3 = state.genNewInterest(Name("/ndn/zhiyi"), current_tp - time::hours(1), current_tp + time::hours(2));
+  auto interest1 = state.genNewInterest(client.getDefaultKey().getName(), current_tp, current_tp - time::hours(1));
+  auto interest2 = state.genNewInterest(client.getDefaultKey().getName(), current_tp, current_tp + time::days(361));
+  auto interest3 = state.genNewInterest(client.getDefaultKey().getName(),
+                                        current_tp - time::hours(1), current_tp + time::hours(2));
   face.onSendData.connect([&](const Data& response) {
     auto contentTlv = response.getContent();
     contentTlv.parse();
@@ -315,7 +317,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithServerBadValidity)
   item.caPrefix = Name("/ndn");
   item.cert = std::make_shared<Certificate>(cert);
   requester::Request state(m_keyChain, item, RequestType::NEW);
-  auto interest = state.genNewInterest(Name("/ndn/zhiyi"),
+  auto interest = state.genNewInterest(addIdentity(Name("/ndn/zhiyi")).getDefaultKey().getName(),
                                        time::system_clock::now(),
                                        time::system_clock::now() + time::days(1));
 
@@ -348,11 +350,11 @@ BOOST_AUTO_TEST_CASE(HandleNewWithLongSuffix)
   item.cert = std::make_shared<Certificate>(cert);
   requester::Request state(m_keyChain, item, RequestType::NEW);
 
-  auto interest1 = state.genNewInterest(Name("/ndn/a"), time::system_clock::now(),
+  auto interest1 = state.genNewInterest(addIdentity(Name("/ndn/a")).getDefaultKey().getName(), time::system_clock::now(),
                                               time::system_clock::now() + time::days(1));
-  auto interest2 = state.genNewInterest(Name("/ndn/a/b"), time::system_clock::now(),
+  auto interest2 = state.genNewInterest(addIdentity(Name("/ndn/a/b")).getDefaultKey().getName(), time::system_clock::now(),
                                               time::system_clock::now() + time::days(1));
-  auto interest3 = state.genNewInterest(Name("/ndn/a/b/c/d"), time::system_clock::now(),
+  auto interest3 = state.genNewInterest(addIdentity(Name("/ndn/a/b/c/d")).getDefaultKey().getName(), time::system_clock::now(),
                                               time::system_clock::now() + time::days(1));
 
   face.onSendData.connect([&](const Data& response) {
@@ -389,8 +391,9 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidLength1)
   requester::Request state(m_keyChain, item, RequestType::NEW);
 
   auto current_tp = time::system_clock::now();
-  auto interest1 = state.genNewInterest(Name("/ndn"), current_tp, current_tp + time::days(1));
-  auto interest2 = state.genNewInterest(Name("/ndn/a/b/c/d"), current_tp, current_tp + time::days(1));
+  auto interest1 = state.genNewInterest(identity.getDefaultKey().getName(), current_tp, current_tp + time::days(1));
+  auto interest2 = state.genNewInterest(addIdentity(Name("/ndn/a/b/c/d")).getDefaultKey().getName(),
+                                        current_tp, current_tp + time::days(1));
   face.onSendData.connect([&](const Data& response) {
     auto contentTlv = response.getContent();
     contentTlv.parse();
@@ -419,7 +422,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
   item.cert = std::make_shared<Certificate>(cert);
   requester::Request state(m_keyChain, item, RequestType::NEW);
 
-  auto newInterest = state.genNewInterest(Name("/ndn/zhiyi"), time::system_clock::now(),
+  auto newInterest = state.genNewInterest(addIdentity(Name("/ndn/zhiyi")).getDefaultKey().getName(), time::system_clock::now(),
                                                 time::system_clock::now() + time::days(1));
 
   // generate CHALLENGE Interest
