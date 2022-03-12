@@ -479,6 +479,10 @@ runProbe(CaProfile profile)
     std::cerr << "\n***************************************\n"
           << "Step " << nStep++ << ": Please provide information for name assignment" << std::endl;
     auto captured = captureParams(profile.probeParameterKeys);
+    auto it = captured.find(defaultChallenge);
+    if (it != captured.end()) {
+      it->second = boost::algorithm::to_lower_copy(it->second);
+    }
     capturedProbeParams = std::make_shared<std::multimap<std::string, std::string>>(captured);
   }
   face.expressInterest(*Request::genProbeInterest(profile, std::move(*capturedProbeParams)),
