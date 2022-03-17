@@ -302,7 +302,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithServerBadValidity)
   Certificate cert;
   cert.setName(Name(key.getName()).append("self-sign").appendVersion());
   cert.setContentType(ndn::tlv::ContentType_Key);
-  cert.setContent(key.getPublicKey().data(), key.getPublicKey().size());
+  cert.setContent(key.getPublicKey());
   SignatureInfo signatureInfo;
   signatureInfo.setValidityPeriod(ndn::security::ValidityPeriod(time::system_clock::now() - time::days(1),
                                                                 time::system_clock::now() - time::seconds(1)));
@@ -497,7 +497,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
   clientCert.setName(Name(clientKey.getName()).append("cert-request").appendVersion());
   clientCert.setContentType(ndn::tlv::ContentType_Key);
   clientCert.setFreshnessPeriod(time::hours(24));
-  clientCert.setContent(clientKey.getPublicKey().data(), clientKey.getPublicKey().size());
+  clientCert.setContent(clientKey.getPublicKey());
   SignatureInfo signatureInfo;
   signatureInfo.setValidityPeriod(ndn::security::ValidityPeriod(time::system_clock::now(),
                                                                 time::system_clock::now() + time::hours(10)));
@@ -568,7 +568,7 @@ BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
   clientCert.setName(Name(clientKey.getName()).append("NDNCERT").append("1473283247810732701"));
   clientCert.setContentType(ndn::tlv::ContentType_Key);
   clientCert.setFreshnessPeriod(time::hours(24));
-  clientCert.setContent(clientKey.getPublicKey().data(), clientKey.getPublicKey().size());
+  clientCert.setContent(clientKey.getPublicKey());
   SignatureInfo signatureInfo;
   signatureInfo.setValidityPeriod(ndn::security::ValidityPeriod(time::system_clock::now(),
                                                                 time::system_clock::now() + time::hours(10)));

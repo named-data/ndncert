@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -48,7 +48,7 @@ ChallengePin::handleChallengeRequest(const Block& params, ca::RequestState& requ
     std::string secretCode = generateSecretCode();
     JsonSection secretJson;
     secretJson.add(PARAMETER_KEY_CODE, secretCode);
-    NDN_LOG_TRACE("Secret for request " << ndn::toHex(request.requestId.data(), request.requestId.size())
+    NDN_LOG_TRACE("Secret for request " << ndn::toHex(request.requestId)
                   << " : " << secretCode);
     return returnWithNewChallengeStatus(request, NEED_CODE, std::move(secretJson), m_maxAttemptTimes,
                                         m_secretLifetime);

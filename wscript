@@ -3,7 +3,7 @@
 from waflib import Utils
 import os
 
-VERSION = '0.1.0'
+VERSION = '0.1'
 APPNAME = 'ndncert'
 GIT_TAG_PREFIX = 'ndncert-'
 
@@ -23,8 +23,9 @@ def configure(conf):
 
     conf.env.WITH_TESTS = conf.options.with_tests
 
-    conf.check_cfg(package='libndn-cxx', args=['--cflags', '--libs'], uselib_store='NDN_CXX',
-                   pkg_config_path=os.environ.get('PKG_CONFIG_PATH', '%s/pkgconfig' % conf.env.LIBDIR))
+    pkg_config_path = os.environ.get('PKG_CONFIG_PATH', f'{conf.env.LIBDIR}/pkgconfig')
+    conf.check_cfg(package='libndn-cxx', args=['libndn-cxx >= 0.8.0', '--cflags', '--libs'],
+                   uselib_store='NDN_CXX', pkg_config_path=pkg_config_path)
 
     conf.check_sqlite3()
     conf.check_openssl(lib='crypto', atleast_version='1.1.1')

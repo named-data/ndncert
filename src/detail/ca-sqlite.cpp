@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -157,8 +157,7 @@ CaSqlite::getRequest(const RequestId& requestId)
     return state;
   }
   else {
-    NDN_THROW(std::runtime_error("Request " + ndn::toHex(requestId.data(), requestId.size()) +
-                                 " cannot be fetched from database"));
+    NDN_THROW(std::runtime_error("Request " + ndn::toHex(requestId) + " cannot be fetched from database"));
   }
 }
 
@@ -188,8 +187,8 @@ CaSqlite::addRequest(const RequestState& request)
     statement.bind(11, request.challengeState->remainingTime.count());
   }
   if (statement.step() != SQLITE_DONE) {
-    NDN_THROW(std::runtime_error("Request " + ndn::toHex(request.requestId.data(), request.requestId.size()) +
-                                 " cannot be added to database"));
+    NDN_THROW(std::runtime_error("Request " + ndn::toHex(request.requestId) +
+                                 " cannot be added to the database"));
   }
 }
 

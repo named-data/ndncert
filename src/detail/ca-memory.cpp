@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -36,8 +36,7 @@ CaMemory::getRequest(const RequestId& requestId)
 {
   auto search = m_requests.find(requestId);
   if (search == m_requests.end()) {
-    NDN_THROW(std::runtime_error("Request " + ndn::toHex(requestId.data(), requestId.size()) +
-                                 " does not exists"));
+    NDN_THROW(std::runtime_error("Request " + ndn::toHex(requestId) + " does not exists"));
   }
   return search->second;
 }
@@ -50,8 +49,7 @@ CaMemory::addRequest(const RequestState& request)
     m_requests.insert(std::make_pair(request.requestId, request));
   }
   else {
-    NDN_THROW(std::runtime_error("Request " + ndn::toHex(request.requestId.data(), request.requestId.size()) +
-                                 " already exists"));
+    NDN_THROW(std::runtime_error("Request " + ndn::toHex(request.requestId) + " already exists"));
   }
 }
 

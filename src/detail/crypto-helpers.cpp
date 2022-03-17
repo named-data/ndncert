@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -416,17 +416,20 @@ encodeBlockWithAesGcm128(uint32_t tlvType, const uint8_t* key,
   // The spec of AES encrypted payload TLV used in NDNCERT:
   //   https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3#242-aes-gcm-encryption
   ndn::Buffer encryptedPayload(payloadSize);
-  uint8_t tag[16];
   if (encryptionIv.empty()) {
     encryptionIv.resize(12, 0);
-    ndn::random::generateSecureBytes(encryptionIv.data(), 8);
+    ndn::random::generateSecureBytes(ndn::make_span(encryptionIv).first(8));
   }
+
+  uint8_t tag[16];
   size_t encryptedPayloadLen = aesGcm128Encrypt(payload, payloadSize, associatedData, associatedDataSize,
                                                 key, encryptionIv.data(), encryptedPayload.data(), tag);
+
   Block content(tlvType);
-  content.push_back(ndn::makeBinaryBlock(tlv::InitializationVector, encryptionIv.data(), encryptionIv.size()));
-  content.push_back(ndn::makeBinaryBlock(tlv::AuthenticationTag, tag, 16));
-  content.push_back(ndn::makeBinaryBlock(tlv::EncryptedPayload, encryptedPayload.data(), encryptedPayloadLen));
+  content.push_back(ndn::makeBinaryBlock(tlv::InitializationVector, encryptionIv));
+  content.push_back(ndn::makeBinaryBlock(tlv::AuthenticationTag, tag));
+  content.push_back(ndn::makeBinaryBlock(tlv::EncryptedPayload,
+                                         ndn::make_span(encryptedPayload).first(encryptedPayloadLen)));
   content.encode();
   // update IV's counter
   updateIv(encryptionIv, payloadSize);

@@ -38,8 +38,8 @@
 namespace ndncert {
 namespace ca {
 
-static const time::seconds DEFAULT_DATA_FRESHNESS_PERIOD = 1_s;
-static const time::seconds REQUEST_VALIDITY_PERIOD_NOT_BEFORE_GRACE_PERIOD = 120_s;
+const time::seconds DEFAULT_DATA_FRESHNESS_PERIOD = 1_s;
+const time::seconds REQUEST_VALIDITY_PERIOD_NOT_BEFORE_GRACE_PERIOD = 120_s;
 
 NDN_LOG_INIT(ndncert.ca);
 
@@ -51,10 +51,13 @@ CaModule::CaModule(ndn::Face& face, ndn::KeyChain& keyChain,
   // load the config and create storage
   m_config.load(configPath);
   m_storage = CaStorage::createCaStorage(storageType, m_config.caProfile.caPrefix, "");
-  ndn::random::generateSecureBytes(m_requestIdGenKey, 32);
-  if (m_config.nameAssignmentFuncs.size() == 0) {
+
+  ndn::random::generateSecureBytes(m_requestIdGenKey);
+
+  if (m_config.nameAssignmentFuncs.empty()) {
     m_config.nameAssignmentFuncs.push_back(NameAssignmentFunc::createNameAssignmentFunc("random"));
   }
+
   registerPrefix();
 }
 
@@ -75,11 +78,10 @@ CaModule::registerPrefix()
   Name prefix = m_config.caProfile.caPrefix;
   prefix.append("CA");
 
-  auto prefixId = m_face.registerPrefix(
-    prefix,
+  auto prefixId = m_face.registerPrefix(prefix,
     [&] (const Name& name) {
       // register INFO RDR metadata prefix
-      ndn::name::Component metaDataComp(32, reinterpret_cast<const uint8_t*>("metadata"), std::strlen("metadata"));
+      const auto& metaDataComp = ndn::MetadataObject::getKeywordComponent();
       auto filterId = m_face.setInterestFilter(Name(name).append("INFO").append(metaDataComp),
                                                [this] (auto&&, const auto& i) { onCaProfileDiscovery(i); });
       m_interestFilterHandles.push_back(filterId);
@@ -147,8 +149,7 @@ CaModule::onCaProfileDiscovery(const Interest&)
   ndn::MetadataObject metadata;
   metadata.setVersionedName(m_profileData->getName().getPrefix(-1));
   Name discoveryInterestName(m_profileData->getName().getPrefix(-2));
-  ndn::name::Component metadataComponent(32, reinterpret_cast<const uint8_t*>("metadata"), std::strlen("metadata"));
-  discoveryInterestName.append(metadataComponent);
+  discoveryInterestName.append(ndn::MetadataObject::getKeywordComponent());
   m_face.put(metadata.makeData(discoveryInterestName, m_keyChain, signingByIdentity(m_config.caProfile.caPrefix)));
 }
 
@@ -180,11 +181,12 @@ CaModule::onProbe(const Interest& request) {
     return;
   }
 
-  if (availableComponents.size() == 0 && redirectionNames.size() == 0) {
+  if (availableComponents.empty() && redirectionNames.empty()) {
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
                                        "Cannot generate available names from parameters provided."));
     return;
   }
+
   std::vector<Name> availableNames;
   for (const auto &component : availableComponents) {
     Name newIdentityName = m_config.caProfile.caPrefix;
@@ -205,7 +207,6 @@ CaModule::onProbe(const Interest& request) {
 void
 CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
 {
-
   //verify ca cert validity
   const auto& caCert = m_keyChain.getPib()
                                  .getIdentity(m_config.caProfile.caPrefix)
@@ -338,7 +339,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   requestState.cert = *clientCert;
   // generate salt for HKDF
   std::array<uint8_t, 32> salt;
-  ndn::random::generateSecureBytes(salt.data(), salt.size());
+  ndn::random::generateSecureBytes(salt);
   // hkdf
   std::array<uint8_t, 16> aesKey;
   hkdf(sharedSecret.data(), sharedSecret.size(), salt.data(), salt.size(),
@@ -353,6 +354,7 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
                                        "Duplicate Request ID: The same request has been seen before."));
     return;
   }
+
   Data result;
   result.setName(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
@@ -377,6 +379,7 @@ CaModule::onChallenge(const Interest& request)
                                        "No certificate request state can be found."));
     return;
   }
+
   // verify signature
   if (!ndn::security::verifySignature(request, requestState->cert)) {
     NDN_LOG_ERROR("Invalid Signature in the Interest packet.");
@@ -384,6 +387,7 @@ CaModule::onChallenge(const Interest& request)
                                        "Invalid Signature in the Interest packet."));
     return;
   }
+
   // decrypt the parameters
   ndn::Buffer paramTLVPayload;
   try {
@@ -398,14 +402,15 @@ CaModule::onChallenge(const Interest& request)
                                        "Interest paramaters decryption failed."));
     return;
   }
-  if (paramTLVPayload.size() == 0) {
+  if (paramTLVPayload.empty()) {
     NDN_LOG_ERROR("No parameters are found after decryption.");
     m_storage->deleteRequest(requestState->requestId);
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
                                        "No parameters are found after decryption."));
     return;
   }
-  auto paramTLV = ndn::makeBinaryBlock(tlv::EncryptedPayload, paramTLVPayload.data(), paramTLVPayload.size());
+
+  auto paramTLV = ndn::makeBinaryBlock(tlv::EncryptedPayload, paramTLVPayload);
   paramTLV.parse();
 
   // load the corresponding challenge module
@@ -499,7 +504,7 @@ CaModule::getCertificateRequest(const Interest& request)
     return nullptr;
   }
   try {
-    NDN_LOG_TRACE("Request Id to query the database " << ndn::toHex(requestId.data(), requestId.size()));
+    NDN_LOG_TRACE("Request Id to query the database " << ndn::toHex(requestId));
     return std::make_unique<RequestState>(m_storage->getRequest(requestId));
   }
   catch (const std::exception& e) {

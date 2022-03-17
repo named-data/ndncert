@@ -140,7 +140,7 @@ Request::genNewInterest(const Name& keyName,
   Certificate certRequest;
   certRequest.setName(Name(keyName).append("cert-request").appendVersion());
   certRequest.setContentType(ndn::tlv::ContentType_Key);
-  certRequest.setContent(m_keyPair.getPublicKey().data(), m_keyPair.getPublicKey().size());
+  certRequest.setContent(m_keyPair.getPublicKey());
   SignatureInfo signatureInfo;
   signatureInfo.setValidityPeriod(ndn::security::ValidityPeriod(notBefore, notAfter));
   m_keyChain.sign(certRequest, signingByKey(keyName).setSignatureInfo(signatureInfo));
@@ -213,7 +213,7 @@ Request::selectOrContinueChallenge(const std::string& challengeSelected)
 std::shared_ptr<Interest>
 Request::genChallengeInterest(std::multimap<std::string, std::string>&& parameters)
 {
-  if (m_challengeType == "") {
+  if (m_challengeType.empty()) {
     NDN_THROW(std::runtime_error("The challenge has not been selected."));
   }
   auto challenge = ChallengeModule::createChallengeModule(m_challengeType);
@@ -223,7 +223,7 @@ Request::genChallengeInterest(std::multimap<std::string, std::string>&& paramete
   auto challengeParams = challenge->genChallengeRequestTLV(m_status, m_challengeStatus, std::move(parameters));
 
   Name interestName = m_caProfile.caPrefix;
-  interestName.append("CA").append("CHALLENGE").append(m_requestId.data(), m_requestId.size());
+  interestName.append("CA").append("CHALLENGE").append(Name::Component(m_requestId));
   auto interest = std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
 

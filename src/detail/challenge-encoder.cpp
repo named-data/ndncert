@@ -36,7 +36,7 @@ challengetlv::encodeDataContent(ca::RequestState& request, const Name& issuedCer
     if (request.challengeState->challengeStatus == "need-proof") {
       response.push_back(ndn::makeStringBlock(tlv::ParameterKey, "nonce"));
       auto nonce = ndn::fromHex(request.challengeState->secrets.get("nonce", ""));
-      response.push_back(ndn::makeBinaryBlock(tlv::ParameterValue, nonce->data(), 16));
+      response.push_back(ndn::makeBinaryBlock(tlv::ParameterValue, *nonce));
     }
   }
   if (!issuedCertName.empty()) {
@@ -57,7 +57,7 @@ challengetlv::decodeDataContent(const Block& contentBlock, requester::Request& s
   auto result = decodeBlockWithAesGcm128(contentBlock, state.m_aesKey.data(),
                                          state.m_requestId.data(), state.m_requestId.size(),
                                          state.m_decryptionIv, state.m_encryptionIv);
-  auto data = ndn::makeBinaryBlock(tlv::EncryptedPayload, result.data(), result.size());
+  auto data = ndn::makeBinaryBlock(tlv::EncryptedPayload, result);
   data.parse();
 
   int numStatus = 0;

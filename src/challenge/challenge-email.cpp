@@ -51,16 +51,15 @@ ChallengeEmail::handleChallengeRequest(const Block& params, ca::RequestState& re
     std::string emailAddress = readString(params.get(tlv::ParameterValue));
     auto lastComponentRequested = readString(request.cert.getIdentity().get(-1));
     if (lastComponentRequested != emailAddress) {
-      NDN_LOG_TRACE("Email and requested name do not match. Email " << emailAddress << " requested last component "
-                    << lastComponentRequested);
+      NDN_LOG_TRACE("Email and requested name do not match. Email " << emailAddress
+                    << " - requested last component " << lastComponentRequested);
     }
     std::string emailCode = generateSecretCode();
     JsonSection secretJson;
     secretJson.add(PARAMETER_KEY_CODE, emailCode);
     // send out the email
     sendEmail(emailAddress, emailCode, request);
-    NDN_LOG_TRACE("Secret for request " << ndn::toHex(request.requestId.data(), request.requestId.size())
-                  << " : " << emailCode);
+    NDN_LOG_TRACE("Secret for request " << ndn::toHex(request.requestId) << " : " << emailCode);
     return returnWithNewChallengeStatus(request, NEED_CODE, std::move(secretJson),
                                         m_maxAttemptTimes, m_secretLifetime);
   }
@@ -104,7 +103,7 @@ std::multimap<std::string, std::string>
 ChallengeEmail::getRequestedParameterList(Status status, const std::string& challengeStatus)
 {
   std::multimap<std::string, std::string> result;
-  if (status == Status::BEFORE_CHALLENGE && challengeStatus == "") {
+  if (status == Status::BEFORE_CHALLENGE && challengeStatus.empty()) {
     result.emplace(PARAMETER_KEY_EMAIL, "Please input your email address");
   }
   else if (status == Status::CHALLENGE && challengeStatus == NEED_CODE) {

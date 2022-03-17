@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2021 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -115,7 +115,7 @@ IdentityManagementFixture::addCertificate(const Key& key, const std::string& iss
   certificate.setFreshnessPeriod(1_h);
 
   // set content
-  certificate.setContent(key.getPublicKey().data(), key.getPublicKey().size());
+  certificate.setContent(key.getPublicKey());
 
   // set signature-info
   SignatureInfo info;

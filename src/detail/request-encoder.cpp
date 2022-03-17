@@ -31,9 +31,8 @@ requesttlv::encodeApplicationParameters(RequestType requestType,
                                         const std::vector<uint8_t>& ecdhPub,
                                         const Certificate& certRequest)
 {
-  Block
-  request(ndn::tlv::ApplicationParameters);
-  request.push_back(ndn::makeBinaryBlock(tlv::EcdhPub, ecdhPub.data(), ecdhPub.size()));
+  Block request(ndn::tlv::ApplicationParameters);
+  request.push_back(ndn::makeBinaryBlock(tlv::EcdhPub, ecdhPub));
   if (requestType == RequestType::NEW || requestType == RequestType::RENEW) {
     request.push_back(makeNestedBlock(tlv::CertRequest, certRequest));
   }
@@ -83,14 +82,15 @@ requesttlv::decodeApplicationParameters(const Block& payload, RequestType reques
 }
 
 Block
-requesttlv::encodeDataContent(const std::vector <uint8_t>& ecdhKey, const std::array<uint8_t, 32>& salt,
+requesttlv::encodeDataContent(const std::vector<uint8_t>& ecdhKey,
+                              const std::array<uint8_t, 32>& salt,
                               const RequestId& requestId,
-                              const std::vector <std::string>& challenges)
+                              const std::vector<std::string>& challenges)
 {
   Block response(ndn::tlv::Content);
-  response.push_back(ndn::makeBinaryBlock(tlv::EcdhPub, ecdhKey.data(), ecdhKey.size()));
-  response.push_back(ndn::makeBinaryBlock(tlv::Salt, salt.data(), salt.size()));
-  response.push_back(ndn::makeBinaryBlock(tlv::RequestId, requestId.data(), requestId.size()));
+  response.push_back(ndn::makeBinaryBlock(tlv::EcdhPub, ecdhKey));
+  response.push_back(ndn::makeBinaryBlock(tlv::Salt, salt));
+  response.push_back(ndn::makeBinaryBlock(tlv::RequestId, requestId));
   for (const auto& entry: challenges) {
     response.push_back(ndn::makeStringBlock(tlv::Challenge, entry));
   }

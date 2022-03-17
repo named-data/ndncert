@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
   auto credentialName = Name(keyB.getName()).append("Credential").appendVersion();
   Certificate credential;
   credential.setName(credentialName);
-  credential.setContent(keyB.getPublicKey().data(), keyB.getPublicKey().size());
+  credential.setContent(keyB.getPublicKey());
   SignatureInfo signatureInfo;
   signatureInfo.setValidityPeriod(ndn::security::ValidityPeriod(time::system_clock::now(),
                                                                 time::system_clock::now() + time::minutes(1)));
@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequestProofFail)
   auto credentialName = Name(keyB.getName()).append("Credential").appendVersion();
   Certificate credential;
   credential.setName(credentialName);
-  credential.setContent(keyB.getPublicKey().data(), keyB.getPublicKey().size());
+  credential.setContent(keyB.getPublicKey());
   SignatureInfo signatureInfo;
   signatureInfo.setValidityPeriod(ndn::security::ValidityPeriod(time::system_clock::now(),
                                                                 time::system_clock::now() + time::minutes(1)));
