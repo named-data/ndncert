@@ -27,8 +27,7 @@
 
 #include <ndn-cxx/security/key-chain.hpp>
 
-namespace ndncert {
-namespace requester {
+namespace ndncert::requester {
 
 class Request : boost::noncopyable
 {
@@ -61,7 +60,7 @@ public:
    * @return the CaProfile if decoding is successful
    * @throw std::runtime_error if the decoding fails or receiving an error packet.
    */
-  static optional<CaProfile>
+  static std::optional<CaProfile>
   onCaProfileResponse(const Data& reply);
 
   /**
@@ -76,7 +75,7 @@ public:
    * @return the CaProfile if decoding is successful
    * @throw std::runtime_error if the decoding fails or receiving an error packet.
    */
-  static optional<CaProfile>
+  static std::optional<CaProfile>
   onCaProfileResponseAfterRedirection(const Data& reply, const Name& caCertFullName);
 
   /**
@@ -276,7 +275,6 @@ private:
   ndn::security::Key m_keyPair;
 };
 
-} // namespace requester
-} // namespace ndncert
+} // namespace ndncert::requester
 
 #endif // NDNCERT_REQUESTER_REQUEST_HPP

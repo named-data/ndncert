@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -40,15 +40,15 @@ NameAssignmentFunc::NameAssignmentFunc(const std::string& format)
 std::unique_ptr<NameAssignmentFunc>
 NameAssignmentFunc::createNameAssignmentFunc(const std::string& challengeType, const std::string& format)
 {
-  CurriedFuncFactory& factory = getFactory();
+  auto& factory = getFactory();
   auto i = factory.find(challengeType);
   return i == factory.end() ? nullptr : i->second(format);
 }
 
-NameAssignmentFunc::CurriedFuncFactory&
+NameAssignmentFunc::FuncFactory&
 NameAssignmentFunc::getFactory()
 {
-  static NameAssignmentFunc::CurriedFuncFactory factory;
+  static FuncFactory factory;
   return factory;
 }
 

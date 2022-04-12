@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -24,7 +24,7 @@
 
 namespace ndncert {
 
-NDNCERT_REGISTER_FUNCFACTORY(AssignmentHash, "hash");
+NDNCERT_REGISTER_NAME_ASSIGNMENT_FUNC(AssignmentHash, "hash");
 
 AssignmentHash::AssignmentHash(const std::string& format)
   : NameAssignmentFunc(format)

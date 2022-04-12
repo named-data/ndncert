@@ -26,12 +26,13 @@
 namespace ndncert {
 
 /**
- * assign names base on client probe parameter
+ * @brief Assign names based on requester's email address
  */
 class AssignmentEmail : public NameAssignmentFunc
 {
 public:
-  explicit AssignmentEmail(const std::string& format = "");
+  explicit
+  AssignmentEmail(const std::string& format = "");
 
   std::vector<ndn::PartialName>
   assignName(const std::multimap<std::string, std::string>& params) override;

@@ -25,13 +25,11 @@
 
 namespace ndncert {
 
-/**
- * assign names base on client probe parameter
- */
 class RedirectionParam : public RedirectionPolicy
 {
 public:
-  explicit RedirectionParam(const std::string& format = "");
+  explicit
+  RedirectionParam(const std::string& format = "");
 
   bool
   isRedirecting(const std::multimap<std::string, std::string>& params) override;

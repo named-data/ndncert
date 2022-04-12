@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -23,31 +23,17 @@
 
 #include "detail/ca-request-state.hpp"
 
+#include <map>
+
 namespace ndncert {
 
 class ChallengeModule : boost::noncopyable
 {
 public:
-  explicit
   ChallengeModule(const std::string& challengeType, size_t maxAttemptTimes, time::seconds secretLifetime);
 
   virtual
   ~ChallengeModule() = default;
-
-  template <class ChallengeType>
-  static void
-  registerChallengeModule(const std::string& typeName)
-  {
-    ChallengeFactory& factory = getFactory();
-    BOOST_ASSERT(factory.count(typeName) == 0);
-    factory[typeName] = [] { return std::make_unique<ChallengeType>(); };
-  }
-
-  static bool
-  isChallengeSupported(const std::string& challengeType);
-
-  static std::unique_ptr<ChallengeModule>
-  createChallengeModule(const std::string& challengeType);
 
   // For CA
   virtual std::tuple<ErrorCode, std::string>
@@ -61,13 +47,27 @@ public:
   genChallengeRequestTLV(Status status, const std::string& challengeStatus,
                          const std::multimap<std::string, std::string>& params) = 0;
 
-  // helpers
+public: // factory
+  template<class ChallengeType>
+  static void
+  registerChallengeModule(const std::string& type)
+  {
+    auto& factory = getFactory();
+    BOOST_ASSERT(factory.count(type) == 0);
+    factory[type] = [] { return std::make_unique<ChallengeType>(); };
+  }
+
+  static bool
+  isChallengeSupported(const std::string& challengeType);
+
+  static std::unique_ptr<ChallengeModule>
+  createChallengeModule(const std::string& challengeType);
+
+protected: // helpers used by concrete challenge modules
   static std::string
   generateSecretCode();
 
-protected:
-  // used by challenge modules
-  std::tuple<ErrorCode, std::string>
+  static std::tuple<ErrorCode, std::string>
   returnWithError(ca::RequestState& request, ErrorCode errorCode, std::string errorInfo);
 
   std::tuple<ErrorCode, std::string>
@@ -79,27 +79,29 @@ protected:
 
 public:
   const std::string CHALLENGE_TYPE;
+
+protected:
   const size_t m_maxAttemptTimes;
   const time::seconds m_secretLifetime;
 
 private:
-  typedef std::function<std::unique_ptr<ChallengeModule>()> ChallengeCreateFunc;
-  typedef std::map<std::string, ChallengeCreateFunc> ChallengeFactory;
+  using CreateFunc = std::function<std::unique_ptr<ChallengeModule>()>;
+  using ChallengeFactory = std::map<std::string, CreateFunc>;
 
   static ChallengeFactory&
   getFactory();
 };
 
-#define NDNCERT_REGISTER_CHALLENGE(C, T)                              \
-  static class NdnCert##C##ChallengeRegistrationClass                 \
-  {                                                                   \
-  public:                                                             \
-    NdnCert##C##ChallengeRegistrationClass()                          \
-    {                                                                 \
-      ::ndncert::ChallengeModule::registerChallengeModule<C>(T);      \
-    }                                                                 \
-  } g_NdnCert##C##ChallengeRegistrationVariable
-
 } // namespace ndncert
+
+#define NDNCERT_REGISTER_CHALLENGE(C, T)                            \
+static class NdnCert##C##ChallengeRegistrationClass                 \
+{                                                                   \
+public:                                                             \
+  NdnCert##C##ChallengeRegistrationClass()                          \
+  {                                                                 \
+    ::ndncert::ChallengeModule::registerChallengeModule<C>(T);      \
+  }                                                                 \
+} g_NdnCert##C##ChallengeRegistrationVariable
 
 #endif // NDNCERT_CHALLENGE_MODULE_HPP

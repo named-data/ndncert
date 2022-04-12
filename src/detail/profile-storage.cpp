@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -20,11 +20,9 @@
 
 #include "detail/profile-storage.hpp"
 
-#include <boost/filesystem.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
-namespace ndncert {
-namespace requester {
+namespace ndncert::requester {
 
 void
 ProfileStorage::load(const std::string& fileName)
@@ -47,13 +45,12 @@ ProfileStorage::load(const JsonSection& json)
 {
   m_caProfiles.clear();
   auto caList = json.get_child("ca-list");
-  for (auto item : caList) {
-    CaProfile caItem;
-    caItem = CaProfile::fromJson(item.second);
-    if (caItem.cert == nullptr) {
+  for (const auto& item : caList) {
+    auto profile = CaProfile::fromJson(item.second);
+    if (profile.cert == nullptr) {
       NDN_THROW(std::runtime_error("No CA certificate is loaded from JSON configuration."));
     }
-    m_caProfiles.push_back(std::move(caItem));
+    m_caProfiles.push_back(std::move(profile));
   }
 }
 
@@ -62,14 +59,12 @@ ProfileStorage::save(const std::string& fileName) const
 {
   JsonSection configJson;
   for (const auto& caItem : m_caProfiles) {
-    configJson.push_back(std::make_pair("", caItem.toJson()));
+    configJson.push_back({"", caItem.toJson()});
   }
   std::stringstream ss;
   boost::property_tree::write_json(ss, configJson);
-  std::ofstream configFile;
-  configFile.open(fileName);
+  std::ofstream configFile(fileName);
   configFile << ss.str();
-  configFile.close();
 }
 
 void
@@ -96,5 +91,4 @@ ProfileStorage::getKnownProfiles() const
   return m_caProfiles;
 }
 
-} // namespace requester
-} // namespace ndncert
+} // namespace ndncert::requester

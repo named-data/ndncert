@@ -22,15 +22,15 @@
 
 NDN_LOG_INIT(ndncert.encode.info);
 
-namespace ndncert {
+namespace ndncert::infotlv {
 
 Block
-infotlv::encodeDataContent(const CaProfile& caConfig, const Certificate& certificate)
+encodeDataContent(const CaProfile& caConfig, const Certificate& certificate)
 {
   Block content(ndn::tlv::Content);
   content.push_back(makeNestedBlock(tlv::CaPrefix, caConfig.caPrefix));
-  std::string caInfo = "";
-  if (caConfig.caInfo == "") {
+  std::string caInfo;
+  if (caConfig.caInfo.empty()) {
     caInfo = "Issued by " + certificate.getSignatureInfo().getKeyLocator().getName().toUri();
   }
   else {
@@ -48,7 +48,8 @@ infotlv::encodeDataContent(const CaProfile& caConfig, const Certificate& certifi
 }
 
 CaProfile
-infotlv::decodeDataContent(const Block& block) {
+decodeDataContent(const Block& block)
+{
   CaProfile result;
   block.parse();
   for (auto const &item : block.elements()) {
@@ -74,13 +75,10 @@ infotlv::decodeDataContent(const Block& block) {
         if (ndn::tlv::isCriticalType(item.type())) {
           NDN_THROW(std::runtime_error("Unrecognized TLV Type: " + std::to_string(item.type())));
         }
-        else {
-          //ignore
-        }
         break;
     }
   }
   return result;
 }
 
-} // namespace ndncert
+} // namespace ndncert::infotlv

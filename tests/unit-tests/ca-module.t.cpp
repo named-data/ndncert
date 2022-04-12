@@ -24,10 +24,10 @@
 #include "challenge/challenge-pin.hpp"
 #include "detail/info-encoder.hpp"
 #include "requester-request.hpp"
+
 #include "test-common.hpp"
 
-namespace ndncert {
-namespace tests {
+namespace ndncert::tests {
 
 using namespace ca;
 using ndn::util::DummyClientFace;
@@ -596,5 +596,4 @@ BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
 
 BOOST_AUTO_TEST_SUITE_END() // TestCaModule
 
-} // namespace tests
-} // namespace ndncert
+} // namespace ndncert::tests

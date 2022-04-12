@@ -39,8 +39,7 @@
 
 #include <boost/lexical_cast.hpp>
 
-namespace ndncert {
-namespace requester {
+namespace ndncert::requester {
 
 NDN_LOG_INIT(ndncert.client);
 
@@ -63,7 +62,7 @@ Request::genCaProfileInterestFromDiscoveryResponse(const Data& reply)
   return std::make_shared<Interest>(interestName);
 }
 
-optional<CaProfile>
+std::optional<CaProfile>
 Request::onCaProfileResponse(const Data& reply)
 {
   auto caItem = infotlv::decodeDataContent(reply.getContent());
@@ -74,7 +73,7 @@ Request::onCaProfileResponse(const Data& reply)
   return caItem;
 }
 
-optional<CaProfile>
+std::optional<CaProfile>
 Request::onCaProfileResponseAfterRedirection(const Data& reply, const Name& caCertFullName)
 {
   auto caItem = infotlv::decodeDataContent(reply.getContent());
@@ -94,7 +93,7 @@ Request::genProbeInterest(const CaProfile& ca, std::multimap<std::string, std::s
   interestName.append("CA").append("PROBE");
   auto interest = std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
-  interest->setApplicationParameters(probetlv::encodeApplicationParameters(std::move(probeInfo)));
+  interest->setApplicationParameters(probetlv::encodeApplicationParameters(probeInfo));
   return interest;
 }
 
@@ -220,7 +219,7 @@ Request::genChallengeInterest(std::multimap<std::string, std::string>&& paramete
   if (challenge == nullptr) {
     NDN_THROW(std::runtime_error("The challenge selected is not supported by your current version of NDNCERT."));
   }
-  auto challengeParams = challenge->genChallengeRequestTLV(m_status, m_challengeStatus, std::move(parameters));
+  auto challengeParams = challenge->genChallengeRequestTLV(m_status, m_challengeStatus, parameters);
 
   Name interestName = m_caProfile.caPrefix;
   interestName.append("CA").append("CHALLENGE").append(Name::Component(m_requestId));
@@ -284,5 +283,4 @@ Request::processIfError(const Data& data)
                                " and Error Info: " + std::get<1>(errorInfo)));
 }
 
-} // namespace requester
-} // namespace ndncert
+} // namespace ndncert::requester

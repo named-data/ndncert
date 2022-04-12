@@ -23,27 +23,26 @@
 
 #include "detail/ndncert-common.hpp"
 
-namespace ndncert {
-namespace probetlv {
+namespace ndncert::probetlv {
 
 // For Client use
 Block
 encodeApplicationParameters(const std::multimap<std::string, std::string>& parameters);
 
 void
-decodeDataContent(const Block& block, std::vector<std::pair<Name, int>>& availableNames,
+decodeDataContent(const Block& block,
+                  std::vector<std::pair<Name, int>>& availableNames,
                   std::vector<Name>& availableRedirection);
 
 // For CA use
 Block
 encodeDataContent(const std::vector<Name>& identifiers,
-                  optional<size_t> maxSuffixLength = nullopt,
-                  std::vector<ndn::Name> redirectionItems = std::vector<ndn::Name>());
+                  std::optional<size_t> maxSuffixLength = std::nullopt,
+                  const std::vector<Name>& redirectionItems = {});
 
 std::multimap<std::string, std::string>
 decodeApplicationParameters(const Block& block);
 
-} // namespace probetlv
-} // namespace ndncert
+} // namespace ndncert::probetlv
 
 #endif // NDNCERT_DETAIL_PROBE_ENCODER_HPP

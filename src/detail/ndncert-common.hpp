@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -37,8 +37,11 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
+#include <optional>
 #include <string>
 #include <tuple>
+#include <vector>
 
 #include <ndn-cxx/data.hpp>
 #include <ndn-cxx/encoding/block.hpp>
@@ -48,7 +51,6 @@
 #include <ndn-cxx/security/certificate.hpp>
 #include <ndn-cxx/util/exception.hpp>
 #include <ndn-cxx/util/logger.hpp>
-#include <ndn-cxx/util/optional.hpp>
 #include <ndn-cxx/util/time.hpp>
 
 #include <boost/algorithm/string.hpp>
@@ -64,9 +66,6 @@ using ndn::Interest;
 using ndn::Name;
 using ndn::SignatureInfo;
 using ndn::security::Certificate;
-
-using ndn::optional;
-using ndn::nullopt;
 
 namespace time = ndn::time;
 using namespace ndn::time_literals;

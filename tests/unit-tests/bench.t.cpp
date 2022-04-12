@@ -22,10 +22,10 @@
 #include "challenge/challenge-pin.hpp"
 #include "detail/info-encoder.hpp"
 #include "requester-request.hpp"
+
 #include "test-common.hpp"
 
-namespace ndncert {
-namespace tests {
+namespace ndncert::tests {
 
 BOOST_FIXTURE_TEST_SUITE(Benchmark, IdentityManagementTimeFixture)
 
@@ -167,5 +167,4 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
 
 BOOST_AUTO_TEST_SUITE_END() // Benchmark
 
-} // namespace tests
-} // namespace ndncert
+} // namespace ndncert::tests

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -19,6 +19,7 @@
  */
 
 #include "challenge/challenge-module.hpp"
+
 #include <ndn-cxx/util/random.hpp>
 
 namespace ndncert {
@@ -35,15 +36,15 @@ ChallengeModule::ChallengeModule(const std::string& challengeType,
 bool
 ChallengeModule::isChallengeSupported(const std::string& challengeType)
 {
-  ChallengeFactory& factory = getFactory();
+  auto& factory = getFactory();
   auto i = factory.find(challengeType);
-  return i == factory.end() ? false : true;
+  return i != factory.end();
 }
 
 std::unique_ptr<ChallengeModule>
 ChallengeModule::createChallengeModule(const std::string& challengeType)
 {
-  ChallengeFactory& factory = getFactory();
+  auto& factory = getFactory();
   auto i = factory.find(challengeType);
   return i == factory.end() ? nullptr : i->second();
 }
@@ -51,7 +52,7 @@ ChallengeModule::createChallengeModule(const std::string& challengeType)
 ChallengeModule::ChallengeFactory&
 ChallengeModule::getFactory()
 {
-  static ChallengeModule::ChallengeFactory factory;
+  static ChallengeFactory factory;
   return factory;
 }
 
@@ -61,10 +62,9 @@ ChallengeModule::generateSecretCode()
   uint32_t securityCode = 0;
   do {
     securityCode = ndn::random::generateSecureWord32();
-  }
-  while (securityCode >= 4294000000);
+  } while (securityCode >= 4294000000);
   securityCode /= 4294;
-  std::string result = ndn::to_string(securityCode);
+  std::string result = std::to_string(securityCode);
   while (result.length() < 6) {
     result = "0" + result;
   }
@@ -76,8 +76,8 @@ ChallengeModule::returnWithError(ca::RequestState& request, ErrorCode errorCode,
 {
   request.status = Status::FAILURE;
   request.challengeType = "";
-  request.challengeState = nullopt;
-  return std::make_tuple(errorCode, std::move(errorInfo));
+  request.challengeState = std::nullopt;
+  return {errorCode, std::move(errorInfo)};
 }
 
 std::tuple<ErrorCode, std::string>
@@ -89,7 +89,7 @@ ChallengeModule::returnWithNewChallengeStatus(ca::RequestState& request, const s
   request.challengeType = CHALLENGE_TYPE;
   request.challengeState = ca::ChallengeState(challengeStatus, time::system_clock::now(), remainingTries,
                                               remainingTime, std::move(challengeSecret));
-  return std::make_tuple(ErrorCode::NO_ERROR, "");
+  return {ErrorCode::NO_ERROR, ""};
 }
 
 std::tuple<ErrorCode, std::string>
@@ -97,8 +97,8 @@ ChallengeModule::returnWithSuccess(ca::RequestState& request)
 {
   request.status = Status::PENDING;
   request.challengeType = CHALLENGE_TYPE;
-  request.challengeState = nullopt;
-  return std::make_tuple(ErrorCode::NO_ERROR, "");
+  request.challengeState = std::nullopt;
+  return {ErrorCode::NO_ERROR, ""};
 }
 
 } // namespace ndncert

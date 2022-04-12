@@ -20,10 +20,10 @@
 
 #include "detail/challenge-encoder.hpp"
 
-namespace ndncert {
+namespace ndncert::challengetlv {
 
 Block
-challengetlv::encodeDataContent(ca::RequestState& request, const Name& issuedCertName)
+encodeDataContent(ca::RequestState& request, const Name& issuedCertName)
 {
   Block response(tlv::EncryptedPayload);
   response.push_back(ndn::makeNonNegativeIntegerBlock(tlv::Status, static_cast<uint64_t>(request.status)));
@@ -52,7 +52,7 @@ challengetlv::encodeDataContent(ca::RequestState& request, const Name& issuedCer
 }
 
 void
-challengetlv::decodeDataContent(const Block& contentBlock, requester::Request& state)
+decodeDataContent(const Block& contentBlock, requester::Request& state)
 {
   auto result = decodeBlockWithAesGcm128(contentBlock, state.m_aesKey.data(),
                                          state.m_requestId.data(), state.m_requestId.size(),
@@ -122,4 +122,4 @@ challengetlv::decodeDataContent(const Block& contentBlock, requester::Request& s
   }
 }
 
-} // namespace ndncert
+} // namespace ndncert::challengetlv

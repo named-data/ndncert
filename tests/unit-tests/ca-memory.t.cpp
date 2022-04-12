@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -19,11 +19,10 @@
  */
 
 #include "detail/ca-memory.hpp"
-#include "detail/ca-sqlite.hpp"
+
 #include "test-common.hpp"
 
-namespace ndncert {
-namespace tests {
+namespace ndncert::tests {
 
 using namespace ca;
 
@@ -94,5 +93,4 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
 
 BOOST_AUTO_TEST_SUITE_END() // TestCaMemory
 
-} // namespace tests
-} // namespace ndncert
+} // namespace ndncert::tests

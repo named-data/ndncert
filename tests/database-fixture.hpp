@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2021 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -27,8 +27,7 @@
 
 #include <boost/filesystem.hpp>
 
-namespace ndncert {
-namespace tests {
+namespace ndncert::tests {
 
 class IdentityManagementTimeFixture : public UnitTestTimeFixture
                                     , public IdentityManagementFixture
@@ -56,7 +55,6 @@ protected:
   boost::filesystem::path dbDir;
 };
 
-} // namespace tests
-} // namespace ndncert
+} // namespace ndncert::tests
 
 #endif // NDNCERT_TESTS_DATABASE_FIXTURE_HPP

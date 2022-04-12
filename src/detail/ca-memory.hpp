@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -23,25 +23,20 @@
 
 #include "detail/ca-storage.hpp"
 
-namespace ndncert {
-namespace ca {
+namespace ndncert::ca {
 
 class CaMemory : public CaStorage
 {
 public:
-  CaMemory(const Name& caName = Name(), const std::string& path = "");
-  const static std::string STORAGE_TYPE;
+  static const std::string STORAGE_TYPE;
+
+  explicit
+  CaMemory(const Name& caName = "", const std::string& path = "");
 
 public:
-  /**
-   * @throw if request cannot be fetched from underlying data storage
-   */
   RequestState
   getRequest(const RequestId& requestId) override;
 
-  /**
-   * @throw if there is an existing request with the same request ID
-   */
   void
   addRequest(const RequestState& request) override;
 
@@ -61,7 +56,6 @@ private:
   std::map<RequestId, RequestState> m_requests;
 };
 
-} // namespace ca
-} // namespace ndncert
+} // namespace ndncert::ca
 
 #endif // NDNCERT_DETAIL_CA_MEMORY_HPP

@@ -26,8 +26,7 @@
 
 #include <boost/filesystem.hpp>
 
-namespace ndncert {
-namespace tests {
+namespace ndncert::tests {
 
 using namespace ndn::security;
 
@@ -126,5 +125,4 @@ IdentityManagementFixture::addCertificate(const Key& key, const std::string& iss
   return certificate;
 }
 
-} // namespace tests
-} // namespace ndncert
+} // namespace ndncert::tests

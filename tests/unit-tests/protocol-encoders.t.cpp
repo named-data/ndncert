@@ -21,13 +21,13 @@
 #include "detail/challenge-encoder.hpp"
 #include "detail/error-encoder.hpp"
 #include "detail/info-encoder.hpp"
-#include "detail/request-encoder.hpp"
 #include "detail/probe-encoder.hpp"
+#include "detail/request-encoder.hpp"
 #include "detail/ca-configuration.hpp"
+
 #include "test-common.hpp"
 
-namespace ndncert {
-namespace tests {
+namespace ndncert::tests {
 
 BOOST_FIXTURE_TEST_SUITE(TestProtocolEncoding, IdentityManagementTimeFixture)
 
@@ -172,5 +172,4 @@ BOOST_AUTO_TEST_CASE(ChallengeEncoding)
 
 BOOST_AUTO_TEST_SUITE_END() // TestProtocolEncoding
 
-} // namespace tests
-} // namespace ndncert
+} // namespace ndncert::tests

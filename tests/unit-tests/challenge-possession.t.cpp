@@ -20,10 +20,10 @@
 
 #include "challenge/challenge-possession.hpp"
 #include "detail/challenge-encoder.hpp"
+
 #include "test-common.hpp"
 
-namespace ndncert {
-namespace tests {
+namespace ndncert::tests {
 
 BOOST_FIXTURE_TEST_SUITE(TestChallengePossession, IdentityManagementFixture)
 
@@ -145,5 +145,4 @@ BOOST_AUTO_TEST_CASE(HandleChallengeRequestProofFail)
 
 BOOST_AUTO_TEST_SUITE_END() // TestChallengePossession
 
-} // namespace tests
-} // namespace ndncert
+} // namespace ndncert::tests

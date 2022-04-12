@@ -20,13 +20,12 @@
 
 #include "detail/ca-memory.hpp"
 
-namespace ndncert {
-namespace ca {
+namespace ndncert::ca {
 
 const std::string CaMemory::STORAGE_TYPE = "ca-storage-memory";
 NDNCERT_REGISTER_CA_STORAGE(CaMemory);
 
-CaMemory::CaMemory(const Name& caName, const std::string& path)
+CaMemory::CaMemory(const Name&, const std::string&)
   : CaStorage()
 {
 }
@@ -34,21 +33,18 @@ CaMemory::CaMemory(const Name& caName, const std::string& path)
 RequestState
 CaMemory::getRequest(const RequestId& requestId)
 {
-  auto search = m_requests.find(requestId);
-  if (search == m_requests.end()) {
-    NDN_THROW(std::runtime_error("Request " + ndn::toHex(requestId) + " does not exists"));
+  auto it = m_requests.find(requestId);
+  if (it == m_requests.end()) {
+    NDN_THROW(std::runtime_error("Request " + ndn::toHex(requestId) + " does not exist"));
   }
-  return search->second;
+  return it->second;
 }
 
 void
 CaMemory::addRequest(const RequestState& request)
 {
-  auto search = m_requests.find(request.requestId);
-  if (search == m_requests.end()) {
-    m_requests.insert(std::make_pair(request.requestId, request));
-  }
-  else {
+  auto result = m_requests.insert({request.requestId, request});
+  if (!result.second) {
     NDN_THROW(std::runtime_error("Request " + ndn::toHex(request.requestId) + " already exists"));
   }
 }
@@ -56,23 +52,13 @@ CaMemory::addRequest(const RequestState& request)
 void
 CaMemory::updateRequest(const RequestState& request)
 {
-  auto search = m_requests.find(request.requestId);
-  if (search == m_requests.end()) {
-    m_requests.insert(std::make_pair(request.requestId, request));
-  }
-  else {
-    search->second = request;
-  }
+  m_requests.insert_or_assign(request.requestId, request);
 }
 
 void
 CaMemory::deleteRequest(const RequestId& requestId)
 {
-  auto search = m_requests.find(requestId);
-  auto keyName = search->second.cert.getKeyName();
-  if (search != m_requests.end()) {
-    m_requests.erase(search);
-  }
+  m_requests.erase(requestId);
 }
 
 std::list<RequestState>
@@ -97,5 +83,4 @@ CaMemory::listAllRequests(const Name& caName)
   return result;
 }
 
-} // namespace ca
-} // namespace ndncert
+} // namespace ndncert::ca

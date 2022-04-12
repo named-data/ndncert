@@ -19,18 +19,19 @@
  */
 
 #include "redirection-param.hpp"
+
 #include <boost/algorithm/string.hpp>
 
 namespace ndncert {
 
-NDNCERT_REGISTER_POLICY_FACTORY(RedirectionParam, "param");
+NDNCERT_REGISTER_REDIRECTION_POLICY(RedirectionParam, "param");
 
 RedirectionParam::RedirectionParam(const std::string& format)
-  : RedirectionPolicy(format)
 {
   if (format.empty()) {
     return;
   }
+
   std::vector<std::string> strs;
   boost::split(strs,format,boost::is_any_of("&"));
   for (const auto& s : strs) {
@@ -47,7 +48,7 @@ RedirectionParam::isRedirecting(const std::multimap<std::string, std::string>& p
 {
   for (const auto& p : m_format) {
     bool found = false;
-    for (auto it = params.find(p.first); it != params.end() && it->first == p.first; it ++) {
+    for (auto it = params.find(p.first); it != params.end() && it->first == p.first; ++it) {
       if (it->second == p.second) {
         found = true;
         break;

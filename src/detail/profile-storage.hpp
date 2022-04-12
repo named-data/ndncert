@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -23,8 +23,7 @@
 
 #include "detail/ca-profile.hpp"
 
-namespace ndncert {
-namespace requester {
+namespace ndncert::requester {
 
 /**
  * @brief CA profiles kept by a requester.
@@ -53,8 +52,7 @@ public:
 
   /**
    * @brief Add a new CA profile
-   *
-   * Be cautious. This will add a new trust anchor for requesters.
+   * @warning This will add a new trust anchor for requesters.
    */
   void
   addCaProfile(const CaProfile& profile);
@@ -66,7 +64,6 @@ private:
   std::list<CaProfile> m_caProfiles;
 };
 
-} // namespace requester
-} // namespace ndncert
+} // namespace ndncert::requester
 
 #endif // NDNCERT_DETAIL_PROFILE_STORAGE_HPP

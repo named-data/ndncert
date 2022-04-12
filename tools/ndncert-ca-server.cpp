@@ -25,15 +25,15 @@
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
-#include <iostream>
+
 #include <chrono>
 #include <deque>
+#include <iostream>
 
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
 
-namespace ndncert {
-namespace ca {
+namespace ndncert::ca {
 
 static ndn::Face face;
 static ndn::KeyChain keyChain;
@@ -42,7 +42,8 @@ static std::string repoPort = "7376";
 const size_t MAX_CACHED_CERT_NUM = 100;
 
 static bool
-writeDataToRepo(const Data& data) {
+writeDataToRepo(const Data& data)
+{
   boost::asio::ip::tcp::iostream requestStream;
 #if BOOST_VERSION >= 106600
     requestStream.expires_after(std::chrono::seconds(3));
@@ -162,8 +163,7 @@ main(int argc, char* argv[])
   return 0;
 }
 
-} // namespace ca
-} // namespace ndncert
+} // namespace ndncert::ca
 
 int
 main(int argc, char* argv[])

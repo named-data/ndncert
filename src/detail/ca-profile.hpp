@@ -83,7 +83,7 @@ public:
    * E.g., When its value is 2, at most 2 name components can be assigned after m_caPrefix.
    * Default: none.
    */
-  optional<size_t> maxSuffixLength = nullopt;
+  std::optional<size_t> maxSuffixLength;
   /**
    * @brief A list of supported challenges. Only CA side will have m_supportedChallenges.
    */

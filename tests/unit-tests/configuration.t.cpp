@@ -21,10 +21,10 @@
 #include "detail/ca-configuration.hpp"
 #include "detail/profile-storage.hpp"
 #include "detail/info-encoder.hpp"
+
 #include "test-common.hpp"
 
-namespace ndncert {
-namespace tests {
+namespace ndncert::tests {
 
 BOOST_FIXTURE_TEST_SUITE(TestConfig, IdentityManagementFixture)
 
@@ -144,5 +144,4 @@ BOOST_AUTO_TEST_CASE(ProfileStorageAddAndRemoveProfile)
 
 BOOST_AUTO_TEST_SUITE_END() // TestConfig
 
-} // namespace tests
-} // namespace ndncert
+} // namespace ndncert::tests

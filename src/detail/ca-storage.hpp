@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -23,20 +23,24 @@
 
 #include "detail/ca-request-state.hpp"
 
-namespace ndncert {
-namespace ca {
+#include <map>
+
+namespace ndncert::ca {
 
 class CaStorage : boost::noncopyable
 {
-public: // request related
+public:
+  virtual
+  ~CaStorage() = default;
+
   /**
-   * @throw if request cannot be fetched from underlying data storage
+   * @throw std::runtime_error The request cannot be fetched from underlying data storage
    */
   virtual RequestState
   getRequest(const RequestId& requestId) = 0;
 
   /**
-   * @throw if there is an existing request with the same request ID
+   * @throw std::runtime_error There is an existing request with the same request ID
    */
   virtual void
   addRequest(const RequestState& request) = 0;
@@ -56,11 +60,11 @@ public: // request related
 public: // factory
   template<class CaStorageType>
   static void
-  registerCaStorage(const std::string& caStorageType = CaStorageType::STORAGE_TYPE)
+  registerCaStorage(const std::string& type = CaStorageType::STORAGE_TYPE)
   {
-    CaStorageFactory& factory = getFactory();
-    BOOST_ASSERT(factory.count(caStorageType) == 0);
-    factory[caStorageType] = [] (const Name& caName, const std::string& path) {
+    auto& factory = getFactory();
+    BOOST_ASSERT(factory.count(type) == 0);
+    factory[type] = [] (const Name& caName, const std::string& path) {
       return std::make_unique<CaStorageType>(caName, path);
     };
   }
@@ -68,28 +72,24 @@ public: // factory
   static std::unique_ptr<CaStorage>
   createCaStorage(const std::string& caStorageType, const Name& caName, const std::string& path);
 
-  virtual
-  ~CaStorage() = default;
-
 private:
-  using CaStorageCreateFunc = std::function<std::unique_ptr<CaStorage> (const Name&, const std::string&)>;
-  using CaStorageFactory = std::map<std::string, CaStorageCreateFunc>;
+  using CreateFunc = std::function<std::unique_ptr<CaStorage>(const Name&, const std::string&)>;
+  using CaStorageFactory = std::map<std::string, CreateFunc>;
 
   static CaStorageFactory&
   getFactory();
 };
 
-#define NDNCERT_REGISTER_CA_STORAGE(C)                           \
-static class NdnCert ## C ## CaStorageRegistrationClass          \
-{                                                                \
-public:                                                          \
-  NdnCert ## C ## CaStorageRegistrationClass()                   \
-  {                                                              \
-    ::ndncert::ca::CaStorage::registerCaStorage<C>();            \
-  }                                                              \
-} g_NdnCert ## C ## CaStorageRegistrationVariable
+} // namespace ndncert::ca
 
-} // namespace ca
-} // namespace ndncert
+#define NDNCERT_REGISTER_CA_STORAGE(C)                        \
+static class NdnCert##C##CaStorageRegistrationClass           \
+{                                                             \
+public:                                                       \
+  NdnCert##C##CaStorageRegistrationClass()                    \
+  {                                                           \
+    ::ndncert::ca::CaStorage::registerCaStorage<C>();         \
+  }                                                           \
+} g_NdnCert##C##CaStorageRegistrationVariable
 
 #endif // NDNCERT_DETAIL_CA_STORAGE_HPP

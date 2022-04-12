@@ -23,8 +23,7 @@
 
 #include "detail/ca-profile.hpp"
 
-namespace ndncert {
-namespace errortlv {
+namespace ndncert::errortlv {
 
 /**
  * Encode error information into a Data content TLV
@@ -38,7 +37,6 @@ encodeDataContent(ErrorCode errorCode, const std::string& description);
 std::tuple<ErrorCode, std::string>
 decodefromDataContent(const Block& block);
 
-} // namespace errortlv
-} // namespace ndncert
+} // namespace ndncert::errortlv
 
 #endif // NDNCERT_DETAIL_ERROR_ENCODER_HPP

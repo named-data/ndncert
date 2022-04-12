@@ -22,7 +22,7 @@
 
 namespace ndncert {
 
-NDNCERT_REGISTER_FUNCFACTORY(AssignmentParam, "param");
+NDNCERT_REGISTER_NAME_ASSIGNMENT_FUNC(AssignmentParam, "param");
 
 AssignmentParam::AssignmentParam(const std::string& format)
   : NameAssignmentFunc(format)

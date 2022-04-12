@@ -25,7 +25,7 @@ namespace ndncert {
 std::unique_ptr<RedirectionPolicy>
 RedirectionPolicy::createPolicyFunc(const std::string& policyType, const std::string& format)
 {
-  PolicyFactory& factory = getFactory();
+  auto& factory = getFactory();
   auto i = factory.find(policyType);
   return i == factory.end() ? nullptr : i->second(format);
 }

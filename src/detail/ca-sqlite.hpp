@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -25,13 +25,12 @@
 
 struct sqlite3;
 
-namespace ndncert {
-namespace ca {
+namespace ndncert::ca {
 
 class CaSqlite : public CaStorage
 {
 public:
-  const static std::string STORAGE_TYPE;
+  static const std::string STORAGE_TYPE;
 
   explicit
   CaSqlite(const Name& caName, const std::string& path = "");
@@ -39,15 +38,9 @@ public:
   ~CaSqlite() override;
 
 public:
-  /**
-   * @throw if request cannot be fetched from underlying data storage
-   */
   RequestState
   getRequest(const RequestId& requestId) override;
 
-  /**
-   * @throw if there is an existing request with the same request ID
-   */
   void
   addRequest(const RequestState& request) override;
 
@@ -67,7 +60,6 @@ private:
   sqlite3* m_database;
 };
 
-} // namespace ca
-} // namespace ndncert
+} // namespace ndncert::ca
 
 #endif // NDNCERT_DETAIL_CA_SQLITE_HPP

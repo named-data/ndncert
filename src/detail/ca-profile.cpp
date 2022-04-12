@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -41,7 +41,7 @@ CaProfile::fromJson(const JsonSection& json)
   // CA max validity period
   profile.maxValidityPeriod = time::seconds(json.get(CONFIG_MAX_VALIDITY_PERIOD, 86400));
   // CA max suffix length
-  profile.maxSuffixLength = nullopt;
+  profile.maxSuffixLength = std::nullopt;
   auto maxSuffixLength = json.get_optional<size_t>(CONFIG_MAX_SUFFIX_LENGTH);
   if (maxSuffixLength) {
     profile.maxSuffixLength = *maxSuffixLength;
@@ -78,7 +78,7 @@ CaProfile::fromJson(const JsonSection& json)
   // anchor certificate
   profile.cert = nullptr;
   auto certificateStr = json.get(CONFIG_CERTIFICATE, "");
-  if (certificateStr != "") {
+  if (!certificateStr.empty()) {
     std::istringstream ss(certificateStr);
     profile.cert = ndn::io::load<Certificate>(ss);
   }
@@ -100,7 +100,7 @@ CaProfile::toJson() const
     for (const auto& key : probeParameterKeys) {
       JsonSection keyJson;
       keyJson.put(CONFIG_PROBE_PARAMETER, key);
-      probeParametersJson.push_back(std::make_pair("", keyJson));
+      probeParametersJson.push_back({"", keyJson});
     }
     caItem.add_child("", probeParametersJson);
   }
@@ -109,7 +109,7 @@ CaProfile::toJson() const
     for (const auto& challenge : supportedChallenges) {
       JsonSection challengeJson;
       challengeJson.put(CONFIG_CHALLENGE, challenge);
-      challengeListJson.push_back(std::make_pair("", challengeJson));
+      challengeListJson.push_back({"", challengeJson});
     }
     caItem.add_child("", challengeListJson);
   }

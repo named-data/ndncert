@@ -19,10 +19,10 @@
  */
 
 #include "challenge/challenge-email.hpp"
+
 #include "test-common.hpp"
 
-namespace ndncert {
-namespace tests {
+namespace ndncert::tests {
 
 BOOST_FIXTURE_TEST_SUITE(TestChallengeEmail, IdentityManagementFixture)
 
@@ -154,5 +154,4 @@ BOOST_AUTO_TEST_CASE(OnValidateInterestComingWithWrongCode)
 
 BOOST_AUTO_TEST_SUITE_END() // TestChallengeEmail
 
-} // namespace tests
-} // namespace ndncert
+} // namespace ndncert::tests

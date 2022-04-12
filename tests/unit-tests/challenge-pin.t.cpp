@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -19,10 +19,10 @@
  */
 
 #include "challenge/challenge-pin.hpp"
+
 #include "test-common.hpp"
 
-namespace ndncert {
-namespace tests {
+namespace ndncert::tests {
 
 BOOST_FIXTURE_TEST_SUITE(TestChallengePin, IdentityManagementFixture)
 
@@ -113,5 +113,4 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithWrongCode)
 
 BOOST_AUTO_TEST_SUITE_END() // TestChallengePin
 
-} // namespace tests
-} // namespace ndncert
+} // namespace ndncert::tests

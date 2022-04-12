@@ -19,16 +19,16 @@
  */
 
 #include "redirection-email.hpp"
+
 #include <boost/algorithm/string.hpp>
 
 namespace ndncert {
 
-NDNCERT_REGISTER_POLICY_FACTORY(RedirectionEmail, "email");
+NDNCERT_REGISTER_REDIRECTION_POLICY(RedirectionEmail, "email");
 
 RedirectionEmail::RedirectionEmail(const std::string& format)
-  : RedirectionPolicy(format)
+  : m_domain(format)
 {
-  m_domain = format;
 }
 
 bool

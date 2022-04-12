@@ -25,8 +25,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
-namespace ndncert {
-namespace ca {
+namespace ndncert::ca {
 
 void
 CaConfig::load(const std::string& fileName)
@@ -38,33 +37,35 @@ CaConfig::load(const std::string& fileName)
   catch (const std::exception& error) {
     NDN_THROW(std::runtime_error("Failed to parse configuration file " + fileName + ", " + error.what()));
   }
+
   if (configJson.begin() == configJson.end()) {
     NDN_THROW(std::runtime_error("No JSON configuration found in file: " + fileName));
   }
   caProfile = CaProfile::fromJson(configJson);
-  if (caProfile.supportedChallenges.size() == 0) {
+  if (caProfile.supportedChallenges.empty()) {
     NDN_THROW(std::runtime_error("At least one challenge should be specified."));
   }
-  // parse redirection section if appears
+
+  // parse redirection section if present
   redirection.clear();
   auto redirectionItems = configJson.get_child_optional(CONFIG_REDIRECTION);
   if (redirectionItems) {
     for (const auto& item : *redirectionItems) {
       auto caPrefixStr = item.second.get(CONFIG_CA_PREFIX, "");
       auto caCertStr = item.second.get(CONFIG_CERTIFICATE, "");
-      if (caCertStr == "") {
+      if (caCertStr.empty()) {
         NDN_THROW(std::runtime_error("Redirect-to item's certificate cannot be empty."));
       }
       std::istringstream ss(caCertStr);
       auto caCert = ndn::io::load<Certificate>(ss);
-      if (caPrefixStr != "" && Name(caPrefixStr) != caCert->getIdentity()) {
+      if (!caPrefixStr.empty() && Name(caPrefixStr) != caCert->getIdentity()) {
         NDN_THROW(std::runtime_error("Redirect-to item's prefix and certificate does not match."));
       }
 
       auto policyType = item.second.get(CONFIG_REDIRECTION_POLICY_TYPE, "");
       auto policyParam = item.second.get(CONFIG_REDIRECTION_POLICY_PARAM, "");
       if (policyType.empty()) {
-          NDN_THROW(std::runtime_error("Redirect-to policy type expected but not provided."));
+        NDN_THROW(std::runtime_error("Redirect-to policy type expected but not provided."));
       }
       auto policy = RedirectionPolicy::createPolicyFunc(policyType, policyParam);
       if (policy == nullptr) {
@@ -73,12 +74,13 @@ CaConfig::load(const std::string& fileName)
       redirection.emplace_back(caCert, std::move(policy));
     }
   }
-  // parse name assignment if appears
+
+  // parse name assignment if present
   nameAssignmentFuncs.clear();
   auto nameAssignmentItems = configJson.get_child_optional(CONFIG_NAME_ASSIGNMENT);
   if (nameAssignmentItems) {
-    for (const auto& item : *nameAssignmentItems) {
-      auto func = NameAssignmentFunc::createNameAssignmentFunc(item.first, item.second.data());
+    for (const auto& [key, val] : *nameAssignmentItems) {
+      auto func = NameAssignmentFunc::createNameAssignmentFunc(key, val.data());
       if (func == nullptr) {
         NDN_THROW(std::runtime_error("Error on creating name assignment function"));
       }
@@ -87,5 +89,4 @@ CaConfig::load(const std::string& fileName)
   }
 }
 
-} // namespace ca
-} // namespace ndncert
+} // namespace ndncert::ca

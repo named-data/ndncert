@@ -28,8 +28,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
-namespace ndncert {
-namespace ca {
+namespace ndncert::ca {
 
 using ndn::util::Sqlite3Statement;
 
@@ -148,7 +147,7 @@ CaSqlite::getRequest(const RequestId& requestId)
     std::memcpy(state.encryptionKey.data(), statement.getBlob(11), statement.getSize(11));
     state.encryptionIv = std::vector<uint8_t>(statement.getBlob(12), statement.getBlob(12) + statement.getSize(12));
     state.decryptionIv = std::vector<uint8_t>(statement.getBlob(13), statement.getBlob(13) + statement.getSize(13));
-    if (state.challengeType != "") {
+    if (!state.challengeType.empty()) {
       ChallengeState challengeState(statement.getString(3), time::fromIsoString(statement.getString(7)),
                                     statement.getInt(8), time::seconds(statement.getInt(9)),
                                     convertString2Json(statement.getString(6)));
@@ -279,7 +278,7 @@ CaSqlite::listAllRequests(const Name& caName)
     std::memcpy(state.encryptionKey.data(), statement.getBlob(12), statement.getSize(12));
     state.encryptionIv = std::vector<uint8_t>(statement.getBlob(13), statement.getBlob(13) + statement.getSize(13));
     state.decryptionIv = std::vector<uint8_t>(statement.getBlob(14), statement.getBlob(14) + statement.getSize(14));
-    if (state.challengeType != "") {
+    if (!state.challengeType.empty()) {
       ChallengeState challengeState(statement.getString(4), time::fromIsoString(statement.getString(8)),
                                     statement.getInt(9), time::seconds(statement.getInt(10)),
                                     convertString2Json(statement.getString(7)));
@@ -299,5 +298,4 @@ CaSqlite::deleteRequest(const RequestId& requestId)
   statement.step();
 }
 
-} // namespace ca
-} // namespace ndncert
+} // namespace ndncert::ca

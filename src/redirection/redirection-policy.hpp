@@ -29,11 +29,9 @@ namespace ndncert {
 
 class RedirectionPolicy : boost::noncopyable
 {
-protected:
-  explicit RedirectionPolicy(const std::string& format = "") {}
-
 public:
-  virtual ~RedirectionPolicy() = default;
+  virtual
+  ~RedirectionPolicy() = default;
 
   /**
    * @brief The Redirection Policy provided by the CA operator to decide if redirection is suitable.
@@ -45,37 +43,37 @@ public:
   virtual bool
   isRedirecting(const std::multimap<std::string, std::string>& params) = 0;
 
-public:
-  template <class PolicyType>
+public: // factory
+  template<class PolicyType>
   static void
-  registerRedirectionPolicy(const std::string& typeName)
+  registerRedirectionPolicy(const std::string& type)
   {
     PolicyFactory& factory = getFactory();
-    BOOST_ASSERT(factory.count(typeName) == 0);
-    factory[typeName] = [](const std::string& format) { return std::make_unique<PolicyType>(format); };
+    BOOST_ASSERT(factory.count(type) == 0);
+    factory[type] = [] (const std::string& format) { return std::make_unique<PolicyType>(format); };
   }
 
   static std::unique_ptr<RedirectionPolicy>
   createPolicyFunc(const std::string& policyType, const std::string& format = "");
 
 private:
-  typedef std::function<std::unique_ptr<RedirectionPolicy>(const std::string&)> FactoryCreateFunc;
-  typedef std::map<std::string, FactoryCreateFunc> PolicyFactory;
+  using CreateFunc = std::function<std::unique_ptr<RedirectionPolicy>(const std::string &)>;
+  using PolicyFactory = std::map<std::string, CreateFunc>;
 
   static PolicyFactory&
   getFactory();
 };
 
-#define NDNCERT_REGISTER_POLICY_FACTORY(C, T)                                  \
-  static class NdnCert##C##PolicyFactoryRegistrationClass                      \
-  {                                                                               \
-  public:                                                                         \
-    NdnCert##C##PolicyFactoryRegistrationClass()                               \
-    {                                                                             \
-      ::ndncert::RedirectionPolicy::registerRedirectionPolicy<C>(T);        \
-    }                                                                             \
-  } g_NdnCert##C##RedirectionPolicyRegistrationVariable
-
 } // namespace ndncert
+
+#define NDNCERT_REGISTER_REDIRECTION_POLICY(C, T)                             \
+static class NdnCert##C##RedirectionPolicyRegistrationClass                   \
+{                                                                             \
+public:                                                                       \
+  NdnCert##C##RedirectionPolicyRegistrationClass()                            \
+  {                                                                           \
+    ::ndncert::RedirectionPolicy::registerRedirectionPolicy<C>(T);            \
+  }                                                                           \
+} g_NdnCert##C##RedirectionPolicyRegistrationVariable
 
 #endif // NDNCERT_REDIRECTION_POLICY_HPP

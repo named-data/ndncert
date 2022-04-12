@@ -35,8 +35,7 @@
 #include <ndn-cxx/util/random.hpp>
 #include <ndn-cxx/util/string-helper.hpp>
 
-namespace ndncert {
-namespace ca {
+namespace ndncert::ca {
 
 const time::seconds DEFAULT_DATA_FRESHNESS_PERIOD = 1_s;
 const time::seconds REQUEST_VALIDITY_PERIOD_NOT_BEFORE_GRACE_PERIOD = 120_s;
@@ -282,11 +281,11 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
 
   if (requestType == RequestType::NEW) {
     // check the validity period
-    auto expectedPeriod = clientCert->getValidityPeriod().getPeriod();
+    auto [notBefore, notAfter] = clientCert->getValidityPeriod().getPeriod();
     auto currentTime = time::system_clock::now();
-    if (expectedPeriod.first < currentTime - REQUEST_VALIDITY_PERIOD_NOT_BEFORE_GRACE_PERIOD ||
-        expectedPeriod.second > currentTime + m_config.caProfile.maxValidityPeriod ||
-        expectedPeriod.second <= expectedPeriod.first) {
+    if (notBefore < currentTime - REQUEST_VALIDITY_PERIOD_NOT_BEFORE_GRACE_PERIOD ||
+        notAfter > currentTime + m_config.caProfile.maxValidityPeriod ||
+        notAfter <= notBefore) {
       NDN_LOG_ERROR("An invalid validity period is being requested.");
       m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::BAD_VALIDITY_PERIOD,
                                          "An invalid validity period is being requested."));
@@ -472,8 +471,7 @@ CaModule::onChallenge(const Interest& request)
 Certificate
 CaModule::issueCertificate(const RequestState& requestState)
 {
-  auto expectedPeriod = requestState.cert.getValidityPeriod().getPeriod();
-  ndn::security::ValidityPeriod period(expectedPeriod.first, expectedPeriod.second);
+  auto period = requestState.cert.getValidityPeriod();
   Certificate newCert;
 
   Name certName = requestState.cert.getKeyName();
@@ -530,5 +528,4 @@ CaModule::generateErrorDataPacket(const Name& name, ErrorCode error, const std::
   return result;
 }
 
-} // namespace ca
-} // namespace ndncert
+} // namespace ndncert::ca

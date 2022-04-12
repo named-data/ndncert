@@ -21,12 +21,11 @@
 #ifndef NDNCERT_DETAIL_CA_CONFIGURATION_HPP
 #define NDNCERT_DETAIL_CA_CONFIGURATION_HPP
 
+#include "ca-profile.hpp"
 #include "name-assignment/assignment-func.hpp"
 #include "redirection/redirection-policy.hpp"
-#include "ca-profile.hpp"
 
-namespace ndncert {
-namespace ca {
+namespace ndncert::ca {
 
 /**
  * @brief CA's configuration on NDNCERT.
@@ -74,7 +73,6 @@ public:
   std::vector<std::unique_ptr<NameAssignmentFunc>> nameAssignmentFuncs;
 };
 
-} // namespace ca
-} // namespace ndncert
+} // namespace ndncert::ca
 
 #endif // NDNCERT_DETAIL_CA_CONFIGURATION_HPP

@@ -22,10 +22,10 @@
 #include "name-assignment/assignment-random.hpp"
 #include "name-assignment/assignment-param.hpp"
 #include "name-assignment/assignment-hash.hpp"
+
 #include "test-common.hpp"
 
-namespace ndncert {
-namespace tests {
+namespace ndncert::tests {
 
 BOOST_AUTO_TEST_SUITE(TestNameAssignment)
 
@@ -93,5 +93,4 @@ BOOST_AUTO_TEST_CASE(NameAssignmentEmail)
 
 BOOST_AUTO_TEST_SUITE_END() // TestNameAssignment
 
-} // namespace tests
-} // namespace ndncert
+} // namespace ndncert::tests

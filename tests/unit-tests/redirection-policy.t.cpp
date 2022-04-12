@@ -21,10 +21,10 @@
 #include "redirection/redirection-policy.hpp"
 #include "redirection/redirection-param.hpp"
 #include "redirection/redirection-email.hpp"
+
 #include "test-common.hpp"
 
-namespace ndncert {
-namespace tests {
+namespace ndncert::tests {
 
 BOOST_AUTO_TEST_SUITE(TestRedirectionPolicy)
 
@@ -76,5 +76,4 @@ BOOST_AUTO_TEST_CASE(RedirectionPolicyEmail)
 
 BOOST_AUTO_TEST_SUITE_END() // TestNameAssignment
 
-} // namespace tests
-} // namespace ndncert
+} // namespace ndncert::tests

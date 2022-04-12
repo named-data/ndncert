@@ -57,7 +57,7 @@ ChallengePossession::parseConfigFile()
   }
   catch (const boost::property_tree::file_parser_error& error) {
     NDN_THROW(std::runtime_error("Failed to parse configuration file " + m_configFile + ": " +
-                                 error.message() + " on line " + ndn::to_string(error.line())));
+                                 error.message() + " on line " + std::to_string(error.line())));
   }
 
   if (config.begin() == config.end()) {
@@ -243,12 +243,12 @@ ChallengePossession::fulfillParameters(std::multimap<std::string, std::string>& 
   const auto& issuedCertTlv = issuedCert.wireEncode();
   auto signature = keyChain.getTpm().sign({nonce}, keyName, ndn::DigestAlgorithm::SHA256);
 
-  for (auto& item : params) {
-    if (item.first == PARAMETER_KEY_CREDENTIAL_CERT) {
-      item.second = std::string(reinterpret_cast<const char*>(issuedCertTlv.wire()), issuedCertTlv.size());
+  for (auto& [key, val] : params) {
+    if (key == PARAMETER_KEY_CREDENTIAL_CERT) {
+      val = std::string(reinterpret_cast<const char*>(issuedCertTlv.wire()), issuedCertTlv.size());
     }
-    else if (item.first == PARAMETER_KEY_PROOF) {
-      item.second = std::string(signature->get<char>(), signature->size());
+    else if (key == PARAMETER_KEY_PROOF) {
+      val = std::string(signature->get<char>(), signature->size());
     }
   }
 }

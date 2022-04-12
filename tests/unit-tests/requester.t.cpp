@@ -19,14 +19,14 @@
  */
 
 #include "requester-request.hpp"
+#include "ca-module.hpp"
+#include "challenge/challenge-module.hpp"
 #include "detail/error-encoder.hpp"
 #include "detail/probe-encoder.hpp"
-#include "challenge/challenge-module.hpp"
-#include "ca-module.hpp"
+
 #include "test-common.hpp"
 
-namespace ndncert {
-namespace tests {
+namespace ndncert::tests {
 
 using namespace requester;
 
@@ -128,5 +128,4 @@ BOOST_AUTO_TEST_CASE(ErrorHandling)
 
 BOOST_AUTO_TEST_SUITE_END() // TestRequester
 
-} // namespace tests
-} // namespace ndncert
+} // namespace ndncert::tests

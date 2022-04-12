@@ -31,11 +31,10 @@
 
 #include <iostream>
 
-namespace ndncert {
-namespace requester {
+namespace ndncert::requester {
 
 static void
-selectCaProfile(std::string configFilePath);
+selectCaProfile(const std::string& configFilePath);
 
 static void
 runProbe(CaProfile profile);
@@ -92,7 +91,7 @@ captureValidityPeriod(time::hours maxValidityPeriod)
             << " The CA may reject your application if your expected period is too long."
             << " The maximum validity period allowed by this CA is " << maxValidityPeriod << "."<< std::endl;
   size_t count = 0;
-  while (true && count < 3) {
+  while (count < 3) {
     std::string periodStr = "";
     getline(std::cin, periodStr);
     try {
@@ -161,7 +160,7 @@ captureKeyName(ndn::security::pib::Identity& identity, ndn::security::pib::Key& 
   }
 }
 
-static void
+[[noreturn]] static void
 onNackCb()
 {
   std::cerr << "Got NACK\n";
@@ -171,7 +170,7 @@ onNackCb()
 static void
 timeoutCb()
 {
-  std::cerr << "Interest sent time out\n";
+  std::cerr << "Interest timeout\n";
 }
 
 static void
@@ -223,62 +222,61 @@ newCb(const Data& reply)
   }
 
   size_t challengeIndex = 0;
-  if (challengeList.size() < 1) {
+  if (challengeList.empty()) {
     std::cerr << "There is no available challenge provided by the CA. Exit" << std::endl;
     exit(1);
   }
-  else if (challengeList.size() >= 1) {
-    auto item = std::find(challengeList.begin(), challengeList.end(), defaultChallenge);
-    if (item != challengeList.end()) {
-      runChallenge(defaultChallenge);
-    }
-    else {
-      // default challenge not available
-      std::cerr << "\n***************************************\n"
-                << "Step " << nStep++
-                << ": CHALLENGE SELECTION" << std::endl;
-      size_t count = 0;
-      std::string choice = "";
-      for (auto item : challengeList) {
-        std::cerr << "> Index: " << count++ << std::endl
-                  << ">> Challenge: " << item << std::endl;
-      }
-      std::cerr << "Please type in the index of the challenge that you want to perform:" << std::endl;
-      size_t inputCount = 0;
-      while (inputCount < 3) {
-        getline(std::cin, choice);
-        try {
-          challengeIndex = std::stoul(choice);
-        }
-        catch (const std::exception&) {
-          std::cerr << "Your input is not valid. Try again:" << std::endl;
-          inputCount++;
-          continue;
-        }
-        if (challengeIndex >= count) {
-          std::cerr << "Your input index is out of range. Try again:" << std::endl;
-          inputCount++;
-          continue;
-        }
-        break;
-      }
-      if (inputCount == 3) {
-        std::cerr << "Invalid input for too many times, exit. " << std::endl;
-        exit(1);
-      }
 
-      auto it = challengeList.begin();
-      std::advance(it, challengeIndex);
-      std::cerr << "The challenge has been selected: " << *it << std::endl;
-      runChallenge(*it);
+  auto item = std::find(challengeList.begin(), challengeList.end(), defaultChallenge);
+  if (item != challengeList.end()) {
+    runChallenge(defaultChallenge);
+  }
+  else {
+    // default challenge not available
+    std::cerr << "\n***************************************\n"
+              << "Step " << nStep++
+              << ": CHALLENGE SELECTION" << std::endl;
+    size_t count = 0;
+    std::string choice = "";
+    for (const auto& item : challengeList) {
+      std::cerr << "> Index: " << count++ << std::endl
+                << ">> Challenge: " << item << std::endl;
     }
+    std::cerr << "Please type in the index of the challenge that you want to perform:" << std::endl;
+    size_t inputCount = 0;
+    while (inputCount < 3) {
+      getline(std::cin, choice);
+      try {
+        challengeIndex = std::stoul(choice);
+      }
+      catch (const std::exception&) {
+        std::cerr << "Your input is not valid. Try again:" << std::endl;
+        inputCount++;
+        continue;
+      }
+      if (challengeIndex >= count) {
+        std::cerr << "Your input index is out of range. Try again:" << std::endl;
+        inputCount++;
+        continue;
+      }
+      break;
+    }
+    if (inputCount == 3) {
+      std::cerr << "Invalid input for too many times, exit. " << std::endl;
+      exit(1);
+    }
+
+    auto it = challengeList.begin();
+    std::advance(it, challengeIndex);
+    std::cerr << "The challenge has been selected: " << *it << std::endl;
+    runChallenge(*it);
   }
 }
 
 static void
 infoCb(const Data& reply, const Name& certFullName)
 {
-  optional<CaProfile> profile;
+  std::optional<CaProfile> profile;
   try {
     if (certFullName.empty()) {
       profile = Request::onCaProfileResponse(reply);
@@ -329,7 +327,7 @@ probeCb(const Data& reply, CaProfile profile)
   Name selectedName;
   Name redirectedCaFullName;
   // always prefer redirection over direct assignment
-  if (redirects.size() > 0) {
+  if (!redirects.empty()) {
     if (redirects.size() < 2) {
       redirectedCaFullName = redirects.front();
     }
@@ -373,7 +371,7 @@ probeCb(const Data& reply, CaProfile profile)
         [] (auto&&...) { onNackCb(); },
         [] (auto&&...) { timeoutCb(); });
   }
-  else if (names.size() > 0) {
+  else if (!names.empty()) {
     if (names.size() < 2) {
       selectedName = names.front().first;
     }
@@ -413,7 +411,7 @@ probeCb(const Data& reply, CaProfile profile)
 }
 
 static void
-selectCaProfile(std::string configFilePath)
+selectCaProfile(const std::string& configFilePath)
 {
   ProfileStorage profileStorage;
   try {
@@ -426,7 +424,7 @@ selectCaProfile(std::string configFilePath)
   size_t count = 0;
   std::cerr << "***************************************\n"
             << "Step " << nStep++ << ": CA SELECTION" << std::endl;
-  for (auto item : profileStorage.getKnownProfiles()) {
+  for (const auto& item : profileStorage.getKnownProfiles()) {
     std::cerr << "> Index: " << count++ << std::endl
               << ">> CA prefix:" << item.caPrefix << std::endl
               << ">> Introduction: " << item.caInfo << std::endl;
@@ -547,7 +545,7 @@ runChallenge(const std::string& challengeType)
               << "\nExit." << std::endl;
     exit(1);
   }
-  if (requirement.size() > 0) {
+  if (!requirement.empty()) {
     if (requesterState->m_status == Status::BEFORE_CHALLENGE && challengeType == defaultChallenge) {
       requirement.find(challengeType)->second = capturedProbeParams->find(defaultChallenge)->second;
     }
@@ -630,8 +628,7 @@ main(int argc, char* argv[])
   return 0;
 }
 
-} // namespace requester
-} // namespace ndncert
+} // namespace ndncert::requester
 
 int
 main(int argc, char* argv[])

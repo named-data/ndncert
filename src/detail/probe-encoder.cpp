@@ -20,10 +20,10 @@
 
 #include "detail/probe-encoder.hpp"
 
-namespace ndncert {
+namespace ndncert::probetlv {
 
 Block
-probetlv::encodeApplicationParameters(const std::multimap<std::string, std::string>& parameters)
+encodeApplicationParameters(const std::multimap<std::string, std::string>& parameters)
 {
   Block content(ndn::tlv::ApplicationParameters);
   for (const auto& items : parameters) {
@@ -35,7 +35,8 @@ probetlv::encodeApplicationParameters(const std::multimap<std::string, std::stri
 }
 
 std::multimap<std::string, std::string>
-probetlv::decodeApplicationParameters(const Block& block) {
+decodeApplicationParameters(const Block& block)
+{
   std::multimap<std::string, std::string> result;
   block.parse();
   const auto& elements = block.elements();
@@ -56,8 +57,8 @@ probetlv::decodeApplicationParameters(const Block& block) {
 }
 
 Block
-probetlv::encodeDataContent(const std::vector<Name>& identifiers, optional<size_t> maxSuffixLength,
-                            std::vector<ndn::Name> redirectionItems)
+encodeDataContent(const std::vector<Name>& identifiers, std::optional<size_t> maxSuffixLength,
+                  const std::vector<Name>& redirectionItems)
 {
   Block content(ndn::tlv::Content);
   for (const auto& name : identifiers) {
@@ -78,9 +79,9 @@ probetlv::encodeDataContent(const std::vector<Name>& identifiers, optional<size_
 }
 
 void
-probetlv::decodeDataContent(const Block& block,
-                            std::vector<std::pair<Name, int>>& availableNames,
-                            std::vector<Name>& availableRedirection) {
+decodeDataContent(const Block& block, std::vector<std::pair<Name, int>>& availableNames,
+                  std::vector<Name>& availableRedirection)
+{
   block.parse();
   for (const auto& item : block.elements()) {
     if (item.type() == tlv::ProbeResponse) {
@@ -121,4 +122,4 @@ probetlv::decodeDataContent(const Block& block,
   }
 }
 
-} // namespace ndncert
+} // namespace ndncert::probetlv

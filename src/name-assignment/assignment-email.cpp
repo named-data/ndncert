@@ -22,7 +22,7 @@
 
 namespace ndncert {
 
-NDNCERT_REGISTER_FUNCFACTORY(AssignmentEmail, "email");
+NDNCERT_REGISTER_NAME_ASSIGNMENT_FUNC(AssignmentEmail, "email");
 
 AssignmentEmail::AssignmentEmail(const std::string& format)
   : NameAssignmentFunc(format)

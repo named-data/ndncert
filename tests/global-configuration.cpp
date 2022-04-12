@@ -26,8 +26,7 @@
 #include <fstream>
 #include <stdlib.h>
 
-namespace ndncert {
-namespace tests {
+namespace ndncert::tests {
 
 class GlobalConfiguration
 {
@@ -63,5 +62,4 @@ private:
 
 BOOST_TEST_GLOBAL_CONFIGURATION(GlobalConfiguration);
 
-} // namespace tests
-} // namespace ndncert
+} // namespace ndncert::tests

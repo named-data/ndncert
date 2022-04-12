@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2021 Regents of the University of California.
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -28,8 +28,7 @@
 
 #include <boost/asio/io_service.hpp>
 
-namespace ndncert {
-namespace tests {
+namespace ndncert::tests {
 
 /** \brief a test fixture that overrides steady clock and system clock
  */
@@ -102,7 +101,6 @@ public:
   boost::asio::io_service io;
 };
 
-} // namespace tests
-} // namespace ndncert
+} // namespace ndncert::tests
 
 #endif // NDN_TESTS_UNIT_UNIT_TEST_TIME_FIXTURE_HPP

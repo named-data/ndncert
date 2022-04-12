@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -20,13 +20,12 @@
 
 #include "detail/ca-storage.hpp"
 
-namespace ndncert {
-namespace ca {
+namespace ndncert::ca {
 
 std::unique_ptr<CaStorage>
 CaStorage::createCaStorage(const std::string& caStorageType, const Name& caName, const std::string& path)
 {
-  CaStorageFactory& factory = getFactory();
+  auto& factory = getFactory();
   auto i = factory.find(caStorageType);
   return i == factory.end() ? nullptr : i->second(caName, path);
 }
@@ -34,9 +33,8 @@ CaStorage::createCaStorage(const std::string& caStorageType, const Name& caName,
 CaStorage::CaStorageFactory&
 CaStorage::getFactory()
 {
-  static CaStorage::CaStorageFactory factory;
+  static CaStorageFactory factory;
   return factory;
 }
 
-} // namespace ca
-} // namespace ndncert
+} // namespace ndncert::ca
