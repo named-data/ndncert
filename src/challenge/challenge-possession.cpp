@@ -115,22 +115,16 @@ ChallengePossession::handleChallengeRequest(const Block& params, ca::RequestStat
     using ndn::toHex;
 
     // check the certificate
-    bool checkOK = false;
-    if (credential.hasContent() && signatureLen == 0) {
-      Name signingKeyName = credential.getSignatureInfo().getKeyLocator().getName();
-      ndn::security::transform::PublicKey key;
-      key.loadPkcs8(credential.getPublicKey());
-      for (const auto& anchor : m_trustAnchors) {
-        if (anchor.getKeyName() == signingKeyName) {
-          if (ndn::security::verifySignature(credential, anchor)) {
-            checkOK = true;
-          }
-        }
-      }
-    }
-    else {
+    if (!credential.hasContent() || signatureLen != 0) {
       return returnWithError(request, ErrorCode::BAD_INTEREST_FORMAT, "Cannot find certificate");
     }
+    auto keyLocator = credential.getSignatureInfo().getKeyLocator().getName();
+    ndn::security::transform::PublicKey key;
+    key.loadPkcs8(credential.getPublicKey());
+    bool checkOK = std::any_of(m_trustAnchors.begin(), m_trustAnchors.end(), [&] (const auto& anchor) {
+      return (anchor.getKeyName() == keyLocator || anchor.getName() == keyLocator) &&
+             ndn::security::verifySignature(credential, anchor);
+    });
     if (!checkOK) {
       return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Certificate cannot be verified");
     }
