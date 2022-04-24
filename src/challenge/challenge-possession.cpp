@@ -229,7 +229,7 @@ ChallengePossession::genChallengeRequestTLV(Status status, const std::string& ch
 void
 ChallengePossession::fulfillParameters(std::multimap<std::string, std::string>& params,
                                        ndn::KeyChain& keyChain, const Name& issuedCertName,
-                                       const std::array<uint8_t, 16>& nonce)
+                                       ndn::span<const uint8_t, 16> nonce)
 {
   auto keyName = ndn::security::extractKeyNameFromCertName(issuedCertName);
   auto id = keyChain.getPib().getIdentity(ndn::security::extractIdentityFromCertName(issuedCertName));

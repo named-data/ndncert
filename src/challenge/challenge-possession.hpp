@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -51,6 +51,7 @@ namespace ndncert {
 class ChallengePossession : public ChallengeModule
 {
 public:
+  explicit
   ChallengePossession(const std::string& configPath = "");
 
   // For CA
@@ -68,7 +69,7 @@ public:
   static void
   fulfillParameters(std::multimap<std::string, std::string>& params,
                     ndn::KeyChain& keyChain, const Name& issuedCertName,
-                    const std::array<uint8_t, 16>& nonce);
+                    ndn::span<const uint8_t, 16> nonce);
 
   // challenge parameters
   static const std::string PARAMETER_KEY_CREDENTIAL_CERT;

@@ -25,11 +25,69 @@
 
 namespace ndncert::tests {
 
-BOOST_FIXTURE_TEST_SUITE(TestChallengePossession, IdentityManagementFixture)
+class ChallengePossessionFixture : public IdentityManagementFixture
+{
+public:
+  void
+  createTrustAnchor()
+  {
+    trustAnchor = addIdentity("/trust").getDefaultKey().getDefaultCertificate();
+    challenge.parseConfigFile();
+    challenge.m_trustAnchors.front() = trustAnchor;
+  }
+
+  void
+  createCertificateRequest()
+  {
+    state.caPrefix = "/example";
+    state.requestId = RequestId{{101}};
+    state.requestType = RequestType::NEW;
+    state.cert = addIdentity("/example").getDefaultKey().getDefaultCertificate();
+  }
+
+  void
+  createRequesterCredential()
+  {
+    auto keyB = addIdentity("/trust/cert").getDefaultKey();
+    ndn::security::MakeCertificateOptions opts;
+    opts.issuerId = ndn::name::Component("Credential");
+    opts.validity.emplace(ndn::security::ValidityPeriod::makeRelative(-1_s, 1_min));
+    credential = m_keyChain.makeCertificate(keyB, signingByCertificate(trustAnchor), opts);
+    m_keyChain.addCertificate(keyB, credential);
+  }
+
+  void
+  signCertRequest()
+  {
+    auto params = challenge.getRequestedParameterList(state.status, "");
+    ChallengePossession::fulfillParameters(params, m_keyChain, credential.getName(), std::array<uint8_t, 16>{});
+    Block paramsTlv = challenge.genChallengeRequestTLV(state.status, "", params);
+    challenge.handleChallengeRequest(paramsTlv, state);
+    BOOST_CHECK_EQUAL(statusToString(state.status), statusToString(Status::CHALLENGE));
+    BOOST_REQUIRE(state.challengeState.has_value());
+    BOOST_CHECK_EQUAL(state.challengeState->challengeStatus, "need-proof");
+  }
+
+  void
+  replyFromServer(ndn::span<const uint8_t, 16> nonce)
+  {
+    auto params2 = challenge.getRequestedParameterList(state.status, state.challengeState->challengeStatus);
+    ChallengePossession::fulfillParameters(params2, m_keyChain, credential.getName(), nonce);
+    Block paramsTlv2 = challenge.genChallengeRequestTLV(state.status, state.challengeState->challengeStatus, params2);
+    challenge.handleChallengeRequest(paramsTlv2, state);
+  }
+
+public:
+  ChallengePossession challenge{"tests/unit-tests/config-files/config-challenge-possession"};
+  Certificate trustAnchor;
+  ca::RequestState state;
+  Certificate credential;
+};
+
+BOOST_FIXTURE_TEST_SUITE(TestChallengePossession, ChallengePossessionFixture)
 
 BOOST_AUTO_TEST_CASE(LoadConfig)
 {
-  ChallengePossession challenge("./tests/unit-tests/config-files/config-challenge-possession");
   BOOST_CHECK_EQUAL(challenge.CHALLENGE_TYPE, "Possession");
 
   challenge.parseConfigFile();
@@ -41,105 +99,27 @@ BOOST_AUTO_TEST_CASE(LoadConfig)
 
 BOOST_AUTO_TEST_CASE(HandleChallengeRequest)
 {
-  // create trust anchor
-  ChallengePossession challenge("./tests/unit-tests/config-files/config-challenge-possession");
-  auto identity = addIdentity(Name("/trust"));
-  auto key = identity.getDefaultKey();
-  auto trustAnchor = key.getDefaultCertificate();
-  challenge.parseConfigFile();
-  challenge.m_trustAnchors.front() = trustAnchor;
+  createTrustAnchor();
+  createCertificateRequest();
+  createRequesterCredential();
+  signCertRequest();
 
-  // create certificate request
-  auto identityA = addIdentity(Name("/example"));
-  auto keyA = identityA.getDefaultKey();
-  auto certA = key.getDefaultCertificate();
-  RequestId requestId = {{101}};
-  ca::RequestState state;
-  state.caPrefix = Name("/example");
-  state.requestId = requestId;
-  state.requestType = RequestType::NEW;
-  state.cert = certA;
-
-  // create requester's credential
-  auto identityB = addIdentity(Name("/trust/cert"));
-  auto keyB = identityB.getDefaultKey();
-  auto credentialName = Name(keyB.getName()).append("Credential").appendVersion();
-  Certificate credential;
-  credential.setName(credentialName);
-  credential.setContent(keyB.getPublicKey());
-  SignatureInfo signatureInfo;
-  signatureInfo.setValidityPeriod(ndn::security::ValidityPeriod(time::system_clock::now(),
-                                                                time::system_clock::now() + time::minutes(1)));
-  m_keyChain.sign(credential, signingByCertificate(trustAnchor).setSignatureInfo(signatureInfo));
-  m_keyChain.addCertificate(keyB, credential);
-
-  // using private key to sign cert request
-  auto params = challenge.getRequestedParameterList(state.status, "");
-  ChallengePossession::fulfillParameters(params, m_keyChain, credential.getName(), std::array<uint8_t, 16>{});
-  Block paramsTlv = challenge.genChallengeRequestTLV(state.status, "", params);
-  challenge.handleChallengeRequest(paramsTlv, state);
-  BOOST_CHECK_EQUAL(statusToString(state.status), statusToString(Status::CHALLENGE));
-  BOOST_CHECK_EQUAL(state.challengeState->challengeStatus, "need-proof");
-
-  // reply from server
   auto nonceBuf = ndn::fromHex(state.challengeState->secrets.get("nonce", ""));
   std::array<uint8_t, 16> nonce{};
   memcpy(nonce.data(), nonceBuf->data(), 16);
-  auto params2 = challenge.getRequestedParameterList(state.status, state.challengeState->challengeStatus);
-  ChallengePossession::fulfillParameters(params2, m_keyChain, credential.getName(), nonce);
-  Block paramsTlv2 = challenge.genChallengeRequestTLV(state.status, state.challengeState->challengeStatus, params2);
-  challenge.handleChallengeRequest(paramsTlv2, state);
+  replyFromServer(nonce);
   BOOST_CHECK_EQUAL(statusToString(state.status), statusToString(Status::PENDING));
 }
 
 BOOST_AUTO_TEST_CASE(HandleChallengeRequestProofFail)
 {
-  // create trust anchor
-  ChallengePossession challenge("./tests/unit-tests/config-files/config-challenge-possession");
-  auto identity = addIdentity(Name("/trust"));
-  auto key = identity.getDefaultKey();
-  auto trustAnchor = key.getDefaultCertificate();
-  challenge.parseConfigFile();
-  challenge.m_trustAnchors.front() = trustAnchor;
+  createTrustAnchor();
+  createCertificateRequest();
+  createRequesterCredential();
+  signCertRequest();
 
-  // create certificate request
-  auto identityA = addIdentity(Name("/example"));
-  auto keyA = identityA.getDefaultKey();
-  auto certA = key.getDefaultCertificate();
-  RequestId requestId = {{101}};
-  ca::RequestState state;
-  state.caPrefix = Name("/example");
-  state.requestId = requestId;
-  state.requestType = RequestType::NEW;
-  state.cert = certA;
-
-  // create requester's credential
-  auto identityB = addIdentity(Name("/trust/cert"));
-  auto keyB = identityB.getDefaultKey();
-  auto credentialName = Name(keyB.getName()).append("Credential").appendVersion();
-  Certificate credential;
-  credential.setName(credentialName);
-  credential.setContent(keyB.getPublicKey());
-  SignatureInfo signatureInfo;
-  signatureInfo.setValidityPeriod(ndn::security::ValidityPeriod(time::system_clock::now(),
-                                                                time::system_clock::now() + time::minutes(1)));
-  m_keyChain.sign(credential, signingByCertificate(trustAnchor).setSignatureInfo(signatureInfo));
-  m_keyChain.addCertificate(keyB, credential);
-
-  // using private key to sign cert request
-  auto params = challenge.getRequestedParameterList(state.status, "");
-  ChallengePossession::fulfillParameters(params, m_keyChain, credential.getName(), std::array<uint8_t, 16>{});
-  Block paramsTlv = challenge.genChallengeRequestTLV(state.status, "", params);
-  challenge.handleChallengeRequest(paramsTlv, state);
-  BOOST_CHECK_EQUAL(statusToString(state.status), statusToString(Status::CHALLENGE));
-  BOOST_CHECK_EQUAL(state.challengeState->challengeStatus, "need-proof");
-
-  // reply from server
   std::array<uint8_t, 16> nonce{};
-  auto params2 = challenge.getRequestedParameterList(state.status, state.challengeState->challengeStatus);
-  ChallengePossession::fulfillParameters(params2, m_keyChain, credential.getName(), nonce);
-  Block paramsTlv2 = challenge.genChallengeRequestTLV(state.status, state.challengeState->challengeStatus, params2);
-  challenge.handleChallengeRequest(paramsTlv2, state);
+  replyFromServer(nonce);
   BOOST_CHECK_EQUAL(statusToString(state.status), statusToString(Status::FAILURE));
 }
 
