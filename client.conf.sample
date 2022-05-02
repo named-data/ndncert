@@ -2,16 +2,8 @@
   "ca-list":
   [
     {
-      "ca-prefix": "/ndncert-demo",
-      "ca-info": "NDN Testbed NDNCERT CA (Demo)",
-      "max-validity-period": "1296000",
-      "max-suffix-length": "5",
-      "probe-parameters": [
-        {
-          "probe-parameter-key": "email"
-        }
-      ],
-      "certificate": "Bv0BLwctCAxuZG5jZXJ0LWRlbW8IA0tFWQgI92c9QI8lJGoIBHNlbGY2CAAAAX7YsardFAkYAQIZBAA27oAVWzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABNIu6i4dFU2FwW9641O4XehbwZD3INSgsEehPfZVRnDhQ0l5oRdUGJo6OQhOutExKov7dp+hzmRSAHbiO3dRjdIWThsBAxwfBx0IDG5kbmNlcnQtZGVtbwgDS0VZCAj3Zz1AjyUkav0A/Sb9AP4PMTk3MDAxMDFUMDAwMDAw/QD/DzIwNDIwMjAzVDA5MzcwORdGMEQCIA7CEGlG+KQnJudjqpCzt7IlHRgPV2ni1k5mSu0yZXKtAiAGkqnGwTu1e8LVqZ1XIidt/wDzcYXTQGEoltwhcN6jUw=="
+      "ca-prefix": "/ndn",
+      "certificate": "Bv0BSwcjCANuZG4IA0tFWQgIJ8SyKp97gScIA25kbjYIAAABgHX6c7QUCRgBAhkEADbugBVbMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEPuDnW4oq0mULLT8PDXh0zuBg+0SJ1yPC85jylUU+hgxX9fDNyjlykLrvb1D6IQRJWJHMKWe6TJKPUhGgOT658hZyGwEDHBYHFAgDbmRuCANLRVkICCfEsiqfe4En/QD9Jv0A/g8yMDIyMDQyOVQxNTM5NTD9AP8PMjAyNjEyMzFUMjM1OTU5/QECKf0CACX9AgEIZnVsbG5hbWX9AgIVTkROIFRlc3RiZWQgUm9vdCAyMjA0F0gwRgIhAPYUOjNakdfDGh5j9dcCGOz+Ie1MqoAEsjM9PEUEWbnqAiEApu0rg9GAK1LNExjLYAF6qVgpWQgU+atPn63Gtuubqyg="
     }
   ]
 }

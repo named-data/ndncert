@@ -51,6 +51,7 @@ static ndn::Face face;
 static ndn::KeyChain keyChain;
 static std::shared_ptr<Request> requesterState;
 static std::shared_ptr<std::multimap<std::string, std::string>> capturedProbeParams;
+static std::shared_ptr<Certificate> trustedCert;
 static Name newlyCreatedIdentityName;
 static Name newlyCreatedKeyName;
 
@@ -279,6 +280,9 @@ infoCb(const Data& reply, const Name& certFullName)
   std::optional<CaProfile> profile;
   try {
     if (certFullName.empty()) {
+      if (trustedCert && !ndn::security::verifySignature(reply, *trustedCert)) {
+        NDN_THROW(std::runtime_error("Cannot verify replied Data packet signature."));
+      }
       profile = Request::onCaProfileResponse(reply);
     }
     else {
@@ -289,24 +293,31 @@ infoCb(const Data& reply, const Name& certFullName)
     std::cerr << "The fetched CA information cannot be used because: " << e.what() << std::endl;
     return;
   }
-  std::cerr << "\n***************************************\n"
-            << "Step " << nStep++
-            << ": Will use a new trust anchor, please double check the identity info:" << std::endl
-            << "> New CA name: " << profile->caPrefix << std::endl
-            << "> This trust anchor information is signed by: " << reply.getSignatureInfo().getKeyLocator() << std::endl
-            << "> The certificate: " << *profile->cert << std::endl
-            << "Do you trust the information? Type in YES or NO" << std::endl;
+  if (!trustedCert)
+  {
+    std::cerr << "\n***************************************\n"
+              << "Step " << nStep++
+              << ": Will use the following CA, please double check the identity info:" << std::endl
+              << "> CA name: " << profile->caPrefix << std::endl
+              << "> This CA information is signed by: " << reply.getSignatureInfo().getKeyLocator() << std::endl
+              << "> The certificate:" << std::endl << *profile->cert << std::endl
+              << "Do you trust the information? Type in YES or NO" << std::endl;
 
-  std::string answer;
-  getline(std::cin, answer);
-  boost::algorithm::to_lower(answer);
-  if (answer == "yes") {
-    std::cerr << "You answered YES: new CA " << profile->caPrefix << " will be used" << std::endl;
-    runProbe(*profile);
+    std::string answer;
+    getline(std::cin, answer);
+    boost::algorithm::to_lower(answer);
+    if (answer == "yes") {
+      std::cerr << "You answered YES: new CA " << profile->caPrefix << " will be used" << std::endl;
+      trustedCert = profile->cert;
+      runProbe(*profile);
+    }
+    else {
+      std::cerr << "You answered NO: new CA " << profile->caPrefix << " will not be used" << std::endl;
+      exit(0);
+    }
   }
   else {
-    std::cerr << "You answered NO: new CA " << profile->caPrefix << " will not be used" << std::endl;
-    exit(0);
+    runProbe(*profile);
   }
 }
 
@@ -435,22 +446,19 @@ selectCaProfile(const std::string& configFilePath)
   getline(std::cin, caIndexS);
   caIndexSLower = caIndexS;
   boost::algorithm::to_lower(caIndexSLower);
+  Name selectedCaName;
   if (caIndexSLower == "none") {
     std::cerr << "\n***************************************\n"
               << "Step " << nStep << ": ADD NEW CA\nPlease type in the CA's Name:" << std::endl;
-    std::string expectedCAName;
-    getline(std::cin, expectedCAName);
-    face.expressInterest(
-        *Request::genCaProfileDiscoveryInterest(Name(expectedCAName)),
-        [&] (const auto&, const auto& data) {
-          auto fetchingInterest = Request::genCaProfileInterestFromDiscoveryResponse(data);
-          face.expressInterest(*fetchingInterest,
-                               [] (const auto&, const auto& data2) { infoCb(data2, {}); },
-                               [] (auto&&...) { onNackCb(); },
-                               [] (auto&&...) { timeoutCb(); });
-        },
-        [] (auto&&...) { onNackCb(); },
-        [] (auto&&...) { timeoutCb(); });
+    std::string targetCaName;
+    getline(std::cin, targetCaName);
+    try {
+      selectedCaName = Name(targetCaName);
+    }
+    catch (const std::exception&) {
+      std::cerr << "Your input is not a valid name. Exit" << std::endl;
+      exit(1);
+    }
   }
   else {
     size_t caIndex;
@@ -468,8 +476,20 @@ selectCaProfile(const std::string& configFilePath)
     auto itemIterator = profileStorage.getKnownProfiles().cbegin();
     std::advance(itemIterator, caIndex);
     auto targetCaItem = *itemIterator;
-    runProbe(targetCaItem);
+    trustedCert = targetCaItem.cert;
+    selectedCaName = targetCaItem.caPrefix;
   }
+  face.expressInterest(
+    *Request::genCaProfileDiscoveryInterest(selectedCaName),
+    [&] (const auto&, const auto& data) {
+      auto fetchingInterest = Request::genCaProfileInterestFromDiscoveryResponse(data);
+      face.expressInterest(*fetchingInterest,
+                            [] (const auto&, const auto& data2) { infoCb(data2, {}); },
+                            [] (auto&&...) { onNackCb(); },
+                            [] (auto&&...) { timeoutCb(); });
+    },
+    [] (auto&&...) { onNackCb(); },
+    [] (auto&&...) { timeoutCb(); });
 }
 
 static void
