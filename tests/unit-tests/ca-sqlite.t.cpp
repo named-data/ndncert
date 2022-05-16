@@ -20,11 +20,36 @@
 
 #include "detail/ca-sqlite.hpp"
 
-#include "test-common.hpp"
+#include "tests/boost-test.hpp"
+#include "tests/key-chain-fixture.hpp"
+
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
 
 namespace ndncert::tests {
 
 using namespace ca;
+
+class DatabaseFixture : public KeyChainFixture
+{
+public:
+  DatabaseFixture()
+  {
+    boost::filesystem::path parentDir{UNIT_TESTS_TMPDIR};
+    dbDir = parentDir / "test-home" / ".ndncert";
+    if (!boost::filesystem::exists(dbDir)) {
+      boost::filesystem::create_directory(dbDir);
+    }
+  }
+
+  ~DatabaseFixture()
+  {
+    boost::filesystem::remove_all(dbDir);
+  }
+
+protected:
+  boost::filesystem::path dbDir;
+};
 
 BOOST_FIXTURE_TEST_SUITE(TestCaSqlite, DatabaseFixture)
 
@@ -32,7 +57,7 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
 {
   CaSqlite storage(Name(), dbDir.string() + "/TestCaSqlite_RequestOperations.db");
 
-  auto identity1 = addIdentity(Name("/ndn/site1"));
+  auto identity1 = m_keyChain.createIdentity(Name("/ndn/site1"));
   auto key1 = identity1.getDefaultKey();
   auto cert1 = key1.getDefaultCertificate();
 
@@ -84,7 +109,7 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
                                 result.decryptionIv.begin(), result.decryptionIv.end());
 
   // another add operation
-  auto identity2 = addIdentity(Name("/ndn/site2"));
+  auto identity2 = m_keyChain.createIdentity(Name("/ndn/site2"));
   auto key2 = identity2.getDefaultKey();
   auto cert2 = key2.getDefaultCertificate();
   RequestId requestId2 = {{102}};
@@ -112,7 +137,7 @@ BOOST_AUTO_TEST_CASE(DuplicateAdd)
 {
   CaSqlite storage(Name(), dbDir.string() + "/TestCaSqlite_DuplicateAdd.db");
 
-  auto identity1 = addIdentity(Name("/ndn/site1"));
+  auto identity1 = m_keyChain.createIdentity(Name("/ndn/site1"));
   auto key1 = identity1.getDefaultKey();
   auto cert1 = key1.getDefaultCertificate();
 

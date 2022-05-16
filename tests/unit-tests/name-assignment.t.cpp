@@ -23,7 +23,7 @@
 #include "name-assignment/assignment-param.hpp"
 #include "name-assignment/assignment-hash.hpp"
 
-#include "test-common.hpp"
+#include "tests/boost-test.hpp"
 
 namespace ndncert::tests {
 

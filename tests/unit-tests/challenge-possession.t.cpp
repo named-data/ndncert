@@ -21,17 +21,18 @@
 #include "challenge/challenge-possession.hpp"
 #include "detail/challenge-encoder.hpp"
 
-#include "test-common.hpp"
+#include "tests/boost-test.hpp"
+#include "tests/key-chain-fixture.hpp"
 
 namespace ndncert::tests {
 
-class ChallengePossessionFixture : public IdentityManagementFixture
+class ChallengePossessionFixture : public KeyChainFixture
 {
 public:
   void
   createTrustAnchor()
   {
-    trustAnchor = addIdentity("/trust").getDefaultKey().getDefaultCertificate();
+    trustAnchor = m_keyChain.createIdentity("/trust").getDefaultKey().getDefaultCertificate();
     challenge.parseConfigFile();
     challenge.m_trustAnchors.front() = trustAnchor;
   }
@@ -42,13 +43,13 @@ public:
     state.caPrefix = "/example";
     state.requestId = RequestId{{101}};
     state.requestType = RequestType::NEW;
-    state.cert = addIdentity("/example").getDefaultKey().getDefaultCertificate();
+    state.cert = m_keyChain.createIdentity("/example").getDefaultKey().getDefaultCertificate();
   }
 
   void
   createRequesterCredential()
   {
-    auto keyB = addIdentity("/trust/cert").getDefaultKey();
+    auto keyB = m_keyChain.createIdentity("/trust/cert").getDefaultKey();
     ndn::security::MakeCertificateOptions opts;
     opts.issuerId = ndn::name::Component("Credential");
     opts.validity.emplace(ndn::security::ValidityPeriod::makeRelative(-1_s, 1_min));

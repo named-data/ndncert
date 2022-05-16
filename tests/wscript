@@ -5,12 +5,11 @@ def build(bld):
     if not bld.env.WITH_TESTS:
         return
 
-    tmpdir = 'TMP_TESTS_PATH="%s"' % bld.bldnode.make_node('tmp-files')
+    tmpdir = 'UNIT_TESTS_TMPDIR="%s"' % bld.bldnode.make_node('tmp-files')
     bld.program(
         target='../unit-tests',
         name='unit-tests',
         source=bld.path.ant_glob(['*.cpp', 'unit-tests/**/*.cpp']),
         use='ndn-cert',
-        includes='.',
         defines=[tmpdir],
         install_path=None)

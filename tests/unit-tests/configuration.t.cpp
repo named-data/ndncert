@@ -22,11 +22,11 @@
 #include "detail/profile-storage.hpp"
 #include "detail/info-encoder.hpp"
 
-#include "test-common.hpp"
+#include "tests/boost-test.hpp"
 
 namespace ndncert::tests {
 
-BOOST_FIXTURE_TEST_SUITE(TestConfig, IdentityManagementFixture)
+BOOST_AUTO_TEST_SUITE(TestConfig)
 
 BOOST_AUTO_TEST_CASE(CaConfigFile)
 {

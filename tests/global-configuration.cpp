@@ -20,7 +20,7 @@
 
 #include "detail/ndncert-common.hpp"
 
-#include "boost-test.hpp"
+#include "tests/boost-test.hpp"
 
 #include <boost/filesystem.hpp>
 #include <fstream>
@@ -37,7 +37,7 @@ public:
     if (envHome)
       m_home = envHome;
 
-    auto testHome = boost::filesystem::path(TMP_TESTS_PATH) / "test-home";
+    auto testHome = boost::filesystem::path(UNIT_TESTS_TMPDIR) / "test-home";
     if (::setenv("HOME", testHome.c_str(), 1) != 0)
       NDN_THROW(std::runtime_error("setenv() failed"));
 

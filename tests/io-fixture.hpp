@@ -19,42 +19,35 @@
  * See AUTHORS.md for complete list of ndn-cxx authors and contributors.
  */
 
-#ifndef NDNCERT_TESTS_DATABASE_FIXTURE_HPP
-#define NDNCERT_TESTS_DATABASE_FIXTURE_HPP
+#ifndef NDNCERT_TESTS_IO_FIXTURE_HPP
+#define NDNCERT_TESTS_IO_FIXTURE_HPP
 
-#include "identity-management-fixture.hpp"
-#include "unit-test-time-fixture.hpp"
+#include "tests/clock-fixture.hpp"
 
-#include <boost/filesystem.hpp>
+#include <boost/asio/io_service.hpp>
 
 namespace ndncert::tests {
 
-class IdentityManagementTimeFixture : public UnitTestTimeFixture
-                                    , public IdentityManagementFixture
+class IoFixture : public ClockFixture
 {
-};
-
-class DatabaseFixture : public IdentityManagementTimeFixture
-{
-public:
-  DatabaseFixture()
+private:
+  void
+  afterTick() final
   {
-    boost::filesystem::path parentDir{TMP_TESTS_PATH};
-    dbDir = parentDir / "test-home" / ".ndncert";
-    if (!boost::filesystem::exists(dbDir)) {
-      boost::filesystem::create_directory(dbDir);
+    if (m_io.stopped()) {
+#if BOOST_VERSION >= 106600
+      m_io.restart();
+#else
+      m_io.reset();
+#endif
     }
-  }
-
-  ~DatabaseFixture()
-  {
-    boost::filesystem::remove_all(dbDir);
+    m_io.poll();
   }
 
 protected:
-  boost::filesystem::path dbDir;
+  boost::asio::io_service m_io;
 };
 
 } // namespace ndncert::tests
 
-#endif // NDNCERT_TESTS_DATABASE_FIXTURE_HPP
+#endif // NDNCERT_TESTS_IO_FIXTURE_HPP

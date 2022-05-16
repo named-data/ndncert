@@ -24,17 +24,20 @@
 #include "detail/error-encoder.hpp"
 #include "detail/probe-encoder.hpp"
 
-#include "test-common.hpp"
+#include "tests/boost-test.hpp"
+#include "tests/io-key-chain-fixture.hpp"
+
+#include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace ndncert::tests {
 
 using namespace requester;
 
-BOOST_FIXTURE_TEST_SUITE(TestRequester, IdentityManagementTimeFixture)
+BOOST_FIXTURE_TEST_SUITE(TestRequester, IoKeyChainFixture)
 
 BOOST_AUTO_TEST_CASE(GenProbeInterest)
 {
-  auto identity = addIdentity(Name("/site"));
+  auto identity = m_keyChain.createIdentity(Name("/site"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
@@ -57,8 +60,9 @@ BOOST_AUTO_TEST_CASE(GenProbeInterest)
   BOOST_CHECK_EQUAL(readString(firstInterest->getApplicationParameters().get(tlv::ParameterValue)), "zhiyi@cs.ucla.edu");
 }
 
-BOOST_AUTO_TEST_CASE(OnProbeResponse){
-  auto identity = addIdentity(Name("/site"));
+BOOST_AUTO_TEST_CASE(OnProbeResponse)
+{
+  auto identity = m_keyChain.createIdentity(Name("/site"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
@@ -73,7 +77,7 @@ BOOST_AUTO_TEST_CASE(OnProbeResponse){
   availableNames.emplace_back("/site1");
   availableNames.emplace_back("/site2");
 
-  ndn::util::DummyClientFace face(io, m_keyChain, {true, true});
+  ndn::util::DummyClientFace face(m_io, m_keyChain, {true, true});
   ca::CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-5", "ca-storage-memory");
 
   Data reply;
@@ -104,7 +108,7 @@ BOOST_AUTO_TEST_CASE(OnProbeResponse){
 
 BOOST_AUTO_TEST_CASE(ErrorHandling)
 {
-  auto identity = addIdentity(Name("/site"));
+  auto identity = m_keyChain.createIdentity(Name("/site"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 

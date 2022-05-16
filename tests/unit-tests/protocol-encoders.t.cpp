@@ -25,11 +25,13 @@
 #include "detail/request-encoder.hpp"
 #include "detail/ca-configuration.hpp"
 
-#include "test-common.hpp"
+#include "tests/boost-test.hpp"
+#include "tests/clock-fixture.hpp"
+#include "tests/key-chain-fixture.hpp"
 
 namespace ndncert::tests {
 
-BOOST_FIXTURE_TEST_SUITE(TestProtocolEncoding, IdentityManagementTimeFixture)
+BOOST_AUTO_TEST_SUITE(TestProtocolEncoding)
 
 BOOST_AUTO_TEST_CASE(InfoEncoding)
 {
@@ -111,11 +113,7 @@ BOOST_AUTO_TEST_CASE(NewRevokeEncodingParam)
   std::shared_ptr<Certificate> returnedCert;
   requesttlv::decodeApplicationParameters(b, RequestType::REVOKE, returnedPub, returnedCert);
 
-  BOOST_CHECK_EQUAL(returnedPub.size(), pub.size());
-  for (auto it1 = returnedPub.begin(), it2 = pub.begin();
-       it1 != returnedPub.end() && it2 != pub.end(); it1++, it2++) {
-    BOOST_CHECK_EQUAL(*it1, *it2);
-  }
+  BOOST_TEST(returnedPub == pub, boost::test_tools::per_element());
   BOOST_CHECK_EQUAL(*returnedCert, *certRequest);
 }
 
@@ -137,7 +135,11 @@ BOOST_AUTO_TEST_CASE(NewRevokeEncodingData)
   BOOST_CHECK_EQUAL_COLLECTIONS(returnedId.begin(), returnedId.end(), id.begin(), id.end());
 }
 
-BOOST_AUTO_TEST_CASE(ChallengeEncoding)
+class ChallengeEncodingFixture : public ClockFixture, public KeyChainFixture
+{
+};
+
+BOOST_FIXTURE_TEST_CASE(ChallengeEncoding, ChallengeEncodingFixture)
 {
   const uint8_t key[] = {0x23, 0x70, 0xe3, 0x20, 0xd4, 0x34, 0x42, 0x08,
                          0xe0, 0xff, 0x56, 0x83, 0xf2, 0x43, 0xb2, 0x13};

@@ -20,19 +20,20 @@
 
 #include "detail/ca-memory.hpp"
 
-#include "test-common.hpp"
+#include "tests/boost-test.hpp"
+#include "tests/key-chain-fixture.hpp"
 
 namespace ndncert::tests {
 
 using namespace ca;
 
-BOOST_FIXTURE_TEST_SUITE(TestCaMemory, IdentityManagementFixture)
+BOOST_FIXTURE_TEST_SUITE(TestCaMemory, KeyChainFixture)
 
 BOOST_AUTO_TEST_CASE(RequestOperations)
 {
   CaMemory storage;
 
-  auto identity1 = addIdentity(Name("/ndn/site1"));
+  auto identity1 = m_keyChain.createIdentity(Name("/ndn/site1"));
   auto key1 = identity1.getDefaultKey();
   auto cert1 = key1.getDefaultCertificate();
 
@@ -71,7 +72,7 @@ BOOST_AUTO_TEST_CASE(RequestOperations)
   BOOST_CHECK_EQUAL(request2.caPrefix, result.caPrefix);
 
   // another add operation
-  auto identity2 = addIdentity(Name("/ndn/site2"));
+  auto identity2 = m_keyChain.createIdentity(Name("/ndn/site2"));
   auto key2 = identity2.getDefaultKey();
   auto cert2 = key2.getDefaultCertificate();
   RequestId requestId2 = {{102}};

@@ -20,7 +20,7 @@
 
 #include "detail/crypto-helpers.hpp"
 
-#include "test-common.hpp"
+#include "tests/boost-test.hpp"
 
 namespace ndncert::tests {
 

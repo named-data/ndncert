@@ -22,7 +22,7 @@
 #include "redirection/redirection-param.hpp"
 #include "redirection/redirection-email.hpp"
 
-#include "test-common.hpp"
+#include "tests/boost-test.hpp"
 
 namespace ndncert::tests {
 

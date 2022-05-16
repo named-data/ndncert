@@ -66,7 +66,7 @@ def build(bld):
               source=bld.path.ant_glob('src/**/*.cpp'),
               use='NDN_CXX BOOST OPENSSL SQLITE3',
               includes='src',
-              export_includes='src')
+              export_includes='src .')
 
     bld(features='subst',
         source='libndn-cert.pc.in',

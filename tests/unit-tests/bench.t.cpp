@@ -23,19 +23,24 @@
 #include "detail/info-encoder.hpp"
 #include "requester-request.hpp"
 
-#include "test-common.hpp"
+#include "tests/boost-test.hpp"
+#include "tests/io-key-chain-fixture.hpp"
+
+#include <ndn-cxx/metadata-object.hpp>
+#include <ndn-cxx/security/verification-helpers.hpp>
+#include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace ndncert::tests {
 
-BOOST_FIXTURE_TEST_SUITE(Benchmark, IdentityManagementTimeFixture)
+BOOST_FIXTURE_TEST_SUITE(Benchmark, IoKeyChainFixture)
 
 BOOST_AUTO_TEST_CASE(PacketSize0)
 {
-  auto identity = addIdentity(Name("/ndn"));
+  auto identity = m_keyChain.createIdentity(Name("/ndn"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  ndn::util::DummyClientFace face(io, m_keyChain, {true, true});
+  ndn::util::DummyClientFace face(m_io, m_keyChain, {true, true});
   ca::CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
   auto profileData = ca.getCaProfileData();
@@ -89,11 +94,11 @@ BOOST_AUTO_TEST_CASE(PacketSize0)
 
 BOOST_AUTO_TEST_CASE(PacketSize1)
 {
-  auto identity = addIdentity(Name("/ndn"));
+  auto identity = m_keyChain.createIdentity(Name("/ndn"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  ndn::util::DummyClientFace face(io, m_keyChain, {true, true});
+  ndn::util::DummyClientFace face(m_io, m_keyChain, {true, true});
   ca::CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
@@ -102,7 +107,7 @@ BOOST_AUTO_TEST_CASE(PacketSize1)
   item.caPrefix = Name("/ndn");
   item.cert = std::make_shared<Certificate>(cert);
   requester::Request state(m_keyChain, item, RequestType::NEW);
-  auto newInterest = state.genNewInterest(addIdentity(Name("/ndn/alice")).getDefaultKey().getName(),
+  auto newInterest = state.genNewInterest(m_keyChain.createIdentity(Name("/ndn/alice")).getDefaultKey().getName(),
                                           time::system_clock::now(),
                                           time::system_clock::now() + time::days(1));
   // std::cout << "New Interest Size: " << newInterest->wireEncode().size() << std::endl;

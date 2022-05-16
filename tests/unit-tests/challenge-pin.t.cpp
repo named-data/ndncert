@@ -20,11 +20,12 @@
 
 #include "challenge/challenge-pin.hpp"
 
-#include "test-common.hpp"
+#include "tests/boost-test.hpp"
+#include "tests/key-chain-fixture.hpp"
 
 namespace ndncert::tests {
 
-BOOST_FIXTURE_TEST_SUITE(TestChallengePin, IdentityManagementFixture)
+BOOST_FIXTURE_TEST_SUITE(TestChallengePin, KeyChainFixture)
 
 BOOST_AUTO_TEST_CASE(ChallengeType)
 {
@@ -34,7 +35,7 @@ BOOST_AUTO_TEST_CASE(ChallengeType)
 
 BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmptyInfo)
 {
-  auto identity = addIdentity(Name("/ndn/site1"));
+  auto identity = m_keyChain.createIdentity(Name("/ndn/site1"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
   RequestId requestId = {{101}};
@@ -54,7 +55,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithEmptyInfo)
 
 BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
 {
-  auto identity = addIdentity(Name("/ndn/site1"));
+  auto identity = m_keyChain.createIdentity(Name("/ndn/site1"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
   JsonSection secret;
@@ -83,7 +84,7 @@ BOOST_AUTO_TEST_CASE(OnChallengeRequestWithCode)
 
 BOOST_AUTO_TEST_CASE(OnChallengeRequestWithWrongCode)
 {
-  auto identity = addIdentity(Name("/ndn/site1"));
+  auto identity = m_keyChain.createIdentity(Name("/ndn/site1"));
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
   JsonSection secret;
