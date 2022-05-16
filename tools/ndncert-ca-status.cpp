@@ -64,12 +64,31 @@ main(int argc, char* argv[])
   CaSqlite storage(Name(caNameString), "");
   std::list<RequestState> requestList;
   requestList = storage.listAllRequests();
-  std::cerr << "The pending requests are :" << std::endl;
+  std::cerr << "The pending requests are :" << requestList.size() << std::endl;
   for (const auto& entry : requestList) {
     std::cerr << "***************************************\n"
               << entry
               << "***************************************\n";
   }
+
+  
+//added_gm by liupenghui 
+#if 1
+  std::list<Certificate> certList;
+  if (caNameString != "") {
+    certList = storage.listAllIssuedCertificates(Name(caNameString));
+  }
+  else {
+    certList = storage.listAllIssuedCertificates();
+  }
+  
+  std::cerr << "\n\n" << "The are "<< certList.size() << " issued certs:" << std::endl;
+  
+  for (const auto& entry : certList) {
+	std::cerr << entry.getName().toUri() << std::endl;
+  }
+#endif
+  
   return 0;
 }
 
@@ -80,3 +99,4 @@ main(int argc, char* argv[])
 {
   return ndncert::ca::main(argc, argv);
 }
+

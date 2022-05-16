@@ -34,6 +34,11 @@
 #include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/util/random.hpp>
 #include <ndn-cxx/util/string-helper.hpp>
+//added_gm by liupenghui 
+#if 1
+#include <ndn-cxx/security/certificate.hpp>
+#include <iostream>
+#endif
 
 namespace ndncert::ca {
 
@@ -99,6 +104,14 @@ CaModule::registerPrefix()
       filterId = m_face.setInterestFilter(Name(name).append("CHALLENGE"),
                                           [this] (auto&&, const auto& i) { onChallenge(i); });
       m_interestFilterHandles.push_back(filterId);
+	  
+//added_gm by liupenghui 
+#if 1
+      // register DOWNLOAD prefix
+      filterId = m_face.setInterestFilter(Name(name).append("DOWNLOAD"),
+	                                     [this] (auto&&, const auto& i) { onDownload(i); });
+      m_interestFilterHandles.push_back(filterId);
+#endif
 
       // register REVOKE prefix
       filterId = m_face.setInterestFilter(Name(name).append("REVOKE"),
@@ -351,6 +364,12 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
     NDN_LOG_ERROR("Duplicate Request ID: The same request has been seen before.");
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
                                        "Duplicate Request ID: The same request has been seen before."));
+
+// added_gm by liupenghui 
+#if 1	
+    if (requestType == RequestType::REVOKE)
+      m_storage->deleteRequest(requestState.requestId);
+#endif
     return;
   }
 
@@ -423,8 +442,27 @@ CaModule::onChallenge(const Interest& request)
     return;
   }
 
+
+// added_gm by liupenghui 
+// REVOKE must use the same email with the one used in NEW application phase, considering security.
+// Otherwise, a malicious user can revoking the certificate with any email.
+#if 1
+  if ((challengeType == "email") && (requestState->status == Status::BEFORE_CHALLENGE)) {
+      requestState->challengeEmail = readString(paramTLV.get(tlv::ParameterValue));
+      if (requestState->requestType == RequestType::REVOKE) {
+  	    std::string emailAddress = m_storage->getApplyEmailofCertificate(requestState->cert);
+    	if (requestState->challengeEmail != emailAddress) {
+          m_storage->deleteRequest(requestState->requestId);
+          m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER, "REVOKE Email is not the same as the one used in NEW phase"));
+          return;
+    	}		
+    }
+  }
+#endif
+
   NDN_LOG_TRACE("CHALLENGE module to be load: " << challengeType);
   auto errorInfo = challenge->handleChallengeRequest(paramTLV, *requestState);
+
   if (std::get<0>(errorInfo) != ErrorCode::NO_ERROR) {
     m_storage->deleteRequest(requestState->requestId);
     m_face.put(generateErrorDataPacket(request.getName(), std::get<0>(errorInfo), std::get<1>(errorInfo)));
@@ -439,11 +477,23 @@ CaModule::onChallenge(const Interest& request)
       requestState->cert = issuedCert;
       requestState->status = Status::SUCCESS;
       m_storage->deleteRequest(requestState->requestId);
-
+	  
+//added_gm by liupenghui 
+//add the new issued certificate after successful challenge.
+#if 1
+      m_storage->deleteCertificate(issuedCert.getKeyName());
+      m_storage->addCertificate(requestState->challengeEmail, issuedCert);
+#endif
       payload = challengetlv::encodeDataContent(*requestState, issuedCert.getName());
       NDN_LOG_TRACE("Challenge succeeded. Certificate has been issued: " << issuedCert.getName());
     }
     else if (requestState->requestType == RequestType::REVOKE) {
+//added_gm by liupenghui 
+//delete the revoked certificate after successful challenge.
+#if 1
+
+	  m_storage->deleteCertificate(requestState->cert.getKeyName());
+#endif
       requestState->status = Status::SUCCESS;
       m_storage->deleteRequest(requestState->requestId);
       // TODO: where is the code to revoke?
@@ -467,6 +517,39 @@ CaModule::onChallenge(const Interest& request)
     m_statusUpdateCallback(*requestState);
   }
 }
+
+//added_gm by liupenghui 
+#if 1
+
+void
+CaModule::onDownload(const Interest& request)
+{
+
+  NDN_LOG_TRACE("Handle Download: send out the Download response");
+  
+  std::cerr << "Handle Download: send out the Download response." << std::endl;
+  
+  auto m_issuedCertName = request.getName()
+  	.getSubName(m_config.caProfile.caPrefix.size()+2, request.getName().size()-m_config.caProfile.caPrefix.size()-4);
+  std::cerr << "m_issuedCertName:" << m_issuedCertName << std::endl;
+  
+  Certificate signedCert;
+  try {
+    signedCert = m_storage->getCertificate(ndn::security::v2::extractKeyNameFromCertName(m_issuedCertName));
+  }
+  catch (const std::exception& e) {
+    NDN_LOG_ERROR("Cannot read signed cert " << m_issuedCertName << " from CA's storage: " << e.what());
+    return;
+  }
+  Data result;
+  result.setName(request.getName());
+  result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
+  result.setContent(signedCert.wireEncode());
+  m_keyChain.sign(result, signingByIdentity(m_config.caProfile.caPrefix));
+  m_face.put(result);
+}
+#endif
+
 
 Certificate
 CaModule::issueCertificate(const RequestState& requestState)
@@ -529,3 +612,4 @@ CaModule::generateErrorDataPacket(const Name& name, ErrorCode error, const std::
 }
 
 } // namespace ndncert::ca
+

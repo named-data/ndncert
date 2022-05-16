@@ -23,6 +23,11 @@
 
 #include "detail/ca-request-state.hpp"
 
+//added_gm by liupenghui 
+#if 1
+#include <ndn-cxx/security/certificate.hpp>
+#endif
+
 #include <map>
 
 namespace ndncert::ca {
@@ -56,6 +61,27 @@ public:
 
   virtual std::list<RequestState>
   listAllRequests(const Name& caName) = 0;
+//added_gm by liupenghui 
+#if 1
+  virtual void
+  addCertificate(const std::string& apply_email, const Certificate& cert) = 0;
+
+  virtual Certificate
+  getCertificate(const Name& certKeyName) = 0;
+
+  virtual std::string
+  getApplyEmailofCertificate(const Certificate& cert) = 0;
+
+  virtual void
+  deleteCertificate(const Name& certKeyName) = 0;
+  
+  virtual std::list<Certificate>
+  listAllIssuedCertificates() = 0;
+
+  
+  virtual std::list<Certificate>
+  listAllIssuedCertificates(const Name& caName) = 0;
+#endif
 
 public: // factory
   template<class CaStorageType>
@@ -93,3 +119,4 @@ public:                                                       \
 } g_NdnCert##C##CaStorageRegistrationVariable
 
 #endif // NDNCERT_DETAIL_CA_STORAGE_HPP
+

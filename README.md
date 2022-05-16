@@ -1,5 +1,10 @@
 # NDNCERT: NDN Certificate Management Protocol
 
+This version supports CA re-direction and certificate revoking. 
+REVOKE must use the same email with the one used in NEW application phase, considering security.
+Otherwise, a malicious user can revoking the certificate with any email.
+
+
 [![CI](https://github.com/named-data/ndncert/actions/workflows/ci.yml/badge.svg)](https://github.com/named-data/ndncert/actions/workflows/ci.yml)
 ![Language](https://img.shields.io/badge/C%2B%2B-17-blue)
 

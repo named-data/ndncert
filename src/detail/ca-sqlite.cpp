@@ -27,6 +27,7 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <iostream>
 
 namespace ndncert::ca {
 
@@ -51,7 +52,44 @@ convertString2Json(const std::string& jsonContent)
   boost::property_tree::json_parser::read_json(ss, json);
   return json;
 }
+//added_gm by liupenghui 
+#if 1
+const std::string INITIALIZATION = R"SQL(
+CREATE TABLE IF NOT EXISTS
+  RequestStates(
+    id INTEGER PRIMARY KEY,
+    request_id BLOB NOT NULL,
+    ca_name BLOB NOT NULL,
+    request_type INTEGER NOT NULL,
+    status INTEGER NOT NULL,
+    cert_request BLOB NOT NULL,
+    challenge_type TEXT,
+    challenge_status TEXT,
+    challenge_tp TEXT,
+    remaining_tries INTEGER,
+    remaining_time INTEGER,
+    challenge_secrets TEXT,
+    encryption_key BLOB NOT NULL,
+    encryption_iv BLOB,
+    decryption_iv BLOB,
+    apply_email TEXT
+  );
+CREATE UNIQUE INDEX IF NOT EXISTS
+  RequestStateIdIndex ON RequestStates(request_id);
 
+CREATE TABLE IF NOT EXISTS
+  IssuedCerts(
+    id INTEGER PRIMARY KEY,
+    apply_email TEXT NOT NULL,
+    cert_key_name BLOB NOT NULL,
+    cert BLOB NOT NULL
+  );
+
+CREATE UNIQUE INDEX IF NOT EXISTS
+  IssuedCertKeyNameIndex ON IssuedCerts(cert_key_name);
+)SQL";
+
+#else
 const std::string INITIALIZATION = R"SQL(
 CREATE TABLE IF NOT EXISTS
   RequestStates(
@@ -74,6 +112,8 @@ CREATE TABLE IF NOT EXISTS
 CREATE UNIQUE INDEX IF NOT EXISTS
   RequestStateIdIndex ON RequestStates(request_id);
 )SQL";
+
+#endif
 
 CaSqlite::CaSqlite(const Name& caName, const std::string& path)
   : CaStorage()
@@ -123,7 +163,180 @@ CaSqlite::~CaSqlite()
 {
   sqlite3_close(m_database);
 }
+//added_gm by liupenghui 
+#if 1
 
+RequestState
+CaSqlite::getRequest(const RequestId& requestId)
+{
+  Sqlite3Statement statement(m_database,
+                             R"_SQLTEXT_(SELECT id, ca_name, status,
+                             challenge_status, cert_request,
+                             challenge_type, challenge_secrets,
+                             challenge_tp, remaining_tries, remaining_time,
+                             request_type, encryption_key, encryption_iv, decryption_iv, apply_email
+                             FROM RequestStates where request_id = ?)_SQLTEXT_");
+  statement.bind(1, requestId.data(), requestId.size(), SQLITE_TRANSIENT);
+
+  if (statement.step() == SQLITE_ROW) {
+    RequestState state;
+    state.requestId = requestId;
+    state.caPrefix = Name(statement.getBlock(1));
+    state.status = static_cast<Status>(statement.getInt(2));
+    state.cert = Certificate(statement.getBlock(4));
+    state.challengeType = statement.getString(5);
+    state.requestType = static_cast<RequestType>(statement.getInt(10));
+    std::memcpy(state.encryptionKey.data(), statement.getBlob(11), statement.getSize(11));
+    state.encryptionIv = std::vector<uint8_t>(statement.getBlob(12), statement.getBlob(12) + statement.getSize(12));
+    state.decryptionIv = std::vector<uint8_t>(statement.getBlob(13), statement.getBlob(13) + statement.getSize(13));
+    state.challengeEmail = statement.getString(14);
+    if (!state.challengeType.empty()) {
+      ChallengeState challengeState(statement.getString(3), time::fromIsoString(statement.getString(7)),
+                                    statement.getInt(8), time::seconds(statement.getInt(9)),
+                                    convertString2Json(statement.getString(6)));
+      state.challengeState = challengeState;
+    }
+    return state;
+  }
+  else {
+    NDN_THROW(std::runtime_error("Request " + ndn::toHex(requestId) + " cannot be fetched from database"));
+  }
+}
+
+void
+CaSqlite::addRequest(const RequestState& request)
+{
+  Sqlite3Statement statement(
+      m_database,
+      R"_SQLTEXT_(INSERT OR ABORT INTO RequestStates (request_id, ca_name, status, request_type,
+                  cert_request, challenge_type, challenge_status, challenge_secrets,
+                  challenge_tp, remaining_tries, remaining_time, encryption_key, encryption_iv, decryption_iv, apply_email)
+                  values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))_SQLTEXT_");
+  statement.bind(1, request.requestId.data(), request.requestId.size(), SQLITE_TRANSIENT);
+  statement.bind(2, request.caPrefix.wireEncode(), SQLITE_TRANSIENT);
+  statement.bind(3, static_cast<int>(request.status));
+  statement.bind(4, static_cast<int>(request.requestType));
+  statement.bind(5, request.cert.wireEncode(), SQLITE_TRANSIENT);
+  statement.bind(12, request.encryptionKey.data(), request.encryptionKey.size(), SQLITE_TRANSIENT);
+  statement.bind(13, request.encryptionIv.data(), request.encryptionIv.size(), SQLITE_TRANSIENT);
+  statement.bind(14, request.decryptionIv.data(), request.decryptionIv.size(), SQLITE_TRANSIENT);
+  statement.bind(15, request.challengeEmail, SQLITE_TRANSIENT);
+  if (request.challengeState) {
+    statement.bind(6, request.challengeType, SQLITE_TRANSIENT);
+    statement.bind(7, request.challengeState->challengeStatus, SQLITE_TRANSIENT);
+    statement.bind(8, convertJson2String(request.challengeState->secrets), SQLITE_TRANSIENT);
+    statement.bind(9, time::toIsoString(request.challengeState->timestamp), SQLITE_TRANSIENT);
+    statement.bind(10, request.challengeState->remainingTries);
+    statement.bind(11, request.challengeState->remainingTime.count());
+  }
+  if (statement.step() != SQLITE_DONE) {
+    NDN_THROW(std::runtime_error("Request " + ndn::toHex(request.requestId) +
+                                 " cannot be added to the database"));
+  }
+}
+
+void
+CaSqlite::updateRequest(const RequestState& request)
+{
+  Sqlite3Statement statement(m_database,
+                             R"_SQLTEXT_(UPDATE RequestStates
+                             SET status = ?, challenge_type = ?, challenge_status = ?, challenge_secrets = ?,
+                             challenge_tp = ?, remaining_tries = ?, remaining_time = ?, encryption_iv = ?, decryption_iv = ?, apply_email = ?
+                             WHERE request_id = ?)_SQLTEXT_");
+  statement.bind(1, static_cast<int>(request.status));
+  statement.bind(2, request.challengeType, SQLITE_TRANSIENT);
+  if (request.challengeState) {
+    statement.bind(3, request.challengeState->challengeStatus, SQLITE_TRANSIENT);
+    statement.bind(4, convertJson2String(request.challengeState->secrets), SQLITE_TRANSIENT);
+    statement.bind(5, time::toIsoString(request.challengeState->timestamp), SQLITE_TRANSIENT);
+    statement.bind(6, request.challengeState->remainingTries);
+    statement.bind(7, request.challengeState->remainingTime.count());
+  }
+  else {
+    statement.bind(3, "", SQLITE_TRANSIENT);
+    statement.bind(4, "", SQLITE_TRANSIENT);
+    statement.bind(5, "", SQLITE_TRANSIENT);
+    statement.bind(6, 0);
+    statement.bind(7, 0);
+  }
+  statement.bind(8, request.encryptionIv.data(), request.encryptionIv.size(), SQLITE_TRANSIENT);
+  statement.bind(9, request.decryptionIv.data(), request.decryptionIv.size(), SQLITE_TRANSIENT);
+  statement.bind(10, request.challengeEmail, SQLITE_TRANSIENT);
+  statement.bind(11, request.requestId.data(), request.requestId.size(), SQLITE_TRANSIENT);
+
+  if (statement.step() != SQLITE_DONE) {
+    addRequest(request);
+  }
+}
+
+std::list<RequestState>
+CaSqlite::listAllRequests()
+{
+  std::list<RequestState> result;
+  Sqlite3Statement statement(m_database, R"_SQLTEXT_(SELECT id, request_id, ca_name, status,
+                             challenge_status, cert_request, challenge_type, challenge_secrets,
+                             challenge_tp, remaining_tries, remaining_time, request_type,
+                             encryption_key, encryption_iv, decryption_iv, apply_email
+                             FROM RequestStates)_SQLTEXT_");
+  while (statement.step() == SQLITE_ROW) {
+    RequestState state;
+    std::memcpy(state.requestId.data(), statement.getBlob(1), statement.getSize(1));
+    state.caPrefix = Name(statement.getBlock(2));
+    state.status = static_cast<Status>(statement.getInt(3));
+    state.challengeType = statement.getString(6);
+    state.cert = Certificate(statement.getBlock(5));
+    state.requestType = static_cast<RequestType>(statement.getInt(11));
+    std::memcpy(state.encryptionKey.data(), statement.getBlob(12), statement.getSize(12));
+    state.encryptionIv = std::vector<uint8_t>(statement.getBlob(13), statement.getBlob(13) + statement.getSize(13));
+    state.decryptionIv = std::vector<uint8_t>(statement.getBlob(14), statement.getBlob(14) + statement.getSize(14));
+    state.challengeEmail = statement.getString(15);
+    if (state.challengeType != "") {
+      ChallengeState challengeState(statement.getString(4), time::fromIsoString(statement.getString(8)),
+                                    statement.getInt(9), time::seconds(statement.getInt(10)),
+                                    convertString2Json(statement.getString(7)));
+      state.challengeState = challengeState;
+    }
+    result.push_back(state);
+  }
+  return result;
+}
+
+std::list<RequestState>
+CaSqlite::listAllRequests(const Name& caName)
+{
+  std::list<RequestState> result;
+  Sqlite3Statement statement(m_database,
+                             R"_SQLTEXT_(SELECT id, request_id, ca_name, status,
+                             challenge_status, cert_request, challenge_type, challenge_secrets,
+                             challenge_tp, remaining_tries, remaining_time, request_type,
+                             encryption_key, encryption_iv, decryption_iv, apply_email
+                             FROM RequestStates WHERE ca_name = ?)_SQLTEXT_");
+  statement.bind(1, caName.wireEncode(), SQLITE_TRANSIENT);
+
+  while (statement.step() == SQLITE_ROW) {
+    RequestState state;
+    std::memcpy(state.requestId.data(), statement.getBlob(1), statement.getSize(1));
+    state.caPrefix = Name(statement.getBlock(2));
+    state.status = static_cast<Status>(statement.getInt(3));
+    state.challengeType = statement.getString(6);
+    state.cert = Certificate(statement.getBlock(5));
+    state.requestType = static_cast<RequestType>(statement.getInt(11));
+    std::memcpy(state.encryptionKey.data(), statement.getBlob(12), statement.getSize(12));
+    state.encryptionIv = std::vector<uint8_t>(statement.getBlob(13), statement.getBlob(13) + statement.getSize(13));
+    state.decryptionIv = std::vector<uint8_t>(statement.getBlob(14), statement.getBlob(14) + statement.getSize(14));
+    state.challengeEmail = statement.getString(15);
+    if (!state.challengeType.empty()) {
+      ChallengeState challengeState(statement.getString(4), time::fromIsoString(statement.getString(8)),
+                                    statement.getInt(9), time::seconds(statement.getInt(10)),
+                                    convertString2Json(statement.getString(7)));
+      state.challengeState = challengeState;
+    }
+    result.push_back(state);
+  }
+  return result;
+}
+
+#else
 RequestState
 CaSqlite::getRequest(const RequestId& requestId)
 {
@@ -289,6 +502,9 @@ CaSqlite::listAllRequests(const Name& caName)
   return result;
 }
 
+#endif
+
+
 void
 CaSqlite::deleteRequest(const RequestId& requestId)
 {
@@ -298,4 +514,95 @@ CaSqlite::deleteRequest(const RequestId& requestId)
   statement.step();
 }
 
+
+
+//added_gm by liupenghui 
+#if 1
+void
+CaSqlite::addCertificate(const std::string& apply_email, const Certificate& cert)
+{
+  Sqlite3Statement statement(m_database,
+							 R"_SQLTEXT_(INSERT INTO IssuedCerts (apply_email, cert_key_name, cert)
+							 values (?, ?, ?))_SQLTEXT_");
+  statement.bind(1, apply_email, SQLITE_TRANSIENT);
+  statement.bind(2, cert.getKeyName().wireEncode(), SQLITE_TRANSIENT);
+  statement.bind(3, cert.wireEncode(), SQLITE_TRANSIENT);
+
+  if (statement.step() != SQLITE_DONE) {
+	NDN_THROW(std::runtime_error("Certificate " + cert.getName().toUri() + " cannot be added to database"));
+  }
+}
+
+std::string
+CaSqlite::getApplyEmailofCertificate(const Certificate& cert)
+{
+  Sqlite3Statement statement(m_database,
+  						   R"_SQLTEXT_(SELECT apply_email FROM IssuedCerts where cert_key_name = ?)_SQLTEXT_");
+  statement.bind(1, cert.getKeyName().wireEncode(), SQLITE_TRANSIENT);
+  
+  if (statement.step() == SQLITE_ROW) {
+    return statement.getString(0);
+  }
+  else {
+    NDN_THROW(std::runtime_error("Certificate with name " + cert.getKeyName().toUri() + " cannot be fetched from database"));
+  }
+}
+
+
+Certificate
+CaSqlite::getCertificate(const Name& certKeyName)
+{
+  Sqlite3Statement statement(m_database,
+                             R"_SQLTEXT_(SELECT cert FROM IssuedCerts where cert_key_name = ?)_SQLTEXT_");
+  statement.bind(1, certKeyName.wireEncode(), SQLITE_TRANSIENT);
+
+  if (statement.step() == SQLITE_ROW) {
+    return Certificate(statement.getBlock(0));
+  }
+  else {
+    NDN_THROW(std::runtime_error("Certificate with name " + certKeyName.toUri() + " cannot be fetched from database"));
+  }
+}
+
+void
+CaSqlite::deleteCertificate(const Name& certKeyName)
+{
+  Sqlite3Statement statement(m_database,
+                             R"_SQLTEXT_(DELETE FROM IssuedCerts WHERE cert_key_name = ?)_SQLTEXT_");
+  statement.bind(1, certKeyName.wireEncode(), SQLITE_TRANSIENT);
+  statement.step();
+}
+
+std::list<Certificate>
+CaSqlite::listAllIssuedCertificates()
+{
+  std::list<Certificate> result;
+  Sqlite3Statement statement(m_database, R"_SQLTEXT_(SELECT * FROM IssuedCerts)_SQLTEXT_");
+
+  while (statement.step() == SQLITE_ROW) {
+	std::cerr << "id : " <<	statement.getInt(0) <<  std::endl;
+	std::cerr << "apply_email : " <<  statement.getString(1) <<  std::endl;
+	std::cerr << "cert_key_name : " << Name(statement.getBlock(2)).toUri() <<  std::endl;
+    result.emplace_back(statement.getBlock(3));
+  }
+  return result;
+}
+
+std::list<Certificate>
+CaSqlite::listAllIssuedCertificates(const Name& caName)
+{
+  auto allCerts = listAllIssuedCertificates();
+  std::list<Certificate> result;
+  for (const auto& entry : allCerts) {
+    const auto& klName = entry.getSignatureInfo().getKeyLocator().getName();
+    if (ndn::security::v2::extractIdentityNameFromKeyLocator(klName) == caName) {
+      result.push_back(entry);
+    }
+  }
+  return result;
+}
+
+#endif
+
 } // namespace ndncert::ca
+

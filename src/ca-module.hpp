@@ -78,6 +78,12 @@ NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 
   void
   onChallenge(const Interest& request);
+  
+//added_gm by liupenghui 
+#if 1
+  void
+  onDownload(const Interest& request);
+#endif
 
   void
   onRegisterFailed(const std::string& reason);
@@ -113,3 +119,4 @@ NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 } // namespace ndncert::ca
 
 #endif // NDNCERT_CA_MODULE_HPP
+

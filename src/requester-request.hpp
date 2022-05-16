@@ -163,9 +163,14 @@ public:
    * @return The shared pointer to the encoded interest
    * @throw std::runtime_error if the challenge is not selected or is not supported.
    */
+//added_gm by liupenghui 
+#if 1   
+  std::shared_ptr<Interest>
+  genChallengeInterest(std::multimap<std::string, std::string>&& parameters, Certificate Cert, RequestType runActionType);
+#else
   std::shared_ptr<Interest>
   genChallengeInterest(std::multimap<std::string, std::string>&& parameters);
-
+#endif
   /**
    * @brief Decodes the responded data from the CHALLENGE interest.
    *
@@ -278,3 +283,4 @@ private:
 } // namespace ndncert::requester
 
 #endif // NDNCERT_REQUESTER_REQUEST_HPP
+

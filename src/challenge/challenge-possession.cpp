@@ -151,9 +151,29 @@ ChallengePossession::handleChallengeRequest(const Block& params, ca::RequestStat
     //check the proof
     ndn::security::transform::PublicKey key;
     key.loadPkcs8(credential.getPublicKey());
+//added_gm by liupenghui 
+#if 1
+    SignatureInfo info = credential.getSignatureInfo();
+    int32_t Signature_type = info.getSignatureType();
+	ndn::KeyType keyTypefromCert = ndn::KeyType::NONE;
+    if (Signature_type == ndn::tlv::SignatureSha256WithRsa)
+      keyTypefromCert =  ndn::KeyType::RSA;
+    else if (Signature_type == ndn::tlv::SignatureSha256WithEcdsa)
+      keyTypefromCert =  ndn::KeyType::EC;
+    else if (Signature_type == ndn::tlv::SignatureHmacWithSha256)
+      keyTypefromCert =  ndn::KeyType::HMAC;
+    else if (Signature_type == ndn::tlv::SignatureSm3WithSm2)
+      keyTypefromCert =  ndn::KeyType::SM2;
+    else
+      keyTypefromCert = ndn::KeyType::NONE;
+    if (ndn::security::verifySignature({secretCode}, {signature, signatureLen}, key, keyTypefromCert)) {
+      return returnWithSuccess(request);
+    }
+#else
     if (ndn::security::verifySignature({secretCode}, {signature, signatureLen}, key)) {
       return returnWithSuccess(request);
     }
+#endif	
     return returnWithError(request, ErrorCode::INVALID_PARAMETER,
                            "Cannot verify the proof of private key against credential.");
   }
@@ -235,7 +255,27 @@ ChallengePossession::fulfillParameters(std::multimap<std::string, std::string>& 
   auto id = keyChain.getPib().getIdentity(ndn::security::extractIdentityFromCertName(issuedCertName));
   auto issuedCert = id.getKey(keyName).getCertificate(issuedCertName);
   const auto& issuedCertTlv = issuedCert.wireEncode();
+
+//added_gm by liupenghui 
+#if 1
+  SignatureInfo info = issuedCert.getSignatureInfo();
+  int32_t Signature_type = info.getSignatureType();
+  ndn::KeyType keyTypefromCert = ndn::KeyType::NONE;
+  if (Signature_type == ndn::tlv::SignatureSha256WithRsa)
+	keyTypefromCert =  ndn::KeyType::RSA;
+  else if (Signature_type == ndn::tlv::SignatureSha256WithEcdsa)
+	keyTypefromCert =  ndn::KeyType::EC;
+  else if (Signature_type == ndn::tlv::SignatureHmacWithSha256)
+	keyTypefromCert =  ndn::KeyType::HMAC;
+  else if (Signature_type == ndn::tlv::SignatureSm3WithSm2)
+	keyTypefromCert =  ndn::KeyType::SM2;
+  else
+	keyTypefromCert = ndn::KeyType::NONE;
+  auto signature = keyChain.getTpm().sign({nonce}, keyName, keyTypefromCert, ndn::DigestAlgorithm::SHA256);
+#else
   auto signature = keyChain.getTpm().sign({nonce}, keyName, ndn::DigestAlgorithm::SHA256);
+#endif	
+  
 
   for (auto& [key, val] : params) {
     if (key == PARAMETER_KEY_CREDENTIAL_CERT) {
@@ -248,3 +288,4 @@ ChallengePossession::fulfillParameters(std::multimap<std::string, std::string>& 
 }
 
 } // namespace ndncert
+

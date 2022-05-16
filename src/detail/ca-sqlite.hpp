@@ -22,6 +22,10 @@
 #define NDNCERT_DETAIL_CA_SQLITE_HPP
 
 #include "detail/ca-storage.hpp"
+//added_gm by liupenghui 
+#if 1
+#include <ndn-cxx/security/certificate.hpp>
+#endif
 
 struct sqlite3;
 
@@ -55,6 +59,27 @@ public:
 
   std::list<RequestState>
   listAllRequests(const Name& caName) override;
+  //added_gm by liupenghui 
+#if 1
+  void
+  addCertificate(const std::string& apply_email, const Certificate& cert) override;
+  
+  Certificate
+  getCertificate(const Name& certKeyName) override;
+  
+  std::string
+  getApplyEmailofCertificate(const Certificate& cert);
+  
+  void
+  deleteCertificate(const Name& certKeyName) override;
+  
+  std::list<Certificate>
+  listAllIssuedCertificates() override;
+  
+  
+  std::list<Certificate>
+  listAllIssuedCertificates(const Name& caName) override;
+#endif
 
 private:
   sqlite3* m_database;
@@ -63,3 +88,4 @@ private:
 } // namespace ndncert::ca
 
 #endif // NDNCERT_DETAIL_CA_SQLITE_HPP
+

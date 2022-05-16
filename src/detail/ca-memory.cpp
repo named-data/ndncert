@@ -19,6 +19,10 @@
  */
 
 #include "detail/ca-memory.hpp"
+//added_gm by liupenghui 
+#if 1
+#include <ndn-cxx/security/validation-policy.hpp>
+#endif
 
 namespace ndncert::ca {
 
@@ -83,4 +87,81 @@ CaMemory::listAllRequests(const Name& caName)
   return result;
 }
 
+//added_gm by liupenghui 
+#if 1
+void
+CaMemory::addCertificate(const std::string& apply_email, const Certificate& cert)
+{
+  auto search = m_issuedCerts.find(cert.getKeyName());
+  if (search == m_issuedCerts.end()) {
+  	Cert_storage cert_data;
+	cert_data.email = apply_email;
+	cert_data.cert = cert;
+	m_issuedCerts[cert.getKeyName()] = cert_data;
+  }
+  else {
+	NDN_THROW(std::runtime_error("Certificate " + cert.getName().toUri() + " already exists"));
+  }
+}
+
+
+Certificate
+CaMemory::getCertificate(const Name& certKeyName)
+{
+  auto search = m_issuedCerts.find(certKeyName);
+  if (search != m_issuedCerts.end()) {
+	return search->second.cert;
+  }
+  NDN_THROW(std::runtime_error("Certificate with certification Name " + certKeyName.toUri() + " does not exists"));
+}
+
+std::string
+CaMemory::getApplyEmailofCertificate(const Certificate& cert)
+{
+  auto search = m_issuedCerts.find(cert.getKeyName());
+  if (search != m_issuedCerts.end()) {
+    return search->second.email;
+  }
+  NDN_THROW(std::runtime_error("Certificate with certification Name " + cert.getKeyName().toUri() + " does not exists"));
+}
+
+
+void
+CaMemory::deleteCertificate(const Name& certKeyName)
+{
+  auto search = m_issuedCerts.find(certKeyName);
+  if (search != m_issuedCerts.end()) {
+	m_issuedCerts.erase(search);
+  }
+}
+
+
+std::list<Certificate>
+CaMemory::listAllIssuedCertificates()
+{
+  std::list<Certificate> result;
+  for (const auto& entry : m_issuedCerts) {
+	result.push_back(entry.second.cert);
+  }
+  return result;
+}
+
+
+std::list<Certificate>
+CaMemory::listAllIssuedCertificates(const Name& caName)
+{
+  std::list<Certificate> result;
+  for (const auto& entry : m_issuedCerts) {
+	const auto& klName = entry.second.cert.getSignatureInfo().getKeyLocator().getName();
+	if (ndn::security::v2::extractIdentityNameFromKeyLocator(klName) == caName) {
+	  result.push_back(entry.second.cert);
+	}
+  }
+  return result;
+}
+
+
+#endif
+
 } // namespace ndncert::ca
+

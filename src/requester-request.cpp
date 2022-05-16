@@ -38,6 +38,10 @@
 #include <ndn-cxx/util/random.hpp>
 
 #include <boost/lexical_cast.hpp>
+//added_gm by liupenghui 
+#if 1
+#include <iostream>
+#endif
 
 namespace ndncert::requester {
 
@@ -209,6 +213,40 @@ Request::selectOrContinueChallenge(const std::string& challengeSelected)
   return challenge->getRequestedParameterList(m_status, m_challengeStatus);
 }
 
+//added_gm by liupenghui 
+#if 1   
+std::shared_ptr<Interest>
+Request::genChallengeInterest(std::multimap<std::string, std::string>&& parameters, Certificate Cert, RequestType runActionType)
+{
+  if (m_challengeType.empty()) {
+    NDN_THROW(std::runtime_error("The challenge has not been selected."));
+  }
+  auto challenge = ChallengeModule::createChallengeModule(m_challengeType);
+  if (challenge == nullptr) {
+    NDN_THROW(std::runtime_error("The challenge selected is not supported by your current version of NDNCERT."));
+  }
+  auto challengeParams = challenge->genChallengeRequestTLV(m_status, m_challengeStatus, parameters);
+  
+  Name interestName = m_caProfile.caPrefix;
+  interestName.append("CA").append("CHALLENGE").append(Name::Component(m_requestId));
+  auto interest = std::make_shared<Interest>(interestName);
+  interest->setMustBeFresh(true);
+  
+  // encrypt the Interest parameters
+  auto paramBlock = encodeBlockWithAesGcm128(ndn::tlv::ApplicationParameters, m_aesKey.data(),
+  										   challengeParams.value(), challengeParams.value_size(),
+  										   m_requestId.data(), m_requestId.size(),
+  										   m_encryptionIv);
+  interest->setApplicationParameters(paramBlock);
+  
+  if (runActionType == RequestType::REVOKE)
+    m_keyChain.sign(*interest, signingByCertificate(Cert.getName()));
+  else
+    m_keyChain.sign(*interest, signingByKey(m_keyPair.getName()));
+  
+  return interest;
+}
+#else
 std::shared_ptr<Interest>
 Request::genChallengeInterest(std::multimap<std::string, std::string>&& parameters)
 {
@@ -220,21 +258,23 @@ Request::genChallengeInterest(std::multimap<std::string, std::string>&& paramete
     NDN_THROW(std::runtime_error("The challenge selected is not supported by your current version of NDNCERT."));
   }
   auto challengeParams = challenge->genChallengeRequestTLV(m_status, m_challengeStatus, parameters);
-
+  
   Name interestName = m_caProfile.caPrefix;
   interestName.append("CA").append("CHALLENGE").append(Name::Component(m_requestId));
   auto interest = std::make_shared<Interest>(interestName);
   interest->setMustBeFresh(true);
-
+  
   // encrypt the Interest parameters
   auto paramBlock = encodeBlockWithAesGcm128(ndn::tlv::ApplicationParameters, m_aesKey.data(),
-                                             challengeParams.value(), challengeParams.value_size(),
-                                             m_requestId.data(), m_requestId.size(),
-                                             m_encryptionIv);
+  										   challengeParams.value(), challengeParams.value_size(),
+  										   m_requestId.data(), m_requestId.size(),
+  										   m_encryptionIv);
   interest->setApplicationParameters(paramBlock);
   m_keyChain.sign(*interest, signingByKey(m_keyPair.getName()));
   return interest;
 }
+#endif
+
 
 void
 Request::onChallengeResponse(const Data& reply)
@@ -250,10 +290,23 @@ Request::onChallengeResponse(const Data& reply)
 std::shared_ptr<Interest>
 Request::genCertFetchInterest() const
 {
+//added_gm by liupenghui 
+#if 1
+  std::cerr << "Certificate name: " << m_issuedCertName.toUri()<< std::endl;
+
+  Name interestName = m_caProfile.caPrefix;
+  interestName.append("CA").append("DOWNLOAD").append(m_issuedCertName.toUri());
+  auto interest = std::make_shared<Interest>(interestName);
+  interest->setMustBeFresh(true);
+  m_keyChain.sign(*interest, signingByKey(m_keyPair.getName()));
+  
+#else
   auto interest = std::make_shared<Interest>(m_issuedCertName);
+
   if (!m_forwardingHint.empty()) {
     interest->setForwardingHint({m_forwardingHint});
   }
+#endif  
   return interest;
 }
 
@@ -261,7 +314,12 @@ std::shared_ptr<Certificate>
 Request::onCertFetchResponse(const Data& reply)
 {
   try {
+//added_gm by liupenghui 
+#if 1
+    return std::make_shared<Certificate>(reply.getContent().blockFromValue());
+#else
     return std::make_shared<Certificate>(reply);
+#endif
   }
   catch (const std::exception&) {
     NDN_LOG_ERROR("Cannot parse replied certificate");
@@ -284,3 +342,4 @@ Request::processIfError(const Data& data)
 }
 
 } // namespace ndncert::requester
+

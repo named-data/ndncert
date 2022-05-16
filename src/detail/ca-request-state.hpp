@@ -127,6 +127,11 @@ struct RequestState
   /**
    * @brief The challenge state.
    */
+//added_gm by liupenghui
+//for revoking certificate...
+#if 1
+   std::string challengeEmail;
+#endif   
   std::optional<ChallengeState> challengeState;
 };
 

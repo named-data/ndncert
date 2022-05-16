@@ -22,6 +22,10 @@
 #define NDNCERT_DETAIL_CA_MEMORY_HPP
 
 #include "detail/ca-storage.hpp"
+//added_gm by liupenghui 
+#if 1
+#include <ndn-cxx/security/certificate.hpp>
+#endif
 
 namespace ndncert::ca {
 
@@ -51,11 +55,43 @@ public:
 
   std::list<RequestState>
   listAllRequests(const Name& caName) override;
+//added_gm by liupenghui 
+#if 1
+  void
+  addCertificate(const std::string& apply_email, const Certificate& cert) override;
+  
+  Certificate
+  getCertificate(const Name& certKeyName) override;
+
+  std::string
+  getApplyEmailofCertificate(const Certificate& cert);
+
+  void
+  deleteCertificate(const Name& certKeyName) override;
+  
+  std::list<Certificate>
+  listAllIssuedCertificates() override;
+  
+  
+  std::list<Certificate>
+  listAllIssuedCertificates(const Name& caName) override;
+#endif
 
 private:
   std::map<RequestId, RequestState> m_requests;
+//added_gm by liupenghui 
+#if 1
+  struct Cert_storage 
+  {
+     std::string email;
+	 Certificate cert;
+  };
+  std::map<Name, Cert_storage> m_issuedCerts;
+#endif
+  
 };
 
 } // namespace ndncert::ca
 
 #endif // NDNCERT_DETAIL_CA_MEMORY_HPP
+

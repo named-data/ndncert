@@ -30,6 +30,10 @@
 #include <boost/program_options/variables_map.hpp>
 
 #include <iostream>
+//added_gm by liupenghui 
+#if 1
+#include <ndn-cxx/util/io.hpp>
+#endif
 
 namespace ndncert::requester {
 
@@ -41,6 +45,12 @@ runProbe(CaProfile profile);
 
 static void
 runNew(CaProfile profile, Name identityName);
+
+//added_gm by liupenghui 
+#if 1
+static void
+runRevokeCertificate(CaProfile profile, const std::string certificateFile);
+#endif
 
 static void
 runChallenge(const std::string& challengeType);
@@ -54,6 +64,11 @@ static std::shared_ptr<std::multimap<std::string, std::string>> capturedProbePar
 static std::shared_ptr<Certificate> trustedCert;
 static Name newlyCreatedIdentityName;
 static Name newlyCreatedKeyName;
+//added_gm by liupenghui 
+#if 1
+static RequestType runType = RequestType::NEW;
+static std::string revokeCertificateFile;
+#endif
 
 static void
 captureParams(std::multimap<std::string, std::string>& requirement)
@@ -179,11 +194,23 @@ certFetchCb(const Data& reply)
 {
   auto item = Request::onCertFetchResponse(reply);
   if (item) {
+//added_gm by liupenghui	 
+#if 1
+	ndn::security::Key key = keyChain.getPib()
+	  .getIdentity(ndn::security::extractIdentityFromCertName(item->getName()))
+	  .getKey(ndn::security::extractKeyNameFromCertName(item->getName()));
+	
+	keyChain.deleteCertificate(key, key.getDefaultCertificate().getName());
+#endif  	
     keyChain.addCertificate(keyChain.getPib().getIdentity(item->getIdentity()).getKey(item->getKeyName()), *item);
+//added_gm by liupenghui	   
+#if 1
+    keyChain.setDefaultCertificate(key, *item);
+#endif
   }
   std::cerr << "\n***************************************\n"
             << "Step " << nStep++
-            << ": DONE\nCertificate with Name: " << reply.getName()
+            << ": DONE\nCertificate with Name: " << item->getName()
             << " has been installed to your local keychain\n"
             << "Exit now" << std::endl;
   face.getIoService().stop();
@@ -199,6 +226,15 @@ challengeCb(const Data& reply)
     std::cerr << "Error when decoding challenge step: " << e.what() << std::endl;
     exit(1);
   }
+  
+//added_gm by liupenghui   
+#if 1
+ if (requesterState->m_status == Status::SUCCESS && requesterState->m_type == RequestType::REVOKE) {
+   std::cerr << "Certificate has already been revoked..." << std::endl;
+   exit(0);
+ }
+#endif 
+
   if (requesterState->m_status == Status::SUCCESS) {
     std::cerr << "Certificate has already been issued, downloading certificate..." << std::endl;
     face.expressInterest(*requesterState->genCertFetchInterest(),
@@ -412,8 +448,20 @@ probeCb(const Data& reply, CaProfile profile)
       }
       selectedName = names[index].first;
     }
+//added_gm by liupenghui 
+#if 1
+	if (runType == RequestType::REVOKE) {
+	  std::cerr << "You are revoking for certificate file: " << revokeCertificateFile << std::endl;
+      runRevokeCertificate(profile, revokeCertificateFile);
+	}
+	else {
+	  std::cerr << "You are applying for name: " << selectedName << std::endl;
+      runNew(profile, selectedName);
+	}
+#else
     std::cerr << "You are applying for name: " << selectedName << std::endl;
     runNew(profile, selectedName);
+#endif
   }
   else {
     std::cerr << "Neither name assignment nor redirection is available, exit." << std::endl;
@@ -545,6 +593,7 @@ runNew(CaProfile profile, Name identityName)
   else {
     keyName = defaultKey.getName();
   }
+  
   auto interest = requesterState->genNewInterest(keyName, now, now + time::hours(validityPeriod));
   if (interest != nullptr) {
     face.expressInterest(*interest,
@@ -556,6 +605,44 @@ runNew(CaProfile profile, Name identityName)
     std::cerr << "Cannot generate the Interest for NEW step. Exit" << std::endl;
   }
 }
+
+//added_gm by liupenghui 
+#if 1
+template<typename T>
+T
+loadFromFile(const std::string& filename)
+{
+  try {
+    std::ifstream file(filename);
+    if (!file) {
+	  std::cerr << "Cannot open '" << filename<< "'" << std::endl;
+    }
+    return ndn::io::loadTlv<T>(file, ndn::io::BASE64);
+  }
+  catch (const ndn::io::Error& e) {
+    std::cerr << "Cannot load '" << filename<< "': malformed TLV or not in base64 format" << std::endl;
+  }
+}
+
+static void
+runRevokeCertificate(CaProfile profile, const std::string certificateFile)
+{
+
+  Certificate revokeCert = loadFromFile<ndn::security::Certificate>(certificateFile);
+  std::cerr << "CertName: " << revokeCert.getName().toUri() << std::endl;
+  
+  if (!profile.caPrefix.isPrefixOf(ndn::security::extractIdentityFromCertName(revokeCert.getName()))) {
+	  std::cerr << "Revoke Certificate Name"<< revokeCert.getName().toUri() <<" is not available for this CA " << profile.caPrefix.toUri() << ", exit." << std::endl;
+	  exit(1);
+  }
+  requesterState = std::make_shared<Request>(keyChain, profile, RequestType::REVOKE);
+
+  face.expressInterest(*requesterState->genRevokeInterest(revokeCert),
+                         [] (const auto&, const auto& data) { newCb(data); },
+                         [] (auto&&...) { onNackCb(); },
+                         [] (auto&&...) { timeoutCb(); });
+}
+#endif  
 
 static void
 runChallenge(const std::string& challengeType)
@@ -580,10 +667,26 @@ runChallenge(const std::string& challengeType)
       captureParams(requirement);
     }
   }
-  face.expressInterest(*requesterState->genChallengeInterest(std::move(requirement)),
+
+//added_gm by liupenghui 
+#if 1 
+  Certificate revokeCert;
+  if (runType == RequestType::REVOKE) {
+    revokeCert = loadFromFile<ndn::security::Certificate>(revokeCertificateFile);
+    std::cerr << "CertName: " << revokeCert.getName().toUri() << std::endl;
+  }
+  
+  face.expressInterest(*requesterState->genChallengeInterest(std::move(requirement), revokeCert, runType),
                        [] (const auto&, const auto& data) { challengeCb(data); },
                        [] (auto&&...) { onNackCb(); },
                        [] (auto&&...) { timeoutCb(); });
+  
+#else
+  face.expressInterest(*requesterState->genChallengeInterest(std::move(requirement)),
+					 [] (const auto&, const auto& data) { challengeCb(data); },
+					 [] (auto&&...) { onNackCb(); },
+					 [] (auto&&...) { timeoutCb(); });
+#endif
 }
 
 static void
@@ -625,10 +728,21 @@ main(int argc, char* argv[])
 
   namespace po = boost::program_options;
   std::string configFilePath = std::string(NDNCERT_SYSCONFDIR) + "/ndncert/client.conf";
+//added_gm by liupenghui 
+#if 1
+  std::string certificateFileName = "NONE";
+  po::options_description description("Usage: ndncert-client [-h] [-c FILE] [-r certificateName]\n");
+#else  
   po::options_description description("Usage: ndncert-client [-h] [-c FILE]\n");
+#endif  
+
   description.add_options()
     ("help,h", "produce help message")
     ("config-file,c", po::value<std::string>(&configFilePath), "configuration file name")
+//added_gm by liupenghui 
+#if 1
+    ("certificateFile,r", po::value<std::string>(&certificateFileName), "configuration file name")
+#endif    
     ;
   po::positional_options_description p;
 
@@ -646,7 +760,13 @@ main(int argc, char* argv[])
     std::cerr << description << std::endl;
     return 0;
   }
-
+//added_gm by liupenghui 
+#if 1
+  if (certificateFileName != "NONE") {
+  	runType = RequestType::REVOKE;
+	revokeCertificateFile = certificateFileName;
+  }
+#endif  
   selectCaProfile(configFilePath);
   face.processEvents();
   return 0;
@@ -659,3 +779,4 @@ main(int argc, char* argv[])
 {
   return ndncert::requester::main(argc, argv);
 }
+
