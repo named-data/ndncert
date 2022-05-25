@@ -478,12 +478,13 @@ CaModule::issueCertificate(const RequestState& requestState)
   certName.append("NDNCERT").appendVersion();
   newCert.setName(certName);
   newCert.setContent(requestState.cert.getContent());
+  newCert.setFreshnessPeriod(1_h);
   NDN_LOG_TRACE("cert request content " << requestState.cert);
   SignatureInfo signatureInfo;
   signatureInfo.setValidityPeriod(period);
   ndn::security::SigningInfo signingInfo(ndn::security::SigningInfo::SIGNER_TYPE_ID,
                                          m_config.caProfile.caPrefix, signatureInfo);
-
+  // Note: we should use KeyChain::makeCertificate() in future.
   m_keyChain.sign(newCert, signingInfo);
   NDN_LOG_TRACE("new cert got signed" << newCert);
   return newCert;

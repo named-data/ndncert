@@ -476,6 +476,12 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
       BOOST_CHECK(state.m_status == Status::SUCCESS);
     }
   });
+  ca.setStatusUpdateCallback([](const RequestState& request) {
+    if (request.status == Status::SUCCESS && request.requestType == RequestType::NEW) {
+      BOOST_REQUIRE_NO_THROW(Certificate{request.cert});
+      BOOST_CHECK(Certificate(request.cert).isValid());
+    }
+  });
 
   face.receive(*newInterest);
   advanceClocks(time::milliseconds(20), 60);
