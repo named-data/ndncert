@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2022, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -26,9 +26,7 @@
 namespace ndncert {
 
 /**
- * @brief Provide PIN code based challenge
- *
- * @sa https://github.com/named-data/ndncert/wiki/NDN-Certificate-Management-Protocol
+ * @brief Provide PIN code based challenge.
  *
  * The main process of this challenge module is:
  *   1. End entity provides empty string. The first POLL is only for selection.
@@ -42,6 +40,8 @@ namespace ndncert {
  * Failure info when application fails:
  *   FAILURE_TIMEOUT: When secret is out-dated.
  *   FAILURE_MAXRETRY: When requester tries too many times.
+ *
+ * @sa https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3-Challenges
  */
 class ChallengePin : public ChallengeModule
 {

@@ -26,12 +26,7 @@
 namespace ndncert {
 
 /**
- * @brief Provide Email based challenge
- *
- * For challenge design
- * @sa https://github.com/named-data/ndncert/wiki/NDN-Certificate-Management-Protocol
- * For deployment instructions:
- * @sa https://github.com/named-data/ndncert/wiki/Deploy-Email-Challenge
+ * @brief Provide email-based challenge.
  *
  * The main process of this challenge module is:
  *   1. Requester provides its email address.
@@ -45,6 +40,8 @@ namespace ndncert {
  * Failure info when application fails:
  *   FAILURE_MAXRETRY: When run out retry times.
  *   FAILURE_TIMEOUT: When the secret lifetime expires.
+ *
+ * @sa https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3-Challenges
  */
 class ChallengeEmail : public ChallengeModule
 {
