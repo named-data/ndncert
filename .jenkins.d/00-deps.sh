@@ -37,4 +37,8 @@ elif has Ubuntu $NODE_LABELS; then
             sudo apt-get -qy install doxygen graphviz
             ;;
     esac
+
+elif has CentOS $NODE_LABELS; then
+    sudo dnf -y install gcc-c++ libasan pkgconf-pkg-config python3 \
+                        boost-devel openssl-devel sqlite-devel
 fi

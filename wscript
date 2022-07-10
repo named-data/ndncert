@@ -9,7 +9,8 @@ GIT_TAG_PREFIX = 'ndncert-'
 
 def options(opt):
     opt.load(['compiler_cxx', 'gnu_dirs'])
-    opt.load(['default-compiler-flags', 'coverage', 'sanitizers',
+    opt.load(['default-compiler-flags',
+              'coverage', 'sanitizers',
               'boost', 'openssl', 'sqlite3'],
              tooldir=['.waf-tools'])
 
@@ -19,9 +20,15 @@ def options(opt):
 
 def configure(conf):
     conf.load(['compiler_cxx', 'gnu_dirs',
-               'default-compiler-flags', 'boost', 'openssl', 'sqlite3'])
+               'default-compiler-flags',
+               'boost', 'openssl', 'sqlite3'])
 
     conf.env.WITH_TESTS = conf.options.with_tests
+
+    # Prefer pkgconf if it's installed, because it gives more correct results
+    # on Fedora/CentOS/RHEL/etc. See https://bugzilla.redhat.com/show_bug.cgi?id=1953348
+    # Store the result in env.PKGCONFIG, which is the variable used inside check_cfg()
+    conf.find_program(['pkgconf', 'pkg-config'], var='PKGCONFIG')
 
     pkg_config_path = os.environ.get('PKG_CONFIG_PATH', f'{conf.env.LIBDIR}/pkgconfig')
     conf.check_cfg(package='libndn-cxx', args=['libndn-cxx >= 0.8.0', '--cflags', '--libs'],
