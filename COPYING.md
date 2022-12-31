@@ -14,11 +14,10 @@ ndncert relies on third-party software, licensed under the following licenses:
 - The waf build system is licensed under the terms of the
   [BSD license](https://github.com/named-data/ndncert/blob/master/waf)
 
-
 The GPL license is provided below in this file.  For more information about
-these licenses, see https://www.gnu.org/licenses/
+these licenses, see <https://www.gnu.org/licenses/>
 
-----------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 ### GNU GENERAL PUBLIC LICENSE
 

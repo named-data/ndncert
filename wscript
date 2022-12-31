@@ -3,9 +3,8 @@
 from waflib import Utils
 import os
 
-VERSION = '0.1'
+VERSION = '0.1.0'
 APPNAME = 'ndncert'
-GIT_TAG_PREFIX = 'ndncert-'
 
 def options(opt):
     opt.load(['compiler_cxx', 'gnu_dirs'])
@@ -31,7 +30,7 @@ def configure(conf):
     conf.find_program(['pkgconf', 'pkg-config'], var='PKGCONFIG')
 
     pkg_config_path = os.environ.get('PKG_CONFIG_PATH', f'{conf.env.LIBDIR}/pkgconfig')
-    conf.check_cfg(package='libndn-cxx', args=['libndn-cxx >= 0.8.0', '--cflags', '--libs'],
+    conf.check_cfg(package='libndn-cxx', args=['libndn-cxx >= 0.8.1', '--cflags', '--libs'],
                    uselib_store='NDN_CXX', pkg_config_path=pkg_config_path)
 
     conf.check_sqlite3()
