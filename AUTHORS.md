@@ -2,7 +2,7 @@
 
 The following lists maintainers, primary developers, and all much-appreciated contributors to NDNCERT in alphabetical order.
 The specific contributions of individual authors can be obtained from the git history of the [official NDNCERT repository](https://github.com/named-data/ndncert).
-If you would like to become a contributor to the official repository, please follow the recommendations in <https://github.com/named-data/.github/blob/master/CONTRIBUTING.md>.
+If you would like to become a contributor to the official repository, please follow the recommendations in <https://github.com/named-data/.github/blob/main/CONTRIBUTING.md>.
 
 * Alexander Afanasyev <https://users.cs.fiu.edu/~afanasyev/>
 * Ashlesh Gawande <https://www.linkedin.com/in/agawande>
