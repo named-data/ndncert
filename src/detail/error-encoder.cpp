@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2023, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -39,14 +39,15 @@ decodefromDataContent(const Block& block)
 {
   try {
     block.parse();
+
     int codeCount = 0;
     int infoCount = 0;
     int otherCriticalCount = 0;
-    ErrorCode error;
+    ErrorCode error = ErrorCode::NO_ERROR;
     std::string errorInfo;
     for (const auto& item : block.elements()) {
       if (item.type() == tlv::ErrorCode) {
-        error = static_cast<ErrorCode>(readNonNegativeInteger(block.get(tlv::ErrorCode)));
+        error = ndn::readNonNegativeIntegerAs<ErrorCode>(block.get(tlv::ErrorCode));
         codeCount++;
       }
       else if (item.type() == tlv::ErrorInfo) {
@@ -57,9 +58,10 @@ decodefromDataContent(const Block& block)
         otherCriticalCount++;
       }
       else {
-        //ignore
+        // ignore
       }
     }
+
     if (codeCount == 0 && infoCount == 0) {
       return {ErrorCode::NO_ERROR, ""};
     }
@@ -68,7 +70,7 @@ decodefromDataContent(const Block& block)
                                    std::to_string(infoCount) + " error info(s), instead of expected 1 time each."));
     }
     if (otherCriticalCount > 0) {
-      NDN_THROW(std::runtime_error("Unknown Critical TLV type in error packet"));
+      NDN_THROW(std::runtime_error("Unknown critical TLV type in error packet"));
     }
     return {error, errorInfo};
   }

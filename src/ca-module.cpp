@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2023, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -121,10 +121,8 @@ Data
 CaModule::getCaProfileData()
 {
   if (m_profileData == nullptr) {
-    const auto& pib = m_keyChain.getPib();
-    const auto& identity = pib.getIdentity(m_config.caProfile.caPrefix);
-    const auto& cert = identity.getDefaultKey().getDefaultCertificate();
-    Block contentTLV = infotlv::encodeDataContent(m_config.caProfile, cert);
+    auto key = m_keyChain.getPib().getIdentity(m_config.caProfile.caPrefix).getDefaultKey();
+    Block contentTLV = infotlv::encodeDataContent(m_config.caProfile, key.getDefaultCertificate());
 
     Name infoPacketName(m_config.caProfile.caPrefix);
     auto segmentComp = ndn::name::Component::fromSegment(0);
@@ -153,7 +151,8 @@ CaModule::onCaProfileDiscovery(const Interest&)
 }
 
 void
-CaModule::onProbe(const Interest& request) {
+CaModule::onProbe(const Interest& request)
+{
   // PROBE Naming Convention: /<CA-Prefix>/CA/PROBE/[ParametersSha256DigestComponent]
   NDN_LOG_TRACE("Received PROBE request");
 
@@ -163,19 +162,20 @@ CaModule::onProbe(const Interest& request) {
   try {
     auto parameters = probetlv::decodeApplicationParameters(request.getApplicationParameters());
 
-    //collect redirections
+    // collect redirections
     for (auto &item : m_config.redirection) {
       if (item.second->isRedirecting(parameters)) {
         redirectionNames.push_back(item.first->getFullName());
       }
     }
 
-    //collect name assignments
+    // collect name assignments
     for (auto &item : m_config.nameAssignmentFuncs) {
       auto names = item->assignName(parameters);
       availableComponents.insert(availableComponents.end(), names.begin(), names.end());
     }
-  } catch (const std::exception& e) {
+  }
+  catch (const std::exception& e) {
     NDN_LOG_ERROR("[CaModule::onProbe]Error in decoding TLV: " << e.what());
     return;
   }
@@ -195,8 +195,8 @@ CaModule::onProbe(const Interest& request) {
 
   Data result;
   result.setName(request.getName());
-  result.setContent(
-      probetlv::encodeDataContent(availableNames, m_config.caProfile.maxSuffixLength, redirectionNames));
+  result.setContent(probetlv::encodeDataContent(availableNames, m_config.caProfile.maxSuffixLength,
+                                                redirectionNames));
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
   m_keyChain.sign(result, signingByIdentity(m_config.caProfile.caPrefix));
   m_face.put(result);
@@ -206,11 +206,11 @@ CaModule::onProbe(const Interest& request) {
 void
 CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
 {
-  //verify ca cert validity
-  const auto& caCert = m_keyChain.getPib()
-                                 .getIdentity(m_config.caProfile.caPrefix)
-                                 .getDefaultKey()
-                                 .getDefaultCertificate();
+  // verify ca cert validity
+  auto caCert = m_keyChain.getPib()
+                          .getIdentity(m_config.caProfile.caPrefix)
+                          .getDefaultKey()
+                          .getDefaultCertificate();
   if (!caCert.isValid()) {
     NDN_LOG_ERROR("Server certificate invalid/expired");
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::BAD_VALIDITY_PERIOD,
