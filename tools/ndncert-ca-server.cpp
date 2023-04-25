@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2023, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -39,24 +39,24 @@ static ndn::Face face;
 static ndn::KeyChain keyChain;
 static std::string repoHost = "localhost";
 static std::string repoPort = "7376";
-const size_t MAX_CACHED_CERT_NUM = 100;
+constexpr size_t MAX_CACHED_CERT_NUM = 100;
 
 static bool
 writeDataToRepo(const Data& data)
 {
   boost::asio::ip::tcp::iostream requestStream;
 #if BOOST_VERSION >= 106600
-    requestStream.expires_after(std::chrono::seconds(3));
+  requestStream.expires_after(std::chrono::seconds(5));
 #else
-    requestStream.expires_from_now(boost::posix_time::seconds(3));
-#endif //BOOST_VERSION >= 106600
+  requestStream.expires_from_now(boost::posix_time::seconds(5));
+#endif // BOOST_VERSION >= 106600
   requestStream.connect(repoHost, repoPort);
   if (!requestStream) {
     std::cerr << "ERROR: Cannot publish the certificate to repo-ng"
               << " (" << requestStream.error().message() << ")" << std::endl;
     return false;
   }
-  requestStream.write(reinterpret_cast<const char*>(data.wireEncode().wire()),
+  requestStream.write(reinterpret_cast<const char*>(data.wireEncode().data()),
                       data.wireEncode().size());
   return true;
 }

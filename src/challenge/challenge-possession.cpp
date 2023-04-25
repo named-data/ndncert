@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2023, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -38,7 +38,7 @@ const std::string ChallengePossession::PARAMETER_KEY_PROOF = "proof";
 const std::string ChallengePossession::NEED_PROOF = "need-proof";
 
 ChallengePossession::ChallengePossession(const std::string& configPath)
-    : ChallengeModule("Possession", 1, time::seconds(60))
+  : ChallengeModule("Possession", 1, time::seconds(60))
 {
   if (configPath.empty()) {
     m_configFile = std::string(NDNCERT_SYSCONFDIR) + "/ndncert/challenge-credential.conf";
@@ -112,7 +112,6 @@ ChallengePossession::handleChallengeRequest(const Block& params, ca::RequestStat
   // verify the credential and the self-signed cert
   if (request.status == Status::BEFORE_CHALLENGE) {
     NDN_LOG_TRACE("Challenge Interest arrives. Check certificate and init the challenge");
-    using ndn::toHex;
 
     // check the certificate
     if (!credential.hasContent() || signatureLen != 0) {
@@ -133,10 +132,9 @@ ChallengePossession::handleChallengeRequest(const Block& params, ca::RequestStat
     std::array<uint8_t, 16> secretCode{};
     ndn::random::generateSecureBytes(secretCode);
     JsonSection secretJson;
-    secretJson.add(PARAMETER_KEY_NONCE, toHex(secretCode));
-    const auto& credBlock = credential.wireEncode();
-    secretJson.add(PARAMETER_KEY_CREDENTIAL_CERT, toHex({credBlock.wire(), credBlock.size()}));
-    NDN_LOG_TRACE("Secret for request " << toHex(request.requestId) << " : " << toHex(secretCode));
+    secretJson.add(PARAMETER_KEY_NONCE, ndn::toHex(secretCode));
+    secretJson.add(PARAMETER_KEY_CREDENTIAL_CERT, ndn::toHex(credential.wireEncode()));
+    NDN_LOG_TRACE("Secret for request " << ndn::toHex(request.requestId) << " : " << ndn::toHex(secretCode));
     return returnWithNewChallengeStatus(request, NEED_PROOF, std::move(secretJson), m_maxAttemptTimes, m_secretLifetime);
   }
   else if (request.challengeState && request.challengeState->challengeStatus == NEED_PROOF) {
@@ -210,9 +208,7 @@ ChallengePossession::genChallengeRequestTLV(Status status, const std::string& ch
     for (const auto& item : params) {
       if (std::get<0>(item) == PARAMETER_KEY_PROOF) {
         request.push_back(ndn::makeStringBlock(tlv::ParameterKey, PARAMETER_KEY_PROOF));
-        auto& sigTlvStr = std::get<1>(item);
-        auto valueBlock = ndn::makeBinaryBlock(tlv::ParameterValue, sigTlvStr.data(), sigTlvStr.size());
-        request.push_back(valueBlock);
+        request.push_back(ndn::makeStringBlock(tlv::ParameterValue, std::get<1>(item)));
       }
       else {
         NDN_THROW(std::runtime_error("Wrong parameter provided."));
@@ -239,7 +235,7 @@ ChallengePossession::fulfillParameters(std::multimap<std::string, std::string>& 
 
   for (auto& [key, val] : params) {
     if (key == PARAMETER_KEY_CREDENTIAL_CERT) {
-      val = std::string(reinterpret_cast<const char*>(issuedCertTlv.wire()), issuedCertTlv.size());
+      val = std::string(reinterpret_cast<const char*>(issuedCertTlv.data()), issuedCertTlv.size());
     }
     else if (key == PARAMETER_KEY_PROOF) {
       val = std::string(signature->get<char>(), signature->size());

@@ -320,10 +320,10 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   uint8_t requestIdData[32];
   Block certNameTlv = clientCert->getName().wireEncode();
   try {
-    hmacSha256(certNameTlv.wire(), certNameTlv.size(), m_requestIdGenKey, 32, requestIdData);
+    hmacSha256(certNameTlv.data(), certNameTlv.size(), m_requestIdGenKey, 32, requestIdData);
   }
   catch (const std::runtime_error& e) {
-    NDN_LOG_ERROR("Error computing the request ID: " << std::string(e.what()));
+    NDN_LOG_ERROR("Error computing the request ID: " << e.what());
     m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
                                        "Error computing the request ID."));
     return;
