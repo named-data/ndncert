@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2023, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -34,7 +34,7 @@ enum class Status : uint16_t {
   CHALLENGE = 1,
   PENDING = 2,
   SUCCESS = 3,
-  FAILURE = 4
+  FAILURE = 4,
 };
 
 /**
@@ -56,9 +56,10 @@ namespace ca {
  */
 struct ChallengeState
 {
-  ChallengeState(const std::string& challengeStatus, const time::system_clock::TimePoint& challengeTp,
+  ChallengeState(const std::string& challengeStatus, const time::system_clock::time_point& challengeTp,
                  size_t remainingTries, time::seconds remainingTime,
                  JsonSection&& challengeSecrets);
+
   /**
    * @brief The status of the challenge.
    */
@@ -66,7 +67,7 @@ struct ChallengeState
   /**
    * @brief The timestamp of the last update of the challenge state.
    */
-  time::system_clock::TimePoint timestamp;
+  time::system_clock::time_point timestamp;
   /**
    * @brief Remaining tries of the challenge.
    */

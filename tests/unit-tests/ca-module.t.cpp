@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2023, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -35,14 +35,13 @@
 namespace ndncert::tests {
 
 using namespace ca;
-using ndn::util::DummyClientFace;
 using ndn::security::verifySignature;
 
 BOOST_FIXTURE_TEST_SUITE(TestCaModule, IoKeyChainFixture)
 
 BOOST_AUTO_TEST_CASE(Initialization)
 {
-  DummyClientFace face(m_io, m_keyChain, {true, true});
+  ndn::DummyClientFace face(m_io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   BOOST_CHECK_EQUAL(ca.getCaConf().caProfile.caPrefix, "/ndn");
 
@@ -57,7 +56,7 @@ BOOST_AUTO_TEST_CASE(HandleProfileFetching)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  DummyClientFace face(m_io, m_keyChain, {true, true});
+  ndn::DummyClientFace face(m_io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
   auto profileData = ca.getCaProfileData();
@@ -110,7 +109,7 @@ BOOST_AUTO_TEST_CASE(HandleProbe)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  DummyClientFace face(m_io, m_keyChain, {true, true});
+  ndn::DummyClientFace face(m_io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
@@ -145,7 +144,7 @@ BOOST_AUTO_TEST_CASE(HandleProbeUsingDefaultHandler)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  DummyClientFace face(m_io, m_keyChain, {true, true});
+  ndn::DummyClientFace face(m_io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
@@ -180,7 +179,7 @@ BOOST_AUTO_TEST_CASE(HandleProbeRedirection)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  DummyClientFace face(m_io, m_keyChain, {true, true});
+  ndn::DummyClientFace face(m_io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-5", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
@@ -220,7 +219,7 @@ BOOST_AUTO_TEST_CASE(HandleNew)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  DummyClientFace face(m_io, m_keyChain, {true, true});
+  ndn::DummyClientFace face(m_io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
@@ -271,7 +270,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidValidityPeriod1)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  DummyClientFace face(m_io, m_keyChain, {true, true});
+  ndn::DummyClientFace face(m_io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1");
   advanceClocks(time::milliseconds(20), 60);
 
@@ -313,7 +312,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithServerBadValidity)
   m_keyChain.sign(cert, signingByKey(key.getName()).setSignatureInfo(signatureInfo));
   m_keyChain.setDefaultCertificate(key, cert);
 
-  DummyClientFace face(m_io, m_keyChain, {true, true});
+  ndn::DummyClientFace face(m_io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
@@ -345,7 +344,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithLongSuffix)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  DummyClientFace face(m_io, m_keyChain, {true, true});
+  ndn::DummyClientFace face(m_io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
@@ -388,7 +387,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidLength1)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  DummyClientFace face(m_io, m_keyChain, {true, true});
+  ndn::DummyClientFace face(m_io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1");
   advanceClocks(time::milliseconds(20), 60);
 
@@ -419,7 +418,7 @@ BOOST_AUTO_TEST_CASE(HandleChallenge)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  DummyClientFace face(m_io, m_keyChain, {true, true});
+  ndn::DummyClientFace face(m_io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
@@ -500,7 +499,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  DummyClientFace face(m_io, {true, true});
+  ndn::DummyClientFace face(m_io, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
@@ -571,7 +570,7 @@ BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  DummyClientFace face(m_io, {true, true});
+  ndn::DummyClientFace face(m_io, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 

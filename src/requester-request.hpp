@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2023, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -118,13 +118,12 @@ public:
    */
   std::shared_ptr<Interest>
   genNewInterest(const Name& keyName,
-                 const time::system_clock::TimePoint& notBefore,
-                 const time::system_clock::TimePoint& notAfter);
+                 const time::system_clock::time_point& notBefore,
+                 const time::system_clock::time_point& notAfter);
 
   /**
    * @brief Generates a REVOKE interest to the CA.
    *
-   * @param state The current requester state for this request. Will be modified in the function.
    * @param certificate The certificate to the revoked.
    * @return The shared pointer to the encoded interest.
    */
@@ -134,7 +133,6 @@ public:
   /**
    * @brief Decodes the replied data of NEW, RENEW, or REVOKE interest from the CA.
    *
-   * @param state The current requester state for the request. Will be updated in the function.
    * @param reply The replied data from the network
    * @return the list of challenge accepted by the CA, for CHALLENGE step.
    * @throw std::runtime_error if the decoding fails or receiving an error packet.
@@ -146,9 +144,8 @@ public:
   /**
    * @brief Generates the required parameter for the selected challenge for the request
    *
-   * @param state, The requester state of the request.Will be updated in the function.
-   * @param challengeSelected, The selected challenge for the request.
-   *            Can use state.m_challengeType to continue.
+   * @param challengeSelected The selected challenge for the request.
+   *                          Can use state.m_challengeType to continue.
    * @return The requirement list for the current stage of the challenge, in name, prompt mapping.
    * @throw std::runtime_error if the challenge is not supported.
    */
@@ -158,8 +155,7 @@ public:
   /**
    * @brief Generates the CHALLENGE interest for the request.
    *
-   * @param state, The requester state of the request.
-   * @param parameters, The requirement list, in name, value mapping.
+   * @param parameters The requirement list, in name, value mapping.
    * @return The shared pointer to the encoded interest
    * @throw std::runtime_error if the challenge is not selected or is not supported.
    */
@@ -169,8 +165,7 @@ public:
   /**
    * @brief Decodes the responded data from the CHALLENGE interest.
    *
-   * @param state, the corresponding requester state of the request. Will be modified.
-   * @param reply, the response data.
+   * @param reply The response data.
    * @throw std::runtime_error if the decoding fails or receiving an error packet.
    */
   void
@@ -179,7 +174,6 @@ public:
   /**
    * @brief Generate the interest to fetch the issued certificate
    *
-   * @param state, the state of the request.
    * @return The shared pointer to the encoded interest
    */
   std::shared_ptr<Interest>
@@ -188,7 +182,7 @@ public:
   /**
    * @brief Decoded and installs the response certificate from the certificate fetch.
    *
-   * @param reply, the data replied from the certificate fetch interest.
+   * @param reply The data replied from the certificate fetch interest.
    * @return The shared pointer to the certificate being fetched.
    */
   static std::shared_ptr<Certificate>
@@ -234,7 +228,7 @@ public:
   /**
    * @brief The time this challenge will remain fresh
    */
-  time::system_clock::TimePoint m_freshBefore;
+  time::system_clock::time_point m_freshBefore;
   /**
    * @brief the name of the certificate being issued.
    */

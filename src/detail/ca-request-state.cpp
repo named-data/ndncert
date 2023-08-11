@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2023, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -56,7 +56,7 @@ statusFromBlock(const Block& block)
 namespace ca {
 
 ChallengeState::ChallengeState(const std::string& challengeStatus,
-                               const time::system_clock::TimePoint& challengeTp,
+                               const time::system_clock::time_point& challengeTp,
                                size_t remainingTries, time::seconds remainingTime,
                                JsonSection&& challengeSecrets)
   : challengeStatus(challengeStatus)

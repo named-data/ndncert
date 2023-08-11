@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2023, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -118,8 +118,8 @@ Request::Request(ndn::KeyChain& keyChain, const CaProfile& profile, RequestType 
 
 std::shared_ptr<Interest>
 Request::genNewInterest(const Name& keyName,
-                        const time::system_clock::TimePoint& notBefore,
-                        const time::system_clock::TimePoint& notAfter)
+                        const time::system_clock::time_point& notBefore,
+                        const time::system_clock::time_point& notAfter)
 {
   if (!m_caProfile.caPrefix.isPrefixOf(keyName)) {
     return nullptr;

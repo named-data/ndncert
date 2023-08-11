@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2023, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(OnProbeResponse)
   availableNames.emplace_back("/site1");
   availableNames.emplace_back("/site2");
 
-  ndn::util::DummyClientFace face(m_io, m_keyChain, {true, true});
+  ndn::DummyClientFace face(m_io, m_keyChain, {true, true});
   ca::CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-5", "ca-storage-memory");
 
   Data reply;
