@@ -7,16 +7,16 @@ def build(bld):
         name='ndncert-client',
         target=f'{top}/bin/ndncert-client',
         source='ndncert-client.cpp',
-        use='libndn-cert')
+        use='BOOST_TOOLS libndn-cert')
 
     bld.program(
         name='ndncert-ca-server',
         target=f'{top}/bin/ndncert-ca-server',
         source='ndncert-ca-server.cpp',
-        use='libndn-cert')
+        use='BOOST_TOOLS libndn-cert')
 
     bld.program(
         name='ndncert-ca-status',
         target=f'{top}/bin/ndncert-ca-status',
         source='ndncert-ca-status.cpp',
-        use='libndn-cert')
+        use='BOOST_TOOLS libndn-cert')

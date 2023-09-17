@@ -8,7 +8,7 @@ def build(bld):
         target=f'{top}/unit-tests',
         name='unit-tests',
         source=bld.path.ant_glob(['*.cpp', 'unit-tests/**/*.cpp']),
-        use='libndn-cert',
+        use='BOOST_TESTS libndn-cert',
         defines=[tmpdir],
         includes=top,
         install_path=None)

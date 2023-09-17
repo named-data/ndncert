@@ -39,15 +39,17 @@ def configure(conf):
     conf.check_sqlite3()
     conf.check_openssl(lib='crypto', atleast_version='1.1.1')
 
-    boost_libs = ['system', 'program_options', 'filesystem']
-    if conf.env.WITH_TESTS:
-        boost_libs.append('unit_test_framework')
-
-    conf.check_boost(lib=boost_libs, mt=True)
+    conf.check_boost(lib='filesystem', mt=True)
     if conf.env.BOOST_VERSION_NUMBER < 106501:
         conf.fatal('The minimum supported version of Boost is 1.65.1.\n'
                    'Please upgrade your distribution or manually install a newer version of Boost.\n'
                    'For more information, see https://redmine.named-data.net/projects/nfd/wiki/Boost')
+
+    if conf.env.WITH_TESTS:
+        conf.check_boost(lib='filesystem unit_test_framework', mt=True, uselib_store='BOOST_TESTS')
+
+    if conf.env.WITH_TOOLS:
+        conf.check_boost(lib='program_options', mt=True, uselib_store='BOOST_TOOLS')
 
     conf.check_compiler_flags()
 
@@ -69,14 +71,15 @@ def configure(conf):
     conf.write_config_header('src/detail/ndncert-config.hpp', define_prefix='NDNCERT_')
 
 def build(bld):
-    bld.shlib(target='ndn-cert',
-              name='libndn-cert',
-              vnum=VERSION,
-              cnum=VERSION,
-              source=bld.path.ant_glob('src/**/*.cpp'),
-              use='NDN_CXX BOOST OPENSSL SQLITE3',
-              includes='src',
-              export_includes='src')
+    bld.shlib(
+        target='ndn-cert',
+        name='libndn-cert',
+        vnum=VERSION,
+        cnum=VERSION,
+        source=bld.path.ant_glob('src/**/*.cpp'),
+        use='BOOST NDN_CXX OPENSSL SQLITE3',
+        includes='src',
+        export_includes='src')
 
     if bld.env.WITH_TESTS:
         bld.recurse('tests')
