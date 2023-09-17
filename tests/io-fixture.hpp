@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2022 Regents of the University of California.
+ * Copyright (c) 2013-2023 Regents of the University of California.
  *
  * This file is part of ndn-cxx library (NDN C++ library with eXperimental eXtensions).
  *
@@ -24,7 +24,7 @@
 
 #include "tests/clock-fixture.hpp"
 
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/io_context.hpp>
 
 namespace ndncert::tests {
 
@@ -35,17 +35,13 @@ private:
   afterTick() final
   {
     if (m_io.stopped()) {
-#if BOOST_VERSION >= 106600
       m_io.restart();
-#else
-      m_io.reset();
-#endif
     }
     m_io.poll();
   }
 
 protected:
-  boost::asio::io_service m_io;
+  boost::asio::io_context m_io;
 };
 
 } // namespace ndncert::tests

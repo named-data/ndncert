@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2023, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -362,33 +362,10 @@ aesGcm128Decrypt(const uint8_t* ciphertext, size_t ciphertextLen, const uint8_t*
 //  }
 }
 
-#ifndef NDNCERT_HAVE_TESTS
-static
-#endif
-uint32_t
+static uint32_t
 loadBigU32(const uint8_t* src) noexcept
 {
-#if BOOST_VERSION >= 107100
   return boost::endian::endian_load<uint32_t, 4, boost::endian::order::big>(src);
-#else
-  uint32_t dest;
-  std::memcpy(reinterpret_cast<uint8_t*>(&dest), src, sizeof(dest));
-  return boost::endian::big_to_native(dest);
-#endif
-}
-
-#ifndef NDNCERT_HAVE_TESTS
-static
-#endif
-void
-storeBigU32(uint8_t* dest, uint32_t src) noexcept
-{
-#if BOOST_VERSION >= 107100
-  boost::endian::endian_store<uint32_t, 4, boost::endian::order::big>(dest, src);
-#else
-  boost::endian::native_to_big_inplace(src);
-  std::memcpy(dest, reinterpret_cast<const uint8_t*>(&src), sizeof(src));
-#endif
 }
 
 static void
@@ -404,7 +381,7 @@ updateIv(std::vector<uint8_t>& iv, size_t payloadSize)
   else {
     counter += increment;
   }
-  storeBigU32(&iv[8], counter);
+  boost::endian::endian_store<uint32_t, 4, boost::endian::order::big>(&iv[8], counter);
 }
 
 Block

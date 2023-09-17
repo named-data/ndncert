@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2023, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -139,7 +139,7 @@ aesGcm128Decrypt(const uint8_t* ciphertext, size_t ciphertextLen, const uint8_t*
  *
  * The TLV spec: https://github.com/named-data/ndncert/wiki/NDNCERT-Protocol-0.3#242-aes-gcm-encryption.
  *
- * @param tlv_type The TLV TYPE of the encoded block, either ApplicationParameters or Content.
+ * @param tlvType The TLV TYPE of the encoded block, either ApplicationParameters or Content.
  * @param key The AES key used for encryption.
  * @param payload The plaintext payload.
  * @param payloadSize The size of the plaintext payload.
@@ -172,14 +172,6 @@ ndn::Buffer
 decodeBlockWithAesGcm128(const Block& block, const uint8_t* key,
                          const uint8_t* associatedData, size_t associatedDataSize,
                          std::vector<uint8_t>& decryptionIv, const std::vector<uint8_t>& encryptionIv);
-
-#ifdef NDNCERT_HAVE_TESTS
-uint32_t
-loadBigU32(const uint8_t* src) noexcept;
-
-void
-storeBigU32(uint8_t* dest, uint32_t src) noexcept;
-#endif
 
 } // namespace ndncert
 

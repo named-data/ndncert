@@ -20,8 +20,8 @@
 
 #include "ca-module.hpp"
 
-#include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/signal_set.hpp>
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
@@ -45,11 +45,7 @@ static bool
 writeDataToRepo(const Data& data)
 {
   boost::asio::ip::tcp::iostream requestStream;
-#if BOOST_VERSION >= 106600
   requestStream.expires_after(std::chrono::seconds(5));
-#else
-  requestStream.expires_from_now(boost::posix_time::seconds(5));
-#endif // BOOST_VERSION >= 106600
   requestStream.connect(repoHost, repoPort);
   if (!requestStream) {
     std::cerr << "ERROR: Cannot publish the certificate to repo-ng"
