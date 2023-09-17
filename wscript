@@ -1,7 +1,7 @@
 # -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
 
-from waflib import Utils
 import os
+from waflib import Utils
 
 VERSION = '0.1.0'
 APPNAME = 'ndncert'
@@ -16,6 +16,8 @@ def options(opt):
     optgrp = opt.add_option_group('ndncert Options')
     optgrp.add_option('--with-tests', action='store_true', default=False,
                       help='Build unit tests')
+    optgrp.add_option('--without-tools', action='store_false', default=True, dest='with_tools',
+                      help='Do not build tools')
 
 def configure(conf):
     conf.load(['compiler_cxx', 'gnu_dirs',
@@ -23,6 +25,7 @@ def configure(conf):
                'boost', 'openssl', 'sqlite3'])
 
     conf.env.WITH_TESTS = conf.options.with_tests
+    conf.env.WITH_TOOLS = conf.options.with_tools
 
     # Prefer pkgconf if it's installed, because it gives more correct results
     # on Fedora/CentOS/RHEL/etc. See https://bugzilla.redhat.com/show_bug.cgi?id=1953348
@@ -67,35 +70,39 @@ def configure(conf):
 
 def build(bld):
     bld.shlib(target='ndn-cert',
+              name='libndn-cert',
               vnum=VERSION,
               cnum=VERSION,
               source=bld.path.ant_glob('src/**/*.cpp'),
               use='NDN_CXX BOOST OPENSSL SQLITE3',
               includes='src',
-              export_includes='src .')
+              export_includes='src')
+
+    if bld.env.WITH_TESTS:
+        bld.recurse('tests')
+
+    if bld.env.WITH_TOOLS:
+        bld.recurse('tools')
+
+    # Install header files
+    srcdir = bld.path.find_dir('src')
+    bld.install_files('${INCLUDEDIR}/ndncert',
+                      srcdir.ant_glob('**/*.hpp'),
+                      cwd=srcdir,
+                      relative_trick=True)
+    bld.install_files('${INCLUDEDIR}/ndncert/detail', 'src/detail/ndncert-config.hpp')
+
+    # Install sample configs
+    bld.install_files('${SYSCONFDIR}/ndncert',
+                      ['ca.conf.sample',
+                       'client.conf.sample',
+                       'ndncert-mail.conf.sample'])
 
     bld(features='subst',
         source='libndn-cert.pc.in',
         target='libndn-cert.pc',
         install_path='${LIBDIR}/pkgconfig',
         VERSION=VERSION)
-
-    bld.recurse('tools')
-    bld.recurse('tests')
-
-    bld.install_files(
-        dest='${INCLUDEDIR}/ndncert',
-        files=bld.path.ant_glob('src/**/*.hpp'),
-        cwd=bld.path.find_dir('src'),
-        relative_trick=True)
-
-    bld.install_files('${INCLUDEDIR}/ndncert/detail',
-                      bld.path.find_resource('src/detail/ndncert-config.hpp'))
-
-    bld.install_files('${SYSCONFDIR}/ndncert',
-                      ['ca.conf.sample',
-                       'client.conf.sample',
-                       'ndncert-mail.conf.sample'])
 
     bld(features='subst',
         name='ndncert-send-email-challenge',
@@ -106,6 +113,6 @@ def build(bld):
 
     if Utils.unversioned_sys_platform() == 'linux':
         bld(features='subst',
-            name='ndncert-ca.service',
+            name='systemd-units',
             source='systemd/ndncert-ca.service.in',
             target='systemd/ndncert-ca.service')

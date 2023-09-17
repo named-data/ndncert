@@ -1,15 +1,14 @@
 # -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
+
 top = '..'
 
 def build(bld):
-    if not bld.env.WITH_TESTS:
-        return
-
     tmpdir = 'UNIT_TESTS_TMPDIR="%s"' % bld.bldnode.make_node('tmp-files')
     bld.program(
-        target='../unit-tests',
+        target=f'{top}/unit-tests',
         name='unit-tests',
         source=bld.path.ant_glob(['*.cpp', 'unit-tests/**/*.cpp']),
-        use='ndn-cert',
+        use='libndn-cert',
         defines=[tmpdir],
+        includes=top,
         install_path=None)
