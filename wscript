@@ -119,3 +119,9 @@ def build(bld):
             name='systemd-units',
             source='systemd/ndncert-ca.service.in',
             target='systemd/ndncert-ca.service')
+
+def dist(ctx):
+    ctx.algo = 'tar.xz'
+
+def distcheck(ctx):
+    ctx.algo = 'tar.xz'
