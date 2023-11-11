@@ -72,14 +72,14 @@ handleSignal(const boost::system::error_code& error, int signalNum)
     std::cerr << signalName;
   }
   std::cerr << std::endl;
-  face.getIoService().stop();
+  face.getIoContext().stop();
   exit(1);
 }
 
 static int
 main(int argc, char* argv[])
 {
-  boost::asio::signal_set terminateSignals(face.getIoService());
+  boost::asio::signal_set terminateSignals(face.getIoContext());
   terminateSignals.add(SIGINT);
   terminateSignals.add(SIGTERM);
   terminateSignals.async_wait(handleSignal);

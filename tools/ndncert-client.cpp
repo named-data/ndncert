@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2023, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -186,7 +186,7 @@ certFetchCb(const Data& reply)
             << ": DONE\nCertificate with Name: " << reply.getName()
             << " has been installed to your local keychain\n"
             << "Exit now" << std::endl;
-  face.getIoService().stop();
+  face.getIoContext().stop();
 }
 
 static void
@@ -611,14 +611,14 @@ handleSignal(const boost::system::error_code& error, int signalNum)
       keyChain.deleteKey(identity, identity.getKey(newlyCreatedKeyName));
     }
   }
-  face.getIoService().stop();
+  face.getIoContext().stop();
   exit(1);
 }
 
 static int
 main(int argc, char* argv[])
 {
-  boost::asio::signal_set terminateSignals(face.getIoService());
+  boost::asio::signal_set terminateSignals(face.getIoContext());
   terminateSignals.add(SIGINT);
   terminateSignals.add(SIGTERM);
   terminateSignals.async_wait(handleSignal);
