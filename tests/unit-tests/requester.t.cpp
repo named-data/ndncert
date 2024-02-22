@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2023, Regents of the University of California.
+ * Copyright (c) 2017-2024, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -20,13 +20,13 @@
 
 #include "requester-request.hpp"
 #include "ca-module.hpp"
-#include "challenge/challenge-module.hpp"
 #include "detail/error-encoder.hpp"
 #include "detail/probe-encoder.hpp"
 
 #include "tests/boost-test.hpp"
 #include "tests/io-key-chain-fixture.hpp"
 
+#include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace ndncert::tests {

@@ -3,7 +3,7 @@
 top = '..'
 
 def build(bld):
-    tmpdir = 'UNIT_TESTS_TMPDIR="%s"' % bld.bldnode.make_node('tmp-files')
+    tmpdir = 'UNIT_TESTS_TMPDIR="%s"' % bld.bldnode.make_node('tests-tmp')
     bld.program(
         target=f'{top}/unit-tests',
         name='unit-tests',

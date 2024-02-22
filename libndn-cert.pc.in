@@ -7,4 +7,4 @@ Description: ndncert library
 Version: @VERSION@
 Libs: -L${libdir} -lndn-cert
 Cflags: -I${includedir}
-Requires: libndn-cxx >= 0.7.1
+Requires: libndn-cxx >= 0.8.1
