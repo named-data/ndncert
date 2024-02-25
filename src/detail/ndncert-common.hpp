@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2024, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -23,7 +23,7 @@
 
 #include "detail/ndncert-config.hpp"
 
-#ifdef NDNCERT_HAVE_TESTS
+#ifdef NDNCERT_WITH_TESTS
 #define NDNCERT_VIRTUAL_WITH_TESTS virtual
 #define NDNCERT_PUBLIC_WITH_TESTS_ELSE_PROTECTED public
 #define NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE public
@@ -38,9 +38,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <optional>
+#include <stdexcept>
 #include <string>
-#include <tuple>
 #include <vector>
 
 #include <ndn-cxx/data.hpp>
@@ -50,12 +49,10 @@
 #include <ndn-cxx/name.hpp>
 #include <ndn-cxx/security/certificate.hpp>
 #include <ndn-cxx/util/exception.hpp>
-#include <ndn-cxx/util/logger.hpp>
 #include <ndn-cxx/util/time.hpp>
 
-#include <boost/algorithm/string.hpp>
 #include <boost/assert.hpp>
-#include <boost/noncopyable.hpp>
+#include <boost/core/noncopyable.hpp>
 #include <boost/property_tree/ptree.hpp>
 
 namespace ndncert {
@@ -99,7 +96,7 @@ enum : uint32_t {
   ErrorInfo = 173,
   AuthenticationTag = 175,
   CertToRevoke = 177,
-  ProbeRedirect = 179
+  ProbeRedirect = 179,
 };
 
 } // namespace tlv
@@ -117,7 +114,7 @@ enum class ErrorCode : uint64_t {
   BAD_VALIDITY_PERIOD = 6,
   OUT_OF_TRIES = 7,
   OUT_OF_TIME = 8,
-  NO_AVAILABLE_NAMES = 9
+  NO_AVAILABLE_NAMES = 9,
 };
 
 // Convert error code to string
@@ -129,7 +126,7 @@ enum class RequestType : uint64_t {
   NOTINITIALIZED = 0,
   NEW = 1,
   RENEW = 2,
-  REVOKE = 3
+  REVOKE = 3,
 };
 
 // Convert request type to string

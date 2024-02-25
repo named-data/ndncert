@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2024, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -20,9 +20,11 @@
 
 #include "detail/info-encoder.hpp"
 
-NDN_LOG_INIT(ndncert.encode.info);
+#include <ndn-cxx/util/logger.hpp>
 
 namespace ndncert::infotlv {
+
+NDN_LOG_INIT(ndncert.encode.info);
 
 Block
 encodeDataContent(const CaProfile& caConfig, const Certificate& certificate)

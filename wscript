@@ -62,7 +62,7 @@ def configure(conf):
     # system has a different version of the ndncert library installed.
     conf.env.prepend_value('STLIBPATH', ['.'])
 
-    conf.define_cond('HAVE_TESTS', conf.env.WITH_TESTS)
+    conf.define_cond('WITH_TESTS', conf.env.WITH_TESTS)
     conf.define('SYSCONFDIR', conf.env.SYSCONFDIR)
     # The config header will contain all defines that were added using conf.define()
     # or conf.define_cond().  Everything that was added directly to conf.env.DEFINES

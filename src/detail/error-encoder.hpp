@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2024, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -21,7 +21,9 @@
 #ifndef NDNCERT_DETAIL_ERROR_ENCODER_HPP
 #define NDNCERT_DETAIL_ERROR_ENCODER_HPP
 
-#include "detail/ca-profile.hpp"
+#include "detail/ndncert-common.hpp"
+
+#include <tuple>
 
 namespace ndncert::errortlv {
 

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2023, Regents of the University of California.
+ * Copyright (c) 2017-2024, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -24,7 +24,8 @@
 #include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
 
-#include <boost/asio.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
+#include <boost/asio/signal_set.hpp>
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>

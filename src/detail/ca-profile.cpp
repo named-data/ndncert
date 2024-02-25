@@ -21,6 +21,7 @@
 #include "detail/ca-profile.hpp"
 #include "challenge/challenge-module.hpp"
 
+#include <boost/algorithm/string/case_conv.hpp>
 #include <ndn-cxx/util/io.hpp>
 
 namespace ndncert {

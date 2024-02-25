@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2024, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -20,6 +20,7 @@
 
 #include "challenge-pin.hpp"
 
+#include <ndn-cxx/util/logger.hpp>
 #include <ndn-cxx/util/random.hpp>
 
 namespace ndncert {

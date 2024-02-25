@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2021, Regents of the University of California.
+ * Copyright (c) 2017-2024, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -20,38 +20,38 @@
 
 #include "detail/ndncert-common.hpp"
 
+#include <ndn-cxx/util/backports.hpp>
+
 namespace ndncert {
 
 std::ostream&
 operator<<(std::ostream& out, ErrorCode code)
 {
   switch (code) {
-    case ErrorCode::NO_ERROR: out << "NO_ERROR"; break;
-    case ErrorCode::BAD_INTEREST_FORMAT: out << "BAD_INTEREST_FORMAT"; break;
-    case ErrorCode::BAD_PARAMETER_FORMAT: out << "BAD_PARAMETER_FORMAT"; break;
-    case ErrorCode::BAD_SIGNATURE: out << "BAD_SIGNATURE"; break;
-    case ErrorCode::INVALID_PARAMETER: out << "INVALID_PARAMETER"; break;
-    case ErrorCode::NAME_NOT_ALLOWED: out << "NAME_NOT_ALLOWED"; break;
-    case ErrorCode::BAD_VALIDITY_PERIOD: out << "BAD_VALIDITY_PERIOD"; break;
-    case ErrorCode::OUT_OF_TRIES: out << "OUT_OF_TRIES"; break;
-    case ErrorCode::OUT_OF_TIME: out << "OUT_OF_TIME"; break;
-    case ErrorCode::NO_AVAILABLE_NAMES: out << "NO_AVAILABLE_NAMES"; break;
-    default: out << "UNKNOWN_ERROR"; break;
+    case ErrorCode::NO_ERROR: return out << "NO_ERROR";
+    case ErrorCode::BAD_INTEREST_FORMAT: return out << "BAD_INTEREST_FORMAT";
+    case ErrorCode::BAD_PARAMETER_FORMAT: return out << "BAD_PARAMETER_FORMAT";
+    case ErrorCode::BAD_SIGNATURE: return out << "BAD_SIGNATURE";
+    case ErrorCode::INVALID_PARAMETER: return out << "INVALID_PARAMETER";
+    case ErrorCode::NAME_NOT_ALLOWED: return out << "NAME_NOT_ALLOWED";
+    case ErrorCode::BAD_VALIDITY_PERIOD: return out << "BAD_VALIDITY_PERIOD";
+    case ErrorCode::OUT_OF_TRIES: return out << "OUT_OF_TRIES";
+    case ErrorCode::OUT_OF_TIME: return out << "OUT_OF_TIME";
+    case ErrorCode::NO_AVAILABLE_NAMES: return out << "NO_AVAILABLE_NAMES";
   }
-  return out;
+  return out << "<Unknown Error " << ndn::to_underlying(code) << ">";
 }
 
 std::ostream&
 operator<<(std::ostream& out, RequestType type)
 {
   switch (type) {
-    case RequestType::NEW: out << "New"; break;
-    case RequestType::RENEW: out << "Renew"; break;
-    case RequestType::REVOKE: out << "Revoke"; break;
-    case RequestType::NOTINITIALIZED: out << "Not Initialized"; break;
-    default: out << "UNKNOWN_REQUEST_TYPE"; break;
+    case RequestType::NOTINITIALIZED: return out << "Not Initialized";
+    case RequestType::NEW: return out << "New";
+    case RequestType::RENEW: return out << "Renew";
+    case RequestType::REVOKE: return out << "Revoke";
   }
-  return out;
+  return out << "<Unknown Request Type " << ndn::to_underlying(type) << ">";
 }
 
 } // namespace ndncert
