@@ -19,13 +19,12 @@ RUN --mount=rw,target=/src <<EOF
 EOF
 
 
-FROM ghcr.io/named-data/ndn-cxx-runtime:${NDN_CXX_VERSION} AS ndncert
+FROM ghcr.io/named-data/ndn-cxx-runtime:${NDN_CXX_VERSION} AS ca
 
 COPY --link --from=build /usr/lib/libndn-cert.so.* /usr/lib/
 COPY --link --from=build /usr/bin/ndncert-ca-server /usr/bin/
 COPY --link --from=build /usr/bin/ndncert-ca-status /usr/bin/
 COPY --link --from=build /usr/bin/ndncert-send-email-challenge /usr/bin/
-COPY --link --from=build /usr/bin/ndncert-client /usr/bin/
 
 RUN apt-get install -Uy --no-install-recommends \
         python3 \
@@ -37,4 +36,18 @@ VOLUME /etc/ndncert
 VOLUME /run/nfd
 
 ENTRYPOINT ["/usr/bin/ndncert-ca-server"]
-CMD ["-c", "/config/ca.conf"]
+CMD ["-c", "/config/ndncert-ca.conf"]
+
+
+FROM ghcr.io/named-data/ndn-cxx-runtime:${NDN_CXX_VERSION} AS client
+
+COPY --link --from=build /usr/lib/libndn-cert.so.* /usr/lib/
+COPY --link --from=build /usr/bin/ndncert-client /usr/bin/
+COPY --link --from=build /etc/ndncert/client.conf.sample /config/ndncert-client.conf
+
+ENV HOME=/config
+VOLUME /config
+VOLUME /run/nfd
+
+ENTRYPOINT ["/usr/bin/ndncert-client"]
+CMD ["-c", "/config/ndncert-client.conf"]

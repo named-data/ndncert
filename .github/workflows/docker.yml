@@ -13,7 +13,22 @@ permissions:
   id-token: write
 
 jobs:
-  ndncert:
+  ndncert-build:
     uses: named-data/actions/.github/workflows/docker-image.yml@v1
     with:
-      name: ndncert
+      name: ndncert-build
+      target: build
+  ndncert-ca:
+    needs: ndncert-build
+    uses: named-data/actions/.github/workflows/docker-image.yml@v1
+    with:
+      name: ndncert-ca
+      target: ca
+      contexts: build=docker-image://${{ needs.ndncert-build.outputs.image }}
+  ndncert-client:
+    needs: ndncert-build
+    uses: named-data/actions/.github/workflows/docker-image.yml@v1
+    with:
+      name: ndncert-client
+      target: client
+      contexts: build=docker-image://${{ needs.ndncert-build.outputs.image }}
