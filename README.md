@@ -2,6 +2,7 @@
 
 ![Language](https://img.shields.io/badge/C%2B%2B-17-blue)
 [![CI](https://github.com/named-data/ndncert/actions/workflows/ci.yml/badge.svg)](https://github.com/named-data/ndncert/actions/workflows/ci.yml)
+[![Docker](https://github.com/named-data/ndncert/actions/workflows/docker.yml/badge.svg)](https://github.com/named-data/ndncert/actions/workflows/docker.yml)
 
 The NDN certificate management protocol (**NDNCERT**) enables automatic certificate management
 in NDN. In Named Data Networking (NDN), every entity should have a corresponding identity
