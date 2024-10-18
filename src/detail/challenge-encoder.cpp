@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2024, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -23,7 +23,7 @@
 namespace ndncert::challengetlv {
 
 Block
-encodeDataContent(ca::RequestState& request, const Name& issuedCertName)
+encodeDataContent(ca::RequestState& request, const Name& issuedCertName, const Name& forwardingHint)
 {
   Block response(tlv::EncryptedPayload);
   response.push_back(ndn::makeNonNegativeIntegerBlock(tlv::Status, static_cast<uint64_t>(request.status)));
@@ -41,7 +41,7 @@ encodeDataContent(ca::RequestState& request, const Name& issuedCertName)
   }
   if (!issuedCertName.empty()) {
     response.push_back(makeNestedBlock(tlv::IssuedCertName, issuedCertName));
-    response.push_back(makeNestedBlock(ndn::tlv::ForwardingHint, Name(request.caPrefix).append("CA")));
+    response.push_back(makeNestedBlock(ndn::tlv::ForwardingHint, forwardingHint));
   }
   response.encode();
 

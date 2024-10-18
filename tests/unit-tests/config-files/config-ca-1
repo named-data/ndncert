@@ -1,5 +1,6 @@
 {
   "ca-prefix": "/ndn",
+  "forwarding-hint": "/repo",
   "ca-info": "ndn testbed ca",
   "max-validity-period": "864000",
   "max-suffix-length": 3,

@@ -35,6 +35,11 @@ CaProfile::fromJson(const JsonSection& json)
   if (profile.caPrefix.empty()) {
     NDN_THROW(std::runtime_error("Cannot parse ca-prefix from the config file"));
   }
+  // Forwarding hint
+  profile.forwardingHint = Name(json.get(CONFIG_FORWARDING_HINT, ""));
+  if (profile.forwardingHint.empty()) {
+    profile.forwardingHint = Name(profile.caPrefix).append("CA");
+  }
   // CA info
   profile.caInfo = json.get(CONFIG_CA_INFO, "");
   // CA max validity period

@@ -37,6 +37,7 @@ const std::string CONFIG_PROBE_PARAMETER = "probe-parameter-key";
 const std::string CONFIG_SUPPORTED_CHALLENGES = "supported-challenges";
 const std::string CONFIG_CHALLENGE = "challenge";
 const std::string CONFIG_CERTIFICATE = "certificate";
+const std::string CONFIG_FORWARDING_HINT = "forwarding-hint";
 const std::string CONFIG_REDIRECTION = "redirect-to";
 const std::string CONFIG_NAME_ASSIGNMENT = "name-assignment";
 const std::string CONFIG_REDIRECTION_POLICY_TYPE = "policy-type";
@@ -64,6 +65,10 @@ public:
    * @brief CA Name prefix (without /CA suffix).
    */
   Name caPrefix;
+  /**
+   * @brief Forwarding hint for requesters to retrieve issued certificates.
+   */
+  Name forwardingHint;
   /**
    * @brief CA Information.
    */

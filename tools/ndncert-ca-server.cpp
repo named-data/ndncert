@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2023, Regents of the University of California.
+ * Copyright (c) 2017-2024, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -37,7 +37,7 @@ namespace ndncert::ca {
 
 static ndn::Face face;
 static ndn::KeyChain keyChain;
-static std::string repoHost = "localhost";
+static std::string repoHost;
 static std::string repoPort = "7376";
 constexpr size_t MAX_CACHED_CERT_NUM = 100;
 
@@ -48,7 +48,7 @@ writeDataToRepo(const Data& data)
   requestStream.expires_after(std::chrono::seconds(5));
   requestStream.connect(repoHost, repoPort);
   if (!requestStream) {
-    std::cerr << "ERROR: Cannot publish the certificate to repo-ng"
+    std::cerr << "ERROR: Cannot publish the certificate to repo"
               << " (" << requestStream.error().message() << ")" << std::endl;
     return false;
   }
@@ -92,9 +92,9 @@ main(int argc, char* argv[])
   optsDesc.add_options()
   ("help,h", "print this help message and exit")
   ("config-file,c", po::value<std::string>(&configFilePath)->default_value(configFilePath), "path to configuration file")
-  ("repo-output,r", po::bool_switch(&wantRepoOut), "when enabled, all issued certificates will be published to repo-ng")
-  ("repo-host,H", po::value<std::string>(&repoHost)->default_value(repoHost), "repo-ng host")
-  ("repo-port,P", po::value<std::string>(&repoPort)->default_value(repoPort), "repo-ng port");
+  ("repo-host,H", po::value<std::string>(&repoHost)->default_value(repoHost),
+   "repo host (if empty or unspecified, issued certificates will not be published to a repo)")
+  ("repo-port,P", po::value<std::string>(&repoPort)->default_value(repoPort), "repo port");
 
   po::variables_map vm;
   try {
@@ -115,6 +115,10 @@ main(int argc, char* argv[])
               << "\n"
               << optsDesc;
     return 0;
+  }
+
+  if (!repoHost.empty()) {
+    wantRepoOut = true;
   }
 
   CaModule ca(face, keyChain, configFilePath);

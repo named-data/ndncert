@@ -441,7 +441,8 @@ CaModule::onChallenge(const Interest& request)
       requestState->status = Status::SUCCESS;
       m_storage->deleteRequest(requestState->requestId);
 
-      payload = challengetlv::encodeDataContent(*requestState, issuedCert.getName());
+      payload = challengetlv::encodeDataContent(*requestState, issuedCert.getName(),
+                                                m_config.caProfile.forwardingHint);
       NDN_LOG_TRACE("Challenge succeeded. Certificate has been issued: " << issuedCert.getName());
     }
     else if (requestState->requestType == RequestType::REVOKE) {

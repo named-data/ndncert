@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2024, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -33,6 +33,7 @@ BOOST_AUTO_TEST_CASE(CaConfigFile)
   ca::CaConfig config;
   config.load("tests/unit-tests/config-files/config-ca-1");
   BOOST_CHECK_EQUAL(config.caProfile.caPrefix, "/ndn");
+  BOOST_CHECK_EQUAL(config.caProfile.forwardingHint, "/repo");
   BOOST_CHECK_EQUAL(config.caProfile.caInfo, "ndn testbed ca");
   BOOST_CHECK_EQUAL(config.caProfile.maxValidityPeriod, time::seconds(864000));
   BOOST_CHECK_EQUAL(*config.caProfile.maxSuffixLength, 3);
@@ -43,6 +44,7 @@ BOOST_AUTO_TEST_CASE(CaConfigFile)
 
   config.load("tests/unit-tests/config-files/config-ca-2");
   BOOST_CHECK_EQUAL(config.caProfile.caPrefix, "/ndn");
+  BOOST_CHECK_EQUAL(config.caProfile.forwardingHint, "/ndn/CA");
   BOOST_CHECK_EQUAL(config.caProfile.caInfo, "missing max validity period, max suffix length, and probe");
   BOOST_CHECK_EQUAL(config.caProfile.maxValidityPeriod, time::seconds(86400));
   BOOST_CHECK(!config.caProfile.maxSuffixLength.has_value());
