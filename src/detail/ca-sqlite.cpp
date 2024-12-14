@@ -25,9 +25,9 @@
 #include <ndn-cxx/security/validation-policy.hpp>
 #include <ndn-cxx/util/sqlite3-statement.hpp>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
 #include <boost/property_tree/json_parser.hpp>
+
+#include <filesystem>
 
 namespace ndncert::ca {
 
@@ -80,21 +80,21 @@ CaSqlite::CaSqlite(const Name& caName, const std::string& path)
   : CaStorage()
 {
   // Determine the path of sqlite db
-  boost::filesystem::path dbDir;
+  std::filesystem::path dbDir;
   if (!path.empty()) {
-    dbDir = boost::filesystem::path(path);
+    dbDir = std::filesystem::path(path);
   }
   else {
     std::string dbName = caName.toUri();
     std::replace(dbName.begin(), dbName.end(), '/', '_');
     dbName += ".db";
     if (getenv("HOME") != nullptr) {
-      dbDir = boost::filesystem::path(getenv("HOME")) / ".ndncert";
+      dbDir = std::filesystem::path(getenv("HOME")) / ".ndncert";
     }
     else {
-      dbDir = boost::filesystem::current_path() / ".ndncert";
+      dbDir = std::filesystem::current_path() / ".ndncert";
     }
-    boost::filesystem::create_directories(dbDir);
+    std::filesystem::create_directories(dbDir);
     dbDir /= dbName;
   }
 

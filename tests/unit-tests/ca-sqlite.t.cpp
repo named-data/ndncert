@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2024, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -23,8 +23,8 @@
 #include "tests/boost-test.hpp"
 #include "tests/key-chain-fixture.hpp"
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
+#include <filesystem>
+#include <system_error>
 
 namespace ndncert::tests {
 
@@ -34,21 +34,19 @@ class DatabaseFixture : public KeyChainFixture
 {
 public:
   DatabaseFixture()
+    : dbDir(std::filesystem::path{UNIT_TESTS_TMPDIR} / "test-home" / ".ndncert")
   {
-    boost::filesystem::path parentDir{UNIT_TESTS_TMPDIR};
-    dbDir = parentDir / "test-home" / ".ndncert";
-    if (!boost::filesystem::exists(dbDir)) {
-      boost::filesystem::create_directory(dbDir);
-    }
+    std::filesystem::create_directory(dbDir);
   }
 
   ~DatabaseFixture()
   {
-    boost::filesystem::remove_all(dbDir);
+    std::error_code ec;
+    std::filesystem::remove_all(dbDir, ec); // ignore error
   }
 
 protected:
-  boost::filesystem::path dbDir;
+  std::filesystem::path dbDir;
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestCaSqlite, DatabaseFixture)

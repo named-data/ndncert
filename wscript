@@ -39,7 +39,7 @@ def configure(conf):
     conf.check_sqlite3()
     conf.check_openssl(lib='crypto', atleast_version='1.1.1')
 
-    conf.check_boost(lib='filesystem', mt=True)
+    conf.check_boost()
     if conf.env.BOOST_VERSION_NUMBER < 107100:
         conf.fatal('The minimum supported version of Boost is 1.71.0.\n'
                    'Please upgrade your distribution or manually install a newer version of Boost.\n'
