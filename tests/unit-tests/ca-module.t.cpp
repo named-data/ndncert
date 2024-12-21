@@ -40,6 +40,7 @@ BOOST_FIXTURE_TEST_SUITE(TestCaModule, IoKeyChainFixture)
 
 BOOST_AUTO_TEST_CASE(Initialization)
 {
+  m_keyChain.createIdentity(Name("/ndn"));
   ndn::DummyClientFace face(m_io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   BOOST_CHECK_EQUAL(ca.getCaConf().caProfile.caPrefix, "/ndn");
@@ -498,7 +499,7 @@ BOOST_AUTO_TEST_CASE(HandleRevoke)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  ndn::DummyClientFace face(m_io, {true, true});
+  ndn::DummyClientFace face(m_io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 
@@ -569,7 +570,7 @@ BOOST_AUTO_TEST_CASE(HandleRevokeWithBadCert)
   auto key = identity.getDefaultKey();
   auto cert = key.getDefaultCertificate();
 
-  ndn::DummyClientFace face(m_io, {true, true});
+  ndn::DummyClientFace face(m_io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1", "ca-storage-memory");
   advanceClocks(time::milliseconds(20), 60);
 

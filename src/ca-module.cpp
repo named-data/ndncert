@@ -74,11 +74,18 @@ CaModule::~CaModule()
 void
 CaModule::registerPrefix()
 {
-  // register prefixes
   Name prefix = m_config.caProfile.caPrefix;
   prefix.append("CA");
 
-  auto prefixId = m_face.registerPrefix(prefix,
+  ndn::security::pib::Identity identity;
+  try {
+    identity = m_keyChain.getPib().getDefaultIdentity();
+  }
+  catch (const ndn::security::Pib::Error&) {
+    identity = m_keyChain.getPib().getIdentity(m_config.caProfile.caPrefix);
+  }
+
+  auto prefixHandle = m_face.registerPrefix(prefix,
     [&] (const Name& name) {
       // register INFO RDR metadata prefix
       const auto& metaDataComp = ndn::MetadataObject::getKeywordComponent();
@@ -108,8 +115,9 @@ CaModule::registerPrefix()
 
       NDN_LOG_TRACE("Prefix " << name << " got registered");
     },
-    [this] (auto&&, const auto& reason) { onRegisterFailed(reason); });
-  m_registeredPrefixHandles.push_back(prefixId);
+    [this] (auto&&, const auto& reason) { onRegisterFailed(reason); },
+    ndn::signingByIdentity(identity));
+  m_registeredPrefixHandles.push_back(prefixHandle);
 }
 
 void
