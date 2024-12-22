@@ -122,28 +122,19 @@ Request::genNewInterest(const Name& keyName,
                         const time::system_clock::time_point& notBefore,
                         const time::system_clock::time_point& notAfter)
 {
-  if (!m_caProfile.caPrefix.isPrefixOf(keyName)) {
+  if (keyName.empty() || !m_caProfile.caPrefix.isPrefixOf(keyName)) {
     return nullptr;
-  }
-  if (keyName.empty()) {
-    return nullptr;
-  }
-  else {
-    const auto& pib = m_keyChain.getPib();
-    ndn::security::pib::Identity identity;
-    m_identityName = ndn::security::extractIdentityFromKeyName(keyName);
-    identity = pib.getIdentity(m_identityName);
-    m_keyPair = identity.getKey(keyName);
   }
 
+  m_identityName = ndn::security::extractIdentityFromKeyName(keyName);
+  auto identity = m_keyChain.getPib().getIdentity(m_identityName);
+  m_keyPair = identity.getKey(keyName);
+
   // generate certificate request
-  Certificate certRequest;
-  certRequest.setName(Name(keyName).append("cert-request").appendVersion());
-  certRequest.setContentType(ndn::tlv::ContentType_Key);
-  certRequest.setContent(m_keyPair.getPublicKey());
-  SignatureInfo signatureInfo;
-  signatureInfo.setValidityPeriod(ndn::security::ValidityPeriod(notBefore, notAfter));
-  m_keyChain.sign(certRequest, signingByKey(keyName).setSignatureInfo(signatureInfo));
+  ndn::security::MakeCertificateOptions opts;
+  opts.issuerId = Name::Component("cert-request");
+  opts.validity.emplace(notBefore, notAfter);
+  auto certRequest = m_keyChain.makeCertificate(m_keyPair, signingByKey(keyName), opts);
 
   // generate Interest packet
   Name interestName = m_caProfile.caPrefix;
