@@ -20,11 +20,7 @@
 
 #include "detail/info-encoder.hpp"
 
-#include <ndn-cxx/util/logger.hpp>
-
 namespace ndncert::infotlv {
-
-NDN_LOG_INIT(ndncert.encode.info);
 
 Block
 encodeDataContent(const CaProfile& caConfig, const Certificate& certificate)
@@ -45,7 +41,6 @@ encodeDataContent(const CaProfile& caConfig, const Certificate& certificate)
   content.push_back(ndn::makeNonNegativeIntegerBlock(tlv::MaxValidityPeriod, caConfig.maxValidityPeriod.count()));
   content.push_back(makeNestedBlock(tlv::CaCertificate, certificate));
   content.encode();
-  NDN_LOG_TRACE("Encoding INFO packet with certificate " << certificate.getFullName());
   return content;
 }
 

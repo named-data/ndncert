@@ -46,8 +46,8 @@ BOOST_AUTO_TEST_CASE(Initialization)
   BOOST_CHECK_EQUAL(ca.getCaConf().caProfile.caPrefix, "/ndn");
 
   advanceClocks(time::milliseconds(20), 60);
-  BOOST_CHECK_EQUAL(ca.m_registeredPrefixHandles.size(), 1); // removed local discovery registration
-  BOOST_CHECK_EQUAL(ca.m_interestFilterHandles.size(), 5);  // infoMeta, onProbe, onNew, onChallenge, onRevoke
+  BOOST_CHECK_EQUAL(ca.m_registeredPrefixes.size(), 1); // removed local discovery registration
+  BOOST_CHECK_EQUAL(ca.m_interestFilters.size(), 5);  // infoMeta, onProbe, onNew, onChallenge, onRevoke
 }
 
 BOOST_AUTO_TEST_CASE(HandleProfileFetching)

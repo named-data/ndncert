@@ -19,27 +19,26 @@
  */
 
 #include "ca-module.hpp"
-#include "detail/crypto-helpers.hpp"
 #include "challenge/challenge-module.hpp"
 #include "name-assignment/assignment-func.hpp"
 #include "detail/challenge-encoder.hpp"
+#include "detail/crypto-helpers.hpp"
 #include "detail/error-encoder.hpp"
 #include "detail/info-encoder.hpp"
-#include "detail/request-encoder.hpp"
 #include "detail/probe-encoder.hpp"
+#include "detail/request-encoder.hpp"
 
 #include <ndn-cxx/metadata-object.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/verification-helpers.hpp>
-#include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/util/logger.hpp>
 #include <ndn-cxx/util/random.hpp>
 #include <ndn-cxx/util/string-helper.hpp>
 
 namespace ndncert::ca {
 
-const time::seconds DEFAULT_DATA_FRESHNESS_PERIOD = 1_s;
-const time::seconds REQUEST_VALIDITY_PERIOD_NOT_BEFORE_GRACE_PERIOD = 120_s;
+constexpr time::milliseconds DEFAULT_DATA_FRESHNESS_PERIOD = 1_s;
+constexpr time::seconds REQUEST_VALIDITY_PERIOD_NOT_BEFORE_GRACE_PERIOD = 120_s;
 
 NDN_LOG_INIT(ndncert.ca);
 
@@ -61,16 +60,6 @@ CaModule::CaModule(ndn::Face& face, ndn::KeyChain& keyChain,
   registerPrefix();
 }
 
-CaModule::~CaModule()
-{
-  for (auto& handle : m_interestFilterHandles) {
-    handle.cancel();
-  }
-  for (auto& handle : m_registeredPrefixHandles) {
-    handle.unregister();
-  }
-}
-
 void
 CaModule::registerPrefix()
 {
@@ -85,61 +74,57 @@ CaModule::registerPrefix()
     identity = m_keyChain.getPib().getIdentity(m_config.caProfile.caPrefix);
   }
 
-  auto prefixHandle = m_face.registerPrefix(prefix,
+  m_registeredPrefixes.emplace_back(m_face.registerPrefix(prefix,
     [&] (const Name& name) {
       // register INFO RDR metadata prefix
       const auto& metaDataComp = ndn::MetadataObject::getKeywordComponent();
       auto filterId = m_face.setInterestFilter(Name(name).append("INFO").append(metaDataComp),
                                                [this] (auto&&, const auto& i) { onCaProfileDiscovery(i); });
-      m_interestFilterHandles.push_back(filterId);
+      m_interestFilters.emplace_back(std::move(filterId));
 
       // register PROBE prefix
       filterId = m_face.setInterestFilter(Name(name).append("PROBE"),
                                           [this] (auto&&, const auto& i) { onProbe(i); });
-      m_interestFilterHandles.push_back(filterId);
+      m_interestFilters.emplace_back(std::move(filterId));
 
       // register NEW prefix
       filterId = m_face.setInterestFilter(Name(name).append("NEW"),
                                           [this] (auto&&, const auto& i) { onNewRenewRevoke(i, RequestType::NEW); });
-      m_interestFilterHandles.push_back(filterId);
+      m_interestFilters.emplace_back(std::move(filterId));
 
-      // register SELECT prefix
+      // register CHALLENGE prefix
       filterId = m_face.setInterestFilter(Name(name).append("CHALLENGE"),
                                           [this] (auto&&, const auto& i) { onChallenge(i); });
-      m_interestFilterHandles.push_back(filterId);
+      m_interestFilters.emplace_back(std::move(filterId));
 
       // register REVOKE prefix
       filterId = m_face.setInterestFilter(Name(name).append("REVOKE"),
                                           [this] (auto&&, const auto& i) { onNewRenewRevoke(i, RequestType::REVOKE); });
-      m_interestFilterHandles.push_back(filterId);
+      m_interestFilters.emplace_back(std::move(filterId));
 
-      NDN_LOG_TRACE("Prefix " << name << " got registered");
+      NDN_LOG_TRACE("Prefix " << name << " registered successfully");
     },
-    [this] (auto&&, const auto& reason) { onRegisterFailed(reason); },
-    ndn::signingByIdentity(identity));
-  m_registeredPrefixHandles.push_back(prefixHandle);
+    [] (auto&&, const auto& reason) {
+      NDN_THROW(std::runtime_error("Failed to register prefix: " + reason));
+    },
+    ndn::signingByIdentity(identity)));
 }
 
-void
-CaModule::setStatusUpdateCallback(const StatusUpdateCallback& onUpdateCallback)
-{
-  m_statusUpdateCallback = onUpdateCallback;
-}
-
-Data
+const Data&
 CaModule::getCaProfileData()
 {
   if (m_profileData == nullptr) {
     auto key = m_keyChain.getPib().getIdentity(m_config.caProfile.caPrefix).getDefaultKey();
-    Block contentTLV = infotlv::encodeDataContent(m_config.caProfile, key.getDefaultCertificate());
+    Block content = infotlv::encodeDataContent(m_config.caProfile, key.getDefaultCertificate());
 
     Name infoPacketName(m_config.caProfile.caPrefix);
-    auto segmentComp = ndn::name::Component::fromSegment(0);
+    auto segmentComp = Name::Component::fromSegment(0);
     infoPacketName.append("CA").append("INFO").appendVersion().append(segmentComp);
     m_profileData = std::make_unique<Data>(infoPacketName);
-    m_profileData->setFinalBlock(segmentComp);
-    m_profileData->setContent(contentTLV);
     m_profileData->setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
+    m_profileData->setFinalBlock(segmentComp);
+    m_profileData->setContent(content);
+
     m_keyChain.sign(*m_profileData, signingByIdentity(m_config.caProfile.caPrefix));
   }
   return *m_profileData;
@@ -148,73 +133,78 @@ CaModule::getCaProfileData()
 void
 CaModule::onCaProfileDiscovery(const Interest&)
 {
-  NDN_LOG_TRACE("Received CA Profile MetaData discovery Interest");
-  if (m_profileData == nullptr) {
-    m_profileData = std::make_unique<Data>(getCaProfileData());
-  }
+  NDN_LOG_TRACE("Received CA profile metadata discovery Interest");
+
+  const auto& profileDataName = getCaProfileData().getName();
   ndn::MetadataObject metadata;
-  metadata.setVersionedName(m_profileData->getName().getPrefix(-1));
-  Name discoveryInterestName(m_profileData->getName().getPrefix(-2));
+  metadata.setVersionedName(profileDataName.getPrefix(-1));
+  Name discoveryInterestName(profileDataName.getPrefix(-2));
   discoveryInterestName.append(ndn::MetadataObject::getKeywordComponent());
   m_face.put(metadata.makeData(discoveryInterestName, m_keyChain, signingByIdentity(m_config.caProfile.caPrefix)));
+
+  NDN_LOG_TRACE("Sent CA profile metadata");
 }
 
 void
 CaModule::onProbe(const Interest& request)
 {
-  // PROBE Naming Convention: /<CA-Prefix>/CA/PROBE/[ParametersSha256DigestComponent]
+  // PROBE naming convention: /<CA-Prefix>/CA/PROBE/<ParametersSha256Digest>
   NDN_LOG_TRACE("Received PROBE request");
 
-  // process PROBE requests: collect probe parameters
-  std::vector<ndn::Name> redirectionNames;
-  std::vector<ndn::PartialName> availableComponents;
+  // process PROBE request: collect probe parameters
+  std::multimap<std::string, std::string> parameters;
   try {
-    auto parameters = probetlv::decodeApplicationParameters(request.getApplicationParameters());
-
-    // collect redirections
-    for (auto &item : m_config.redirection) {
-      if (item.second->isRedirecting(parameters)) {
-        redirectionNames.push_back(item.first->getFullName());
-      }
-    }
-
-    // collect name assignments
-    for (auto &item : m_config.nameAssignmentFuncs) {
-      auto names = item->assignName(parameters);
-      availableComponents.insert(availableComponents.end(), names.begin(), names.end());
-    }
+    parameters = probetlv::decodeApplicationParameters(request.getApplicationParameters());
   }
   catch (const std::exception& e) {
-    NDN_LOG_ERROR("[CaModule::onProbe]Error in decoding TLV: " << e.what());
+    NDN_LOG_ERROR("Cannot decode PROBE parameters: " << e.what());
     return;
   }
 
+  // collect redirections
+  std::vector<ndn::Name> redirectionNames;
+  for (const auto& item : m_config.redirection) {
+    if (item.second->isRedirecting(parameters)) {
+      redirectionNames.push_back(item.first->getFullName());
+    }
+  }
+
+  // collect name assignments
+  std::vector<ndn::PartialName> availableComponents;
+  for (const auto& item : m_config.nameAssignmentFuncs) {
+    auto names = item->assignName(parameters);
+    availableComponents.insert(availableComponents.end(), names.begin(), names.end());
+  }
+
   if (availableComponents.empty() && redirectionNames.empty()) {
-    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
-                                       "Cannot generate available names from parameters provided."));
+    NDN_LOG_TRACE("Cannot generate available names");
+    m_face.put(makeErrorPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
+                               "Cannot generate available names from parameters provided."));
     return;
   }
 
   std::vector<Name> availableNames;
-  for (const auto &component : availableComponents) {
-    Name newIdentityName = m_config.caProfile.caPrefix;
-    newIdentityName.append(component);
-    availableNames.push_back(newIdentityName);
+  availableNames.reserve(availableComponents.size());
+  for (const auto& component : availableComponents) {
+    availableNames.push_back(Name(m_config.caProfile.caPrefix).append(component));
   }
 
-  Data result;
-  result.setName(request.getName());
+  Data result(request.getName());
+  result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
   result.setContent(probetlv::encodeDataContent(availableNames, m_config.caProfile.maxSuffixLength,
                                                 redirectionNames));
-  result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
   m_keyChain.sign(result, signingByIdentity(m_config.caProfile.caPrefix));
   m_face.put(result);
-  NDN_LOG_TRACE("Handle PROBE: send out the PROBE response");
+  NDN_LOG_TRACE("Sent PROBE response");
 }
 
 void
 CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
 {
+  // NEW naming convention: /<CA-Prefix>/CA/NEW/<ParametersSha256Digest>
+  // REVOKE naming convention: /<CA-Prefix>/CA/REVOKE/<ParametersSha256Digest>
+  NDN_LOG_TRACE("Received " << requestType << " request");
+
   // verify ca cert validity
   auto caCert = m_keyChain.getPib()
                           .getIdentity(m_config.caProfile.caPrefix)
@@ -222,68 +212,53 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
                           .getDefaultCertificate();
   if (!caCert.isValid()) {
     NDN_LOG_ERROR("Server certificate invalid/expired");
-    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::BAD_VALIDITY_PERIOD,
-                                       "Server certificate invalid/expired"));
+    m_face.put(makeErrorPacket(request.getName(), ErrorCode::BAD_VALIDITY_PERIOD,
+                               "Server certificate invalid/expired"));
     return;
   }
 
-  // NEW Naming Convention: /<CA-prefix>/CA/NEW/[SignedInterestParameters_Digest]
-  // REVOKE Naming Convention: /<CA-prefix>/CA/REVOKE/[SignedInterestParameters_Digest]
   // get ECDH pub key and cert request
-  const auto& parameterTLV = request.getApplicationParameters();
-  std::vector <uint8_t> ecdhPub;
+  const auto& paramsBlock = request.getApplicationParameters();
+  std::vector<uint8_t> ecdhPub;
   std::shared_ptr<Certificate> clientCert;
   try {
-    requesttlv::decodeApplicationParameters(parameterTLV, requestType, ecdhPub, clientCert);
+    requesttlv::decodeApplicationParameters(paramsBlock, requestType, ecdhPub, clientCert);
   }
   catch (const std::exception& e) {
-    if (!parameterTLV.hasValue()) {
-      NDN_LOG_ERROR("Empty TLV obtained from the Interest parameter.");
-      m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
-                                         "Empty TLV obtained from the Interest parameter."));
-      return;
+    if (!paramsBlock.hasValue()) {
+      NDN_LOG_ERROR("Empty parameters in request");
+      m_face.put(makeErrorPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
+                                 "Malformed request parameters."));
     }
-
-    NDN_LOG_ERROR("Unrecognized self-signed certificate: " << e.what());
-    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
-                                       "Unrecognized self-signed certificate."));
+    else {
+      NDN_LOG_ERROR("Cannot decode request parameters: " << e.what());
+      m_face.put(makeErrorPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
+                                 "Malformed request parameters."));
+    }
     return;
   }
 
   if (ecdhPub.empty()) {
-    NDN_LOG_ERROR("Empty ECDH PUB obtained from the Interest parameter.");
-    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
-                                       "Empty ECDH PUB obtained from the Interest parameter."));
-    return;
-  }
-
-  // get server's ECDH pub key
-  ECDHState ecdh;
-  std::vector <uint8_t> sharedSecret;
-  try {
-    sharedSecret = ecdh.deriveSecret(ecdhPub);
-  }
-  catch (const std::exception& e) {
-    NDN_LOG_ERROR("Cannot derive a shared secret using the provided ECDH key: " << e.what());
-    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
-                                       "Cannot derive a shared secret using the provided ECDH key."));
+    NDN_LOG_ERROR("Empty ECDH public key in request parameters");
+    m_face.put(makeErrorPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
+                               "Malformed request parameters."));
     return;
   }
 
   // verify identity name
-  if (!m_config.caProfile.caPrefix.isPrefixOf(clientCert->getIdentity())
-      || !Certificate::isValidName(clientCert->getName())
-      || clientCert->getIdentity().size() <= m_config.caProfile.caPrefix.size()) {
-    NDN_LOG_ERROR("An invalid certificate name is being requested " << clientCert->getName());
-    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
-                                       "An invalid certificate name is being requested."));
+  if (!Certificate::isValidName(clientCert->getName()) ||
+      !m_config.caProfile.caPrefix.isPrefixOf(clientCert->getIdentity()) ||
+      clientCert->getIdentity().size() <= m_config.caProfile.caPrefix.size()) {
+    NDN_LOG_ERROR("Invalid certificate name requested: " << clientCert->getName());
+    m_face.put(makeErrorPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
+                               "Invalid certificate name requested."));
     return;
   }
   if (m_config.caProfile.maxSuffixLength) {
     if (clientCert->getIdentity().size() > m_config.caProfile.caPrefix.size() + *m_config.caProfile.maxSuffixLength) {
-      NDN_LOG_ERROR("An invalid certificate name is being requested " << clientCert->getName());
-      m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
-                                         "An invalid certificate name is being requested."));
+      NDN_LOG_ERROR("Invalid certificate name requested: " << clientCert->getName());
+      m_face.put(makeErrorPacket(request.getName(), ErrorCode::NAME_NOT_ALLOWED,
+                                 "Invalid certificate name requested."));
       return;
     }
   }
@@ -295,34 +270,47 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
     if (notBefore < currentTime - REQUEST_VALIDITY_PERIOD_NOT_BEFORE_GRACE_PERIOD ||
         notAfter > currentTime + m_config.caProfile.maxValidityPeriod ||
         notAfter <= notBefore) {
-      NDN_LOG_ERROR("An invalid validity period is being requested.");
-      m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::BAD_VALIDITY_PERIOD,
-                                         "An invalid validity period is being requested."));
+      NDN_LOG_ERROR("Invalid validity period requested");
+      m_face.put(makeErrorPacket(request.getName(), ErrorCode::BAD_VALIDITY_PERIOD,
+                                 "Invalid validity period requested."));
       return;
     }
 
-    // verify signature
+    // verify signatures
     if (!ndn::security::verifySignature(*clientCert, *clientCert)) {
-      NDN_LOG_ERROR("Invalid signature in the self-signed certificate.");
-      m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::BAD_SIGNATURE,
-                                         "Invalid signature in the self-signed certificate."));
+      NDN_LOG_ERROR("Invalid signature in the self-signed certificate");
+      m_face.put(makeErrorPacket(request.getName(), ErrorCode::BAD_SIGNATURE,
+                                 "Invalid signature in the self-signed certificate."));
       return;
     }
     if (!ndn::security::verifySignature(request, *clientCert)) {
-      NDN_LOG_ERROR("Invalid signature in the Interest packet.");
-      m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::BAD_SIGNATURE,
-                                         "Invalid signature in the Interest packet."));
+      NDN_LOG_ERROR("Invalid signature in the Interest packet");
+      m_face.put(makeErrorPacket(request.getName(), ErrorCode::BAD_SIGNATURE,
+                                 "Invalid signature in the Interest packet."));
       return;
     }
   }
   else if (requestType == RequestType::REVOKE) {
-    //verify cert is from this CA
+    // verify cert is from this CA
     if (!ndn::security::verifySignature(*clientCert, caCert)) {
-      NDN_LOG_ERROR("Invalid signature in the certificate to revoke.");
-      m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::BAD_SIGNATURE,
-                                         "Invalid signature in the certificate to revoke."));
+      NDN_LOG_ERROR("Invalid signature in the certificate to revoke");
+      m_face.put(makeErrorPacket(request.getName(), ErrorCode::BAD_SIGNATURE,
+                                 "Invalid signature in the certificate to revoke."));
       return;
     }
+  }
+
+  // derive server's ECDH pub key
+  ECDHState ecdh;
+  std::vector<uint8_t> sharedSecret;
+  try {
+    sharedSecret = ecdh.deriveSecret(ecdhPub);
+  }
+  catch (const std::exception& e) {
+    NDN_LOG_ERROR("Cannot derive a shared secret using the provided ECDH public key: " << e.what());
+    m_face.put(makeErrorPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
+                               "Cannot derive a shared secret using the provided ECDH public key."));
+    return;
   }
 
   // create new request instance
@@ -333,8 +321,8 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   }
   catch (const std::runtime_error& e) {
     NDN_LOG_ERROR("Error computing the request ID: " << e.what());
-    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
-                                       "Error computing the request ID."));
+    m_face.put(makeErrorPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
+                               "Error computing the request ID."));
     return;
   }
   RequestId id;
@@ -357,20 +345,20 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
     m_storage->addRequest(requestState);
   }
   catch (const std::runtime_error&) {
-    NDN_LOG_ERROR("Duplicate Request ID: The same request has been seen before.");
-    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
-                                       "Duplicate Request ID: The same request has been seen before."));
+    NDN_LOG_ERROR("Duplicate request ID " << ndn::toHex(id));
+    m_face.put(makeErrorPacket(request.getName(), ErrorCode::INVALID_PARAMETER, "Duplicate request ID."));
     return;
   }
 
-  Data result;
-  result.setName(request.getName());
+  Data result(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
   result.setContent(requesttlv::encodeDataContent(ecdh.getSelfPubKey(),
                                                   salt, requestState.requestId,
                                                   m_config.caProfile.supportedChallenges));
   m_keyChain.sign(result, signingByIdentity(m_config.caProfile.caPrefix));
   m_face.put(result);
+  NDN_LOG_TRACE("Sent " << requestType << " response");
+
   if (m_statusUpdateCallback) {
     m_statusUpdateCallback(requestState);
   }
@@ -379,102 +367,132 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
 void
 CaModule::onChallenge(const Interest& request)
 {
+  NDN_LOG_TRACE("Received CHALLENGE request");
+
   // get certificate request state
   auto requestState = getCertificateRequest(request);
   if (requestState == nullptr) {
-    NDN_LOG_ERROR("No certificate request state can be found.");
-    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
-                                       "No certificate request state can be found."));
+    NDN_LOG_ERROR("No pending certificate request found");
+    m_face.put(makeErrorPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
+                               "No pending certificate request found."));
     return;
   }
 
   // verify signature
   if (!ndn::security::verifySignature(request, requestState->cert)) {
-    NDN_LOG_ERROR("Invalid Signature in the Interest packet.");
-    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::BAD_SIGNATURE,
-                                       "Invalid Signature in the Interest packet."));
+    NDN_LOG_ERROR("Invalid signature in the Interest packet");
+    m_face.put(makeErrorPacket(request.getName(), ErrorCode::BAD_SIGNATURE,
+                               "Invalid signature in the Interest packet."));
     return;
   }
 
   // decrypt the parameters
-  ndn::Buffer paramTLVPayload;
+  ndn::Buffer plaintext;
   try {
-    paramTLVPayload = decodeBlockWithAesGcm128(request.getApplicationParameters(), requestState->encryptionKey.data(),
-                                               requestState->requestId.data(), requestState->requestId.size(),
-                                               requestState->decryptionIv, requestState->encryptionIv);
+    plaintext = decodeBlockWithAesGcm128(request.getApplicationParameters(), requestState->encryptionKey.data(),
+                                         requestState->requestId.data(), requestState->requestId.size(),
+                                         requestState->decryptionIv, requestState->encryptionIv);
   }
   catch (const std::exception& e) {
-    NDN_LOG_ERROR("Interest paramaters decryption failed: " << e.what());
+    NDN_LOG_ERROR("Cannot decrypt challenge parameters: " << e.what());
     m_storage->deleteRequest(requestState->requestId);
-    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
-                                       "Interest paramaters decryption failed."));
+    m_face.put(makeErrorPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
+                               "Malformed challenge parameters."));
     return;
   }
-  if (paramTLVPayload.empty()) {
-    NDN_LOG_ERROR("No parameters are found after decryption.");
+  if (plaintext.empty()) {
+    NDN_LOG_ERROR("Empty parameters after decryption");
     m_storage->deleteRequest(requestState->requestId);
-    m_face.put(generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
-                                       "No parameters are found after decryption."));
+    m_face.put(makeErrorPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
+                               "Malformed challenge parameters."));
     return;
   }
 
-  auto paramTLV = ndn::makeBinaryBlock(tlv::EncryptedPayload, paramTLVPayload);
+  auto paramTLV = ndn::makeBinaryBlock(tlv::EncryptedPayload, plaintext);
   paramTLV.parse();
 
   // load the corresponding challenge module
   std::string challengeType = readString(paramTLV.get(tlv::SelectedChallenge));
   auto challenge = ChallengeModule::createChallengeModule(challengeType);
   if (challenge == nullptr) {
-    NDN_LOG_TRACE("Unrecognized challenge type: " << challengeType);
+    NDN_LOG_TRACE("Unsupported challenge type: " << challengeType);
     m_storage->deleteRequest(requestState->requestId);
-    m_face.put(
-      generateErrorDataPacket(request.getName(), ErrorCode::INVALID_PARAMETER, "Unrecognized challenge type."));
+    m_face.put(makeErrorPacket(request.getName(), ErrorCode::INVALID_PARAMETER,
+                               "Unsupported challenge type."));
     return;
   }
 
-  NDN_LOG_TRACE("CHALLENGE module to be load: " << challengeType);
-  auto errorInfo = challenge->handleChallengeRequest(paramTLV, *requestState);
-  if (std::get<0>(errorInfo) != ErrorCode::NO_ERROR) {
+  NDN_LOG_TRACE("Using challenge: " << challengeType);
+  auto [errCode, errMsg] = challenge->handleChallengeRequest(paramTLV, *requestState);
+  if (errCode != ErrorCode::NO_ERROR) {
     m_storage->deleteRequest(requestState->requestId);
-    m_face.put(generateErrorDataPacket(request.getName(), std::get<0>(errorInfo), std::get<1>(errorInfo)));
+    m_face.put(makeErrorPacket(request.getName(), errCode, errMsg));
     return;
   }
 
   Block payload;
   if (requestState->status == Status::PENDING) {
-    // if challenge succeeded
-    if (requestState->requestType == RequestType::NEW || requestState->requestType == RequestType::RENEW) {
+    NDN_LOG_TRACE("Challenge succeeded");
+    if (requestState->requestType == RequestType::NEW ||
+        requestState->requestType == RequestType::RENEW) {
       auto issuedCert = issueCertificate(*requestState);
       requestState->cert = issuedCert;
       requestState->status = Status::SUCCESS;
       m_storage->deleteRequest(requestState->requestId);
-
       payload = challengetlv::encodeDataContent(*requestState, issuedCert.getName(),
                                                 m_config.caProfile.forwardingHint);
-      NDN_LOG_TRACE("Challenge succeeded. Certificate has been issued: " << issuedCert.getName());
     }
     else if (requestState->requestType == RequestType::REVOKE) {
+      // TODO: where is the code to revoke?
       requestState->status = Status::SUCCESS;
       m_storage->deleteRequest(requestState->requestId);
-      // TODO: where is the code to revoke?
       payload = challengetlv::encodeDataContent(*requestState);
-      NDN_LOG_TRACE("Challenge succeeded. Certificate has been revoked");
     }
   }
   else {
     payload = challengetlv::encodeDataContent(*requestState);
     m_storage->updateRequest(*requestState);
-    NDN_LOG_TRACE("No failure no success. Challenge moves on");
+    NDN_LOG_TRACE("Challenge continues");
   }
 
-  Data result;
-  result.setName(request.getName());
+  Data result(request.getName());
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
   result.setContent(payload);
   m_keyChain.sign(result, signingByIdentity(m_config.caProfile.caPrefix));
   m_face.put(result);
+  NDN_LOG_TRACE("Sent CHALLENGE response");
+
   if (m_statusUpdateCallback) {
     m_statusUpdateCallback(*requestState);
+  }
+}
+
+std::unique_ptr<RequestState>
+CaModule::getCertificateRequest(const Interest& request)
+{
+  Name::Component component;
+  try {
+    component = request.getName().at(m_config.caProfile.caPrefix.size() + 2);
+  }
+  catch (const std::exception& e) {
+    NDN_LOG_ERROR("Cannot extract request ID from Interest name: " << e.what());
+    return nullptr;
+  }
+
+  RequestId requestId;
+  if (component.value_size() != requestId.size()) {
+    NDN_LOG_ERROR("Invalid request ID of length " << component.value_size());
+    return nullptr;
+  }
+  std::memcpy(requestId.data(), component.value(), requestId.size());
+
+  try {
+    NDN_LOG_TRACE("Retrieving request with ID " << ndn::toHex(requestId));
+    return std::make_unique<RequestState>(m_storage->getRequest(requestId));
+  }
+  catch (const std::exception& e) {
+    NDN_LOG_ERROR("Cannot fetch certificate request record from storage: " << e.what());
+    return nullptr;
   }
 }
 
@@ -486,45 +504,16 @@ CaModule::issueCertificate(const RequestState& requestState)
   opts.validity = requestState.cert.getValidityPeriod();
   auto newCert = m_keyChain.makeCertificate(requestState.cert,
                                             signingByIdentity(m_config.caProfile.caPrefix), opts);
-  NDN_LOG_TRACE("Signed new certificate: " << newCert);
+  NDN_LOG_TRACE("Certificate issued: " << newCert);
   return newCert;
 }
 
-std::unique_ptr <RequestState>
-CaModule::getCertificateRequest(const Interest& request)
-{
-  RequestId requestId;
-  try {
-    auto& component = request.getName().at(m_config.caProfile.caPrefix.size() + 2);
-    std::memcpy(requestId.data(), component.value(), component.value_size());
-  }
-  catch (const std::exception& e) {
-    NDN_LOG_ERROR("Cannot read the request ID out from the request: " << e.what());
-    return nullptr;
-  }
-  try {
-    NDN_LOG_TRACE("Request Id to query the database " << ndn::toHex(requestId));
-    return std::make_unique<RequestState>(m_storage->getRequest(requestId));
-  }
-  catch (const std::exception& e) {
-    NDN_LOG_ERROR("Cannot get certificate request record from the storage: " << e.what());
-    return nullptr;
-  }
-}
-
-void
-CaModule::onRegisterFailed(const std::string& reason)
-{
-  NDN_LOG_ERROR("Failed to register prefix in local hub's daemon, REASON: " << reason);
-}
-
 Data
-CaModule::generateErrorDataPacket(const Name& name, ErrorCode error, const std::string& errorInfo)
+CaModule::makeErrorPacket(const Name& name, ErrorCode errorCode, std::string_view errorInfo)
 {
-  Data result;
-  result.setName(name);
+  Data result(name);
   result.setFreshnessPeriod(DEFAULT_DATA_FRESHNESS_PERIOD);
-  result.setContent(errortlv::encodeDataContent(error, errorInfo));
+  result.setContent(errortlv::encodeDataContent(errorCode, errorInfo));
   m_keyChain.sign(result, signingByIdentity(m_config.caProfile.caPrefix));
   return result;
 }

@@ -42,7 +42,7 @@ ChallengePossession::ChallengePossession(const std::string& configPath)
   : ChallengeModule("Possession", 1, time::seconds(60))
 {
   if (configPath.empty()) {
-    m_configFile = std::string(NDNCERT_SYSCONFDIR) + "/ndncert/challenge-credential.conf";
+    m_configFile = NDNCERT_SYSCONFDIR "/ndncert/challenge-credential.conf";
   }
   else {
     m_configFile = configPath;
@@ -62,7 +62,7 @@ ChallengePossession::parseConfigFile()
   }
 
   if (config.begin() == config.end()) {
-    NDN_THROW(std::runtime_error("Error processing configuration file: " + m_configFile + " no data"));
+    NDN_THROW(std::runtime_error("Error processing configuration file " + m_configFile + ": no data"));
   }
 
   m_trustAnchors.clear();
@@ -72,7 +72,7 @@ ChallengePossession::parseConfigFile()
     std::istringstream ss(it->second.get("certificate", ""));
     auto cert = ndn::io::load<Certificate>(ss);
     if (cert == nullptr) {
-      NDN_LOG_ERROR("Cannot load the certificate from config file");
+      NDN_LOG_ERROR("Cannot load certificate from configuration file");
       continue;
     }
     m_trustAnchors.push_back(*cert);
@@ -98,9 +98,8 @@ ChallengePossession::handleChallengeRequest(const Block& params, ca::RequestStat
           credential.wireDecode(elements[i + 1].blockFromValue());
         }
         catch (const std::exception& e) {
-          NDN_LOG_ERROR("Cannot load challenge parameter: credential " << e.what());
-          return returnWithError(request, ErrorCode::INVALID_PARAMETER,
-                                 "Cannot challenge credential: credential."s + e.what());
+          NDN_LOG_ERROR("Cannot decode credential: " << e.what());
+          return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Malformed credential.");
         }
       }
       else if (readString(elements[i]) == PARAMETER_KEY_PROOF) {
@@ -112,11 +111,11 @@ ChallengePossession::handleChallengeRequest(const Block& params, ca::RequestStat
 
   // verify the credential and the self-signed cert
   if (request.status == Status::BEFORE_CHALLENGE) {
-    NDN_LOG_TRACE("Challenge Interest arrives. Check certificate and init the challenge");
+    NDN_LOG_TRACE("Begin challenge");
 
     // check the certificate
     if (!credential.hasContent() || signatureLen != 0) {
-      return returnWithError(request, ErrorCode::BAD_INTEREST_FORMAT, "Cannot find certificate");
+      return returnWithError(request, ErrorCode::BAD_INTEREST_FORMAT, "Cannot find certificate.");
     }
     auto keyLocator = credential.getSignatureInfo().getKeyLocator().getName();
     ndn::security::transform::PublicKey key;
@@ -126,7 +125,7 @@ ChallengePossession::handleChallengeRequest(const Block& params, ca::RequestStat
              ndn::security::verifySignature(credential, anchor);
     });
     if (!checkOK) {
-      return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Certificate cannot be verified");
+      return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Certificate cannot be verified.");
     }
 
     // for the first time, init the challenge
@@ -135,19 +134,19 @@ ChallengePossession::handleChallengeRequest(const Block& params, ca::RequestStat
     JsonSection secretJson;
     secretJson.add(PARAMETER_KEY_NONCE, ndn::toHex(secretCode));
     secretJson.add(PARAMETER_KEY_CREDENTIAL_CERT, ndn::toHex(credential.wireEncode()));
-    NDN_LOG_TRACE("Secret for request " << ndn::toHex(request.requestId) << " : " << ndn::toHex(secretCode));
+    NDN_LOG_TRACE("Secret for request " << ndn::toHex(request.requestId) << " is " << ndn::toHex(secretCode));
     return returnWithNewChallengeStatus(request, NEED_PROOF, std::move(secretJson), m_maxAttemptTimes, m_secretLifetime);
   }
   else if (request.challengeState && request.challengeState->challengeStatus == NEED_PROOF) {
-    NDN_LOG_TRACE("Challenge Interest (proof) arrives. Check the proof");
-    //check the format and load credential
+    NDN_LOG_TRACE("Checking proof");
+    // check the format and load credential
     if (credential.hasContent() || signatureLen == 0) {
-      return returnWithError(request, ErrorCode::BAD_INTEREST_FORMAT, "Cannot find certificate");
+      return returnWithError(request, ErrorCode::BAD_INTEREST_FORMAT, "Cannot find certificate.");
     }
     credential = Certificate(Block(ndn::fromHex(request.challengeState->secrets.get(PARAMETER_KEY_CREDENTIAL_CERT, ""))));
     auto secretCode = *ndn::fromHex(request.challengeState->secrets.get(PARAMETER_KEY_NONCE, ""));
 
-    //check the proof
+    // check the proof
     ndn::security::transform::PublicKey key;
     key.loadPkcs8(credential.getPublicKey());
     if (ndn::security::verifySignature({secretCode}, {signature, signatureLen}, key)) {
@@ -156,8 +155,9 @@ ChallengePossession::handleChallengeRequest(const Block& params, ca::RequestStat
     return returnWithError(request, ErrorCode::INVALID_PARAMETER,
                            "Cannot verify the proof of private key against credential.");
   }
-  NDN_LOG_TRACE("Proof of possession: bad state");
-  return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Fail to recognize the request.");
+
+  NDN_LOG_TRACE("Bad state");
+  return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Cannot recognize the request.");
 }
 
 // For Client
@@ -173,7 +173,7 @@ ChallengePossession::getRequestedParameterList(Status status, const std::string&
     result.emplace(PARAMETER_KEY_PROOF, "Please sign a Data packet with request ID as the content.");
   }
   else {
-    NDN_THROW(std::runtime_error("Unexpected status or challenge status."));
+    NDN_THROW(std::runtime_error("Unexpected challenge status"));
   }
   return result;
 }
@@ -185,7 +185,7 @@ ChallengePossession::genChallengeRequestTLV(Status status, const std::string& ch
   Block request(tlv::EncryptedPayload);
   if (status == Status::BEFORE_CHALLENGE) {
     if (params.size() != 1) {
-      NDN_THROW(std::runtime_error("Wrong parameter provided."));
+      NDN_THROW(std::runtime_error("Wrong parameter provided"));
     }
     request.push_back(ndn::makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
     for (const auto& item : params) {
@@ -198,13 +198,13 @@ ChallengePossession::genChallengeRequestTLV(Status status, const std::string& ch
         request.push_back(valueBlock);
       }
       else {
-        NDN_THROW(std::runtime_error("Wrong parameter provided."));
+        NDN_THROW(std::runtime_error("Wrong parameter provided"));
       }
     }
   }
   else if (status == Status::CHALLENGE && challengeStatus == NEED_PROOF) {
     if (params.size() != 1) {
-      NDN_THROW(std::runtime_error("Wrong parameter provided."));
+      NDN_THROW(std::runtime_error("Wrong parameter provided"));
     }
     for (const auto& item : params) {
       if (std::get<0>(item) == PARAMETER_KEY_PROOF) {
@@ -212,12 +212,12 @@ ChallengePossession::genChallengeRequestTLV(Status status, const std::string& ch
         request.push_back(ndn::makeStringBlock(tlv::ParameterValue, std::get<1>(item)));
       }
       else {
-        NDN_THROW(std::runtime_error("Wrong parameter provided."));
+        NDN_THROW(std::runtime_error("Wrong parameter provided"));
       }
     }
   }
   else {
-    NDN_THROW(std::runtime_error("Unexpected status or challenge status."));
+    NDN_THROW(std::runtime_error("Unexpected challenge status"));
   }
   request.encode();
   return request;

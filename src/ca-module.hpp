@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2024, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -22,7 +22,6 @@
 #define NDNCERT_CA_MODULE_HPP
 
 #include "detail/ca-configuration.hpp"
-#include "detail/crypto-helpers.hpp"
 #include "detail/ca-storage.hpp"
 
 #include <ndn-cxx/face.hpp>
@@ -46,8 +45,6 @@ public:
   CaModule(ndn::Face& face, ndn::KeyChain& keyChain, const std::string& configPath,
            const std::string& storageType = "ca-storage-sqlite3");
 
-  ~CaModule();
-
   CaConfig&
   getCaConf()
   {
@@ -61,12 +58,18 @@ public:
   }
 
   void
-  setStatusUpdateCallback(const StatusUpdateCallback& onUpdateCallback);
+  setStatusUpdateCallback(StatusUpdateCallback cb)
+  {
+    m_statusUpdateCallback = std::move(cb);
+  }
 
-  Data
+  const Data&
   getCaProfileData();
 
 NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+  void
+  registerPrefix();
+
   void
   onCaProfileDiscovery(const Interest& request);
 
@@ -79,35 +82,27 @@ NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
   onChallenge(const Interest& request);
 
-  void
-  onRegisterFailed(const std::string& reason);
-
   std::unique_ptr<RequestState>
   getCertificateRequest(const Interest& request);
 
   Certificate
   issueCertificate(const RequestState& requestState);
 
-  void
-  registerPrefix();
-
   Data
-  generateErrorDataPacket(const Name& name, ErrorCode error, const std::string& errorInfo);
+  makeErrorPacket(const Name& name, ErrorCode errorCode, std::string_view errorInfo);
 
 NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   ndn::Face& m_face;
+  ndn::KeyChain& m_keyChain;
   CaConfig m_config;
   std::unique_ptr<CaStorage> m_storage;
-  ndn::KeyChain& m_keyChain;
+
   uint8_t m_requestIdGenKey[32];
   std::unique_ptr<Data> m_profileData;
-  /**
-   * StatusUpdate Callback function
-   */
   StatusUpdateCallback m_statusUpdateCallback;
 
-  std::list<ndn::RegisteredPrefixHandle> m_registeredPrefixHandles;
-  std::list<ndn::InterestFilterHandle> m_interestFilterHandles;
+  std::vector<ndn::ScopedRegisteredPrefixHandle> m_registeredPrefixes;
+  std::vector<ndn::ScopedInterestFilterHandle> m_interestFilters;
 };
 
 } // namespace ndncert::ca

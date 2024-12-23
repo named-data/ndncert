@@ -31,7 +31,7 @@ namespace ndncert::errortlv {
  * Encode error information into a Data content TLV
  */
 Block
-encodeDataContent(ErrorCode errorCode, const std::string& description);
+encodeDataContent(ErrorCode errorCode, std::string_view description);
 
 /**
  * Decode error information from Data content TLV

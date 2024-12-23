@@ -27,10 +27,10 @@ namespace ndncert::errortlv {
 NDN_LOG_INIT(ndncert.encode.error);
 
 Block
-encodeDataContent(ErrorCode errorCode, const std::string& description)
+encodeDataContent(ErrorCode errorCode, std::string_view description)
 {
   Block response(ndn::tlv::Content);
-  response.push_back(ndn::makeNonNegativeIntegerBlock(tlv::ErrorCode, static_cast<size_t>(errorCode)));
+  response.push_back(ndn::makeNonNegativeIntegerBlock(tlv::ErrorCode, static_cast<uint64_t>(errorCode)));
   response.push_back(ndn::makeStringBlock(tlv::ErrorInfo, description));
   response.encode();
   return response;
@@ -68,8 +68,9 @@ decodefromDataContent(const Block& block)
       return {ErrorCode::NO_ERROR, ""};
     }
     if (codeCount != 1 || infoCount != 1) {
-      NDN_THROW(std::runtime_error("Error TLV contains " + std::to_string(codeCount) + " error code(s) and " +
-                                   std::to_string(infoCount) + " error info(s), instead of expected 1 time each."));
+      NDN_THROW(std::runtime_error("Error TLV contains " + std::to_string(codeCount) +
+                                   " error code(s) and " + std::to_string(infoCount) +
+                                   " error info(s), instead of expected 1 time each."));
     }
     if (otherCriticalCount > 0) {
       NDN_THROW(std::runtime_error("Unknown critical TLV type in error packet"));

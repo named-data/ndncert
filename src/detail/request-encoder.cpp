@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2024, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -60,7 +60,7 @@ requesttlv::decodeApplicationParameters(const Block& payload, RequestType reques
       ecdhPubCount++;
     }
     else if ((requestType == RequestType::NEW && item.type() == tlv::CertRequest) ||
-               (requestType == RequestType::REVOKE && item.type() == tlv::CertToRevoke)) {
+             (requestType == RequestType::REVOKE && item.type() == tlv::CertToRevoke)) {
       requestPayload = item;
       requestPayloadCount++;
       requestPayload.parse();
@@ -75,9 +75,9 @@ requesttlv::decodeApplicationParameters(const Block& payload, RequestType reques
   }
 
   if (ecdhPubCount != 1 || requestPayloadCount != 1) {
-    NDN_THROW(std::runtime_error("Error TLV contains " + std::to_string(ecdhPubCount) + " ecdh public param(s) and " +
-                                 std::to_string(requestPayloadCount) +
-                                 "request payload(s), instead of expected 1 times each."));
+    NDN_THROW(std::runtime_error("TLV contains " + std::to_string(ecdhPubCount) +
+                                 " ecdh public param(s) and " + std::to_string(requestPayloadCount) +
+                                 " request payload(s), instead of expected 1 time each"));
   }
 }
 
@@ -100,9 +100,11 @@ requesttlv::encodeDataContent(const std::vector<uint8_t>& ecdhKey,
 
 std::list <std::string>
 requesttlv::decodeDataContent(const Block& content, std::vector <uint8_t>& ecdhKey,
-                              std::array<uint8_t, 32>& salt, RequestId& requestId) {
-  std::list<std::string> challenges;
+                              std::array<uint8_t, 32>& salt, RequestId& requestId)
+{
   content.parse();
+
+  std::list<std::string> challenges;
   int ecdhPubCount = 0, saltCount = 0, requestIdCount = 0;
   for (auto const &element : content.elements()) {
     if (element.type() == tlv::Challenge) {
@@ -128,11 +130,13 @@ requesttlv::decodeDataContent(const Block& content, std::vector <uint8_t>& ecdhK
       //ignore
     }
   }
+
   if (ecdhPubCount != 1 || saltCount != 1 || requestIdCount != 1) {
-    NDN_THROW(std::runtime_error("Error TLV contains " + std::to_string(ecdhPubCount) + " ecdh public param(s), " +
+    NDN_THROW(std::runtime_error("TLV contains " + std::to_string(ecdhPubCount) + " ecdh public param(s), " +
                                  std::to_string(saltCount) + " salt(s) and " + std::to_string(requestIdCount) +
-                                 "request id(s), instead of expected 1 times each."));
+                                 " request id(s), instead of expected 1 time each"));
   }
+
   return challenges;
 }
 

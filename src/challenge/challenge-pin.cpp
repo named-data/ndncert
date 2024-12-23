@@ -43,47 +43,49 @@ ChallengePin::handleChallengeRequest(const Block& params, ca::RequestState& requ
 {
   params.parse();
   auto currentTime = time::system_clock::now();
+
   if (request.status == Status::BEFORE_CHALLENGE) {
-    NDN_LOG_TRACE("Challenge Interest arrives. Init the challenge");
+    NDN_LOG_TRACE("Begin challenge");
     // for the first time, init the challenge
     std::string secretCode = generateSecretCode();
     JsonSection secretJson;
     secretJson.add(PARAMETER_KEY_CODE, secretCode);
-    NDN_LOG_TRACE("Secret for request " << ndn::toHex(request.requestId)
-                  << " : " << secretCode);
+    NDN_LOG_TRACE("Secret for request " << ndn::toHex(request.requestId) << " is " << secretCode);
     return returnWithNewChallengeStatus(request, NEED_CODE, std::move(secretJson), m_maxAttemptTimes,
                                         m_secretLifetime);
   }
+
   if (request.challengeState) {
     if (request.challengeState->challengeStatus == NEED_CODE ||
         request.challengeState->challengeStatus == WRONG_CODE) {
-      NDN_LOG_TRACE("Challenge Interest arrives. Challenge Status: " << request.challengeState->challengeStatus);
+      NDN_LOG_TRACE("Challenge status: " << request.challengeState->challengeStatus);
       // the incoming interest should bring the pin code
       std::string givenCode = readString(params.get(tlv::ParameterValue));
       auto secret = request.challengeState->secrets;
       if (currentTime - request.challengeState->timestamp >= m_secretLifetime) {
+        NDN_LOG_TRACE("Secret expired");
         return returnWithError(request, ErrorCode::OUT_OF_TIME, "Secret expired.");
       }
       if (givenCode == secret.get<std::string>(PARAMETER_KEY_CODE)) {
-        NDN_LOG_TRACE("Correct PIN code. Challenge succeeded.");
+        NDN_LOG_TRACE("PIN is correct, challenge succeeded");
         return returnWithSuccess(request);
       }
       // check rest attempt times
       if (request.challengeState->remainingTries > 1) {
         auto remainTime = m_secretLifetime - (currentTime - request.challengeState->timestamp);
-        NDN_LOG_TRACE("Wrong PIN code provided. Remaining Tries - 1.");
+        NDN_LOG_TRACE("Wrong PIN, remaining tries = " << request.challengeState->remainingTries - 1);
         return returnWithNewChallengeStatus(request, WRONG_CODE, std::move(secret),
                                             request.challengeState->remainingTries - 1,
                                             time::duration_cast<time::seconds>(remainTime));
       }
       else {
-        // run out times
-        NDN_LOG_TRACE("Wrong PIN code provided. Ran out tires. Challenge failed.");
-        return returnWithError(request, ErrorCode::OUT_OF_TRIES, "Ran out tires.");
+        NDN_LOG_TRACE("Wrong PIN, no tries remaining");
+        return returnWithError(request, ErrorCode::OUT_OF_TRIES, "Ran out of tries.");
       }
     }
   }
-  return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Unexpected status or challenge status");
+
+  return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Unexpected challenge status.");
 }
 
 // For Client
@@ -101,7 +103,7 @@ ChallengePin::getRequestedParameterList(Status status, const std::string& challe
     result.emplace(PARAMETER_KEY_CODE, "Incorrect PIN code, please try again");
   }
   else {
-    NDN_THROW(std::runtime_error("Unexpected status or challenge status."));
+    NDN_THROW(std::runtime_error("Unexpected challenge status"));
   }
   return result;
 }
@@ -116,14 +118,14 @@ ChallengePin::genChallengeRequestTLV(Status status, const std::string& challenge
   }
   else if (status == Status::CHALLENGE && (challengeStatus == NEED_CODE || challengeStatus == WRONG_CODE)) {
     if (params.size() != 1 || params.find(PARAMETER_KEY_CODE) == params.end()) {
-      NDN_THROW(std::runtime_error("Wrong parameter provided."));
+      NDN_THROW(std::runtime_error("Wrong parameter provided"));
     }
     request.push_back(ndn::makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
     request.push_back(ndn::makeStringBlock(tlv::ParameterKey, PARAMETER_KEY_CODE));
     request.push_back(ndn::makeStringBlock(tlv::ParameterValue, params.find(PARAMETER_KEY_CODE)->second));
   }
   else {
-    NDN_THROW(std::runtime_error("Unexpected status or challenge status."));
+    NDN_THROW(std::runtime_error("Unexpected challenge status"));
   }
   request.encode();
   return request;

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2024, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -21,7 +21,7 @@
 #ifndef NDNCERT_REDIRECTION_POLICY_HPP
 #define NDNCERT_REDIRECTION_POLICY_HPP
 
-#include "detail/ca-request-state.hpp"
+#include "detail/ndncert-common.hpp"
 
 #include <map>
 
@@ -35,10 +35,8 @@ public:
 
   /**
    * @brief The Redirection Policy provided by the CA operator to decide if redirection is suitable.
-   *
-   *
-   * @param vector A list of parameter key-value pair from probe.
-   * @return a boolean that is true if the provided params conform to the configured redirection policy.
+   * @param params A list of parameter key-value pairs from the probe.
+   * @return true if the provided @p params conform to the configured redirection policy.
    */
   virtual bool
   isRedirecting(const std::multimap<std::string, std::string>& params) = 0;

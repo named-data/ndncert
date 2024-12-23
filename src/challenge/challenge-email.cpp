@@ -49,56 +49,59 @@ ChallengeEmail::handleChallengeRequest(const Block& params, ca::RequestState& re
 {
   params.parse();
   auto currentTime = time::system_clock::now();
+
   if (request.status == Status::BEFORE_CHALLENGE) {
     // for the first time, init the challenge
     std::string emailAddress = readString(params.get(tlv::ParameterValue));
     auto lastComponentRequested = readString(request.cert.getIdentity().get(-1));
     if (lastComponentRequested != emailAddress) {
-      NDN_LOG_TRACE("Email and requested name do not match. Email " << emailAddress
-                    << " - requested last component " << lastComponentRequested);
+      NDN_LOG_TRACE("Email and requested name do not match: email=" << emailAddress
+                    << " requested=" << lastComponentRequested);
     }
     std::string emailCode = generateSecretCode();
     JsonSection secretJson;
     secretJson.add(PARAMETER_KEY_CODE, emailCode);
     // send out the email
     sendEmail(emailAddress, emailCode, request);
-    NDN_LOG_TRACE("Secret for request " << ndn::toHex(request.requestId) << " : " << emailCode);
+    NDN_LOG_TRACE("Secret for request " << ndn::toHex(request.requestId) << " is " << emailCode);
     return returnWithNewChallengeStatus(request, NEED_CODE, std::move(secretJson),
                                         m_maxAttemptTimes, m_secretLifetime);
   }
+
   if (request.challengeState) {
     if (request.challengeState->challengeStatus == NEED_CODE ||
         request.challengeState->challengeStatus == WRONG_CODE) {
-      NDN_LOG_TRACE("Challenge Interest arrives. Challenge Status: " << request.challengeState->challengeStatus);
+      NDN_LOG_TRACE("Challenge status: " << request.challengeState->challengeStatus);
       // the incoming interest should bring the pin code
       std::string givenCode = readString(params.get(tlv::ParameterValue));
       auto secret = request.challengeState->secrets;
       // check if run out of time
       if (currentTime - request.challengeState->timestamp >= m_secretLifetime) {
+        NDN_LOG_TRACE("Secret expired");
         return returnWithError(request, ErrorCode::OUT_OF_TIME, "Secret expired.");
       }
       // check if provided secret is correct
       if (givenCode == secret.get<std::string>(PARAMETER_KEY_CODE)) {
         // the code is correct
-        NDN_LOG_TRACE("Correct secret code. Challenge succeeded.");
+        NDN_LOG_TRACE("Secret is correct, challenge succeeded");
         return returnWithSuccess(request);
       }
       // otherwise, check remaining attempt times
       if (request.challengeState->remainingTries > 1) {
         auto remainTime = m_secretLifetime - (currentTime - request.challengeState->timestamp);
-        NDN_LOG_TRACE("Wrong secret code provided. Remaining Tries - 1.");
+        NDN_LOG_TRACE("Wrong secret, remaining tries = " << request.challengeState->remainingTries - 1);
         return returnWithNewChallengeStatus(request, WRONG_CODE, std::move(secret),
                                             request.challengeState->remainingTries - 1,
                                             time::duration_cast<time::seconds>(remainTime));
       }
       else {
-        // run out times
-        NDN_LOG_TRACE("Wrong secret code provided. Ran out of tries. Challenge failed.");
+        NDN_LOG_TRACE("Wrong secret, no tries remaining");
         return returnWithError(request, ErrorCode::OUT_OF_TRIES, "Ran out of tries.");
       }
     }
   }
-  return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Unexpected status or challenge status");
+
+  return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Unexpected challenge status.");
 }
 
 // For Client
@@ -116,7 +119,7 @@ ChallengeEmail::getRequestedParameterList(Status status, const std::string& chal
     result.emplace(PARAMETER_KEY_CODE, "Incorrect code, please try again");
   }
   else {
-    NDN_THROW(std::runtime_error("Unexpected status or challenge status."));
+    NDN_THROW(std::runtime_error("Unexpected challenge status"));
   }
   return result;
 }
@@ -128,7 +131,7 @@ ChallengeEmail::genChallengeRequestTLV(Status status, const std::string& challen
   Block request(tlv::EncryptedPayload);
   if (status == Status::BEFORE_CHALLENGE) {
     if (params.size() != 1 || params.find(PARAMETER_KEY_EMAIL) == params.end()) {
-      NDN_THROW(std::runtime_error("Wrong parameter provided."));
+      NDN_THROW(std::runtime_error("Wrong parameter provided"));
     }
     request.push_back(ndn::makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
     request.push_back(ndn::makeStringBlock(tlv::ParameterKey, PARAMETER_KEY_EMAIL));
@@ -136,14 +139,14 @@ ChallengeEmail::genChallengeRequestTLV(Status status, const std::string& challen
   }
   else if (status == Status::CHALLENGE && (challengeStatus == NEED_CODE || challengeStatus == WRONG_CODE)) {
     if (params.size() != 1 || params.find(PARAMETER_KEY_CODE) == params.end()) {
-      NDN_THROW(std::runtime_error("Wrong parameter provided."));
+      NDN_THROW(std::runtime_error("Wrong parameter provided"));
     }
     request.push_back(ndn::makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
     request.push_back(ndn::makeStringBlock(tlv::ParameterKey, PARAMETER_KEY_CODE));
     request.push_back(ndn::makeStringBlock(tlv::ParameterValue, params.find(PARAMETER_KEY_CODE)->second));
   }
   else {
-    NDN_THROW(std::runtime_error("Unexpected status or challenge status."));
+    NDN_THROW(std::runtime_error("Unexpected challenge status"));
   }
   request.encode();
   return request;
@@ -168,11 +171,10 @@ ChallengeEmail::sendEmail(const std::string& emailAddress, const std::string& se
   boost::process::child child(command);
   child.wait();
   if (child.exit_code() != 0) {
-    NDN_LOG_TRACE("EmailSending Script " + m_sendEmailScript + " fails.");
+    NDN_LOG_ERROR("Email sending script " + m_sendEmailScript + " failed");
   }
   else {
-    NDN_LOG_TRACE("EmailSending Script " + m_sendEmailScript +
-              " was executed successfully with return value 0.");
+    NDN_LOG_TRACE("Email sending script " + m_sendEmailScript + " succeeded");
   }
 }
 
