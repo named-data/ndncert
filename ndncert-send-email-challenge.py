@@ -40,7 +40,7 @@ msg.add_alternative(html, subtype='html')
 # connect to SMTP server
 if encrypt_mode == 'ssl':
     context = smtplib.SMTP_SSL(server, port, timeout=10)
-elif encrypt_mode == 'tls':
+elif encrypt_mode == 'starttls':
     context = smtplib.SMTP(server, port, timeout=10)
     context.starttls()
 elif encrypt_mode == 'none':

@@ -1,7 +1,7 @@
 [ndncert.smtp]
 SMTP_SERVER = localhost or remote smtp server
 SMTP_PORT = port number, usually one from 25 465 587
-ENCRYPT_MODE = select one from ssl/tls/none
+ENCRYPT_MODE = select one from ssl/starttls/none
 SMTP_USER = leave it empty if you do not have one
 SMTP_PASSWORD = leave it empty if you do not have one
 
