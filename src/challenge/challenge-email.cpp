@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2024, Regents of the University of California.
+ * Copyright (c) 2017-2025, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -155,8 +155,9 @@ ChallengeEmail::genChallengeRequestTLV(Status status, const std::string& challen
 bool
 ChallengeEmail::isValidEmailAddress(const std::string& emailAddress)
 {
-  const std::string pattern = R"_REGEX_((^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+.[a-zA-Z0-9\-\.]+$))_REGEX_";
-  static const std::regex emailPattern(pattern);
+  static const std::regex emailPattern = [] {
+    return std::regex(R"_RE_((^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+.[a-zA-Z0-9\-\.]+$))_RE_");
+  }();
   return std::regex_match(emailAddress, emailPattern);
 }
 
@@ -168,13 +169,12 @@ ChallengeEmail::sendEmail(const std::string& emailAddress, const std::string& se
   command += " \"" + emailAddress + "\" \"" + secret + "\" \"" +
              request.caPrefix.toUri() + "\" \"" +
              request.cert.getName().toUri() + "\"";
-  boost::process::child child(command);
-  child.wait();
-  if (child.exit_code() != 0) {
-    NDN_LOG_ERROR("Email sending script " + m_sendEmailScript + " failed");
+  int ret = boost::process::system(command, boost::process::std_in < boost::process::null);
+  if (ret == 0) {
+    NDN_LOG_TRACE("Sent email to " << emailAddress);
   }
   else {
-    NDN_LOG_TRACE("Email sending script " + m_sendEmailScript + " succeeded");
+    NDN_LOG_ERROR("Failed to send email to " << emailAddress);
   }
 }
 

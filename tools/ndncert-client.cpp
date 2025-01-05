@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2024, Regents of the University of California.
+ * Copyright (c) 2017-2025, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -624,18 +624,19 @@ main(int argc, char* argv[])
   terminateSignals.add(SIGTERM);
   terminateSignals.async_wait(handleSignal);
 
+  std::string configFilePath(NDNCERT_SYSCONFDIR "/ndncert/client.conf");
+
   namespace po = boost::program_options;
-  std::string configFilePath = std::string(NDNCERT_SYSCONFDIR) + "/ndncert/client.conf";
-  po::options_description description("Usage: ndncert-client [-h] [-c FILE]\n");
-  description.add_options()
-    ("help,h", "produce help message")
-    ("config-file,c", po::value<std::string>(&configFilePath), "configuration file name")
+  po::options_description optsDesc("Usage: ndncert-client [-h] [-c FILE]\n");
+  optsDesc.add_options()
+    ("help,h",        "print help message and exit")
+    ("config-file,c", po::value<std::string>(&configFilePath)->default_value(configFilePath),
+                      "path to configuration file")
     ;
-  po::positional_options_description p;
 
   po::variables_map vm;
   try {
-    po::store(po::command_line_parser(argc, argv).options(description).positional(p).run(), vm);
+    po::store(po::parse_command_line(argc, argv, optsDesc), vm);
     po::notify(vm);
   }
   catch (const std::exception& e) {
@@ -644,7 +645,7 @@ main(int argc, char* argv[])
   }
 
   if (vm.count("help") != 0) {
-    std::cerr << description << std::endl;
+    std::cerr << optsDesc << std::endl;
     return 0;
   }
 
