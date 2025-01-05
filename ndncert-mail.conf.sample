@@ -6,7 +6,20 @@ SMTP_USER = leave it empty if you do not have one
 SMTP_PASSWORD = leave it empty if you do not have one
 
 [ndncert.email]
-MAIL_FROM = NDN Testbed Certificate Robot <noreply-ndncert@named-data.net>
-SUBJECT = Email Challenge Triggered by NDNCERT
-TEXT_TEMPLATE = Your PIN code: {0} from NDNCERT CA {1}. Certificate Name: {2}. Your email has been used to apply for a digital certificate from NDNCERT. Please keep it secret and type it in your application to complete the certificate issuance process. If you do not know what is going on, please ignore this message.
-HTML_TEMPLATE = <html><head></head><body><p><b>Your PIN code: {0} from NDNCERT CA {1}. Certificate Name: {2}.</b></p><p>Your email has been used to apply for a digital certificate from NDNCERT. Please keep it secret and type it in your application to complete the certificate issuance process. If you do not know what is going on, please ignore this message.</p><p>Sincerely,<br/>NDN Testbed NDNCERT robot</p>
+from = NDN Certificate Robot <noreply@ndncert.named-data.net>
+subject = Your NDNCERT verification code
+text_template = Your email was recently used to apply for a digital certificate from NDNCERT.
+    Here is the verification code to enter into your application and complete the certificate issuance process. Do not share this code with anyone else.
+
+    Your verification code is: ${secret}
+    CA name: ${ca_name}
+    Certificate name: ${cert_name}
+
+    If you do not know what is going on, please ignore this message.
+html_template = <!DOCTYPE html>
+    <p>Your email was recently used to apply for a digital certificate from NDNCERT.<br>
+    Here is the verification code to enter into your application and complete the certificate issuance process. Do not share this code with anyone else.</p>
+    <p><strong>Your verification code is: <code>${secret}</code></strong><br>
+    CA name: <code>${ca_name}</code><br>
+    Certificate name: <code>${cert_name}</code></p>
+    <p>If you do not know what is going on, please ignore this message.</p>

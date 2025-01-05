@@ -6,14 +6,22 @@ from email.message import EmailMessage
 
 # init arg parser and parse
 parser = argparse.ArgumentParser(description='Email challenge sender for NDNCERT CA')
-parser.add_argument('email', help='email address of the recipient')
+parser.add_argument('recipient', help='email address of the recipient')
 parser.add_argument('secret', help='secret code for the challenge')
 parser.add_argument('ca_name', help='name of the certificate authority')
 parser.add_argument('cert_name', help='name of the certificate being requested')
 args = parser.parse_args()
 
+vars = {
+    'ca_name': args.ca_name,
+    'cert_name': args.cert_name,
+    'recipient': args.recipient,
+    'secret': args.secret,
+}
+
 # open config file
-confParser = configparser.ConfigParser()
+confParser = configparser.ConfigParser(empty_lines_in_values=True,
+                                       interpolation=configparser.ExtendedInterpolation())
 confParser.read('@SYSCONFDIR@/ndncert/ndncert-mail.conf')
 
 # read smtp settings
@@ -24,15 +32,15 @@ username = confParser.get('ndncert.smtp', 'smtp_user')
 password = confParser.get('ndncert.smtp', 'smtp_password')
 
 # read email settings
-from_addr = confParser.get('ndncert.email', 'mail_from')
-subject = confParser.get('ndncert.email', 'subject')
-text = confParser.get('ndncert.email', 'text_template').format(args.secret, args.ca_name, args.cert_name)
-html = confParser.get('ndncert.email', 'html_template').format(args.secret, args.ca_name, args.cert_name)
+from_addr = confParser.get('ndncert.email', 'from', vars=vars)
+subject = confParser.get('ndncert.email', 'subject', vars=vars)
+text = confParser.get('ndncert.email', 'text_template', vars=vars)
+html = confParser.get('ndncert.email', 'html_template', vars=vars)
 
 # create email message
 msg = EmailMessage()
 msg['From'] = from_addr
-msg['To'] = args.email
+msg['To'] = args.recipient
 msg['Subject'] = subject
 msg.set_content(text)
 msg.add_alternative(html, subtype='html')

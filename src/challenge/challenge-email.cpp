@@ -72,7 +72,7 @@ ChallengeEmail::handleChallengeRequest(const Block& params, ca::RequestState& re
     if (request.challengeState->challengeStatus == NEED_CODE ||
         request.challengeState->challengeStatus == WRONG_CODE) {
       NDN_LOG_TRACE("Challenge status: " << request.challengeState->challengeStatus);
-      // the incoming interest should bring the pin code
+      // the incoming interest should bring the verification code
       std::string givenCode = readString(params.get(tlv::ParameterValue));
       auto secret = request.challengeState->secrets;
       // check if run out of time
