@@ -20,22 +20,22 @@ vars = {
 }
 
 # open config file
-confParser = configparser.ConfigParser(empty_lines_in_values=True,
-                                       interpolation=configparser.ExtendedInterpolation())
-confParser.read('@SYSCONFDIR@/ndncert/ndncert-mail.conf')
+cfg = configparser.ConfigParser(empty_lines_in_values=True,
+                                interpolation=configparser.ExtendedInterpolation())
+cfg.read('@SYSCONFDIR@/ndncert/ndncert-mail.conf')
 
 # read smtp settings
-encrypt_mode = confParser.get('ndncert.smtp', 'encrypt_mode')
-server = confParser.get('ndncert.smtp', 'smtp_server')
-port = confParser.get('ndncert.smtp', 'smtp_port')
-username = confParser.get('ndncert.smtp', 'smtp_user')
-password = confParser.get('ndncert.smtp', 'smtp_password')
+server = cfg.get('ndncert.smtp', 'smtp_server')
+port = cfg.get('ndncert.smtp', 'smtp_port')
+encrypt_mode = cfg.get('ndncert.smtp', 'encrypt_mode')
+username = cfg.get('ndncert.smtp', 'smtp_user', fallback=None)
+password = cfg.get('ndncert.smtp', 'smtp_password', fallback=None)
 
 # read email settings
-from_addr = confParser.get('ndncert.email', 'from', vars=vars)
-subject = confParser.get('ndncert.email', 'subject', vars=vars)
-text = confParser.get('ndncert.email', 'text_template', vars=vars)
-html = confParser.get('ndncert.email', 'html_template', vars=vars)
+from_addr = cfg.get('ndncert.email', 'from', vars=vars)
+subject = cfg.get('ndncert.email', 'subject', vars=vars)
+text = cfg.get('ndncert.email', 'text_template', vars=vars)
+html = cfg.get('ndncert.email', 'html_template', vars=vars)
 
 # create email message
 msg = EmailMessage()
