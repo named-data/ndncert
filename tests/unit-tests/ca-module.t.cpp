@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2024, Regents of the University of California.
+ * Copyright (c) 2017-2025, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -264,7 +264,7 @@ BOOST_AUTO_TEST_CASE(HandleNew)
   BOOST_CHECK_EQUAL(count, 1);
 }
 
-BOOST_AUTO_TEST_CASE(HandleNewWithInvalidValidityPeriod1)
+BOOST_AUTO_TEST_CASE(HandleNewWithInvalidValidityPeriod)
 {
   auto identity = m_keyChain.createIdentity(Name("/ndn"));
   auto key = identity.getDefaultKey();
@@ -272,29 +272,38 @@ BOOST_AUTO_TEST_CASE(HandleNewWithInvalidValidityPeriod1)
 
   ndn::DummyClientFace face(m_io, m_keyChain, {true, true});
   CaModule ca(face, m_keyChain, "tests/unit-tests/config-files/config-ca-1");
-  advanceClocks(time::milliseconds(20), 60);
+  advanceClocks(20_ms, 60);
 
   CaProfile item;
   item.caPrefix = Name("/ndn");
   item.cert = std::make_shared<Certificate>(cert);
   requester::Request state(m_keyChain, item, RequestType::NEW);
   auto client = m_keyChain.createIdentity(Name("/ndn/zhiyi"));
-  auto current_tp = time::system_clock::now();
-  auto interest1 = state.genNewInterest(client.getDefaultKey().getName(), current_tp, current_tp - time::hours(1));
-  auto interest2 = state.genNewInterest(client.getDefaultKey().getName(), current_tp, current_tp + time::days(361));
-  auto interest3 = state.genNewInterest(client.getDefaultKey().getName(),
-                                        current_tp - time::hours(1), current_tp + time::hours(2));
+
+  // max-validity-period is 10 days
+  auto now = time::system_clock::now();
+  auto interest1 = state.genNewInterest(client.getDefaultKey().getName(), now, now - 1_h);
+  auto interest2 = state.genNewInterest(client.getDefaultKey().getName(), now, now + 11_days);
+  auto interest3 = state.genNewInterest(client.getDefaultKey().getName(), now - 3_min, now + 1_day);
+  auto interest4 = state.genNewInterest(client.getDefaultKey().getName(), now + 1_day, now + 10_days + 3_min);
+  auto interest5 = state.genNewInterest(client.getDefaultKey().getName(), now - 1_min, now + 10_days + 1_min);
+
+  int count = 0;
   face.onSendData.connect([&](const Data& response) {
+    ++count;
     auto contentTlv = response.getContent();
     contentTlv.parse();
-    auto errorCode = static_cast<ErrorCode>(readNonNegativeInteger(contentTlv.get(tlv::ErrorCode)));
-    BOOST_CHECK(errorCode != ErrorCode::NO_ERROR);
+    auto err = ndn::readNonNegativeIntegerAs<ErrorCode>(contentTlv.get(tlv::ErrorCode));
+    BOOST_TEST(err == ErrorCode::BAD_VALIDITY_PERIOD);
   });
   face.receive(*interest1);
   face.receive(*interest2);
   face.receive(*interest3);
+  face.receive(*interest4);
+  face.receive(*interest5);
 
-  advanceClocks(time::milliseconds(20), 60);
+  advanceClocks(20_ms, 60);
+  BOOST_TEST(count == 5);
 }
 
 BOOST_AUTO_TEST_CASE(HandleNewWithServerBadValidity)
@@ -302,7 +311,7 @@ BOOST_AUTO_TEST_CASE(HandleNewWithServerBadValidity)
   auto identity = m_keyChain.createIdentity(Name("/ndn"));
   auto key = identity.getDefaultKey();
 
-  //build expired cert
+  // build expired cert
   Certificate cert;
   cert.setName(Name(key.getName()).append("self-sign").appendVersion());
   cert.setContentType(ndn::tlv::ContentType_Key);

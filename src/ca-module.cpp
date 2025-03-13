@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2024, Regents of the University of California.
+ * Copyright (c) 2017-2025, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -38,7 +38,7 @@
 namespace ndncert::ca {
 
 constexpr time::milliseconds DEFAULT_DATA_FRESHNESS_PERIOD = 1_s;
-constexpr time::seconds REQUEST_VALIDITY_PERIOD_NOT_BEFORE_GRACE_PERIOD = 120_s;
+constexpr time::seconds REQUEST_VALIDITY_PERIOD_GRACE_PERIOD = 120_s;
 
 NDN_LOG_INIT(ndncert.ca);
 
@@ -266,10 +266,12 @@ CaModule::onNewRenewRevoke(const Interest& request, RequestType requestType)
   if (requestType == RequestType::NEW) {
     // check the validity period
     auto [notBefore, notAfter] = clientCert->getValidityPeriod().getPeriod();
-    auto currentTime = time::system_clock::now();
-    if (notBefore < currentTime - REQUEST_VALIDITY_PERIOD_NOT_BEFORE_GRACE_PERIOD ||
-        notAfter > currentTime + m_config.caProfile.maxValidityPeriod ||
-        notAfter <= notBefore) {
+    auto validFor = notAfter - notBefore;
+    auto now = time::system_clock::now();
+    if (notBefore < now - REQUEST_VALIDITY_PERIOD_GRACE_PERIOD ||
+        notAfter > now + m_config.caProfile.maxValidityPeriod + REQUEST_VALIDITY_PERIOD_GRACE_PERIOD ||
+        validFor > m_config.caProfile.maxValidityPeriod ||
+        validFor < 0_s) {
       NDN_LOG_ERROR("Invalid validity period requested");
       m_face.put(makeErrorPacket(request.getName(), ErrorCode::BAD_VALIDITY_PERIOD,
                                  "Invalid validity period requested."));
