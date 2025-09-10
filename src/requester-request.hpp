@@ -257,6 +257,14 @@ public:
    * @brief Store Nonce for signature
    */
   std::array<uint8_t, 16> m_nonce = {};
+  /**
+   * @brief Store DNS record name for DNS challenges
+   */
+  std::string m_dnsRecordName;
+  /**
+   * @brief Store DNS expected value for DNS challenges
+   */
+  std::string m_dnsExpectedValue;
 
 private:
   /**

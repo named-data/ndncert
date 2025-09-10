@@ -38,6 +38,20 @@ encodeDataContent(ca::RequestState& request, const Name& issuedCertName, const N
       auto nonce = ndn::fromHex(request.challengeState->secrets.get("nonce", ""));
       response.push_back(ndn::makeBinaryBlock(tlv::ParameterValue, *nonce));
     }
+    else if (request.challengeState->challengeStatus == "need-record") {
+      // Include DNS record information for DNS challenges
+      std::string recordName = request.challengeState->secrets.get("record-name", "");
+      std::string expectedValue = request.challengeState->secrets.get("expected-value", "");
+      
+      if (!recordName.empty()) {
+        response.push_back(ndn::makeStringBlock(tlv::ParameterKey, "record-name"));
+        response.push_back(ndn::makeStringBlock(tlv::ParameterValue, recordName));
+      }
+      if (!expectedValue.empty()) {
+        response.push_back(ndn::makeStringBlock(tlv::ParameterKey, "expected-value"));
+        response.push_back(ndn::makeStringBlock(tlv::ParameterValue, expectedValue));
+      }
+    }
   }
   if (!issuedCertName.empty()) {
     response.push_back(makeNestedBlock(tlv::IssuedCertName, issuedCertName));
@@ -61,9 +75,9 @@ decodeDataContent(const Block& contentBlock, requester::Request& state)
   data.parse();
 
   int numStatus = 0;
-  bool lookingForNonce = false;
+  std::string currentParameterKey;
   for (const auto &item : data.elements()) {
-    if (!lookingForNonce) {
+    if (currentParameterKey.empty()) {
       switch (item.type()) {
         case tlv::Status:
           state.m_status = statusFromBlock(data.get(tlv::Status));
@@ -86,12 +100,7 @@ decodeDataContent(const Block& contentBlock, requester::Request& state)
           state.m_forwardingHint = Name(item.blockFromValue());
           break;
         case tlv::ParameterKey:
-          if (readString(item) == "nonce") {
-            lookingForNonce = true;
-          }
-          else {
-            NDN_THROW(std::runtime_error("Unknown Parameter: " + readString(item)));
-          }
+          currentParameterKey = readString(item);
           break;
         default:
           if (ndn::tlv::isCriticalType(item.type())) {
@@ -105,11 +114,19 @@ decodeDataContent(const Block& contentBlock, requester::Request& state)
     }
     else {
       if (item.type() == tlv::ParameterValue) {
-        lookingForNonce = false;
-        if (item.value_size() != 16) {
-          NDN_THROW(std::runtime_error("Wrong nonce length"));
+        if (currentParameterKey == "nonce") {
+          if (item.value_size() != 16) {
+            NDN_THROW(std::runtime_error("Wrong nonce length"));
+          }
+          memcpy(state.m_nonce.data(), item.value(), 16);
         }
-        memcpy(state.m_nonce.data(), item.value(), 16);
+        else if (currentParameterKey == "record-name") {
+          state.m_dnsRecordName = readString(item);
+        }
+        else if (currentParameterKey == "expected-value") {
+          state.m_dnsExpectedValue = readString(item);
+        }
+        currentParameterKey.clear(); // Reset for next parameter
       }
       else {
         NDN_THROW(std::runtime_error("Parameter Key found, but no value found"));

@@ -20,3 +20,9 @@ def build(bld):
         target=f'{top}/bin/ndncert-ca-status',
         source='ndncert-ca-status.cpp',
         use='BOOST_TOOLS libndn-cert')
+
+    bld.program(
+        name='ndncert-dns-client',
+        target=f'{top}/bin/ndncert-dns-client',
+        source='ndncert-dns-client.cpp',
+        use='BOOST_TOOLS libndn-cert')
