@@ -14,6 +14,9 @@
     },
     {
       "challenge": "email"
+    },
+    {
+      "challenge": "dns"
     }
   ],
   "redirect-to": [
