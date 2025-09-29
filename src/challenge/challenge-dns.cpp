@@ -37,7 +37,7 @@ NDN_LOG_INIT(ndncert.challenge.dns);
 NDNCERT_REGISTER_CHALLENGE(ChallengeDns, "dns");
 
 const std::string ChallengeDns::NEED_DOMAIN = "need-domain";
-const std::string ChallengeDns::NEED_RECORD = "need-record";  
+const std::string ChallengeDns::NEED_RECORD = "need-record";
 const std::string ChallengeDns::WRONG_RECORD = "wrong-record";
 const std::string ChallengeDns::READY_FOR_VALIDATION = "ready-for-validation";
 const std::string ChallengeDns::PARAMETER_KEY_DOMAIN = "domain";
@@ -60,7 +60,7 @@ ChallengeDns::handleChallengeRequest(const Block& params, ca::RequestState& requ
   if (request.status == Status::BEFORE_CHALLENGE) {
     // First request: requester provides domain name
     std::string domain = readString(params.get(tlv::ParameterValue));
-    
+
     if (!isValidDomainName(domain)) {
       NDN_LOG_TRACE("Invalid domain name: " << domain);
       return returnWithError(request, ErrorCode::INVALID_PARAMETER, "Invalid domain name");
@@ -68,7 +68,7 @@ ChallengeDns::handleChallengeRequest(const Block& params, ca::RequestState& requ
 
     // Generate challenge token
     std::string challengeToken = generateSecretCode();
-    
+
     // Compute key hash from requester's public key
     auto keyBits = request.cert.getPublicKey();
     ndn::util::Sha256 sha256;
@@ -77,7 +77,7 @@ ChallengeDns::handleChallengeRequest(const Block& params, ca::RequestState& requ
 
     // Compute expected DNS record value
     std::string expectedValue = computeChallengeResponse(challengeToken, keyHash);
-    
+
     JsonSection secretJson;
     secretJson.add("token", challengeToken);
     secretJson.add("domain", domain);
@@ -85,7 +85,7 @@ ChallengeDns::handleChallengeRequest(const Block& params, ca::RequestState& requ
     secretJson.add("expected-value", expectedValue);
     secretJson.add("record-name", getDnsRecordName(domain));
 
-    NDN_LOG_TRACE("DNS challenge for request " << ndn::toHex(request.requestId) 
+    NDN_LOG_TRACE("DNS challenge for request " << ndn::toHex(request.requestId)
                   << " domain=" << domain << " token=" << challengeToken);
 
     return returnWithNewChallengeStatus(request, NEED_RECORD, std::move(secretJson),
@@ -107,7 +107,7 @@ ChallengeDns::handleChallengeRequest(const Block& params, ca::RequestState& requ
       static const std::string READY_CONFIRMATION = "ready";
       std::string confirmation = readString(params.get(tlv::ParameterValue));
       if (confirmation != READY_CONFIRMATION) {
-        return returnWithError(request, ErrorCode::INVALID_PARAMETER, 
+        return returnWithError(request, ErrorCode::INVALID_PARAMETER,
                               "Expected '" + READY_CONFIRMATION + "' confirmation");
       }
 
@@ -129,14 +129,14 @@ ChallengeDns::handleChallengeRequest(const Block& params, ca::RequestState& requ
         // DNS verification failed
         if (request.challengeState->remainingTries > 1) {
           auto remainTime = getRemainingTime(currentTime, request.challengeState->timestamp);
-          NDN_LOG_TRACE("DNS verification failed, remaining tries = " 
+          NDN_LOG_TRACE("DNS verification failed, remaining tries = "
                         << request.challengeState->remainingTries - 1);
           return returnWithNewChallengeStatus(request, WRONG_RECORD, std::move(secret),
                                               request.challengeState->remainingTries - 1, remainTime);
         }
         else {
           NDN_LOG_TRACE("DNS verification failed, no tries remaining");
-          return returnWithError(request, ErrorCode::OUT_OF_TRIES, 
+          return returnWithError(request, ErrorCode::OUT_OF_TRIES,
                                 "DNS verification failed. No tries remaining.");
         }
       }
@@ -151,25 +151,25 @@ std::multimap<std::string, std::string>
 ChallengeDns::getRequestedParameterList(Status status, const std::string& challengeStatus)
 {
   std::multimap<std::string, std::string> result;
-  
+
   if (status == Status::BEFORE_CHALLENGE && challengeStatus.empty()) {
     result.emplace(PARAMETER_KEY_DOMAIN, "Please input the domain name you want to validate");
   }
   else if (status == Status::CHALLENGE && challengeStatus == NEED_RECORD) {
-    result.emplace(PARAMETER_KEY_CONFIRMATION, 
+    result.emplace(PARAMETER_KEY_CONFIRMATION,
                   "Create the DNS TXT record as instructed, then enter 'ready' to proceed");
   }
   else if (status == Status::CHALLENGE && challengeStatus == READY_FOR_VALIDATION) {
     // Automatic DNS verification phase - no user input needed
   }
   else if (status == Status::CHALLENGE && challengeStatus == WRONG_RECORD) {
-    result.emplace(PARAMETER_KEY_CONFIRMATION, 
+    result.emplace(PARAMETER_KEY_CONFIRMATION,
                   "DNS record verification failed. Please check the record and enter 'ready' to retry");
   }
   else {
     NDN_THROW(std::runtime_error("Unexpected challenge status"));
   }
-  
+
   return result;
 }
 
@@ -178,14 +178,14 @@ ChallengeDns::genChallengeRequestTLV(Status status, const std::string& challenge
                                      const std::multimap<std::string, std::string>& params)
 {
   Block request(tlv::EncryptedPayload);
-  
+
   if (status == Status::BEFORE_CHALLENGE) {
     auto paramValue = validateSingleParameter(params, PARAMETER_KEY_DOMAIN);
     request.push_back(ndn::makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
     request.push_back(ndn::makeStringBlock(tlv::ParameterKey, PARAMETER_KEY_DOMAIN));
     request.push_back(ndn::makeStringBlock(tlv::ParameterValue, paramValue));
   }
-  else if (status == Status::CHALLENGE && 
+  else if (status == Status::CHALLENGE &&
            (challengeStatus == NEED_RECORD || challengeStatus == WRONG_RECORD)) {
     auto paramValue = validateSingleParameter(params, PARAMETER_KEY_CONFIRMATION);
     request.push_back(ndn::makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
@@ -201,7 +201,7 @@ ChallengeDns::genChallengeRequestTLV(Status status, const std::string& challenge
   else {
     NDN_THROW(std::runtime_error("Unexpected challenge status"));
   }
-  
+
   request.encode();
   return request;
 }
@@ -216,7 +216,7 @@ ChallengeDns::isValidDomainName(const std::string& domain)
   static const std::regex domainPattern = [] {
     return std::regex(R"_RE_((^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$))_RE_");
   }();
-  
+
   return std::regex_match(domain, domainPattern);
 }
 
@@ -258,7 +258,7 @@ bool
 ChallengeDns::verifyDnsRecord(const std::string& domain, const std::string& expectedValue) const
 {
   std::string recordName = getDnsRecordName(domain);
-  
+
   // Initialize resolver
   if (res_init() != 0) {
     NDN_LOG_ERROR("Failed to initialize resolver");
@@ -267,7 +267,7 @@ ChallengeDns::verifyDnsRecord(const std::string& domain, const std::string& expe
 
   // Query buffer
   unsigned char answer[4096];
-  
+
   // Perform DNS TXT query
   int answerLen = res_query(recordName.c_str(), C_IN, T_TXT, answer, sizeof(answer));
   if (answerLen < 0) {
@@ -338,15 +338,15 @@ ChallengeDns::verifyDnsRecord(const std::string& domain, const std::string& expe
       while (ptr < txtEnd) {
         uint8_t txtLen = *ptr++;
         if (ptr + txtLen > txtEnd) break;
-        
+
         std::string txtValue(reinterpret_cast<char*>(ptr), txtLen);
         NDN_LOG_TRACE("Found TXT record: " << txtValue);
-        
+
         if (txtValue == expectedValue) {
           NDN_LOG_TRACE("DNS TXT record matches expected value");
           return true;
         }
-        
+
         ptr += txtLen;
       }
     }
