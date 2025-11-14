@@ -25,8 +25,10 @@
 #include <ndn-cxx/util/sha256.hpp>
 
 #include <regex>
+#include <memory>
 #include <netinet/in.h>
 #include <arpa/nameser.h>
+#include <arpa/inet.h>
 #include <resolv.h>
 #include <cstring>
 #include <netdb.h>
@@ -35,6 +37,13 @@ namespace ndncert {
 
 NDN_LOG_INIT(ndncert.challenge.dns);
 NDNCERT_REGISTER_CHALLENGE(ChallengeDns, "dns");
+
+namespace {
+
+constexpr char DNS_RESOLVER_IP[] = "1.1.1.1";
+constexpr uint16_t DNS_RESOLVER_PORT = 53;
+
+} // namespace
 
 const std::string ChallengeDns::NEED_DOMAIN = "need-domain";
 const std::string ChallengeDns::NEED_RECORD = "need-record";
@@ -259,9 +268,23 @@ ChallengeDns::verifyDnsRecord(const std::string& domain, const std::string& expe
 {
   std::string recordName = getDnsRecordName(domain);
 
-  // Initialize resolver
-  if (res_init() != 0) {
+  // Initialize dedicated resolver pointed at 1.1.1.1 to ensure recursive resolution
+  struct __res_state resolver;
+  std::memset(&resolver, 0, sizeof(resolver));
+
+  if (res_ninit(&resolver) != 0) {
     NDN_LOG_ERROR("Failed to initialize resolver");
+    return false;
+  }
+
+  auto resolverGuard = std::unique_ptr<struct __res_state, decltype(&res_nclose)>(&resolver, res_nclose);
+
+  resolver.options |= RES_RECURSE;
+  resolver.nscount = 1;
+  resolver.nsaddr_list[0].sin_family = AF_INET;
+  resolver.nsaddr_list[0].sin_port = htons(DNS_RESOLVER_PORT);
+  if (inet_pton(AF_INET, DNS_RESOLVER_IP, &resolver.nsaddr_list[0].sin_addr) != 1) {
+    NDN_LOG_ERROR("Invalid resolver address " << DNS_RESOLVER_IP);
     return false;
   }
 
@@ -269,9 +292,9 @@ ChallengeDns::verifyDnsRecord(const std::string& domain, const std::string& expe
   unsigned char answer[4096];
 
   // Perform DNS TXT query
-  int answerLen = res_query(recordName.c_str(), C_IN, T_TXT, answer, sizeof(answer));
+  int answerLen = res_nquery(&resolver, recordName.c_str(), C_IN, T_TXT, answer, sizeof(answer));
   if (answerLen < 0) {
-    NDN_LOG_TRACE("DNS query failed for " << recordName << " (h_errno=" << h_errno << ")");
+    NDN_LOG_TRACE("DNS query failed for " << recordName << " (h_errno=" << resolver.res_h_errno << ")");
     return false;
   }
 
