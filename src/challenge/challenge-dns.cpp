@@ -28,7 +28,8 @@
 #include <memory>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <resolv.h>
+#include <sys/socket.h>
+#include <unistd.h>
 #include <cstring>
 #include <netdb.h>
 
@@ -270,35 +271,106 @@ ChallengeDns::verifyDnsRecord(const std::string& domain, const std::string& expe
   constexpr uint16_t DNS_CLASS_IN = 1;
   constexpr uint16_t DNS_TYPE_TXT = 16;
 
-  // Initialize dedicated resolver pointed at 1.1.1.1 to ensure recursive resolution
-  struct __res_state resolver;
-  std::memset(&resolver, 0, sizeof(resolver));
-
-  if (res_ninit(&resolver) != 0) {
-    NDN_LOG_ERROR("Failed to initialize resolver");
+  // Send a direct UDP DNS query to the configured resolver (avoids libresolv linkage issues).
+  int sock = ::socket(AF_INET, SOCK_DGRAM, 0);
+  if (sock < 0) {
+    NDN_LOG_ERROR("Failed to create UDP socket");
     return false;
   }
 
-  auto resolverGuard = std::unique_ptr<struct __res_state, decltype(&res_nclose)>(&resolver, res_nclose);
+  auto sockGuard = std::unique_ptr<int, void(*)(int*)>(&sock, [](int* fd) {
+    if (fd && *fd >= 0) {
+      ::close(*fd);
+      *fd = -1;
+    }
+  });
 
-  resolver.options |= RES_RECURSE;
-  resolver.nscount = 1;
-  resolver.nsaddr_list[0].sin_family = AF_INET;
-  resolver.nsaddr_list[0].sin_port = htons(DNS_RESOLVER_PORT);
-  if (inet_pton(AF_INET, DNS_RESOLVER_IP, &resolver.nsaddr_list[0].sin_addr) != 1) {
+  timeval timeout{};
+  timeout.tv_sec = 3;
+  timeout.tv_usec = 0;
+  (void)::setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
+  sockaddr_in resolverAddr{};
+  resolverAddr.sin_family = AF_INET;
+  resolverAddr.sin_port = htons(DNS_RESOLVER_PORT);
+  if (inet_pton(AF_INET, DNS_RESOLVER_IP, &resolverAddr.sin_addr) != 1) {
     NDN_LOG_ERROR("Invalid resolver address " << DNS_RESOLVER_IP);
     return false;
   }
 
-  // Query buffer
-  unsigned char answer[4096];
+  // Build minimal RFC1035 DNS query (one question)
+  unsigned char query[512];
+  size_t qlen = 0;
+  auto putU16 = [&](uint16_t v) {
+    uint16_t tmp = htons(v);
+    std::memcpy(query + qlen, &tmp, sizeof(tmp));
+    qlen += 2;
+  };
 
-  // Perform DNS TXT query
-  int answerLen = res_nquery(&resolver, recordName.c_str(), DNS_CLASS_IN, DNS_TYPE_TXT, answer, sizeof(answer));
-  if (answerLen < 0) {
-    NDN_LOG_TRACE("DNS query failed for " << recordName << " (h_errno=" << resolver.res_h_errno << ")");
+  // Transaction ID derived from time (good enough for our single-shot query)
+  uint16_t txid = static_cast<uint16_t>(time::system_clock::now().time_since_epoch().count());
+
+  if (sizeof(query) < 12) {
     return false;
   }
+  putU16(txid);
+  putU16(0x0100); // flags: RD
+  putU16(1);      // QDCOUNT
+  putU16(0);      // ANCOUNT
+  putU16(0);      // NSCOUNT
+  putU16(0);      // ARCOUNT
+
+  // QNAME
+  size_t start = 0;
+  while (start < recordName.size()) {
+    size_t dot = recordName.find('.', start);
+    if (dot == std::string::npos) {
+      dot = recordName.size();
+    }
+    size_t labelLen = dot - start;
+    if (labelLen == 0 || labelLen > 63 || qlen + 1 + labelLen >= sizeof(query)) {
+      NDN_LOG_TRACE("Invalid DNS name: " << recordName);
+      return false;
+    }
+    query[qlen++] = static_cast<unsigned char>(labelLen);
+    std::memcpy(query + qlen, recordName.data() + start, labelLen);
+    qlen += labelLen;
+    start = dot + 1;
+  }
+  if (qlen + 1 + 4 > sizeof(query)) {
+    return false;
+  }
+  query[qlen++] = 0; // end of name
+
+  putU16(DNS_TYPE_TXT);
+  putU16(DNS_CLASS_IN);
+
+  ssize_t sent = ::sendto(sock, query, qlen, 0, reinterpret_cast<sockaddr*>(&resolverAddr), sizeof(resolverAddr));
+  if (sent < 0 || static_cast<size_t>(sent) != qlen) {
+    NDN_LOG_TRACE("DNS query send failed for " << recordName);
+    return false;
+  }
+
+  unsigned char answer[4096];
+  sockaddr_in from{};
+  socklen_t fromLen = sizeof(from);
+  ssize_t recvd = ::recvfrom(sock, answer, sizeof(answer), 0, reinterpret_cast<sockaddr*>(&from), &fromLen);
+  if (recvd <= 0) {
+    NDN_LOG_TRACE("DNS query receive failed/timeout for " << recordName);
+    return false;
+  }
+
+  // Basic TXID check
+  if (static_cast<size_t>(recvd) >= 2) {
+    uint16_t rxid;
+    std::memcpy(&rxid, answer, sizeof(rxid));
+    if (ntohs(rxid) != txid) {
+      NDN_LOG_TRACE("DNS response TXID mismatch for " << recordName);
+      return false;
+    }
+  }
+
+  int answerLen = static_cast<int>(recvd);
 
   const size_t msgLen = static_cast<size_t>(answerLen);
   if (msgLen < 12) {
