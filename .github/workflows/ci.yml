@@ -10,6 +10,16 @@ on:
       - '.gitignore'
       - '.mailmap'
       - '*.md'
+  pull_request:
+    branches:
+      - '**'
+    paths-ignore:
+      - 'Dockerfile'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.gitignore'
+      - '.mailmap'
+      - '*.md'
   workflow_dispatch:
 
 permissions: {}
