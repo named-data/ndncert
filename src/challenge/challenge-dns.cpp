@@ -28,6 +28,11 @@
 #include <memory>
 #include <netinet/in.h>
 #include <arpa/nameser.h>
+#if defined(__has_include)
+#  if __has_include(<arpa/nameser_compat.h>)
+#    include <arpa/nameser_compat.h>
+#  endif
+#endif
 #include <arpa/inet.h>
 #include <resolv.h>
 #include <cstring>
