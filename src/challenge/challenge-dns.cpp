@@ -27,12 +27,6 @@
 #include <regex>
 #include <memory>
 #include <netinet/in.h>
-#include <arpa/nameser.h>
-#if defined(__has_include)
-#  if __has_include(<arpa/nameser_compat.h>)
-#    include <arpa/nameser_compat.h>
-#  endif
-#endif
 #include <arpa/inet.h>
 #include <resolv.h>
 #include <cstring>
@@ -273,6 +267,9 @@ ChallengeDns::verifyDnsRecord(const std::string& domain, const std::string& expe
 {
   std::string recordName = getDnsRecordName(domain);
 
+  constexpr uint16_t DNS_CLASS_IN = 1;
+  constexpr uint16_t DNS_TYPE_TXT = 16;
+
   // Initialize dedicated resolver pointed at 1.1.1.1 to ensure recursive resolution
   struct __res_state resolver;
   std::memset(&resolver, 0, sizeof(resolver));
@@ -297,55 +294,131 @@ ChallengeDns::verifyDnsRecord(const std::string& domain, const std::string& expe
   unsigned char answer[4096];
 
   // Perform DNS TXT query
-  int answerLen = res_nquery(&resolver, recordName.c_str(), ns_c_in, ns_t_txt, answer, sizeof(answer));
+  int answerLen = res_nquery(&resolver, recordName.c_str(), DNS_CLASS_IN, DNS_TYPE_TXT, answer, sizeof(answer));
   if (answerLen < 0) {
     NDN_LOG_TRACE("DNS query failed for " << recordName << " (h_errno=" << resolver.res_h_errno << ")");
     return false;
   }
 
-  // Parse DNS response using resolver helpers (portable across BIND / libc variants)
-  ns_msg msg;
-  if (ns_initparse(answer, answerLen, &msg) != 0) {
-    NDN_LOG_TRACE("Failed to parse DNS response for " << recordName);
+  const size_t msgLen = static_cast<size_t>(answerLen);
+  if (msgLen < 12) {
+    NDN_LOG_TRACE("DNS response too short for " << recordName);
     return false;
   }
 
-  int answerCount = ns_msg_count(msg, ns_s_an);
-  if (answerCount <= 0) {
+  auto readU16 = [&](size_t offset, uint16_t& value) -> bool {
+    if (offset + 2 > msgLen) {
+      return false;
+    }
+    uint16_t tmp;
+    std::memcpy(&tmp, answer + offset, sizeof(tmp));
+    value = ntohs(tmp);
+    return true;
+  };
+
+  uint16_t flags = 0;
+  uint16_t qdcount = 0;
+  uint16_t ancount = 0;
+  if (!readU16(2, flags) || !readU16(4, qdcount) || !readU16(6, ancount)) {
+    NDN_LOG_TRACE("Failed to parse DNS header for " << recordName);
+    return false;
+  }
+
+  uint8_t rcode = static_cast<uint8_t>(flags & 0x000F);
+  if (rcode != 0) {
+    NDN_LOG_TRACE("DNS query returned error code: " << static_cast<int>(rcode));
+    return false;
+  }
+
+  if (ancount == 0) {
     NDN_LOG_TRACE("No TXT records found for " << recordName);
     return false;
   }
 
-  for (int i = 0; i < answerCount; ++i) {
-    ns_rr rr;
-    if (ns_parserr(&msg, ns_s_an, i, &rr) != 0) {
-      continue;
-    }
-
-    if (ns_rr_type(rr) != ns_t_txt || ns_rr_class(rr) != ns_c_in) {
-      continue;
-    }
-
-    const unsigned char* rdata = ns_rr_rdata(rr);
-    int rdlen = ns_rr_rdlen(rr);
-
-    int pos = 0;
-    while (pos < rdlen) {
-      uint8_t txtLen = rdata[pos++];
-      if (pos + txtLen > rdlen) {
-        break;
+  auto skipName = [&](size_t& offset) -> bool {
+    // RFC1035 name with optional compression pointers
+    for (int steps = 0; steps < 128; ++steps) {
+      if (offset >= msgLen) {
+        return false;
       }
-
-      std::string txtValue(reinterpret_cast<const char*>(rdata + pos), txtLen);
-      NDN_LOG_TRACE("Found TXT record: " << txtValue);
-
-      if (txtValue == expectedValue) {
-        NDN_LOG_TRACE("DNS TXT record matches expected value");
+      uint8_t len = answer[offset];
+      if (len == 0) {
+        ++offset;
         return true;
       }
-
-      pos += txtLen;
+      if ((len & 0xC0) == 0xC0) {
+        if (offset + 2 > msgLen) {
+          return false;
+        }
+        offset += 2;
+        return true;
+      }
+      if ((len & 0xC0) != 0) {
+        return false;
+      }
+      offset += static_cast<size_t>(len) + 1;
     }
+    return false;
+  };
+
+  size_t offset = 12;
+
+  // Skip question section
+  for (uint16_t i = 0; i < qdcount; ++i) {
+    if (!skipName(offset)) {
+      return false;
+    }
+    if (offset + 4 > msgLen) {
+      return false;
+    }
+    offset += 4; // QTYPE + QCLASS
+  }
+
+  // Parse answer section
+  for (uint16_t i = 0; i < ancount && offset < msgLen; ++i) {
+    if (!skipName(offset)) {
+      break;
+    }
+    if (offset + 10 > msgLen) {
+      break;
+    }
+
+    uint16_t type = 0;
+    uint16_t class_ = 0;
+    uint16_t rdlength = 0;
+    if (!readU16(offset, type) || !readU16(offset + 2, class_) || !readU16(offset + 8, rdlength)) {
+      break;
+    }
+    offset += 10; // TYPE(2) + CLASS(2) + TTL(4) + RDLENGTH(2)
+
+    if (offset + rdlength > msgLen) {
+      break;
+    }
+
+    if (type == DNS_TYPE_TXT && class_ == DNS_CLASS_IN) {
+      const unsigned char* rdata = answer + offset;
+      size_t rdlen = rdlength;
+
+      size_t pos = 0;
+      while (pos < rdlen) {
+        uint8_t txtLen = rdata[pos++];
+        if (pos + txtLen > rdlen) {
+          break;
+        }
+
+        std::string txtValue(reinterpret_cast<const char*>(rdata + pos), txtLen);
+        NDN_LOG_TRACE("Found TXT record: " << txtValue);
+
+        if (txtValue == expectedValue) {
+          NDN_LOG_TRACE("DNS TXT record matches expected value");
+          return true;
+        }
+
+        pos += txtLen;
+      }
+    }
+
+    offset += rdlength;
   }
 
   NDN_LOG_TRACE("Expected TXT value not found in DNS response");

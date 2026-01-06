@@ -51,10 +51,6 @@ def configure(conf):
     if conf.env.WITH_TOOLS:
         conf.check_boost(lib='program_options', mt=True, uselib_store='BOOST_TOOLS')
 
-    # Some resolver helpers (e.g., ns_initparse/ns_parserr) are provided by libresolv on some platforms.
-    # Link it when available.
-    conf.check(lib='resolv', uselib_store='RESOLV', mandatory=False)
-
     conf.check_compiler_flags()
 
     # Loading "late" to prevent tests from being compiled with profiling flags
@@ -75,17 +71,13 @@ def configure(conf):
     conf.write_config_header('src/detail/ndncert-config.hpp', define_prefix='NDNCERT_')
 
 def build(bld):
-    useLibs = ['BOOST', 'NDN_CXX', 'OPENSSL', 'SQLITE3']
-    if bld.env.LIB_RESOLV:
-        useLibs.append('RESOLV')
-
     bld.shlib(
         target='ndn-cert',
         name='libndn-cert',
         vnum=VERSION,
         cnum=VERSION,
         source=bld.path.ant_glob('src/**/*.cpp'),
-        use=useLibs,
+        use='BOOST NDN_CXX OPENSSL SQLITE3',
         includes='src',
         export_includes='src')
 
