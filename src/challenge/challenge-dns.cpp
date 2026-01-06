@@ -297,89 +297,54 @@ ChallengeDns::verifyDnsRecord(const std::string& domain, const std::string& expe
   unsigned char answer[4096];
 
   // Perform DNS TXT query
-  int answerLen = res_nquery(&resolver, recordName.c_str(), C_IN, T_TXT, answer, sizeof(answer));
+  int answerLen = res_nquery(&resolver, recordName.c_str(), ns_c_in, ns_t_txt, answer, sizeof(answer));
   if (answerLen < 0) {
     NDN_LOG_TRACE("DNS query failed for " << recordName << " (h_errno=" << resolver.res_h_errno << ")");
     return false;
   }
 
-  // Parse DNS response
-  HEADER* header = reinterpret_cast<HEADER*>(answer);
-  if (header->rcode != NOERROR) {
-    NDN_LOG_TRACE("DNS query returned error code: " << header->rcode);
+  // Parse DNS response using resolver helpers (portable across BIND / libc variants)
+  ns_msg msg;
+  if (ns_initparse(answer, answerLen, &msg) != 0) {
+    NDN_LOG_TRACE("Failed to parse DNS response for " << recordName);
     return false;
   }
 
-  if (ntohs(header->ancount) == 0) {
+  int answerCount = ns_msg_count(msg, ns_s_an);
+  if (answerCount <= 0) {
     NDN_LOG_TRACE("No TXT records found for " << recordName);
     return false;
   }
 
-  // Skip DNS header and question section
-  unsigned char* ptr = answer + sizeof(HEADER);
-  unsigned char* endPtr = answer + answerLen;
+  for (int i = 0; i < answerCount; ++i) {
+    ns_rr rr;
+    if (ns_parserr(&msg, ns_s_an, i, &rr) != 0) {
+      continue;
+    }
 
-  // Skip question section
-  for (int i = 0; i < ntohs(header->qdcount) && ptr < endPtr; i++) {
-    // Skip QNAME
-    while (ptr < endPtr && *ptr != 0) {
-      if ((*ptr & 0xC0) == 0xC0) {
-        ptr += 2; // Compressed name
+    if (ns_rr_type(rr) != ns_t_txt || ns_rr_class(rr) != ns_c_in) {
+      continue;
+    }
+
+    const unsigned char* rdata = ns_rr_rdata(rr);
+    int rdlen = ns_rr_rdlen(rr);
+
+    int pos = 0;
+    while (pos < rdlen) {
+      uint8_t txtLen = rdata[pos++];
+      if (pos + txtLen > rdlen) {
         break;
       }
-      else {
-        ptr += *ptr + 1; // Label length + label
+
+      std::string txtValue(reinterpret_cast<const char*>(rdata + pos), txtLen);
+      NDN_LOG_TRACE("Found TXT record: " << txtValue);
+
+      if (txtValue == expectedValue) {
+        NDN_LOG_TRACE("DNS TXT record matches expected value");
+        return true;
       }
-    }
-    if (ptr < endPtr && *ptr == 0) ptr++; // Skip null terminator
-    ptr += 4; // Skip QTYPE and QCLASS
-  }
 
-  // Parse answer section
-  for (int i = 0; i < ntohs(header->ancount) && ptr < endPtr; i++) {
-    // Skip NAME field
-    if ((*ptr & 0xC0) == 0xC0) {
-      ptr += 2; // Compressed name
-    }
-    else {
-      while (ptr < endPtr && *ptr != 0) {
-        ptr += *ptr + 1;
-      }
-      if (ptr < endPtr) ptr++; // Skip null terminator
-    }
-
-    if (ptr + 10 > endPtr) break; // Not enough data for TYPE, CLASS, TTL, RDLENGTH
-
-    uint16_t type = ntohs(*(uint16_t*)ptr);
-    ptr += 2;
-    uint16_t class_ = ntohs(*(uint16_t*)ptr);
-    ptr += 2;
-    ptr += 4; // Skip TTL
-    uint16_t rdlength = ntohs(*(uint16_t*)ptr);
-    ptr += 2;
-
-    if (ptr + rdlength > endPtr) break; // Not enough data for RDATA
-
-    if (type == T_TXT && class_ == C_IN) {
-      // Parse TXT record data
-      unsigned char* txtEnd = ptr + rdlength;
-      while (ptr < txtEnd) {
-        uint8_t txtLen = *ptr++;
-        if (ptr + txtLen > txtEnd) break;
-
-        std::string txtValue(reinterpret_cast<char*>(ptr), txtLen);
-        NDN_LOG_TRACE("Found TXT record: " << txtValue);
-
-        if (txtValue == expectedValue) {
-          NDN_LOG_TRACE("DNS TXT record matches expected value");
-          return true;
-        }
-
-        ptr += txtLen;
-      }
-    }
-    else {
-      ptr += rdlength; // Skip non-TXT records
+      pos += txtLen;
     }
   }
 
