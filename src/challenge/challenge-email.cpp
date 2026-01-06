@@ -23,7 +23,8 @@
 #include <ndn-cxx/util/logger.hpp>
 
 #include <regex>
-#include <boost/process.hpp>
+#include <boost/process/io.hpp>
+#include <boost/process/system.hpp>
 
 namespace ndncert {
 
