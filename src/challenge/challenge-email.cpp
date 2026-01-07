@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2025, Regents of the University of California.
+ * Copyright (c) 2017-2026, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -23,7 +23,15 @@
 #include <ndn-cxx/util/logger.hpp>
 
 #include <regex>
-#include <boost/process.hpp>
+
+#include <boost/version.hpp>
+#if BOOST_VERSION >= 108600
+#include <boost/process/v1/io.hpp>
+#include <boost/process/v1/system.hpp>
+#else
+#include <boost/process/io.hpp>
+#include <boost/process/system.hpp>
+#endif
 
 namespace ndncert {
 
@@ -169,7 +177,14 @@ ChallengeEmail::sendEmail(const std::string& emailAddress, const std::string& se
   command += " \"" + emailAddress + "\" \"" + secret + "\" \"" +
              request.caPrefix.toUri() + "\" \"" +
              request.cert.getName().toUri() + "\"";
-  int ret = boost::process::system(command, boost::process::std_in < boost::process::null);
+
+#if BOOST_VERSION >= 108600
+  // TODO: migrate to Boost.Process v2
+  namespace bp = boost::process::v1;
+#else
+  namespace bp = boost::process;
+#endif
+  int ret = bp::system(command, bp::std_in < bp::null);
   if (ret == 0) {
     NDN_LOG_TRACE("Sent email to " << emailAddress);
   }
