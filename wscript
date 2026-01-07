@@ -99,7 +99,8 @@ def build(bld):
     bld.install_files('${SYSCONFDIR}/ndncert',
                       ['ca.conf.sample',
                        'client.conf.sample',
-                       'ndncert-mail.conf.sample'])
+                       'ndncert-mail.conf.sample',
+                       'ndncert-dns.conf.sample'])
 
     bld(features='subst',
         source='libndn-cert.pc.in',

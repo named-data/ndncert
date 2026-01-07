@@ -26,12 +26,19 @@
 
 #include <regex>
 #include <memory>
+#include <cstring>
+#include <fstream>
+#include <optional>
+#include <cstdlib>
+#include <string>
+
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <cstring>
 #include <netdb.h>
+
+#include <boost/property_tree/json_parser.hpp>
 
 namespace ndncert {
 
@@ -40,23 +47,154 @@ NDNCERT_REGISTER_CHALLENGE(ChallengeDns, "dns");
 
 namespace {
 
-constexpr char DNS_RESOLVER_IP[] = "1.1.1.1";
-constexpr uint16_t DNS_RESOLVER_PORT = 53;
+constexpr char DNS_RESOLV_CONF_PATH[] = "/etc/resolv.conf";
+constexpr char DNS_RESOLVER_ENV[] = "NDNCERT_DNS_RESOLVER";
+constexpr char DNS_RESOLVER_PORT_ENV[] = "NDNCERT_DNS_RESOLVER_PORT";
+constexpr char DNS_CHALLENGE_CONFIG_DEFAULT[] = NDNCERT_SYSCONFDIR "/ndncert/ndncert-dns.conf";
+
+constexpr char DNS_CONFIG_KEY_RESOLVER[] = "resolver";
+constexpr char DNS_CONFIG_KEY_PORT[] = "port";
+
+static std::optional<std::string>
+getEnv(const char* name)
+{
+  if (name == nullptr) {
+    return std::nullopt;
+  }
+  const char* value = std::getenv(name);
+  if (value == nullptr || *value == '\0') {
+    return std::nullopt;
+  }
+  return std::string(value);
+}
+
+static std::optional<std::string>
+getDefaultDnsResolverIpV4()
+{
+  std::ifstream in(DNS_RESOLV_CONF_PATH);
+  if (!in.is_open()) {
+    return std::nullopt;
+  }
+
+  std::string token;
+  while (in >> token) {
+    if (token == "nameserver") {
+      std::string addr;
+      if (!(in >> addr)) {
+        break;
+      }
+
+      in_addr tmp{};
+      if (inet_pton(AF_INET, addr.c_str(), &tmp) == 1) {
+        return addr;
+      }
+
+      // Not an IPv4 resolver address, skip.
+    }
+  }
+
+  return std::nullopt;
+}
+
+static std::optional<uint16_t>
+parsePort(const std::string& s)
+{
+  try {
+    size_t idx = 0;
+    unsigned long v = std::stoul(s, &idx, 10);
+    if (idx != s.size() || v == 0 || v > 65535) {
+      return std::nullopt;
+    }
+    return static_cast<uint16_t>(v);
+  }
+  catch (...) {
+    return std::nullopt;
+  }
+}
+
+static uint16_t
+getDefaultDnsResolverPort()
+{
+  // Prefer service lookup to avoid hard-coding 53.
+  if (servent* svc = ::getservbyname("domain", "udp")) {
+    return ntohs(static_cast<uint16_t>(svc->s_port));
+  }
+  return 53;
+}
+
+static bool
+setRecvTimeout(int sock, int timeoutMs)
+{
+  timeval timeout{};
+  timeout.tv_sec = timeoutMs / 1000;
+  timeout.tv_usec = (timeoutMs % 1000) * 1000;
+  return ::setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == 0;
+}
 
 } // namespace
 
-const std::string ChallengeDns::NEED_DOMAIN = "need-domain";
 const std::string ChallengeDns::NEED_RECORD = "need-record";
 const std::string ChallengeDns::WRONG_RECORD = "wrong-record";
-const std::string ChallengeDns::READY_FOR_VALIDATION = "ready-for-validation";
 const std::string ChallengeDns::PARAMETER_KEY_DOMAIN = "domain";
 const std::string ChallengeDns::PARAMETER_KEY_CONFIRMATION = "confirmation";
 const std::string ChallengeDns::DNS_PREFIX = "_ndncert-challenge";
 
 ChallengeDns::ChallengeDns(const size_t& maxAttemptTimes,
-                           const time::seconds secretLifetime)
+                           const time::seconds secretLifetime,
+                           const std::string& configPath)
   : ChallengeModule("dns", maxAttemptTimes, secretLifetime)
+  , m_configFile(configPath.empty() ? DNS_CHALLENGE_CONFIG_DEFAULT : configPath)
 {
+}
+
+void
+ChallengeDns::parseConfigFile() const
+{
+  if (m_isConfigParsed) {
+    return;
+  }
+  m_isConfigParsed = true;
+
+  std::ifstream in(m_configFile);
+  if (!in.is_open()) {
+    return;
+  }
+
+  JsonSection config;
+  try {
+    boost::property_tree::read_json(in, config);
+  }
+  catch (const boost::property_tree::json_parser_error& e) {
+    NDN_LOG_ERROR("Failed to parse DNS challenge config " << m_configFile << ": " << e.message());
+    return;
+  }
+
+  if (auto resolver = config.get_optional<std::string>(DNS_CONFIG_KEY_RESOLVER)) {
+    in_addr tmp{};
+    if (inet_pton(AF_INET, resolver->c_str(), &tmp) == 1) {
+      m_configResolverIpV4 = *resolver;
+    }
+    else {
+      NDN_LOG_ERROR("Invalid DNS resolver IPv4 in " << m_configFile << ": " << *resolver);
+    }
+  }
+
+  if (auto port = config.get_optional<std::string>(DNS_CONFIG_KEY_PORT)) {
+    if (auto parsed = parsePort(*port)) {
+      m_configResolverPort = *parsed;
+    }
+    else {
+      NDN_LOG_ERROR("Invalid DNS resolver port in " << m_configFile << ": " << *port);
+    }
+  }
+  else if (auto portNum = config.get_optional<uint16_t>(DNS_CONFIG_KEY_PORT)) {
+    if (*portNum != 0) {
+      m_configResolverPort = *portNum;
+    }
+    else {
+      NDN_LOG_ERROR("Invalid DNS resolver port in " << m_configFile << ": 0");
+    }
+  }
 }
 
 // For CA
@@ -111,8 +249,8 @@ ChallengeDns::handleChallengeRequest(const Block& params, ca::RequestState& requ
       return returnWithError(request, ErrorCode::OUT_OF_TIME, "Challenge expired.");
     }
 
-    if (challengeStatus == NEED_RECORD) {
-      // Requester confirms they've created the DNS record
+    if (challengeStatus == NEED_RECORD || challengeStatus == WRONG_RECORD) {
+      // Requester confirms they've created/updated the DNS record
       static const std::string READY_CONFIRMATION = "ready";
       std::string confirmation = readString(params.get(tlv::ParameterValue));
       if (confirmation != READY_CONFIRMATION) {
@@ -120,12 +258,6 @@ ChallengeDns::handleChallengeRequest(const Block& params, ca::RequestState& requ
                               "Expected '" + READY_CONFIRMATION + "' confirmation");
       }
 
-      // Move to validation phase
-      auto remainTime = getRemainingTime(currentTime, request.challengeState->timestamp);
-      return returnWithNewChallengeStatus(request, READY_FOR_VALIDATION, std::move(secret),
-                                          request.challengeState->remainingTries, remainTime);
-    }
-    else if (challengeStatus == READY_FOR_VALIDATION || challengeStatus == WRONG_RECORD) {
       // Perform DNS verification
       std::string domain = secret.get<std::string>("domain");
       std::string expectedValue = secret.get<std::string>("expected-value");
@@ -168,9 +300,6 @@ ChallengeDns::getRequestedParameterList(Status status, const std::string& challe
     result.emplace(PARAMETER_KEY_CONFIRMATION,
                   "Create the DNS TXT record as instructed, then enter 'ready' to proceed");
   }
-  else if (status == Status::CHALLENGE && challengeStatus == READY_FOR_VALIDATION) {
-    // Automatic DNS verification phase - no user input needed
-  }
   else if (status == Status::CHALLENGE && challengeStatus == WRONG_RECORD) {
     result.emplace(PARAMETER_KEY_CONFIRMATION,
                   "DNS record verification failed. Please check the record and enter 'ready' to retry");
@@ -200,12 +329,6 @@ ChallengeDns::genChallengeRequestTLV(Status status, const std::string& challenge
     request.push_back(ndn::makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
     request.push_back(ndn::makeStringBlock(tlv::ParameterKey, PARAMETER_KEY_CONFIRMATION));
     request.push_back(ndn::makeStringBlock(tlv::ParameterValue, paramValue));
-  }
-  else if (status == Status::CHALLENGE && challengeStatus == READY_FOR_VALIDATION) {
-    // Automatic verification - send challenge type only
-    request.push_back(ndn::makeStringBlock(tlv::SelectedChallenge, CHALLENGE_TYPE));
-    request.push_back(ndn::makeStringBlock(tlv::ParameterKey, "verify"));
-    request.push_back(ndn::makeStringBlock(tlv::ParameterValue, "now"));
   }
   else {
     NDN_THROW(std::runtime_error("Unexpected challenge status"));
@@ -268,35 +391,53 @@ ChallengeDns::verifyDnsRecord(const std::string& domain, const std::string& expe
 {
   std::string recordName = getDnsRecordName(domain);
 
+  parseConfigFile();
+
+  // Resolver address (hostname or IP). For best portability, prefer explicit config.
+  auto resolverHost = getEnv(DNS_RESOLVER_ENV);
+  if (!resolverHost) {
+    if (m_configResolverIpV4) {
+      resolverHost = *m_configResolverIpV4;
+    }
+    else {
+      resolverHost = getDefaultDnsResolverIpV4();
+    }
+  }
+  if (!resolverHost) {
+    NDN_LOG_ERROR("No DNS resolver configured. Set " << DNS_RESOLVER_ENV << " or configure 'resolver' in "
+                  << m_configFile << ".");
+    return false;
+  }
+
+  uint16_t resolverPort = m_configResolverPort.value_or(getDefaultDnsResolverPort());
+  if (auto envPort = getEnv(DNS_RESOLVER_PORT_ENV)) {
+    if (auto parsed = parsePort(*envPort)) {
+      resolverPort = *parsed;
+    }
+    else {
+      NDN_LOG_ERROR("Invalid " << DNS_RESOLVER_PORT_ENV << "='" << *envPort << "'");
+      return false;
+    }
+  }
+
   constexpr uint16_t DNS_CLASS_IN = 1;
   constexpr uint16_t DNS_TYPE_TXT = 16;
 
-  // Send a direct UDP DNS query to the configured resolver (avoids libresolv linkage issues).
-  int sock = ::socket(AF_INET, SOCK_DGRAM, 0);
-  if (sock < 0) {
-    NDN_LOG_ERROR("Failed to create UDP socket");
+  // Resolve resolver host (supports IPv4/IPv6/hostname) and send a UDP query.
+  addrinfo hints{};
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_DGRAM;
+  hints.ai_protocol = IPPROTO_UDP;
+
+  addrinfo* res = nullptr;
+  const std::string portStr = std::to_string(resolverPort);
+  int gai = ::getaddrinfo(resolverHost->c_str(), portStr.c_str(), &hints, &res);
+  if (gai != 0 || res == nullptr) {
+    NDN_LOG_ERROR("getaddrinfo failed for resolver " << *resolverHost << ":" << resolverPort
+                  << " (" << ::gai_strerror(gai) << ")");
     return false;
   }
-
-  auto sockGuard = std::unique_ptr<int, void(*)(int*)>(&sock, [](int* fd) {
-    if (fd && *fd >= 0) {
-      ::close(*fd);
-      *fd = -1;
-    }
-  });
-
-  timeval timeout{};
-  timeout.tv_sec = 3;
-  timeout.tv_usec = 0;
-  (void)::setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-
-  sockaddr_in resolverAddr{};
-  resolverAddr.sin_family = AF_INET;
-  resolverAddr.sin_port = htons(DNS_RESOLVER_PORT);
-  if (inet_pton(AF_INET, DNS_RESOLVER_IP, &resolverAddr.sin_addr) != 1) {
-    NDN_LOG_ERROR("Invalid resolver address " << DNS_RESOLVER_IP);
-    return false;
-  }
+  auto resGuard = std::unique_ptr<addrinfo, void(*)(addrinfo*)>(res, ::freeaddrinfo);
 
   // Build minimal RFC1035 DNS query (one question)
   unsigned char query[512];
@@ -345,16 +486,36 @@ ChallengeDns::verifyDnsRecord(const std::string& domain, const std::string& expe
   putU16(DNS_TYPE_TXT);
   putU16(DNS_CLASS_IN);
 
-  ssize_t sent = ::sendto(sock, query, qlen, 0, reinterpret_cast<sockaddr*>(&resolverAddr), sizeof(resolverAddr));
-  if (sent < 0 || static_cast<size_t>(sent) != qlen) {
-    NDN_LOG_TRACE("DNS query send failed for " << recordName);
-    return false;
+  unsigned char answer[4096];
+  ssize_t recvd = -1;
+  for (addrinfo* ai = res; ai != nullptr; ai = ai->ai_next) {
+    int sock = ::socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+    if (sock < 0) {
+      continue;
+    }
+    auto sockGuard = std::unique_ptr<int, void(*)(int*)>(&sock, [](int* fd) {
+      if (fd && *fd >= 0) {
+        ::close(*fd);
+        *fd = -1;
+      }
+    });
+
+    (void)setRecvTimeout(sock, 3000);
+
+    ssize_t sent = ::sendto(sock, query, qlen, 0, ai->ai_addr, ai->ai_addrlen);
+    if (sent < 0 || static_cast<size_t>(sent) != qlen) {
+      continue;
+    }
+
+    sockaddr_storage from{};
+    socklen_t fromLen = sizeof(from);
+    ssize_t r = ::recvfrom(sock, answer, sizeof(answer), 0, reinterpret_cast<sockaddr*>(&from), &fromLen);
+    if (r > 0) {
+      recvd = r;
+      break;
+    }
   }
 
-  unsigned char answer[4096];
-  sockaddr_in from{};
-  socklen_t fromLen = sizeof(from);
-  ssize_t recvd = ::recvfrom(sock, answer, sizeof(answer), 0, reinterpret_cast<sockaddr*>(&from), &fromLen);
   if (recvd <= 0) {
     NDN_LOG_TRACE("DNS query receive failed/timeout for " << recordName);
     return false;

@@ -126,6 +126,9 @@ decodeDataContent(const Block& contentBlock, requester::Request& state)
         else if (currentParameterKey == "expected-value") {
           state.m_dnsExpectedValue = readString(item);
         }
+        else {
+          NDN_THROW(std::runtime_error("Unknown Parameter: " + currentParameterKey));
+        }
         currentParameterKey.clear(); // Reset for next parameter
       }
       else {

@@ -570,6 +570,16 @@ runChallenge(const std::string& challengeType)
               << "\nExit." << std::endl;
     exit(1);
   }
+
+  if (challengeType == "dns" && requesterState->m_status == Status::CHALLENGE &&
+      (requesterState->m_challengeStatus == "need-record" || requesterState->m_challengeStatus == "wrong-record") &&
+      !requesterState->m_dnsRecordName.empty() && !requesterState->m_dnsExpectedValue.empty()) {
+    std::cerr << "\n=== DNS TXT Record Required ===\n"
+              << "Record Name: " << requesterState->m_dnsRecordName << "\n"
+              << "Record Type: TXT\n"
+              << "Record Value: " << requesterState->m_dnsExpectedValue << "\n";
+  }
+
   if (!requirement.empty()) {
     if (requesterState->m_status == Status::BEFORE_CHALLENGE && challengeType == defaultChallenge) {
       requirement.find(challengeType)->second = capturedProbeParams->find(defaultChallenge)->second;

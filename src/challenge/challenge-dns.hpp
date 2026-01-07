@@ -23,6 +23,8 @@
 
 #include "challenge-module.hpp"
 
+#include <optional>
+
 namespace ndncert {
 
 /**
@@ -40,10 +42,8 @@ namespace ndncert {
  *   challenge-token + "." + requester-key-hash
  *
  * There are several challenge statuses in DNS challenge:
- *   NEED_DOMAIN: When domain name is needed from requester.
  *   NEED_RECORD: When DNS record details have been provided and record needs to be created.
  *   WRONG_RECORD: When DNS lookup fails or record doesn't match.
- *   READY_FOR_VALIDATION: When requester confirms record is ready for validation.
  *
  * Failure info when challenge fails:
  *   FAILURE_MAXRETRY: When run out of retry times for DNS verification.
@@ -55,8 +55,9 @@ namespace ndncert {
 class ChallengeDns : public ChallengeModule
 {
 public:
-  ChallengeDns(const size_t& maxAttemptTimes = 5,
-               const time::seconds secretLifetime = time::seconds(1800));
+  ChallengeDns(const size_t& maxAttemptTimes = 3,
+               const time::seconds secretLifetime = time::seconds(3600),
+               const std::string& configPath = "");
 
   // For CA
   std::tuple<ErrorCode, std::string>
@@ -71,10 +72,8 @@ public:
                          const std::multimap<std::string, std::string>& params) override;
 
   // challenge status
-  static const std::string NEED_DOMAIN;
   static const std::string NEED_RECORD;
   static const std::string WRONG_RECORD;
-  static const std::string READY_FOR_VALIDATION;
   
   // challenge parameters
   static const std::string PARAMETER_KEY_DOMAIN;
@@ -87,13 +86,16 @@ NDNCERT_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   static std::string
   computeChallengeResponse(const std::string& token, const std::string& keyHash);
 
-  bool
+  NDNCERT_VIRTUAL_WITH_TESTS bool
   verifyDnsRecord(const std::string& domain, const std::string& expectedValue) const;
 
   std::string
   getDnsRecordName(const std::string& domain) const;
 
 private:
+  void
+  parseConfigFile() const;
+
   time::seconds
   getRemainingTime(const time::system_clock::time_point& currentTime,
                    const time::system_clock::time_point& startTime) const;
@@ -103,6 +105,12 @@ private:
                           const std::string& expectedKey) const;
 
   static const std::string DNS_PREFIX;
+
+private:
+  std::string m_configFile;
+  mutable bool m_isConfigParsed = false;
+  mutable std::optional<std::string> m_configResolverIpV4;
+  mutable std::optional<uint16_t> m_configResolverPort;
 };
 
 } // namespace ndncert
