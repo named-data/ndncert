@@ -3,8 +3,8 @@ libdir=@LIBDIR@
 includedir=@INCLUDEDIR@
 
 Name: libndn-cert
-Description: ndncert library
+Description: NDNCERT Library
 Version: @VERSION@
 Libs: -L${libdir} -lndn-cert
 Cflags: -I${includedir}
-Requires: libndn-cxx >= 0.8.1
+Requires: libndn-cxx >= 0.9.0

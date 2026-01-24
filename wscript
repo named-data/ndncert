@@ -33,15 +33,15 @@ def configure(conf):
     conf.find_program(['pkgconf', 'pkg-config'], var='PKGCONFIG')
 
     pkg_config_path = os.environ.get('PKG_CONFIG_PATH', f'{conf.env.LIBDIR}/pkgconfig')
-    conf.check_cfg(package='libndn-cxx', args=['libndn-cxx >= 0.8.1', '--cflags', '--libs'],
+    conf.check_cfg(package='libndn-cxx', args=['libndn-cxx >= 0.9.0', '--cflags', '--libs'],
                    uselib_store='NDN_CXX', pkg_config_path=pkg_config_path)
 
     conf.check_sqlite3()
     conf.check_openssl(lib='crypto', atleast_version='1.1.1')
 
     conf.check_boost()
-    if conf.env.BOOST_VERSION_NUMBER < 107100:
-        conf.fatal('The minimum supported version of Boost is 1.71.0.\n'
+    if conf.env.BOOST_VERSION_NUMBER < 107400:
+        conf.fatal('The minimum supported version of Boost is 1.74.0.\n'
                    'Please upgrade your distribution or manually install a newer version of Boost.\n'
                    'For more information, see https://redmine.named-data.net/projects/nfd/wiki/Boost')
 
