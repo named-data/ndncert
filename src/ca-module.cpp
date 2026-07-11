@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2025, Regents of the University of California.
+ * Copyright (c) 2017-2026, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -76,7 +76,7 @@ CaModule::registerPrefix()
 
   m_registeredPrefixes.emplace_back(m_face.registerPrefix(prefix,
     [&] (const Name& name) {
-      // register INFO RDR metadata prefix
+      // register INFO metadata prefix
       const auto& metaDataComp = ndn::MetadataObject::getKeywordComponent();
       auto filterId = m_face.setInterestFilter(Name(name).append("INFO").append(metaDataComp),
                                                [this] (auto&&, const auto& i) { onCaProfileDiscovery(i); });

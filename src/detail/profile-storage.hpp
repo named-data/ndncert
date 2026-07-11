@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2026, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -27,7 +27,6 @@ namespace ndncert::requester {
 
 /**
  * @brief CA profiles kept by a requester.
- * @sa https://github.com/named-data/ndncert/wiki/Client-Configuration-Sample
  */
 class ProfileStorage
 {

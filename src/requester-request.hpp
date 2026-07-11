@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2023, Regents of the University of California.
+ * Copyright (c) 2017-2026, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -33,19 +33,23 @@ class Request : boost::noncopyable
 {
 public:
   /**
-   * @brief Generates a CA profile discovery Interest following RDR protocol.
+   * @brief Generates a metadata discovery Interest for the CA profile.
    *
    * @param caName The name prefix of the CA.
    * @return A shared pointer to an Interest ready to be sent.
+   *
+   * @sa https://redmine.named-data.net/projects/ndn-tlv/wiki/Metadata
    */
   static std::shared_ptr<Interest>
   genCaProfileDiscoveryInterest(const Name& caName);
 
   /**
-   * @brief Generates a CA profile fetching Interest following RDR protocol.
+   * @brief Generates a CA profile fetching Interest from a metadata packet.
    *
    * @param reply The Data packet replied from discovery Interest.
    * @return A shared pointer to an Interest ready to be sent.
+   *
+   * @sa https://redmine.named-data.net/projects/ndn-tlv/wiki/Metadata
    */
   static std::shared_ptr<Interest>
   genCaProfileInterestFromDiscoveryResponse(const Data& reply);
