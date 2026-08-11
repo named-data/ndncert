@@ -165,7 +165,7 @@ CaModule::onProbe(const Interest& request)
   std::vector<ndn::Name> redirectionNames;
   for (const auto& item : m_config.redirection) {
     if (item.second->isRedirecting(parameters)) {
-      redirectionNames.push_back(item.first->getFullName());
+      redirectionNames.push_back(item.first.getFullName());
     }
   }
 

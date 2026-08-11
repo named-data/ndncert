@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2024, Regents of the University of California.
+ * Copyright (c) 2017-2026, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -86,7 +86,8 @@ BOOST_AUTO_TEST_CASE(OnProbeResponse)
   reply.setFreshnessPeriod(time::seconds(100));
   {
     std::vector<Name> redirectionNames;
-    for (const auto &i : ca.m_config.redirection) redirectionNames.push_back(i.first->getFullName());
+    for (const auto& i : ca.m_config.redirection)
+      redirectionNames.push_back(i.first.getFullName());
     reply.setContent(probetlv::encodeDataContent(availableNames, 3, redirectionNames));
   }
   m_keyChain.sign(reply, ndn::signingByIdentity(identity));

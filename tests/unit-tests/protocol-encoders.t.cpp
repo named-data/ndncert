@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2022, Regents of the University of California.
+ * Copyright (c) 2017-2026, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -82,7 +82,8 @@ BOOST_AUTO_TEST_CASE(ProbeEncodingData)
   names.emplace_back("/ndn/1");
   names.emplace_back("/ndn/2");
   std::vector<Name> redirectionNames;
-  for (const auto& i : config.redirection) redirectionNames.push_back(i.first->getFullName());
+  for (const auto& i : config.redirection)
+    redirectionNames.push_back(i.first.getFullName());
   auto b = probetlv::encodeDataContent(names, 2, redirectionNames);
   std::vector<std::pair<Name, int>> retNames;
   std::vector<Name> redirection;
@@ -98,7 +99,7 @@ BOOST_AUTO_TEST_CASE(ProbeEncodingData)
   auto it3 = redirection.begin();
   auto it4 = config.redirection.begin();
   for (; it3 != redirection.end() && it4 != config.redirection.end(); it3++, it4++) {
-    BOOST_CHECK_EQUAL(*it3, it4->first->getFullName());
+    BOOST_CHECK_EQUAL(*it3, it4->first.getFullName());
   }
 }
 

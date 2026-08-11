@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2024, Regents of the University of California.
+ * Copyright (c) 2017-2026, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -53,7 +53,7 @@ BOOST_AUTO_TEST_CASE(CaConfigFile)
   BOOST_CHECK_EQUAL(config.caProfile.supportedChallenges.front(), "pin");
 
   config.load("tests/unit-tests/config-files/config-ca-5");
-  BOOST_CHECK_EQUAL(config.redirection[0].first->getName(),
+  BOOST_CHECK_EQUAL(config.redirection[0].first.getName(),
                     "/ndn/edu/ucla/KEY/m%08%98%C2xNZ%13/self/v=1646441513929");
   BOOST_CHECK_EQUAL(config.nameAssignmentFuncs.size(), 3);
   BOOST_CHECK_EQUAL(config.nameAssignmentFuncs[0]->m_nameFormat[0], "group");

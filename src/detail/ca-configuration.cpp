@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2024, Regents of the University of California.
+ * Copyright (c) 2017-2026, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -56,8 +56,8 @@ CaConfig::load(const std::string& fileName)
         NDN_THROW(std::runtime_error("Redirect-to item's certificate cannot be empty."));
       }
       std::istringstream ss(caCertStr);
-      auto caCert = ndn::io::load<Certificate>(ss);
-      if (!caPrefixStr.empty() && Name(caPrefixStr) != caCert->getIdentity()) {
+      auto caCert = ndn::io::loadTlv<Certificate>(ss);
+      if (!caPrefixStr.empty() && Name(caPrefixStr) != caCert.getIdentity()) {
         NDN_THROW(std::runtime_error("Redirect-to item's prefix and certificate does not match."));
       }
 
@@ -70,7 +70,7 @@ CaConfig::load(const std::string& fileName)
       if (policy == nullptr) {
         NDN_THROW(std::runtime_error("Error on creating redirection policy"));
       }
-      redirection.emplace_back(caCert, std::move(policy));
+      redirection.emplace_back(std::move(caCert), std::move(policy));
     }
   }
 

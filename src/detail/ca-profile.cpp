@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2017-2024, Regents of the University of California.
+ * Copyright (c) 2017-2026, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -84,7 +84,7 @@ CaProfile::fromJson(const JsonSection& json)
   auto certificateStr = json.get(CONFIG_CERTIFICATE, "");
   if (!certificateStr.empty()) {
     std::istringstream ss(certificateStr);
-    profile.cert = ndn::io::load<Certificate>(ss);
+    profile.cert = std::make_shared<Certificate>(ndn::io::loadTlv<Certificate>(ss));
   }
   return profile;
 }
@@ -119,7 +119,7 @@ CaProfile::toJson() const
   }
   if (cert != nullptr) {
     std::stringstream ss;
-    ndn::io::save(*cert, ss);
+    ndn::io::saveTlv(*cert, ss);
     caItem.put("certificate", ss.str());
   }
   return caItem;

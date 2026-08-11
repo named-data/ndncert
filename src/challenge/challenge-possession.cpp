@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2024, Regents of the University of California.
+ * Copyright (c) 2017-2026, Regents of the University of California.
  *
  * This file is part of ndncert, a certificate management system based on NDN.
  *
@@ -67,15 +67,14 @@ ChallengePossession::parseConfigFile()
 
   m_trustAnchors.clear();
   auto anchorList = config.get_child("anchor-list");
-  auto it = anchorList.begin();
-  for (; it != anchorList.end(); it++) {
-    std::istringstream ss(it->second.get("certificate", ""));
-    auto cert = ndn::io::load<Certificate>(ss);
-    if (cert == nullptr) {
-      NDN_LOG_ERROR("Cannot load certificate from configuration file");
-      continue;
+  try {
+    for (auto it = anchorList.begin(); it != anchorList.end(); it++) {
+      std::istringstream ss(it->second.get("certificate", ""));
+      m_trustAnchors.push_back(ndn::io::loadTlv<Certificate>(ss));
     }
-    m_trustAnchors.push_back(*cert);
+  }
+  catch (const ndn::io::Error& e) {
+    NDN_THROW(std::runtime_error("Cannot load anchor certificate from configuration file: "s + e.what()));
   }
 }
 
